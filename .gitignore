@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+.junit/
+.nyc_output/
+istanbul/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+# Build results
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+jspm_packages/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Playwright artifacts
+playwright-report/
+test-results/
+
+# Client design-source files (large binaries, not versioned — see README/PROJECT.md)
+ATT Design System/

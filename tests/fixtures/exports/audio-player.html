@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob:; media-src 'self' http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+
+      --primary: #2563EB;
+      --accent: #F59E0B;
+      --primary-hover: #1D4ED8;
+      --bg-body: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-main: #1F2937;
+      --text-muted: #505863;
+      --border-color: #DBDDDF;
+      --border-radius: 12px;
+      --button-radius: 8px;
+      --border-style: 1px solid var(--border-color);
+      --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --font-family: 'Lato', sans-serif;
+      --heading-font-family: 'Lato', sans-serif;
+      --spacing-scale: 1;
+      --animation-speed: 200ms;
+      --primary-light: rgba(37, 99, 235, 0.12);
+      --primary-tint: rgba(37, 99, 235, 0.05);
+      --focus-ring: rgba(37, 99, 235, 0.16);
+      --accent-light: rgba(245, 158, 11, 0.14);
+      --accent-tint: rgba(245, 158, 11, 0.07);
+      --success: #10B981;
+      --warning: #A16207;
+      --danger: #EF4444;
+      --on-primary: #FFFFFF;
+      --on-accent: #FFFFFF;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --component-max-width: 740px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      padding: calc(30px * var(--spacing-scale));
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      transition: background-color var(--animation-speed) ease;
+    }
+
+    button { border-radius: var(--button-radius); }
+
+    /* Interactive Block Shell */
+    .rise-block-wrapper {
+      width: 100%;
+      max-width: var(--component-max-width);
+      margin: 0 auto;
+    }
+
+    .block-header {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      white-space: pre-line;
+    }
+
+    .block-headline {
+      font-family: var(--heading-font-family);
+      white-space: pre-line;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .block-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .audio-player-block {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-style);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .audio-info {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .audio-art {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background-color: var(--accent-light);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .audio-art .custom-item-icon { width: 100%; height: 100%; }
+    .audio-text-labels h5 {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .audio-text-labels p {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .audio-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .audio-play-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      color: var(--on-primary);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .audio-play-btn:hover {
+      transform: scale(1.05);
+    }
+    .audio-scrub-bar {
+      flex: 1;
+      height: 6px;
+      border-radius: 4px;
+      background-color: var(--bg-body);
+      cursor: pointer;
+      position: relative;
+    }
+    .scrub-fill {
+      height: 100%;
+      border-radius: 4px;
+      background-color: var(--accent);
+    }
+    .audio-timer {
+      font-size: 11px;
+      color: var(--text-muted);
+      width: 30px;
+      text-align: right;
+    }
+    @media (forced-colors: active) {
+      .scrub-fill { background: Highlight; }
+    }
+
+    [hidden] { display: none !important; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    :where(button, [href], input, [tabindex]:not([tabindex="-1"])):focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 2px var(--bg-card);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Completion Tracker Bar */
+    .completion-tracker {
+      margin-top: 30px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      width: 100%;
+      background-color: var(--bg-body);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :where(button, [role="button"], [role="radio"], [role="tab"], input) { border: 1px solid ButtonText; }
+      :where(button, [role="button"], [role="radio"], [role="tab"], input):focus-visible { outline: 3px solid Highlight; }
+      .progress-fill { background: Highlight; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-audio-player-block-headline">
+    <div class="block-header">
+      <div class="block-label">SAMPLE EXPORT</div>
+      <h2 class="block-headline" id="rcb-fixture-audio-player-block-headline">Representative export fixture</h2>
+      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
+    </div>
+
+    <div class="block-content">
+      
+    <div class="audio-player-block">
+      <div class="audio-info">
+        <div class="audio-art">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        </div>
+        <div class="audio-text-labels">
+          <h5>Introduction Podcast (Audio Clip)</h5>
+          <p>Duration available after media loads</p>
+        </div>
+      </div>
+      <div class="audio-controls-row">
+        <button type="button" class="audio-play-btn" aria-label="Play audio" aria-pressed="false">
+          <svg class="play-svg" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <svg class="pause-svg" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        </button>
+        <div class="audio-scrub-bar" role="slider" tabindex="0" aria-label="Audio position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="25" aria-valuetext="25 percent">
+          <div class="scrub-fill" style="width: 25%;"></div>
+        </div>
+        <span class="audio-timer" aria-live="off">0:56</span>
+      </div>
+      <audio id="rcb-fixture-audio-player-html5-audio-element" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="metadata" style="display:none;"></audio>
+      <p class="media-alternative-note sr-only">No transcript has been supplied for this audio.</p>
+    </div>
+  
+    </div>
+
+    
+    <div class="completion-tracker" aria-labelledby="rcb-fixture-audio-player-completion-label">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
+          <span id="rcb-fixture-audio-player-completion-label">Progress Completion</span>
+          <span id="rcb-fixture-audio-player-completion-text" aria-hidden="true">0%</span>
+        </div>
+        <div class="progress-bar-container" id="rcb-fixture-audio-player-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-audio-player-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
+          <div class="progress-fill" id="rcb-fixture-audio-player-progress-fill"></div>
+        </div>
+      </div>
+    <div id="rcb-fixture-audio-player-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <script>
+    (function() {
+
+    var viewedItems = new Set();
+    var totalItems = 1;
+    var completionMessage = "Activity complete!";
+
+    function announce(message) {
+      var status = document.getElementById('rcb-fixture-audio-player-interaction-status');
+      if (!status) return;
+      status.textContent = '';
+      window.setTimeout(function() { status.textContent = message; }, 20);
+    }
+
+    // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
+    // completion decision here).
+    function setProgressAccessibility(percent) {
+      var progress = document.getElementById('rcb-fixture-audio-player-progress-bar');
+      if (progress) {
+        progress.setAttribute('aria-valuenow', String(percent));
+        progress.setAttribute('aria-valuetext', percent + ' percent complete');
+      }
+    }
+
+    // Concept #2: internal component completion. Fires the (adapter-owned) notification
+    // exactly once per completed state — see RiseComponentCompletion.notifyComplete().
+    function evaluateComponentCompletion(percent) {
+      if (percent < 100) return;
+      if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
+      announce(completionMessage);
+      RiseComponentCompletion.notifyComplete();
+    }
+
+    function updateProgress() {
+      if (!true) return;
+      var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
+      var txt = document.getElementById('rcb-fixture-audio-player-completion-text');
+      var bar = document.getElementById('rcb-fixture-audio-player-progress-fill');
+      if (txt && bar) {
+        txt.textContent = percent + '%';
+        bar.style.width = percent + '%';
+      }
+      setProgressAccessibility(percent);
+      evaluateComponentCompletion(percent);
+    }
+
+    function updateTrackerComplete() {
+      if (!true) return;
+      var txt = document.getElementById('rcb-fixture-audio-player-completion-text');
+      var bar = document.getElementById('rcb-fixture-audio-player-progress-fill');
+      if (txt && bar) {
+        txt.textContent = '100%';
+        bar.style.width = '100%';
+      }
+      setProgressAccessibility(100);
+      evaluateComponentCompletion(100);
+    }
+
+    // Inbound-reset target (js/completion.js calls this by name after validating a
+    // 'reset' message): clears interaction progress and re-arms completion so a fresh
+    // completion can fire again later.
+    function resetComponentProgress() {
+      viewedItems = new Set();
+      updateProgress();
+      if (typeof RiseComponentCompletion !== 'undefined') RiseComponentCompletion.reset();
+      announce('Progress reset.');
+    }
+
+    var RiseComponentCompletion = (function() {
+      var CHANNEL = "rise-component-builder";
+      var SCHEMA_VERSION = 1;
+      var componentId = "audio-player";
+      var componentVersion = "1.0.0";
+      var instanceId = "rcb-fixture-audio-player";
+      var allowedOrigin = null;
+      var hasCompletedFlag = false;
+
+      function targetOrigin() { return allowedOrigin || '*'; }
+
+      function buildEnvelope(type, extra) {
+        var envelope = {
+          channel: CHANNEL, schemaVersion: SCHEMA_VERSION, type: type,
+          componentId: componentId, componentVersion: componentVersion, instanceId: instanceId,
+          timestamp: new Date().toISOString()
+        };
+        if (extra) { for (var key in extra) { if (extra.hasOwnProperty(key)) envelope[key] = extra[key]; } }
+        return envelope;
+      }
+
+      function isEmbedded() {
+        try { return Boolean(window.parent) && window.parent !== window; }
+        catch (error) { return false; }
+      }
+
+      function selectAdapterName() {
+        if (!isEmbedded()) return 'standalone';
+        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
+        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
+        return 'noop';
+      }
+
+      var adapterName = selectAdapterName();
+
+      function send(envelope) {
+        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
+        try { window.parent.postMessage(envelope, targetOrigin()); }
+        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
+      }
+
+      function notifyComplete() {
+        if (hasCompletedFlag) return; // prevent duplicate completion events
+        hasCompletedFlag = true;
+        send(buildEnvelope('completion', { status: 'completed' }));
+      }
+
+      function hasCompleted() { return hasCompletedFlag; }
+
+      function resetCompletionState() { hasCompletedFlag = false; }
+
+      function isValidInboundMessage(data) {
+        if (!data || typeof data !== 'object') return false;
+        if (data.channel !== CHANNEL || data.schemaVersion !== SCHEMA_VERSION) return false;
+        if (data.type !== 'reset') return false; // 'reset' is the only supported inbound command today
+        if (data.instanceId && data.instanceId !== instanceId) return false; // targeted at a different instance
+        return true;
+      }
+
+      window.addEventListener('message', function(event) {
+        if (allowedOrigin && event.origin !== allowedOrigin) return; // origin check, when configured
+        if (!isValidInboundMessage(event.data)) return; // silently ignore anything malformed/unrecognized
+        resetCompletionState();
+        if (typeof resetComponentProgress === 'function') resetComponentProgress();
+      });
+
+      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, reset: resetCompletionState, adapterName: adapterName };
+    })();
+
+    function toggleAudioPlayback(btn) {
+      var audio = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
+      var playSvg = btn.querySelector('.play-svg');
+      var pauseSvg = btn.querySelector('.pause-svg');
+
+      if (audio.paused) {
+        audio.play().catch(function(e) { console.log('Audio autoplay blocked or invalid source URL'); });
+        playSvg.style.display = 'none';
+        pauseSvg.style.display = 'block';
+        btn.style.backgroundColor = 'var(--accent)';
+        btn.setAttribute('aria-label', 'Pause audio');
+        btn.setAttribute('aria-pressed', 'true');
+      } else {
+        audio.pause();
+        playSvg.style.display = 'block';
+        pauseSvg.style.display = 'none';
+        btn.style.backgroundColor = 'var(--primary)';
+        btn.setAttribute('aria-label', 'Play audio');
+        btn.setAttribute('aria-pressed', 'false');
+      }
+    }
+
+    function scrubAudio(event) {
+      var bar = event.currentTarget;
+      var rect = bar.getBoundingClientRect();
+      var clickX = event.clientX - rect.left;
+      var width = rect.width;
+      var percentage = (clickX / width) * 100;
+
+      bar.querySelector('.scrub-fill').style.width = percentage + '%';
+      bar.setAttribute('aria-valuenow', String(Math.round(percentage)));
+      bar.setAttribute('aria-valuetext', Math.round(percentage) + ' percent');
+      var audio = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
+      if (audio && audio.duration) audio.currentTime = audio.duration * percentage / 100;
+    }
+
+    function changeAudioSliderByKeyboard(event) {
+      if (['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowUp', 'Home', 'End'].indexOf(event.key) === -1) return;
+      event.preventDefault();
+      var slider = event.currentTarget;
+      var value = Number(slider.getAttribute('aria-valuenow')) || 0;
+      if (event.key === 'Home') value = 0;
+      else if (event.key === 'End') value = 100;
+      else value += (event.key === 'ArrowRight' || event.key === 'ArrowUp') ? 5 : -5;
+      value = Math.max(0, Math.min(100, value));
+      slider.setAttribute('aria-valuenow', String(value));
+      slider.setAttribute('aria-valuetext', value + ' percent');
+      var fill = slider.querySelector('.scrub-fill');
+      if (fill) fill.style.width = value + '%';
+      var media = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
+      if (media && media.duration) media.currentTime = media.duration * value / 100;
+    }
+
+    function formatMediaTime(seconds) {
+      if (!Number.isFinite(seconds)) return '0:00';
+      var minutes = Math.floor(seconds / 60);
+      return minutes + ':' + String(Math.floor(seconds % 60)).padStart(2, '0');
+    }
+
+    function syncAudioProgress(media, slider, fill, timer) {
+      if (!media || !slider || !media.duration) return;
+      var value = Math.max(0, Math.min(100, media.currentTime / media.duration * 100));
+      slider.setAttribute('aria-valuenow', String(Math.round(value)));
+      slider.setAttribute('aria-valuetext', formatMediaTime(media.currentTime) + ' of ' + formatMediaTime(media.duration));
+      if (fill) fill.style.width = value + '%';
+      if (timer) timer.textContent = formatMediaTime(media.currentTime);
+    }
+
+    function initComponent() {
+      var audioPlayBtn = document.querySelector('.audio-play-btn');
+      var audioElement = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
+      var audioScrubBar = document.querySelector('.audio-scrub-bar');
+      if (audioPlayBtn) audioPlayBtn.addEventListener('click', function() { toggleAudioPlayback(audioPlayBtn); });
+      if (audioScrubBar) audioScrubBar.addEventListener('click', scrubAudio);
+      if (audioScrubBar) audioScrubBar.addEventListener('keydown', changeAudioSliderByKeyboard);
+      if (audioElement) audioElement.addEventListener('timeupdate', function() {
+        syncAudioProgress(audioElement, audioScrubBar, audioScrubBar && audioScrubBar.querySelector('.scrub-fill'), document.querySelector('.audio-timer'));
+      });
+      if (audioElement) audioElement.addEventListener('ended', function() {
+        viewedItems.add(0);
+        updateProgress();
+        if (audioPlayBtn) {
+          audioPlayBtn.setAttribute('aria-label', 'Play audio');
+          audioPlayBtn.setAttribute('aria-pressed', 'false');
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initComponent);
+    } else {
+      initComponent();
+    }
+    })();
+  </script>
+</body>
+</html>

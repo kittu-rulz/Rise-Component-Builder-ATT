@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob:; media-src 'self' http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+
+      --primary: #2563EB;
+      --accent: #F59E0B;
+      --primary-hover: #1D4ED8;
+      --bg-body: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-main: #1F2937;
+      --text-muted: #505863;
+      --border-color: #DBDDDF;
+      --border-radius: 12px;
+      --button-radius: 8px;
+      --border-style: 1px solid var(--border-color);
+      --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --font-family: 'Lato', sans-serif;
+      --heading-font-family: 'Lato', sans-serif;
+      --spacing-scale: 1;
+      --animation-speed: 200ms;
+      --primary-light: rgba(37, 99, 235, 0.12);
+      --primary-tint: rgba(37, 99, 235, 0.05);
+      --focus-ring: rgba(37, 99, 235, 0.16);
+      --accent-light: rgba(245, 158, 11, 0.14);
+      --accent-tint: rgba(245, 158, 11, 0.07);
+      --success: #10B981;
+      --warning: #A16207;
+      --danger: #EF4444;
+      --on-primary: #FFFFFF;
+      --on-accent: #FFFFFF;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --component-max-width: 740px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      padding: calc(30px * var(--spacing-scale));
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      transition: background-color var(--animation-speed) ease;
+    }
+
+    button { border-radius: var(--button-radius); }
+
+    /* Interactive Block Shell */
+    .rise-block-wrapper {
+      width: 100%;
+      max-width: var(--component-max-width);
+      margin: 0 auto;
+    }
+
+    .block-header {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      white-space: pre-line;
+    }
+
+    .block-headline {
+      font-family: var(--heading-font-family);
+      white-space: pre-line;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .block-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .accordion-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .accordion-item {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-style);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    .accordion-trigger {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    .accordion-trigger:focus-visible {
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .acc-arrow {
+      transition: transform 0.25s ease;
+      color: var(--text-muted);
+    }
+
+    .accordion-item.active .acc-arrow {
+      transform: rotate(180deg);
+      color: var(--accent);
+    }
+
+    .accordion-item.active {
+      border-color: var(--accent);
+    }
+
+    .acc-plus-minus {
+      position: relative;
+      width: 14px;
+      height: 14px;
+    }
+
+    .acc-plus-minus::before, .acc-plus-minus::after {
+      content: '';
+      position: absolute;
+      background-color: var(--text-muted);
+      transition: transform 0.25s ease;
+    }
+
+    .acc-plus-minus::before {
+      top: 6px;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .acc-plus-minus::after {
+      top: 0;
+      bottom: 0;
+      left: 6px;
+      width: 2px;
+    }
+
+    .accordion-item.active .acc-plus-minus::after {
+      transform: rotate(90deg);
+      opacity: 0;
+    }
+    .accordion-item.active .acc-plus-minus::before,
+    .accordion-item.active .acc-plus-minus::after {
+      background-color: var(--accent);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .accordion-body {
+      padding: 0 20px 20px 20px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    [hidden] { display: none !important; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    :where(button, [href], input, [tabindex]:not([tabindex="-1"])):focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 2px var(--bg-card);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Completion Tracker Bar */
+    .completion-tracker {
+      margin-top: 30px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      width: 100%;
+      background-color: var(--bg-body);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :where(button, [role="button"], [role="radio"], [role="tab"], input) { border: 1px solid ButtonText; }
+      :where(button, [role="button"], [role="radio"], [role="tab"], input):focus-visible { outline: 3px solid Highlight; }
+      .progress-fill { background: Highlight; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-accordion-block-headline">
+    <div class="block-header">
+      <div class="block-label">SAMPLE EXPORT</div>
+      <h2 class="block-headline" id="rcb-fixture-accordion-block-headline">Representative export fixture</h2>
+      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
+    </div>
+
+    <div class="block-content">
+      <div class="accordion-group">
+    <div class="accordion-item" id="rcb-fixture-accordion-item-0">
+      <h3><button class="accordion-trigger" id="rcb-fixture-accordion-accordion-trigger-0" data-idx="0" aria-expanded="false" aria-controls="rcb-fixture-accordion-accordion-panel-0"><span>Understanding User Intent</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="acc-arrow"><polyline points="6 9 12 15 18 9"></polyline></svg></button></h3>
+      <div class="accordion-content" id="rcb-fixture-accordion-accordion-panel-0" role="region" aria-labelledby="rcb-fixture-accordion-accordion-trigger-0" aria-hidden="true"><div class="accordion-body"><p>Instructional design begins by identifying the core learning objectives and alignment with business outcomes.</p></div></div>
+    </div>
+    <div class="accordion-item" id="rcb-fixture-accordion-item-1">
+      <h3><button class="accordion-trigger" id="rcb-fixture-accordion-accordion-trigger-1" data-idx="1" aria-expanded="false" aria-controls="rcb-fixture-accordion-accordion-panel-1"><span>Designing for Engagement</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="acc-arrow"><polyline points="6 9 12 15 18 9"></polyline></svg></button></h3>
+      <div class="accordion-content" id="rcb-fixture-accordion-accordion-panel-1" role="region" aria-labelledby="rcb-fixture-accordion-accordion-trigger-1" aria-hidden="true"><div class="accordion-body"><p>Modern eLearning relies on micro-interactions, clean visual layouts, and bite-sized chunks of information.</p></div></div>
+    </div>
+    <div class="accordion-item" id="rcb-fixture-accordion-item-2">
+      <h3><button class="accordion-trigger" id="rcb-fixture-accordion-accordion-trigger-2" data-idx="2" aria-expanded="false" aria-controls="rcb-fixture-accordion-accordion-panel-2"><span>SCORM and Tracking Analytics</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="acc-arrow"><polyline points="6 9 12 15 18 9"></polyline></svg></button></h3>
+      <div class="accordion-content" id="rcb-fixture-accordion-accordion-panel-2" role="region" aria-labelledby="rcb-fixture-accordion-accordion-trigger-2" aria-hidden="true"><div class="accordion-body"><p>Export clean standard elements to trace course completion, custom interaction states, and score cards.</p></div></div>
+    </div></div>
+    </div>
+
+    
+    <div class="completion-tracker" aria-labelledby="rcb-fixture-accordion-completion-label">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
+          <span id="rcb-fixture-accordion-completion-label">Progress Completion</span>
+          <span id="rcb-fixture-accordion-completion-text" aria-hidden="true">0%</span>
+        </div>
+        <div class="progress-bar-container" id="rcb-fixture-accordion-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-accordion-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
+          <div class="progress-fill" id="rcb-fixture-accordion-progress-fill"></div>
+        </div>
+      </div>
+    <div id="rcb-fixture-accordion-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <script>
+    (function() {
+
+    var viewedItems = new Set();
+    var totalItems = 3;
+    var completionMessage = "Activity complete!";
+
+    function announce(message) {
+      var status = document.getElementById('rcb-fixture-accordion-interaction-status');
+      if (!status) return;
+      status.textContent = '';
+      window.setTimeout(function() { status.textContent = message; }, 20);
+    }
+
+    // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
+    // completion decision here).
+    function setProgressAccessibility(percent) {
+      var progress = document.getElementById('rcb-fixture-accordion-progress-bar');
+      if (progress) {
+        progress.setAttribute('aria-valuenow', String(percent));
+        progress.setAttribute('aria-valuetext', percent + ' percent complete');
+      }
+    }
+
+    // Concept #2: internal component completion. Fires the (adapter-owned) notification
+    // exactly once per completed state — see RiseComponentCompletion.notifyComplete().
+    function evaluateComponentCompletion(percent) {
+      if (percent < 100) return;
+      if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
+      announce(completionMessage);
+      RiseComponentCompletion.notifyComplete();
+    }
+
+    function updateProgress() {
+      if (!true) return;
+      var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
+      var txt = document.getElementById('rcb-fixture-accordion-completion-text');
+      var bar = document.getElementById('rcb-fixture-accordion-progress-fill');
+      if (txt && bar) {
+        txt.textContent = percent + '%';
+        bar.style.width = percent + '%';
+      }
+      setProgressAccessibility(percent);
+      evaluateComponentCompletion(percent);
+    }
+
+    function updateTrackerComplete() {
+      if (!true) return;
+      var txt = document.getElementById('rcb-fixture-accordion-completion-text');
+      var bar = document.getElementById('rcb-fixture-accordion-progress-fill');
+      if (txt && bar) {
+        txt.textContent = '100%';
+        bar.style.width = '100%';
+      }
+      setProgressAccessibility(100);
+      evaluateComponentCompletion(100);
+    }
+
+    // Inbound-reset target (js/completion.js calls this by name after validating a
+    // 'reset' message): clears interaction progress and re-arms completion so a fresh
+    // completion can fire again later.
+    function resetComponentProgress() {
+      viewedItems = new Set();
+      updateProgress();
+      if (typeof RiseComponentCompletion !== 'undefined') RiseComponentCompletion.reset();
+      announce('Progress reset.');
+    }
+
+    var RiseComponentCompletion = (function() {
+      var CHANNEL = "rise-component-builder";
+      var SCHEMA_VERSION = 1;
+      var componentId = "accordion";
+      var componentVersion = "1.0.0";
+      var instanceId = "rcb-fixture-accordion";
+      var allowedOrigin = null;
+      var hasCompletedFlag = false;
+
+      function targetOrigin() { return allowedOrigin || '*'; }
+
+      function buildEnvelope(type, extra) {
+        var envelope = {
+          channel: CHANNEL, schemaVersion: SCHEMA_VERSION, type: type,
+          componentId: componentId, componentVersion: componentVersion, instanceId: instanceId,
+          timestamp: new Date().toISOString()
+        };
+        if (extra) { for (var key in extra) { if (extra.hasOwnProperty(key)) envelope[key] = extra[key]; } }
+        return envelope;
+      }
+
+      function isEmbedded() {
+        try { return Boolean(window.parent) && window.parent !== window; }
+        catch (error) { return false; }
+      }
+
+      function selectAdapterName() {
+        if (!isEmbedded()) return 'standalone';
+        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
+        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
+        return 'noop';
+      }
+
+      var adapterName = selectAdapterName();
+
+      function send(envelope) {
+        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
+        try { window.parent.postMessage(envelope, targetOrigin()); }
+        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
+      }
+
+      function notifyComplete() {
+        if (hasCompletedFlag) return; // prevent duplicate completion events
+        hasCompletedFlag = true;
+        send(buildEnvelope('completion', { status: 'completed' }));
+      }
+
+      function hasCompleted() { return hasCompletedFlag; }
+
+      function resetCompletionState() { hasCompletedFlag = false; }
+
+      function isValidInboundMessage(data) {
+        if (!data || typeof data !== 'object') return false;
+        if (data.channel !== CHANNEL || data.schemaVersion !== SCHEMA_VERSION) return false;
+        if (data.type !== 'reset') return false; // 'reset' is the only supported inbound command today
+        if (data.instanceId && data.instanceId !== instanceId) return false; // targeted at a different instance
+        return true;
+      }
+
+      window.addEventListener('message', function(event) {
+        if (allowedOrigin && event.origin !== allowedOrigin) return; // origin check, when configured
+        if (!isValidInboundMessage(event.data)) return; // silently ignore anything malformed/unrecognized
+        resetCompletionState();
+        if (typeof resetComponentProgress === 'function') resetComponentProgress();
+      });
+
+      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, reset: resetCompletionState, adapterName: adapterName };
+    })();
+
+    var multiOpen = true;
+    var allowAnimation = true;
+
+    function toggleAccordion(index) {
+      var item = document.getElementById('rcb-fixture-accordion-item-' + index);
+      var isCurrentlyActive = item.classList.contains('active');
+
+      if (!multiOpen) {
+        document.querySelectorAll('.accordion-item').forEach(function(el) {
+          el.classList.remove('active');
+          var panel = el.querySelector('.accordion-content');
+          var trigger = el.querySelector('.accordion-trigger');
+          if (panel) {
+            panel.style.maxHeight = null;
+            panel.setAttribute('aria-hidden', 'true');
+          }
+          if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        });
+      }
+
+      var contentPanel = item.querySelector('.accordion-content');
+
+      if (isCurrentlyActive) {
+        item.classList.remove('active');
+        contentPanel.style.maxHeight = null;
+        contentPanel.setAttribute('aria-hidden', 'true');
+        item.querySelector('.accordion-trigger').setAttribute('aria-expanded', 'false');
+      } else {
+        item.classList.add('active');
+        contentPanel.style.maxHeight = contentPanel.scrollHeight + 'px';
+        contentPanel.setAttribute('aria-hidden', 'false');
+        item.querySelector('.accordion-trigger').setAttribute('aria-expanded', 'true');
+        viewedItems.add(index);
+        updateProgress();
+      }
+    }
+
+    function initComponent() {
+      document.querySelectorAll('.accordion-trigger').forEach(function(trigger) {
+        trigger.addEventListener('click', function() {
+          toggleAccordion(parseInt(trigger.getAttribute('data-idx'), 10));
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initComponent);
+    } else {
+      initComponent();
+    }
+    })();
+  </script>
+</body>
+</html>

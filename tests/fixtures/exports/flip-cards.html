@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob:; media-src 'self' http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+
+      --primary: #2563EB;
+      --accent: #F59E0B;
+      --primary-hover: #1D4ED8;
+      --bg-body: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-main: #1F2937;
+      --text-muted: #505863;
+      --border-color: #DBDDDF;
+      --border-radius: 12px;
+      --button-radius: 8px;
+      --border-style: 1px solid var(--border-color);
+      --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --font-family: 'Lato', sans-serif;
+      --heading-font-family: 'Lato', sans-serif;
+      --spacing-scale: 1;
+      --animation-speed: 200ms;
+      --primary-light: rgba(37, 99, 235, 0.12);
+      --primary-tint: rgba(37, 99, 235, 0.05);
+      --focus-ring: rgba(37, 99, 235, 0.16);
+      --accent-light: rgba(245, 158, 11, 0.14);
+      --accent-tint: rgba(245, 158, 11, 0.07);
+      --success: #10B981;
+      --warning: #A16207;
+      --danger: #EF4444;
+      --on-primary: #FFFFFF;
+      --on-accent: #FFFFFF;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --component-max-width: 740px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      padding: calc(30px * var(--spacing-scale));
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      transition: background-color var(--animation-speed) ease;
+    }
+
+    button { border-radius: var(--button-radius); }
+
+    /* Interactive Block Shell */
+    .rise-block-wrapper {
+      width: 100%;
+      max-width: var(--component-max-width);
+      margin: 0 auto;
+    }
+
+    .block-header {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      white-space: pre-line;
+    }
+
+    .block-headline {
+      font-family: var(--heading-font-family);
+      white-space: pre-line;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .block-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .flip-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .flip-card {
+      background-color: transparent;
+      height: 180px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .flip-card.flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front, .flip-card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: var(--border-radius);
+      border: var(--border-style);
+      box-shadow: var(--shadow-style);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flip-card-front {
+      background-color: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .card-icon-badge {
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .card-icon-badge .custom-item-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: calc(var(--border-radius) / 2);
+    }
+
+    .flip-card-front h3, .flip-card-back h3 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .flip-card-front p, .flip-card-back p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .flip-card-back {
+      background-color: var(--primary);
+      color: var(--on-primary);
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-back h3 {
+      color: var(--on-primary);
+    }
+
+    .flip-card-back p {
+      color: var(--on-primary);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .flip-card-inner { transform: none !important; }
+      .flip-card-front, .flip-card-back { transition: none !important; }
+      .flip-card.flipped .flip-card-front { display: none; }
+      .flip-card:not(.flipped) .flip-card-back { display: none; }
+    }
+
+    [hidden] { display: none !important; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    :where(button, [href], input, [tabindex]:not([tabindex="-1"])):focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 2px var(--bg-card);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Completion Tracker Bar */
+    .completion-tracker {
+      margin-top: 30px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      width: 100%;
+      background-color: var(--bg-body);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :where(button, [role="button"], [role="radio"], [role="tab"], input) { border: 1px solid ButtonText; }
+      :where(button, [role="button"], [role="radio"], [role="tab"], input):focus-visible { outline: 3px solid Highlight; }
+      .progress-fill { background: Highlight; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-flip-cards-block-headline">
+    <div class="block-header">
+      <div class="block-label">SAMPLE EXPORT</div>
+      <h2 class="block-headline" id="rcb-fixture-flip-cards-block-headline">Representative export fixture</h2>
+      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
+    </div>
+
+    <div class="block-content">
+      <div class="flip-cards-grid">
+    <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-0" aria-label="Front Side A: reveal back">
+      <div class="flip-card-inner">
+      <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-0" aria-hidden="false"><div class="card-icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div><h3>Front Side A</h3><p>Hover to reveal definition.</p></div>
+      <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-0" aria-hidden="true"><h3>Back Side A</h3><p>Definitions should be concise.</p></div>
+    </div></div>
+    <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-1" aria-label="Front Side B: reveal back">
+      <div class="flip-card-inner">
+      <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-1" aria-hidden="false"><div class="card-icon-badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div><h3>Front Side B</h3><p>Mobile compatibility check.</p></div>
+      <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-1" aria-hidden="true"><h3>Back Side B</h3><p>Rise blocks fit full width.</p></div>
+    </div></div></div>
+    </div>
+
+    
+    <div class="completion-tracker" aria-labelledby="rcb-fixture-flip-cards-completion-label">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
+          <span id="rcb-fixture-flip-cards-completion-label">Progress Completion</span>
+          <span id="rcb-fixture-flip-cards-completion-text" aria-hidden="true">0%</span>
+        </div>
+        <div class="progress-bar-container" id="rcb-fixture-flip-cards-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-flip-cards-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
+          <div class="progress-fill" id="rcb-fixture-flip-cards-progress-fill"></div>
+        </div>
+      </div>
+    <div id="rcb-fixture-flip-cards-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <script>
+    (function() {
+
+    var viewedItems = new Set();
+    var totalItems = 2;
+    var completionMessage = "Activity complete!";
+
+    function announce(message) {
+      var status = document.getElementById('rcb-fixture-flip-cards-interaction-status');
+      if (!status) return;
+      status.textContent = '';
+      window.setTimeout(function() { status.textContent = message; }, 20);
+    }
+
+    // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
+    // completion decision here).
+    function setProgressAccessibility(percent) {
+      var progress = document.getElementById('rcb-fixture-flip-cards-progress-bar');
+      if (progress) {
+        progress.setAttribute('aria-valuenow', String(percent));
+        progress.setAttribute('aria-valuetext', percent + ' percent complete');
+      }
+    }
+
+    // Concept #2: internal component completion. Fires the (adapter-owned) notification
+    // exactly once per completed state — see RiseComponentCompletion.notifyComplete().
+    function evaluateComponentCompletion(percent) {
+      if (percent < 100) return;
+      if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
+      announce(completionMessage);
+      RiseComponentCompletion.notifyComplete();
+    }
+
+    function updateProgress() {
+      if (!true) return;
+      var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
+      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
+      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      if (txt && bar) {
+        txt.textContent = percent + '%';
+        bar.style.width = percent + '%';
+      }
+      setProgressAccessibility(percent);
+      evaluateComponentCompletion(percent);
+    }
+
+    function updateTrackerComplete() {
+      if (!true) return;
+      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
+      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      if (txt && bar) {
+        txt.textContent = '100%';
+        bar.style.width = '100%';
+      }
+      setProgressAccessibility(100);
+      evaluateComponentCompletion(100);
+    }
+
+    // Inbound-reset target (js/completion.js calls this by name after validating a
+    // 'reset' message): clears interaction progress and re-arms completion so a fresh
+    // completion can fire again later.
+    function resetComponentProgress() {
+      viewedItems = new Set();
+      updateProgress();
+      if (typeof RiseComponentCompletion !== 'undefined') RiseComponentCompletion.reset();
+      announce('Progress reset.');
+    }
+
+    var RiseComponentCompletion = (function() {
+      var CHANNEL = "rise-component-builder";
+      var SCHEMA_VERSION = 1;
+      var componentId = "flip-cards";
+      var componentVersion = "1.0.0";
+      var instanceId = "rcb-fixture-flip-cards";
+      var allowedOrigin = null;
+      var hasCompletedFlag = false;
+
+      function targetOrigin() { return allowedOrigin || '*'; }
+
+      function buildEnvelope(type, extra) {
+        var envelope = {
+          channel: CHANNEL, schemaVersion: SCHEMA_VERSION, type: type,
+          componentId: componentId, componentVersion: componentVersion, instanceId: instanceId,
+          timestamp: new Date().toISOString()
+        };
+        if (extra) { for (var key in extra) { if (extra.hasOwnProperty(key)) envelope[key] = extra[key]; } }
+        return envelope;
+      }
+
+      function isEmbedded() {
+        try { return Boolean(window.parent) && window.parent !== window; }
+        catch (error) { return false; }
+      }
+
+      function selectAdapterName() {
+        if (!isEmbedded()) return 'standalone';
+        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
+        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
+        return 'noop';
+      }
+
+      var adapterName = selectAdapterName();
+
+      function send(envelope) {
+        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
+        try { window.parent.postMessage(envelope, targetOrigin()); }
+        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
+      }
+
+      function notifyComplete() {
+        if (hasCompletedFlag) return; // prevent duplicate completion events
+        hasCompletedFlag = true;
+        send(buildEnvelope('completion', { status: 'completed' }));
+      }
+
+      function hasCompleted() { return hasCompletedFlag; }
+
+      function resetCompletionState() { hasCompletedFlag = false; }
+
+      function isValidInboundMessage(data) {
+        if (!data || typeof data !== 'object') return false;
+        if (data.channel !== CHANNEL || data.schemaVersion !== SCHEMA_VERSION) return false;
+        if (data.type !== 'reset') return false; // 'reset' is the only supported inbound command today
+        if (data.instanceId && data.instanceId !== instanceId) return false; // targeted at a different instance
+        return true;
+      }
+
+      window.addEventListener('message', function(event) {
+        if (allowedOrigin && event.origin !== allowedOrigin) return; // origin check, when configured
+        if (!isValidInboundMessage(event.data)) return; // silently ignore anything malformed/unrecognized
+        resetCompletionState();
+        if (typeof resetComponentProgress === 'function') resetComponentProgress();
+      });
+
+      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, reset: resetCompletionState, adapterName: adapterName };
+    })();
+
+    function initComponent() {
+      document.querySelectorAll('.flip-card').forEach(function(card, idx) {
+        card.addEventListener('click', function() {
+          card.classList.toggle('flipped');
+          var flipped = card.classList.contains('flipped');
+          card.setAttribute('aria-expanded', String(flipped));
+          card.setAttribute('aria-label', (flipped ? 'Hide back of ' : 'Reveal back of ') + card.querySelector('.flip-card-front h3').textContent);
+          card.querySelector('.flip-card-front').setAttribute('aria-hidden', String(flipped));
+          card.querySelector('.flip-card-back').setAttribute('aria-hidden', String(!flipped));
+          announce(flipped ? 'Card back revealed' : 'Card front shown');
+          viewedItems.add(idx);
+          updateProgress();
+        });
+        card.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            card.click();
+          }
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initComponent);
+    } else {
+      initComponent();
+    }
+    })();
+  </script>
+</body>
+</html>

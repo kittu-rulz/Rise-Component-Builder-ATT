@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Export fixtures — manual test index</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; color: #1F2937; }
+  h1 { font-size: 20px; }
+  p { line-height: 1.5; color: #374151; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 10px; }
+  code { background: #F1F5F9; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .note { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 12px 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+  <h1>Export fixtures — standalone browser test pages</h1>
+  <p>
+    Each link below is a real, standalone exported component — produced by the same
+    compiler the app's own "Download .HTML File" button uses
+    (<code>scripts/generate-export-fixtures.mjs</code> → <code>js/preview.js#generateIframeContent</code>),
+    not a hand-written approximation. Open one directly in a browser to manually check
+    it the same way a real exported file would behave.
+  </p>
+  <p class="note">
+    These are NOT Rise or Moodle. Opening one of these confirms the exported file works
+    as a plain web page — see <code>docs/RISE-COMPATIBILITY-MATRIX.md</code> for what is
+    and isn't verified beyond that, and <code>docs/RISE-TEST-CHECKLIST.md</code> /
+    <code>docs/MOODLE-SCORM-TEST-CHECKLIST.md</code> for the manual steps that actually
+    exercise Rise/Moodle.
+  </p>
+  <p>For each fixture, try:</p>
+  <ul>
+    <li>Click every interactive control (accordion header, quiz option, hotspot pin, tab, etc.).</li>
+    <li>Tab to the component using only the keyboard, then activate controls with Enter/Space/arrow keys — no mouse.</li>
+    <li>Resize the window narrow (under 400px) and confirm nothing overflows or becomes unusable.</li>
+    <li>Open your browser devtools console and confirm there are no errors.</li>
+  </ul>
+  <ul>
+    <li><a href="accordion.html">Accordion</a></li>
+    <li><a href="flip-cards.html">Flip Cards</a></li>
+    <li><a href="tabs.html">Tabs</a></li>
+    <li><a href="multiple-choice.html">Multiple Choice</a></li>
+    <li><a href="hotspots.html">Hotspots</a></li>
+    <li><a href="timeline.html">Vertical Timeline</a></li>
+    <li><a href="audio-player.html">Audio Player</a></li>
+  </ul>
+  <p>
+    These same files are also loaded automatically by
+    <code>tests/e2e/exported-fixtures.spec.js</code> (console-error, keyboard-operability,
+    and offline-font-fallback checks) and validated for drift by
+    <code>tests/unit/export-fixtures.test.js</code>. Regenerate with
+    <code>npm run fixtures:exports</code> after changing any of the 7 components listed
+    above, then commit the updated files.
+  </p>
+</body>
+</html>

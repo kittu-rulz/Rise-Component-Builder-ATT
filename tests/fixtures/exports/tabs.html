@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob:; media-src 'self' http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+
+      --primary: #2563EB;
+      --accent: #F59E0B;
+      --primary-hover: #1D4ED8;
+      --bg-body: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-main: #1F2937;
+      --text-muted: #505863;
+      --border-color: #DBDDDF;
+      --border-radius: 12px;
+      --button-radius: 8px;
+      --border-style: 1px solid var(--border-color);
+      --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --font-family: 'Lato', sans-serif;
+      --heading-font-family: 'Lato', sans-serif;
+      --spacing-scale: 1;
+      --animation-speed: 200ms;
+      --primary-light: rgba(37, 99, 235, 0.12);
+      --primary-tint: rgba(37, 99, 235, 0.05);
+      --focus-ring: rgba(37, 99, 235, 0.16);
+      --accent-light: rgba(245, 158, 11, 0.14);
+      --accent-tint: rgba(245, 158, 11, 0.07);
+      --success: #10B981;
+      --warning: #A16207;
+      --danger: #EF4444;
+      --on-primary: #FFFFFF;
+      --on-accent: #FFFFFF;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --component-max-width: 740px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      padding: calc(30px * var(--spacing-scale));
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      transition: background-color var(--animation-speed) ease;
+    }
+
+    button { border-radius: var(--button-radius); }
+
+    /* Interactive Block Shell */
+    .rise-block-wrapper {
+      width: 100%;
+      max-width: var(--component-max-width);
+      margin: 0 auto;
+    }
+
+    .block-header {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      white-space: pre-line;
+    }
+
+    .block-headline {
+      font-family: var(--heading-font-family);
+      white-space: pre-line;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .block-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .tabs-container {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-style);
+      overflow: hidden;
+    }
+    .tabs-header {
+      display: flex;
+      border-bottom: var(--border-style);
+      background-color: rgba(0,0,0,0.02);
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 14px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tabs-content-wrapper {
+      padding: 20px;
+    }
+    .tab-panel {
+      display: none;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      animation: fadeIn 0.3s ease;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+
+    [hidden] { display: none !important; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    :where(button, [href], input, [tabindex]:not([tabindex="-1"])):focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 2px var(--bg-card);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Completion Tracker Bar */
+    .completion-tracker {
+      margin-top: 30px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      width: 100%;
+      background-color: var(--bg-body);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :where(button, [role="button"], [role="radio"], [role="tab"], input) { border: 1px solid ButtonText; }
+      :where(button, [role="button"], [role="radio"], [role="tab"], input):focus-visible { outline: 3px solid Highlight; }
+      .progress-fill { background: Highlight; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-tab-blocks-block-headline">
+    <div class="block-header">
+      <div class="block-label">SAMPLE EXPORT</div>
+      <h2 class="block-headline" id="rcb-fixture-tab-blocks-block-headline">Representative export fixture</h2>
+      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
+    </div>
+
+    <div class="block-content">
+      <div class="tabs-container">
+    <div class="tabs-header" role="tablist" aria-label="Content sections"><button class="tab-btn active" id="rcb-fixture-tab-blocks-tab-0" role="tab" aria-selected="true" aria-controls="rcb-fixture-tab-blocks-tab-panel-0" tabindex="0">Tab 1: Overview</button><button class="tab-btn " id="rcb-fixture-tab-blocks-tab-1" role="tab" aria-selected="false" aria-controls="rcb-fixture-tab-blocks-tab-panel-1" tabindex="-1">Tab 2: Details</button><button class="tab-btn " id="rcb-fixture-tab-blocks-tab-2" role="tab" aria-selected="false" aria-controls="rcb-fixture-tab-blocks-tab-panel-2" tabindex="-1">Tab 3: Summary</button></div>
+    <div class="tabs-content-wrapper"><div class="tab-panel active" id="rcb-fixture-tab-blocks-tab-panel-0" role="tabpanel" aria-labelledby="rcb-fixture-tab-blocks-tab-0" tabindex="0" ><p>A high-level explanation of the subject matter, laying a strong conceptual foundation.</p></div><div class="tab-panel " id="rcb-fixture-tab-blocks-tab-panel-1" role="tabpanel" aria-labelledby="rcb-fixture-tab-blocks-tab-1" tabindex="0" hidden><p>In-depth description of procedures, parameters, and design metrics.</p></div><div class="tab-panel " id="rcb-fixture-tab-blocks-tab-panel-2" role="tabpanel" aria-labelledby="rcb-fixture-tab-blocks-tab-2" tabindex="0" hidden><p>Key takeaways and visual summaries to reinforce memory retention.</p></div></div>
+  </div>
+    </div>
+
+    
+    <div class="completion-tracker" aria-labelledby="rcb-fixture-tab-blocks-completion-label">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
+          <span id="rcb-fixture-tab-blocks-completion-label">Progress Completion</span>
+          <span id="rcb-fixture-tab-blocks-completion-text" aria-hidden="true">0%</span>
+        </div>
+        <div class="progress-bar-container" id="rcb-fixture-tab-blocks-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-tab-blocks-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
+          <div class="progress-fill" id="rcb-fixture-tab-blocks-progress-fill"></div>
+        </div>
+      </div>
+    <div id="rcb-fixture-tab-blocks-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <script>
+    (function() {
+
+    var viewedItems = new Set();
+    var totalItems = 3;
+    var completionMessage = "Activity complete!";
+
+    function announce(message) {
+      var status = document.getElementById('rcb-fixture-tab-blocks-interaction-status');
+      if (!status) return;
+      status.textContent = '';
+      window.setTimeout(function() { status.textContent = message; }, 20);
+    }
+
+    // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
+    // completion decision here).
+    function setProgressAccessibility(percent) {
+      var progress = document.getElementById('rcb-fixture-tab-blocks-progress-bar');
+      if (progress) {
+        progress.setAttribute('aria-valuenow', String(percent));
+        progress.setAttribute('aria-valuetext', percent + ' percent complete');
+      }
+    }
+
+    // Concept #2: internal component completion. Fires the (adapter-owned) notification
+    // exactly once per completed state — see RiseComponentCompletion.notifyComplete().
+    function evaluateComponentCompletion(percent) {
+      if (percent < 100) return;
+      if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
+      announce(completionMessage);
+      RiseComponentCompletion.notifyComplete();
+    }
+
+    function updateProgress() {
+      if (!true) return;
+      var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
+      var txt = document.getElementById('rcb-fixture-tab-blocks-completion-text');
+      var bar = document.getElementById('rcb-fixture-tab-blocks-progress-fill');
+      if (txt && bar) {
+        txt.textContent = percent + '%';
+        bar.style.width = percent + '%';
+      }
+      setProgressAccessibility(percent);
+      evaluateComponentCompletion(percent);
+    }
+
+    function updateTrackerComplete() {
+      if (!true) return;
+      var txt = document.getElementById('rcb-fixture-tab-blocks-completion-text');
+      var bar = document.getElementById('rcb-fixture-tab-blocks-progress-fill');
+      if (txt && bar) {
+        txt.textContent = '100%';
+        bar.style.width = '100%';
+      }
+      setProgressAccessibility(100);
+      evaluateComponentCompletion(100);
+    }
+
+    // Inbound-reset target (js/completion.js calls this by name after validating a
+    // 'reset' message): clears interaction progress and re-arms completion so a fresh
+    // completion can fire again later.
+    function resetComponentProgress() {
+      viewedItems = new Set();
+      updateProgress();
+      if (typeof RiseComponentCompletion !== 'undefined') RiseComponentCompletion.reset();
+      announce('Progress reset.');
+    }
+
+    var RiseComponentCompletion = (function() {
+      var CHANNEL = "rise-component-builder";
+      var SCHEMA_VERSION = 1;
+      var componentId = "tab-blocks";
+      var componentVersion = "1.0.0";
+      var instanceId = "rcb-fixture-tab-blocks";
+      var allowedOrigin = null;
+      var hasCompletedFlag = false;
+
+      function targetOrigin() { return allowedOrigin || '*'; }
+
+      function buildEnvelope(type, extra) {
+        var envelope = {
+          channel: CHANNEL, schemaVersion: SCHEMA_VERSION, type: type,
+          componentId: componentId, componentVersion: componentVersion, instanceId: instanceId,
+          timestamp: new Date().toISOString()
+        };
+        if (extra) { for (var key in extra) { if (extra.hasOwnProperty(key)) envelope[key] = extra[key]; } }
+        return envelope;
+      }
+
+      function isEmbedded() {
+        try { return Boolean(window.parent) && window.parent !== window; }
+        catch (error) { return false; }
+      }
+
+      function selectAdapterName() {
+        if (!isEmbedded()) return 'standalone';
+        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
+        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
+        return 'noop';
+      }
+
+      var adapterName = selectAdapterName();
+
+      function send(envelope) {
+        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
+        try { window.parent.postMessage(envelope, targetOrigin()); }
+        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
+      }
+
+      function notifyComplete() {
+        if (hasCompletedFlag) return; // prevent duplicate completion events
+        hasCompletedFlag = true;
+        send(buildEnvelope('completion', { status: 'completed' }));
+      }
+
+      function hasCompleted() { return hasCompletedFlag; }
+
+      function resetCompletionState() { hasCompletedFlag = false; }
+
+      function isValidInboundMessage(data) {
+        if (!data || typeof data !== 'object') return false;
+        if (data.channel !== CHANNEL || data.schemaVersion !== SCHEMA_VERSION) return false;
+        if (data.type !== 'reset') return false; // 'reset' is the only supported inbound command today
+        if (data.instanceId && data.instanceId !== instanceId) return false; // targeted at a different instance
+        return true;
+      }
+
+      window.addEventListener('message', function(event) {
+        if (allowedOrigin && event.origin !== allowedOrigin) return; // origin check, when configured
+        if (!isValidInboundMessage(event.data)) return; // silently ignore anything malformed/unrecognized
+        resetCompletionState();
+        if (typeof resetComponentProgress === 'function') resetComponentProgress();
+      });
+
+      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, reset: resetCompletionState, adapterName: adapterName };
+    })();
+
+    function selectTab(index, button) {
+      var container = button.closest('.tabs-container');
+      container.querySelectorAll('.tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+        b.setAttribute('tabindex', '-1');
+      });
+      container.querySelectorAll('.tab-panel').forEach(function(p) {
+        p.classList.remove('active');
+        p.hidden = true;
+      });
+      button.classList.add('active');
+      button.setAttribute('aria-selected', 'true');
+      button.setAttribute('tabindex', '0');
+      var panel = document.getElementById('rcb-fixture-tab-blocks-tab-panel-' + index);
+      panel.hidden = false;
+      panel.classList.add('active');
+      viewedItems.add(index);
+      updateProgress();
+    }
+
+    function initComponent() {
+      document.querySelectorAll('.tab-btn').forEach(function(button, idx) {
+        button.addEventListener('click', function() {
+          selectTab(idx, button);
+        });
+        button.addEventListener('keydown', function(event) {
+          var tabs = Array.from(button.closest('[role="tablist"]').querySelectorAll('[role="tab"]'));
+          var next = idx;
+          if (event.key === 'ArrowRight') next = (idx + 1) % tabs.length;
+          else if (event.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = tabs.length - 1;
+          else return;
+          event.preventDefault();
+          selectTab(next, tabs[next]);
+          tabs[next].focus();
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initComponent);
+    } else {
+      initComponent();
+    }
+    })();
+  </script>
+</body>
+</html>

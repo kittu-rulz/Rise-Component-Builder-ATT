@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob:; media-src 'self' http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+
+      --primary: #2563EB;
+      --accent: #F59E0B;
+      --primary-hover: #1D4ED8;
+      --bg-body: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --text-main: #1F2937;
+      --text-muted: #505863;
+      --border-color: #DBDDDF;
+      --border-radius: 12px;
+      --button-radius: 8px;
+      --border-style: 1px solid var(--border-color);
+      --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --font-family: 'Lato', sans-serif;
+      --heading-font-family: 'Lato', sans-serif;
+      --spacing-scale: 1;
+      --animation-speed: 200ms;
+      --primary-light: rgba(37, 99, 235, 0.12);
+      --primary-tint: rgba(37, 99, 235, 0.05);
+      --focus-ring: rgba(37, 99, 235, 0.16);
+      --accent-light: rgba(245, 158, 11, 0.14);
+      --accent-tint: rgba(245, 158, 11, 0.07);
+      --success: #10B981;
+      --warning: #A16207;
+      --danger: #EF4444;
+      --on-primary: #FFFFFF;
+      --on-accent: #FFFFFF;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --component-max-width: 740px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      padding: calc(30px * var(--spacing-scale));
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      transition: background-color var(--animation-speed) ease;
+    }
+
+    button { border-radius: var(--button-radius); }
+
+    /* Interactive Block Shell */
+    .rise-block-wrapper {
+      width: 100%;
+      max-width: var(--component-max-width);
+      margin: 0 auto;
+    }
+
+    .block-header {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .block-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      white-space: pre-line;
+    }
+
+    .block-headline {
+      font-family: var(--heading-font-family);
+      white-space: pre-line;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .block-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .quiz-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quiz-option {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-style);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .quiz-option:hover {
+      border-color: var(--primary);
+    }
+
+    .quiz-option.selected {
+      border-color: var(--accent);
+      background-color: var(--accent-tint);
+    }
+
+    .option-check-circle {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .quiz-option.selected .option-check-circle {
+      border-color: var(--accent);
+      background-color: var(--accent);
+    }
+
+    .quiz-option.selected .option-check-circle::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #FFFFFF;
+    }
+
+    .option-text {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .quiz-submit-btn {
+      align-self: flex-start;
+      margin-top: 10px;
+      padding: 10px 24px;
+      border-radius: var(--button-radius);
+      border: none;
+      background-color: var(--primary);
+      color: var(--on-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--animation-speed);
+    }
+
+    .quiz-submit-btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .quiz-feedback {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: var(--border-radius);
+      font-size: 13px;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .quiz-feedback.correct {
+      background-color: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #065F46;
+    }
+
+    .quiz-feedback.wrong {
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #991B1B;
+    }
+
+    [hidden] { display: none !important; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    :where(button, [href], input, [tabindex]:not([tabindex="-1"])):focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 2px var(--bg-card);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Completion Tracker Bar */
+    .completion-tracker {
+      margin-top: 30px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      width: 100%;
+      background-color: var(--bg-body);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :where(button, [role="button"], [role="radio"], [role="tab"], input) { border: 1px solid ButtonText; }
+      :where(button, [role="button"], [role="radio"], [role="tab"], input):focus-visible { outline: 3px solid Highlight; }
+      .progress-fill { background: Highlight; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-multiple-choice-block-headline">
+    <div class="block-header">
+      <div class="block-label">SAMPLE EXPORT</div>
+      <h2 class="block-headline" id="rcb-fixture-multiple-choice-block-headline">Representative export fixture</h2>
+      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
+    </div>
+
+    <div class="block-content">
+      <div class="quiz-block"><div class="quiz-options" role="radiogroup" aria-label="Answer choices">
+    <div class="quiz-option" role="radio" tabindex="0" aria-checked="false" data-idx="0"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option A (Correct)</div></div>
+    <div class="quiz-option" role="radio" tabindex="-1" aria-checked="false" data-idx="1"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option B</div></div>
+    <div class="quiz-option" role="radio" tabindex="-1" aria-checked="false" data-idx="2"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option C</div></div></div>
+    <button class="quiz-submit-btn" type="button">Submit Answer</button><div id="rcb-fixture-multiple-choice-quiz-feedback-box" class="quiz-feedback" role="status" aria-live="polite" aria-atomic="true" style="display:none;"></div>
+  </div>
+    </div>
+
+    
+    <div class="completion-tracker" aria-labelledby="rcb-fixture-multiple-choice-completion-label">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
+          <span id="rcb-fixture-multiple-choice-completion-label">Progress Completion</span>
+          <span id="rcb-fixture-multiple-choice-completion-text" aria-hidden="true">0%</span>
+        </div>
+        <div class="progress-bar-container" id="rcb-fixture-multiple-choice-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-multiple-choice-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
+          <div class="progress-fill" id="rcb-fixture-multiple-choice-progress-fill"></div>
+        </div>
+      </div>
+    <div id="rcb-fixture-multiple-choice-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <script>
+    (function() {
+
+    var viewedItems = new Set();
+    var totalItems = 3;
+    var completionMessage = "Activity complete!";
+
+    function announce(message) {
+      var status = document.getElementById('rcb-fixture-multiple-choice-interaction-status');
+      if (!status) return;
+      status.textContent = '';
+      window.setTimeout(function() { status.textContent = message; }, 20);
+    }
+
+    // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
+    // completion decision here).
+    function setProgressAccessibility(percent) {
+      var progress = document.getElementById('rcb-fixture-multiple-choice-progress-bar');
+      if (progress) {
+        progress.setAttribute('aria-valuenow', String(percent));
+        progress.setAttribute('aria-valuetext', percent + ' percent complete');
+      }
+    }
+
+    // Concept #2: internal component completion. Fires the (adapter-owned) notification
+    // exactly once per completed state — see RiseComponentCompletion.notifyComplete().
+    function evaluateComponentCompletion(percent) {
+      if (percent < 100) return;
+      if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
+      announce(completionMessage);
+      RiseComponentCompletion.notifyComplete();
+    }
+
+    function updateProgress() {
+      if (!true) return;
+      var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
+      var txt = document.getElementById('rcb-fixture-multiple-choice-completion-text');
+      var bar = document.getElementById('rcb-fixture-multiple-choice-progress-fill');
+      if (txt && bar) {
+        txt.textContent = percent + '%';
+        bar.style.width = percent + '%';
+      }
+      setProgressAccessibility(percent);
+      evaluateComponentCompletion(percent);
+    }
+
+    function updateTrackerComplete() {
+      if (!true) return;
+      var txt = document.getElementById('rcb-fixture-multiple-choice-completion-text');
+      var bar = document.getElementById('rcb-fixture-multiple-choice-progress-fill');
+      if (txt && bar) {
+        txt.textContent = '100%';
+        bar.style.width = '100%';
+      }
+      setProgressAccessibility(100);
+      evaluateComponentCompletion(100);
+    }
+
+    // Inbound-reset target (js/completion.js calls this by name after validating a
+    // 'reset' message): clears interaction progress and re-arms completion so a fresh
+    // completion can fire again later.
+    function resetComponentProgress() {
+      viewedItems = new Set();
+      updateProgress();
+      if (typeof RiseComponentCompletion !== 'undefined') RiseComponentCompletion.reset();
+      announce('Progress reset.');
+    }
+
+    var RiseComponentCompletion = (function() {
+      var CHANNEL = "rise-component-builder";
+      var SCHEMA_VERSION = 1;
+      var componentId = "multiple-choice";
+      var componentVersion = "1.0.0";
+      var instanceId = "rcb-fixture-multiple-choice";
+      var allowedOrigin = null;
+      var hasCompletedFlag = false;
+
+      function targetOrigin() { return allowedOrigin || '*'; }
+
+      function buildEnvelope(type, extra) {
+        var envelope = {
+          channel: CHANNEL, schemaVersion: SCHEMA_VERSION, type: type,
+          componentId: componentId, componentVersion: componentVersion, instanceId: instanceId,
+          timestamp: new Date().toISOString()
+        };
+        if (extra) { for (var key in extra) { if (extra.hasOwnProperty(key)) envelope[key] = extra[key]; } }
+        return envelope;
+      }
+
+      function isEmbedded() {
+        try { return Boolean(window.parent) && window.parent !== window; }
+        catch (error) { return false; }
+      }
+
+      function selectAdapterName() {
+        if (!isEmbedded()) return 'standalone';
+        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
+        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
+        return 'noop';
+      }
+
+      var adapterName = selectAdapterName();
+
+      function send(envelope) {
+        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
+        try { window.parent.postMessage(envelope, targetOrigin()); }
+        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
+      }
+
+      function notifyComplete() {
+        if (hasCompletedFlag) return; // prevent duplicate completion events
+        hasCompletedFlag = true;
+        send(buildEnvelope('completion', { status: 'completed' }));
+      }
+
+      function hasCompleted() { return hasCompletedFlag; }
+
+      function resetCompletionState() { hasCompletedFlag = false; }
+
+      function isValidInboundMessage(data) {
+        if (!data || typeof data !== 'object') return false;
+        if (data.channel !== CHANNEL || data.schemaVersion !== SCHEMA_VERSION) return false;
+        if (data.type !== 'reset') return false; // 'reset' is the only supported inbound command today
+        if (data.instanceId && data.instanceId !== instanceId) return false; // targeted at a different instance
+        return true;
+      }
+
+      window.addEventListener('message', function(event) {
+        if (allowedOrigin && event.origin !== allowedOrigin) return; // origin check, when configured
+        if (!isValidInboundMessage(event.data)) return; // silently ignore anything malformed/unrecognized
+        resetCompletionState();
+        if (typeof resetComponentProgress === 'function') resetComponentProgress();
+      });
+
+      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, reset: resetCompletionState, adapterName: adapterName };
+    })();
+
+    var selectedOptionIndex = null;
+    var quizOptions = [{"label":"Option A (Correct)","content":"Micro-learning helps memory retention.","correct":true},{"label":"Option B","content":"Courses must be at least 1 hour long.","correct":false},{"label":"Option C","content":"Instructional text should be very dense.","correct":false}];
+
+    function selectQuizOption(index, element) {
+      selectedOptionIndex = index;
+      document.querySelectorAll('.quiz-option').forEach(function(el) {
+        el.classList.remove('selected');
+        el.setAttribute('aria-checked', 'false');
+        el.setAttribute('tabindex', '-1');
+      });
+      element.classList.add('selected');
+      element.setAttribute('aria-checked', 'true');
+      element.setAttribute('tabindex', '0');
+    }
+
+    function submitQuiz() {
+      var feedback = document.getElementById('rcb-fixture-multiple-choice-quiz-feedback-box');
+      if (selectedOptionIndex === null) {
+        feedback.style.display = 'block';
+        feedback.className = 'quiz-feedback wrong';
+        feedback.innerHTML = '<strong>Select an option first.</strong>';
+        return;
+      }
+
+      var selection = quizOptions[selectedOptionIndex];
+      var isCorrect = selection.correct;
+
+      feedback.style.display = 'block';
+      feedback.className = 'quiz-feedback ' + (isCorrect ? 'correct' : 'wrong');
+
+      if (isCorrect) {
+        feedback.innerHTML = '<strong>Correct!</strong> ' + (selection.content || 'Excellent choices.');
+        updateTrackerComplete();
+      } else {
+        feedback.innerHTML = '<strong>Incorrect.</strong> Try reviewing the source documentation again.';
+      }
+    }
+
+    function initComponent() {
+      document.querySelectorAll('.quiz-option[role="radio"]').forEach(function(option) {
+        option.addEventListener('click', function() {
+          selectQuizOption(parseInt(option.getAttribute('data-idx'), 10), option);
+        });
+        option.addEventListener('keydown', function(event) {
+          var options = Array.from(document.querySelectorAll('.quiz-option[role="radio"]'));
+          var current = options.indexOf(option);
+          var next = current;
+          if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = (current + 1) % options.length;
+          else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = (current - 1 + options.length) % options.length;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = options.length - 1;
+          else if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            selectQuizOption(current, option);
+            return;
+          } else return;
+          event.preventDefault();
+          selectQuizOption(next, options[next]);
+          options[next].focus();
+        });
+      });
+
+      var quizSubmitBtn = document.querySelector('.quiz-submit-btn');
+      if (quizSubmitBtn) quizSubmitBtn.addEventListener('click', submitQuiz);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initComponent);
+    } else {
+      initComponent();
+    }
+    })();
+  </script>
+</body>
+</html>
