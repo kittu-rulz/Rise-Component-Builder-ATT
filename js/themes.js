@@ -1,7 +1,10 @@
 export const THEME_SCHEMA_VERSION = 1;
 
+// 'ATT Aleck Sans' is a self-hosted, base64-embedded brand font (js/custom-fonts.js) rather
+// than a Google Fonts family — js/preview.js and js/export-shell.js branch on
+// CUSTOM_FONT_FACES_BY_FAMILY to load it correctly either way.
 export const ALLOWED_THEME_FONTS = Object.freeze([
-  'Merriweather', 'Lato', 'Roboto', 'Montserrat', 'Open Sans'
+  'Merriweather', 'Lato', 'Roboto', 'Montserrat', 'Open Sans', 'ATT Aleck Sans'
 ]);
 export const ALLOWED_THEME_SHADOWS = Object.freeze(['none', 'soft', 'medium', 'premium']);
 export const ALLOWED_SPACING_DENSITIES = Object.freeze(['compact', 'comfortable', 'spacious']);

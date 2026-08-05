@@ -227,20 +227,28 @@ const BOOTSTRAP_JS = `
  * same function via js/preview.js#generateIframeContent — see docs/EXPORT-CONTRACT.md.
  */
 export function renderShell({
-  instanceId, tokensCSS, fontQuery, componentCSS, blockLabel, blockHeadline, blockDesc,
+  instanceId, tokensCSS, fontQuery, customFontFaceCSS = '', componentCSS, blockLabel, blockHeadline, blockDesc,
   blockHeadingLevel, componentHTML, completionTrackerHTML, sharedA11yScript, componentJS
 }) {
   // Rise embeds this markup inside a lesson page that has its own h1, so the wrapping
   // headline's tag is author-configurable (defaults to h2) rather than a hardcoded h1 —
   // see docs/ACCESSIBILITY-CONFORMANCE.md.
   const headingTag = normalizeHeadingLevel(blockHeadingLevel);
+  // A theme's font families may be entirely self-hosted (js/custom-fonts.js) — in that case
+  // fontQuery is empty and the Google Fonts <link> would otherwise request nothing useful
+  // (or 400, depending on host), so it's only emitted when at least one family actually
+  // needs it. Self-hosted families are embedded as base64 @font-face rules directly in the
+  // page's own <style>, so they work identically in preview and every export mode with no
+  // external request and no separate asset-packaging step.
+  const googleFontsLink = fontQuery ? `<link href="https://fonts.googleapis.com/css2?${fontQuery}&display=swap" rel="stylesheet">` : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="${CSP_META}">
-  <link href="https://fonts.googleapis.com/css2?${fontQuery}&display=swap" rel="stylesheet">
+  ${googleFontsLink}
   <style>
+${customFontFaceCSS}
     :root {
 ${tokensCSS}
     }

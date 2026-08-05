@@ -3,6 +3,7 @@ import { resolveMediaReferencesForPreview } from './media-storage.js';
 import { applyThemeToConfig, getBuiltInTheme, resolveThemeTokens } from './themes.js';
 import { renderCompletionTrackerHTML, renderSharedA11yScript, renderShell } from './export-shell.js';
 import { renderCompletionAdapterScript } from './completion.js';
+import { CUSTOM_FONT_FACES_BY_FAMILY } from './custom-fonts.js';
 
 // The single source of truth for how wide an authored Rise block ever actually renders
 // (also referenced by the builder's own Desktop preview mode, js/device-preview.js).
@@ -72,8 +73,16 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
   const cardBorder = c.borderOutline ? '1px solid var(--border-color)' : 'none';
   const fontStack = themeTokens.fontFamily;
   const headingFontStack = themeTokens.headingFontFamily;
-  const fontQuery = [...new Set([fontStack, headingFontStack])]
+  // A theme's fontFamily/headingFontFamily may each independently be a Google Fonts family
+  // or a self-hosted one registered in js/custom-fonts.js — split them so a self-hosted
+  // family is never requested from Google (it isn't there) and a Google family never
+  // silently falls through with no @font-face at all.
+  const uniqueFamilies = [...new Set([fontStack, headingFontStack])];
+  const googleFamilies = uniqueFamilies.filter(font => !CUSTOM_FONT_FACES_BY_FAMILY[font]);
+  const fontQuery = googleFamilies
     .map(font => `family=${font.replaceAll(' ', '+')}:wght@300;400;500;600;700`).join('&');
+  const customFontFaceCSS = uniqueFamilies
+    .map(font => CUSTOM_FONT_FACES_BY_FAMILY[font]).filter(Boolean).join('\n\n');
   const spacingScale = { compact: 0.82, comfortable: 1, spacious: 1.18 }[themeTokens.spacingDensity] || 1;
   const primaryLight = toRgba(c.colorPrimary, 0.12, 'rgba(37, 99, 235, 0.12)');
   const primaryTint = toRgba(c.colorPrimary, 0.05, 'rgba(37, 99, 235, 0.05)');
@@ -139,6 +148,7 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
     instanceId,
     tokensCSS,
     fontQuery,
+    customFontFaceCSS,
     componentCSS: entry.generateCSS(),
     blockLabel: escapeHTML(c.blockTitle),
     blockHeadline: escapeHTML(c.blockHeadline),
