@@ -47,14 +47,11 @@ function preset(id, name, description, organization, tokens, options = {}) {
 // (ATT Design System/All_ATTAleck_Fonts, ATT design system.xd — kept local-only,
 // see .gitignore). Values traced directly to the brand source:
 //   - primary (#00388F, Cobalt): "Cobalt is typically used for CTA buttons."
-//   - accent (#0079B1, AT&T Blue 15% darker): the brand's own "AT&T Blue" (#009FDB)
-//     only reaches 3.01:1 contrast against white — below the 4.5:1 WCAG AA
-//     threshold this token needs since it colors small text (e.g. the block
-//     label). The 15%-darker stop from AT&T's own "AT&T Blue gradient" swatch
-//     is a brand-approved value that reaches 4.81:1. Flagged for review: the
-//     brand guide describes that gradient as "limited use" for gradients
-//     specifically, not necessarily as a flat solid accent — this is a
-//     deliberate accessibility substitution, not a literal brand-book value.
+//   - accent (#009FDB, AT&T Primary Blue): per explicit brand direction, this is
+//     the literal brand primary — not a substitute. Note: at this weight/size it
+//     only reaches 3.01:1 contrast against white, below the 4.5:1 WCAG AA
+//     threshold for small text (e.g. the block label), which is a known,
+//     accepted tradeoff rather than an oversight.
 //   - buttonRadius (20): measured directly from the brand's own button spec
 //     artboard (a 150x40 button rectangle with a 20px corner radius — fully
 //     pill-shaped, not a modest rounding).
@@ -67,7 +64,7 @@ function preset(id, name, description, organization, tokens, options = {}) {
 // not a brand-specified color.
 export const BUILT_IN_THEMES = Object.freeze([
   preset('att-standard', 'AT&T Standard', 'The standardized AT&T brand theme — the only theme in this build.', 'AT&T', {
-    fontFamily: 'ATT Aleck Sans', headingFontFamily: 'ATT Aleck Sans', primary: '#00388F', primaryHover: '#002A6B', accent: '#0079B1',
+    fontFamily: 'ATT Aleck Sans', headingFontFamily: 'ATT Aleck Sans', primary: '#00388F', primaryHover: '#002A6B', accent: '#009FDB',
     background: '#F3F4F5', surface: '#FFFFFF', text: '#000000', mutedText: '#4B5563', border: '#DCDFE3',
     success: '#087F5B', warning: '#9A6700', danger: '#B42318', borderRadius: 12, buttonRadius: 20,
     shadow: 'soft', spacingDensity: 'comfortable', animationSpeed: 200
