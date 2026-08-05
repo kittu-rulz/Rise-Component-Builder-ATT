@@ -43,52 +43,38 @@ function preset(id, name, description, organization, tokens, options = {}) {
   };
 }
 
+// This build is locked to a single theme derived from AT&T's own design system
+// (ATT Design System/All_ATTAleck_Fonts, ATT design system.xd — kept local-only,
+// see .gitignore). Values traced directly to the brand source:
+//   - primary (#00388F, Cobalt): "Cobalt is typically used for CTA buttons."
+//   - accent (#0079B1, AT&T Blue 15% darker): the brand's own "AT&T Blue" (#009FDB)
+//     only reaches 3.01:1 contrast against white — below the 4.5:1 WCAG AA
+//     threshold this token needs since it colors small text (e.g. the block
+//     label). The 15%-darker stop from AT&T's own "AT&T Blue gradient" swatch
+//     is a brand-approved value that reaches 4.81:1. Flagged for review: the
+//     brand guide describes that gradient as "limited use" for gradients
+//     specifically, not necessarily as a flat solid accent — this is a
+//     deliberate accessibility substitution, not a literal brand-book value.
+//   - buttonRadius (20): measured directly from the brand's own button spec
+//     artboard (a 150x40 button rectangle with a 20px corner radius — fully
+//     pill-shaped, not a modest rounding).
+//   - background/surface/text/border: Grey 1 (#F3F4F5), White, Black, Grey 2
+//     (#DCDFE3) from the brand's neutral-tones swatch.
+// Values the brand book never specifies (mutedText, success/warning/danger,
+// general container borderRadius, spacingDensity, animationSpeed) use
+// best-judgment defaults consistent with this project's other presets —
+// mutedText is a derived dark grey chosen for 7.56:1 contrast against white,
+// not a brand-specified color.
 export const BUILT_IN_THEMES = Object.freeze([
-  preset('aptara-corporate', 'Aptara Corporate', 'A polished corporate palette for professional learning programs.', 'Aptara', {
-    fontFamily: 'Lato', headingFontFamily: 'Montserrat', primary: '#175CD3', primaryHover: '#1849A9', accent: '#F79009',
-    background: '#F8FAFC', surface: '#FFFFFF', text: '#101828', mutedText: '#475467', border: '#D0D5DD',
-    success: '#067647', warning: '#B54708', danger: '#B42318', borderRadius: 10, buttonRadius: 8,
+  preset('att-standard', 'AT&T Standard', 'The standardized AT&T brand theme — the only theme in this build.', 'AT&T', {
+    fontFamily: 'ATT Aleck Sans', headingFontFamily: 'ATT Aleck Sans', primary: '#00388F', primaryHover: '#002A6B', accent: '#0079B1',
+    background: '#F3F4F5', surface: '#FFFFFF', text: '#000000', mutedText: '#4B5563', border: '#DCDFE3',
+    success: '#087F5B', warning: '#9A6700', danger: '#B42318', borderRadius: 12, buttonRadius: 20,
     shadow: 'soft', spacingDensity: 'comfortable', animationSpeed: 200
-  }, { isLocked: true }),
-  preset('aptara-ai-university', 'Aptara AI University', 'A modern technology palette for AI learning and innovation programs.', 'Aptara', {
-    fontFamily: 'Roboto', headingFontFamily: 'Montserrat', primary: '#5B5BD6', primaryHover: '#4747B8', accent: '#16B8A6',
-    background: '#F5F7FF', surface: '#FFFFFF', text: '#171A2B', mutedText: '#51576D', border: '#C9CDE3',
-    success: '#087F5B', warning: '#A15C00', danger: '#C92A2A', borderRadius: 14, buttonRadius: 10,
-    shadow: 'medium', spacingDensity: 'comfortable', animationSpeed: 220
-  }, { isLocked: true }),
-  preset('clean-light', 'Clean Light', 'A neutral, flexible preset for general-purpose course content.', 'Rise Component Builder', {
-    fontFamily: 'Lato', headingFontFamily: 'Lato', primary: '#2563EB', primaryHover: '#1D4ED8', accent: '#F59E0B',
-    background: '#FFFFFF', surface: '#FFFFFF', text: '#1F2937', mutedText: '#505863', border: '#DBDDDF',
-    success: '#10B981', warning: '#A16207', danger: '#EF4444', borderRadius: 12, buttonRadius: 8,
-    shadow: 'soft', spacingDensity: 'comfortable', animationSpeed: 200
-  }),
-  preset('dark-technology', 'Dark Technology', 'A dark, high-energy preset for technical and cyber learning.', 'Rise Component Builder', {
-    fontFamily: 'Roboto', headingFontFamily: 'Montserrat', primary: '#60A5FA', primaryHover: '#93C5FD', accent: '#2DD4BF',
-    background: '#0B1120', surface: '#111827', text: '#F8FAFC', mutedText: '#CBD5E1', border: '#334155',
-    success: '#34D399', warning: '#FBBF24', danger: '#F87171', borderRadius: 10, buttonRadius: 8,
-    shadow: 'premium', spacingDensity: 'comfortable', animationSpeed: 180
-  }),
-  preset('accessibility-high-contrast', 'Accessibility High Contrast', 'A strong-contrast preset designed for clear visual separation.', 'Rise Component Builder', {
-    fontFamily: 'Open Sans', headingFontFamily: 'Open Sans', primary: '#003B73', primaryHover: '#00264A', accent: '#7A3E00',
-    background: '#FFFFFF', surface: '#FFFFFF', text: '#000000', mutedText: '#333333', border: '#000000',
-    success: '#006B3C', warning: '#7A3E00', danger: '#A40000', borderRadius: 4, buttonRadius: 4,
-    shadow: 'none', spacingDensity: 'spacious', animationSpeed: 0
-  }),
-  preset('healthcare', 'Healthcare', 'A calm clinical palette for healthcare and patient education.', 'Rise Component Builder', {
-    fontFamily: 'Open Sans', headingFontFamily: 'Lato', primary: '#086F83', primaryHover: '#075B6B', accent: '#8A4F00',
-    background: '#F6FBFC', surface: '#FFFFFF', text: '#17333A', mutedText: '#46636A', border: '#B9D7DC',
-    success: '#087F5B', warning: '#9A6700', danger: '#B42318', borderRadius: 12, buttonRadius: 10,
-    shadow: 'soft', spacingDensity: 'spacious', animationSpeed: 180
-  }),
-  preset('financial-services', 'Financial Services', 'A measured, trustworthy palette for finance and compliance learning.', 'Rise Component Builder', {
-    fontFamily: 'Lato', headingFontFamily: 'Merriweather', primary: '#163A5F', primaryHover: '#0E2B49', accent: '#8A5D00',
-    background: '#F7F8FA', surface: '#FFFFFF', text: '#172B3A', mutedText: '#4B5F6D', border: '#C8D0D8',
-    success: '#176B45', warning: '#8A5D00', danger: '#A12828', borderRadius: 8, buttonRadius: 6,
-    shadow: 'soft', spacingDensity: 'comfortable', animationSpeed: 160
-  })
+  }, { isLocked: true })
 ]);
 
-export const DEFAULT_THEME_ID = 'clean-light';
+export const DEFAULT_THEME_ID = 'att-standard';
 
 export function getBuiltInTheme(id = DEFAULT_THEME_ID) {
   return clone(BUILT_IN_THEMES.find(theme => theme.id === id) || BUILT_IN_THEMES.find(theme => theme.id === DEFAULT_THEME_ID));

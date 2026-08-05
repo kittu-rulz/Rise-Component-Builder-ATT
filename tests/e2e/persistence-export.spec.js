@@ -38,74 +38,16 @@ test('favorites persist after browser reload', async ({ page }) => {
   await expect(page.locator('.component-select-card').filter({ hasText: 'Responsive Accordion' })).toBeVisible();
 });
 
-test('selected default component theme persists independently from UI mode', async ({ page }) => {
-  await page.goto('/');
-  await page.locator('#btn-theme-manager').click();
-  const healthcare = page.locator('.theme-card').filter({ hasText: 'Healthcare' });
-  await healthcare.getByRole('button', { name: 'Apply' }).click();
-  await healthcare.getByRole('button', { name: 'Set Default' }).click();
-  await page.reload();
-  await page.locator('#btn-theme-manager').click();
-  await expect(page.locator('.theme-card').filter({ hasText: 'Healthcare' })).toContainText('Default');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-});
-
-test('creating and renaming a custom theme uses in-app prompt dialogs', async ({ page }) => {
-  await openAccordion(page);
-  await page.locator('#btn-theme-manager').click();
-  await page.locator('#btn-save-current-theme').click();
-  const promptModal = page.locator('#modal-prompt');
-  await expect(promptModal).toBeVisible();
-  await page.locator('#modal-prompt-input').fill('My Custom Theme');
-  await page.locator('#btn-prompt-dialog-action').click();
-  await expect(promptModal).toBeHidden();
-  const card = page.locator('.theme-card').filter({ hasText: 'My Custom Theme' });
-  await expect(card).toBeVisible();
-
-  await card.getByRole('button', { name: 'Rename' }).click();
-  await expect(promptModal).toBeVisible();
-  await expect(page.locator('#modal-prompt-input')).toHaveValue('My Custom Theme');
-  await page.keyboard.press('Escape');
-  await expect(promptModal).toBeHidden();
-  await expect(page.locator('.theme-card').filter({ hasText: 'My Custom Theme' })).toBeVisible();
-
-  await card.getByRole('button', { name: 'Rename' }).click();
-  await page.locator('#modal-prompt-input').fill('Renamed Theme');
-  await page.locator('#btn-prompt-dialog-action').click();
-  await expect(page.locator('.theme-card').filter({ hasText: 'Renamed Theme' })).toBeVisible();
-});
-
-test('deleting a custom theme uses an in-app confirm dialog', async ({ page }) => {
-  await openAccordion(page);
-  await page.locator('#btn-theme-manager').click();
-  await page.locator('#btn-save-current-theme').click();
-  await page.locator('#modal-prompt-input').fill('Deletable Theme');
-  await page.locator('#btn-prompt-dialog-action').click();
-  const card = page.locator('.theme-card').filter({ hasText: 'Deletable Theme' });
-  await expect(card).toBeVisible();
-
-  await card.getByRole('button', { name: 'Delete' }).click();
-  const confirmModal = page.locator('#modal-confirm');
-  await expect(confirmModal).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.theme-card').filter({ hasText: 'Deletable Theme' })).toBeVisible();
-
-  await card.getByRole('button', { name: 'Delete' }).click();
-  await page.locator('#btn-confirm-dialog-action').click();
-  await expect(page.locator('.theme-card').filter({ hasText: 'Deletable Theme' })).toHaveCount(0);
-});
-
 test('export contains selected content and theme, excludes unsafe executable markup, and downloads runnable HTML', async ({ page, context }) => {
   const errors = [];
   await openAccordion(page);
   await page.locator('#input-block-headline').fill('Exported <script>globalThis.bad=true</script> content');
-  await page.locator('#btn-theme-manager').click();
-  await page.locator('.theme-card').filter({ hasText: 'Healthcare' }).getByRole('button', { name: 'Apply' }).click();
-  await page.locator('#modal-theme-manager .modal-close-btn').click();
   await page.locator('#btn-export').click();
   const code = page.locator('#export-html-code');
   await expect(code).toContainText('Exported');
-  await expect(code).toContainText('--primary: #086F83');
+  // This build is locked to a single AT&T theme (js/themes.js) — no Theme Manager exists
+  // to switch themes, so the export always carries the AT&T Cobalt primary color.
+  await expect(code).toContainText('--primary: #00388F');
   const exported = await code.textContent();
   expect(exported).not.toContain('<script>globalThis.bad=true</script>');
 
@@ -127,7 +69,7 @@ test('export contains selected content and theme, excludes unsafe executable mar
   for await (const chunk of stream) chunks.push(chunk);
   const html = Buffer.concat(chunks).toString('utf8');
   expect(html).toContain('Exported');
-  expect(html).toContain('--primary: #086F83');
+  expect(html).toContain('--primary: #00388F');
   const exportedPage = await context.newPage();
   exportedPage.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   exportedPage.on('pageerror', error => errors.push(error.message));

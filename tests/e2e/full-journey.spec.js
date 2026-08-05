@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 
 // End-to-end coverage of the complete authoring journey described in prompt 13's test
-// pyramid: start a project, select a component, edit content, change design, change
-// behavior, switch preview sizes, save, reopen, run export preflight, export, open the
-// standalone export, interact by keyboard, and verify completion. Each step reuses the
-// same selectors already exercised individually in editor-preview.spec.js,
+// pyramid: start a project, select a component, edit content, verify the (locked) design
+// theme, change behavior, switch preview sizes, save, reopen, run export preflight,
+// export, open the standalone export, interact by keyboard, and verify completion. Each
+// step reuses the same selectors already exercised individually in
 // preview-device-modes.spec.js, persistence-export.spec.js, and completion.spec.js — this
 // spec's value is proving the full chain works end-to-end in one continuous session,
 // across a component other than Accordion (Tabs), rather than re-testing any single step
@@ -24,10 +24,10 @@ test('a full authoring session: create, edit, save, reopen, preflight, export, a
   const previewFrame = page.frameLocator('#live-preview-iframe');
   await expect(previewFrame.locator('[id$="-block-headline"]')).toHaveText('Full Journey Tabs');
 
-  // 4. Change design — a theme token updates in the live preview.
-  await page.getByRole('button', { name: 'Design & Style' }).click();
-  await page.locator('#input-color-primary-text').fill('#0F766E');
-  await expect.poll(() => previewFrame.locator('html').evaluate(el => getComputedStyle(el).getPropertyValue('--primary').trim())).toBe('#0F766E');
+  // 4. Design is locked to the single AT&T theme (js/themes.js) in this build — no
+  // Design & Style tab exists to change it. Verify the locked theme token reaches the
+  // live preview instead of an author-chosen override.
+  await expect.poll(() => previewFrame.locator('html').evaluate(el => getComputedStyle(el).getPropertyValue('--primary').trim())).toBe('#00388F');
 
   // 5. Change behavior — enable completion tracking for this block.
   await page.getByRole('button', { name: 'Behavior' }).click();

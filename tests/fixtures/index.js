@@ -1,4 +1,4 @@
-import { applyThemeToConfig, BUILT_IN_THEMES } from '../../js/themes.js';
+import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID } from '../../js/themes.js';
 
 export const longText = `${'Long learning content with <markup> & punctuation “quotes” 😀. '.repeat(300)}END`;
 export const unsafeText = '"><script>globalThis.compromised=true</script><img src=x onerror="bad()">`${danger}';
@@ -6,7 +6,10 @@ export const multilingualText = 'English · العربية · हिन्दी
 export const rtlText = 'مرحبا بكم في تجربة التعلم — שלום עולם';
 export const invalidUrls = ['javascript:alert(1)', 'vbscript:msgbox(1)', 'data:text/html,<script>bad()</script>'];
 
-export const cleanTheme = structuredClone(BUILT_IN_THEMES.find(theme => theme.id === 'clean-light'));
+// Named for the original "Clean Light" built-in theme this fixture used to point at;
+// kept as-is (rather than renamed across every importer) now that it resolves to this
+// build's single locked theme (js/themes.js).
+export const cleanTheme = structuredClone(BUILT_IN_THEMES.find(theme => theme.id === DEFAULT_THEME_ID));
 export const customTheme = {
   ...structuredClone(cleanTheme),
   id: 'fixture-custom-theme', name: 'Fixture Custom Theme', description: 'Reusable test theme.',

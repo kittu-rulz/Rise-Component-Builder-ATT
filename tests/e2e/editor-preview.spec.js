@@ -56,15 +56,6 @@ test('range sliders inside draggable item cards are not hijacked by drag-to-reor
   await expect.poll(() => cards.nth(0).locator('.item-collapse-btn').textContent()).not.toBe(firstBefore);
 });
 
-test('design controls update theme variables in preview', async ({ page }) => {
-  await page.getByRole('button', { name: 'Design & Style' }).click();
-  await page.locator('#input-color-primary-text').fill('#123456');
-  await page.locator('#input-border-radius').fill('20');
-  const frame = page.frameLocator('#live-preview-iframe');
-  await expect.poll(() => frame.locator('html').evaluate(element => getComputedStyle(element).getPropertyValue('--primary').trim())).toBe('#123456');
-  await expect.poll(() => frame.locator('html').evaluate(element => getComputedStyle(element).getPropertyValue('--border-radius').trim())).toBe('20px');
-});
-
 test('behavior settings update accordion single-open behavior', async ({ page }) => {
   await page.getByRole('button', { name: 'Behavior' }).click();
   await page.locator('#input-behavior-accordion-multi').uncheck();

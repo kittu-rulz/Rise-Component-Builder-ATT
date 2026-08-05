@@ -35,18 +35,16 @@ function baseConfig() {
   };
 }
 
-test('seven centralized built-in themes validate and a built-in theme applies to legacy style fields', () => {
-  assert.equal(BUILT_IN_THEMES.length, 7);
-  assert.deepEqual(BUILT_IN_THEMES.map(theme => theme.name), [
-    'Aptara Corporate', 'Aptara AI University', 'Clean Light', 'Dark Technology',
-    'Accessibility High Contrast', 'Healthcare', 'Financial Services'
-  ]);
+test('the single locked AT&T theme validates and applies to legacy style fields', () => {
+  assert.equal(BUILT_IN_THEMES.length, 1);
+  assert.deepEqual(BUILT_IN_THEMES.map(theme => theme.name), ['AT&T Standard']);
   BUILT_IN_THEMES.forEach(theme => assert.equal(validateTheme(theme).valid, true));
-  const dark = BUILT_IN_THEMES.find(theme => theme.id === 'dark-technology');
-  const applied = applyThemeToConfig(baseConfig(), dark);
-  assert.equal(applied.colorPrimary, dark.tokens.primary);
-  assert.equal(applied.colorBg, dark.tokens.background);
-  assert.equal(applied.themeTokens.headingFontFamily, dark.tokens.headingFontFamily);
+  const theme = BUILT_IN_THEMES[0];
+  assert.equal(theme.isLocked, true);
+  const applied = applyThemeToConfig(baseConfig(), theme);
+  assert.equal(applied.colorPrimary, theme.tokens.primary);
+  assert.equal(applied.colorBg, theme.tokens.background);
+  assert.equal(applied.themeTokens.headingFontFamily, theme.tokens.headingFontFamily);
 });
 
 test('locked themes duplicate into editable custom themes and custom themes can be renamed', () => {
@@ -61,7 +59,7 @@ test('locked themes duplicate into editable custom themes and custom themes can 
 
 test('custom theme creation, saving, deletion, and default selection persist locally', () => {
   globalThis.localStorage = memoryStorage();
-  const custom = createCustomTheme({ name: 'Saved Theme', tokens: BUILT_IN_THEMES[2].tokens });
+  const custom = createCustomTheme({ name: 'Saved Theme', tokens: BUILT_IN_THEMES[0].tokens });
   saveCustomTheme(custom);
   assert.equal(loadCustomThemes()[0].name, 'Saved Theme');
   assert.equal(saveDefaultThemeId(custom.id), custom.id);
@@ -73,7 +71,7 @@ test('custom theme creation, saving, deletion, and default selection persist loc
 });
 
 test('saving current styling creates a custom theme with component overrides resolved', () => {
-  const theme = BUILT_IN_THEMES[2];
+  const theme = BUILT_IN_THEMES[0];
   const custom = createThemeFromCurrentStyling('Current Styling', theme, { primary: '#123456', fontFamily: 'Roboto' });
   assert.equal(custom.tokens.primary, '#123456');
   assert.equal(custom.tokens.fontFamily, 'Roboto');
@@ -81,7 +79,7 @@ test('saving current styling creates a custom theme with component overrides res
 });
 
 test('component overrides take precedence and resetting them restores active theme values', () => {
-  const theme = BUILT_IN_THEMES[5];
+  const theme = BUILT_IN_THEMES[0];
   const overridden = applyThemeToConfig(baseConfig(), theme, {
     primary: '#123456', accent: '#654321', background: '#FAFAFA', text: '#111111',
     borderRadius: 20, shadow: 'premium', fontFamily: 'Roboto'
@@ -96,7 +94,7 @@ test('component overrides take precedence and resetting them restores active the
 
 test('project persistence retains the active theme snapshot, overrides, and independent UI mode', () => {
   globalThis.localStorage = memoryStorage();
-  const theme = BUILT_IN_THEMES[6];
+  const theme = BUILT_IN_THEMES[0];
   const project = buildProject({
     name: 'Themed project', componentId: 'accordion', config: applyThemeToConfig(baseConfig(), theme, { accent: '#704F00' }),
     activeTheme: theme, componentOverrides: { accent: '#704F00' }, uiTheme: 'dark',
@@ -110,7 +108,7 @@ test('project persistence retains the active theme snapshot, overrides, and inde
 });
 
 test('theme JSON imports defensively and malformed or unsupported themes are rejected', () => {
-  const custom = createCustomTheme({ name: 'Portable', tokens: BUILT_IN_THEMES[2].tokens });
+  const custom = createCustomTheme({ name: 'Portable', tokens: BUILT_IN_THEMES[0].tokens });
   const imported = importThemeJson(serializeTheme(custom));
   assert.equal(imported.isBuiltIn, false);
   assert.equal(imported.isLocked, false);
@@ -123,7 +121,7 @@ test('theme JSON imports defensively and malformed or unsupported themes are rej
 });
 
 test('contrast validation reports exact ratios, normal and large text results, and suggestions', () => {
-  const accessible = BUILT_IN_THEMES.find(theme => theme.id === 'accessibility-high-contrast');
+  const accessible = BUILT_IN_THEMES[0];
   const report = validateThemeContrast(accessible);
   assert.equal(report.length, 7);
   assert.ok(report.every(row => typeof row.ratio === 'number' && typeof row.normalText === 'boolean' && typeof row.largeText === 'boolean'));
@@ -138,7 +136,7 @@ test('contrast validation reports exact ratios, normal and large text results, a
 test('generated and exported HTML uses the selected component theme while builder dark mode remains independent', () => {
   globalThis.localStorage = memoryStorage();
   saveUiTheme('dark');
-  const theme = BUILT_IN_THEMES.find(item => item.id === 'healthcare');
+  const theme = BUILT_IN_THEMES[0];
   const state = {
     selectedComponent: { id: 'accordion' }, activeTheme: theme, activeThemeId: theme.id,
     componentOverrides: {}, uiTheme: loadUiTheme(), settings: { defaultFont: 'Merriweather' }, config: baseConfig()

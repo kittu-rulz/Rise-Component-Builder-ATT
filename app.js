@@ -5,8 +5,8 @@
 import { appState, resetConfig } from './js/state.js';
 import {
   buildProject, clearDraft, deleteProject, duplicateProject, getProject, importProjectJson,
-  deleteCustomTheme, loadCustomThemes, loadDefaultThemeId, loadDraft, loadFavorites, loadPreviewDevice,
-  loadProjects, loadSettings, loadUiTheme, renameProject, saveCustomTheme, saveDefaultThemeId, saveDraft,
+  loadCustomThemes, loadDefaultThemeId, loadDraft, loadFavorites, loadPreviewDevice,
+  loadProjects, loadSettings, loadUiTheme, renameProject, saveDraft,
   saveFavorites, savePreviewDevice, saveProject, saveSettings, saveUiTheme
 } from './js/storage.js';
 import { componentCatalog, filterCatalog, createCatalogCard } from './js/catalog.js';
@@ -25,11 +25,7 @@ import { collectSyncIssues, runPreflight, summarizePreflight } from './js/valida
 import { collectMediaReferences, resolveMediaLimits, validateMediaAccessibility } from './js/media.js';
 import { downloadProjectPackage, exportProjectPackage, importProjectPackage, isProjectPackageFile } from './js/project-package.js';
 import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, restoreMediaReferences } from './js/media-storage.js';
-import {
-  applyThemeToConfig, BUILT_IN_THEMES, createThemeFromCurrentStyling, DEFAULT_THEME_ID,
-  duplicateTheme, importThemeJson, normalizeComponentOverrides, renameCustomTheme,
-  serializeTheme, validateThemeContrast
-} from './js/themes.js';
+import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, normalizeComponentOverrides } from './js/themes.js';
 // Every catalog component is a real, isolated module (js/component-registry.js). The
 // preview/export compiler needs its renderer (generateHTML/CSS/JS) and version (embedded
 // in the completion adapter's message envelope, js/completion.js); the editor's save-time
@@ -108,19 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputBlockHeadline = document.getElementById('input-block-headline');
   const inputBlockDesc = document.getElementById('input-block-desc');
   const selectHeadingLevel = document.getElementById('select-heading-level');
-  const inputColorPrimary = document.getElementById('input-color-primary');
-  const inputColorPrimaryText = document.getElementById('input-color-primary-text');
-  const inputColorAccent = document.getElementById('input-color-accent');
-  const inputColorAccentText = document.getElementById('input-color-accent-text');
-  const inputColorBg = document.getElementById('input-color-bg');
-  const inputColorBgText = document.getElementById('input-color-bg-text');
-  const inputColorText = document.getElementById('input-color-text');
-  const inputColorTextText = document.getElementById('input-color-text-text');
-  const inputBorderRadius = document.getElementById('input-border-radius');
-  const radiusVal = document.getElementById('radius-val');
-  const selectShadow = document.getElementById('select-shadow');
-  const inputBorderEnable = document.getElementById('input-border-enable');
-  
+
   const inputBehaviorAccordionMulti = document.getElementById('input-behavior-accordion-multi');
   const inputBehaviorAccordionAnimation = document.getElementById('input-behavior-accordion-animation');
   const selectIconStyle = document.getElementById('select-icon-style');
@@ -143,16 +127,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saveNameInput = document.getElementById('save-component-name');
   const btnConfirmSaveAs = document.getElementById('btn-confirm-save-as');
   const importProjectFile = document.getElementById('import-project-file');
-  const selectComponentFont = document.getElementById('select-component-font');
-  const themeCards = document.getElementById('theme-cards');
-  const importThemeFile = document.getElementById('import-theme-file');
 
   // Modals elements
   const modalTriggers = {
     'btn-export': 'modal-export',
     'btn-settings': 'modal-settings',
-    'btn-theme-manager': 'modal-theme-manager',
-    'btn-open-theme-manager-style': 'modal-theme-manager',
     'btn-preflight': 'modal-preflight'
   };
   const modalOverlays = document.querySelectorAll('.modal-overlay');
@@ -225,225 +204,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     appState.componentOverrides = normalizeComponentOverrides(appState.componentOverrides);
     appState.config = applyThemeToConfig(appState.config, appState.activeTheme, appState.componentOverrides);
   }
-
-  function updateThemeSourceIndicators() {
-    const keys = ['primary', 'accent', 'background', 'text', 'borderRadius', 'shadow', 'fontFamily'];
-    keys.forEach(key => {
-      const badge = document.getElementById(`override-${key}-status`);
-      if (!badge) return;
-      const overridden = Object.hasOwn(appState.componentOverrides, key);
-      badge.textContent = overridden ? 'Component override' : 'Theme value';
-      badge.classList.toggle('is-override', overridden);
-    });
-    const activeLabel = document.getElementById('active-component-theme-name');
-    if (activeLabel) activeLabel.textContent = appState.activeTheme.name;
-  }
-
-  function setComponentOverride(key, value) {
-    appState.componentOverrides = { ...appState.componentOverrides, [key]: value };
-    syncResolvedThemeConfig();
-    updateThemeSourceIndicators();
-    updateLivePreview();
-  }
-
-  function applyComponentTheme(theme, { clearOverrides = false } = {}) {
-    appState.activeThemeId = theme.id;
-    appState.activeTheme = structuredClone(theme);
-    if (clearOverrides) appState.componentOverrides = {};
-    syncResolvedThemeConfig();
-    if (appState.selectedComponent) syncEditorControls();
-    else updateThemeSourceIndicators();
-    renderThemeManager();
-    updateLivePreview();
-  }
-
-  function addThemeAction(container, label, handler, className = 'btn btn-text btn-small') {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = className;
-    button.textContent = label;
-    button.addEventListener('click', handler);
-    container.appendChild(button);
-  }
-
-  function renderContrastReport() {
-    const container = document.getElementById('theme-contrast-report');
-    container.replaceChildren();
-    validateThemeContrast(appState.activeTheme).forEach(result => {
-      const card = document.createElement('div');
-      card.className = `contrast-result${result.normalText ? '' : ' fail'}`;
-      const heading = document.createElement('div');
-      heading.className = 'contrast-result-line';
-      const name = document.createElement('strong');
-      name.textContent = result.label;
-      const ratio = document.createElement('span');
-      ratio.textContent = `${result.ratio}:1`;
-      heading.append(name, ratio);
-      const levels = document.createElement('div');
-      levels.className = 'contrast-result-line';
-      const normal = document.createElement('span');
-      normal.className = result.normalText ? 'contrast-pass' : 'contrast-fail';
-      normal.textContent = `Normal: ${result.normalText ? 'Pass' : 'Fail'}`;
-      const large = document.createElement('span');
-      large.className = result.largeText ? 'contrast-pass' : 'contrast-fail';
-      large.textContent = `Large: ${result.largeText ? 'Pass' : 'Fail'}`;
-      levels.append(normal, large);
-      card.append(heading, levels);
-      if (result.suggested) {
-        const suggestion = document.createElement('div');
-        suggestion.className = 'contrast-suggestion';
-        suggestion.textContent = `Suggested accessible ${result.foregroundToken}: ${result.suggested}. Review before applying.`;
-        card.appendChild(suggestion);
-      }
-      container.appendChild(card);
-    });
-  }
-
-  function renderThemeManager() {
-    if (!themeCards) return;
-    document.getElementById('theme-manager-active-name').textContent = appState.activeTheme.name;
-    document.getElementById('theme-manager-default-label').textContent = appState.activeTheme.id === defaultThemeId ? 'Default theme' : '';
-    themeCards.replaceChildren();
-    getAvailableThemes().forEach(theme => {
-      const card = document.createElement('article');
-      card.className = `theme-card${theme.id === appState.activeThemeId ? ' is-active' : ''}`;
-      const preview = document.createElement('div');
-      preview.className = 'theme-card-preview';
-      preview.style.background = theme.tokens.background;
-      const title = document.createElement('div');
-      title.className = 'theme-card-preview-title';
-      title.style.background = theme.tokens.text;
-      const copy = document.createElement('div');
-      copy.className = 'theme-card-preview-copy';
-      copy.style.background = theme.tokens.mutedText;
-      const sampleButton = document.createElement('div');
-      sampleButton.className = 'theme-card-preview-button';
-      sampleButton.style.background = theme.tokens.primary;
-      sampleButton.style.borderRadius = `${theme.tokens.buttonRadius}px`;
-      preview.append(title, copy, sampleButton);
-
-      const body = document.createElement('div');
-      body.className = 'theme-card-body';
-      const heading = document.createElement('div');
-      heading.className = 'theme-card-heading';
-      const name = document.createElement('strong');
-      name.textContent = theme.name;
-      const pill = document.createElement('span');
-      pill.className = 'theme-pill';
-      pill.textContent = theme.isLocked ? 'Company · Locked' : theme.isBuiltIn ? 'Built-in' : 'Custom';
-      heading.append(name, pill);
-      const meta = document.createElement('div');
-      meta.className = 'theme-card-meta';
-      meta.textContent = `${theme.organization}${theme.id === defaultThemeId ? ' · Default' : ''}`;
-      const description = document.createElement('p');
-      description.className = 'theme-card-description';
-      description.textContent = theme.description;
-      const actions = document.createElement('div');
-      actions.className = 'theme-card-actions';
-      addThemeAction(actions, theme.id === appState.activeThemeId ? 'Applied' : 'Apply', () => {
-        applyComponentTheme(theme);
-        showToast(`Applied “${theme.name}”.`, 'success');
-      }, theme.id === appState.activeThemeId ? 'btn btn-secondary btn-small' : 'btn btn-primary btn-small');
-      addThemeAction(actions, 'Duplicate', () => {
-        try {
-          const copyTheme = saveCustomTheme(duplicateTheme(theme));
-          customThemes = loadCustomThemes();
-          renderThemeManager();
-          showToast(`Created editable copy “${copyTheme.name}”.`, 'success');
-        } catch (error) { showToast(error.message, 'error'); }
-      });
-      addThemeAction(actions, 'Set Default', () => {
-        try {
-          defaultThemeId = saveDefaultThemeId(theme.id);
-          renderThemeManager();
-          showToast(`“${theme.name}” is now the default theme.`, 'success');
-        } catch (error) { showToast(error.message, 'error'); }
-      });
-      if (!theme.isBuiltIn && !theme.isLocked) {
-        addThemeAction(actions, 'Rename', async () => {
-          const nextName = await openPromptDialog({ title: 'Rename Theme', label: 'Theme Name', initialValue: theme.name, confirmLabel: 'Rename' });
-          if (nextName === null) return;
-          try {
-            const renamed = saveCustomTheme(renameCustomTheme(theme, nextName));
-            customThemes = loadCustomThemes();
-            if (appState.activeThemeId === renamed.id) appState.activeTheme = structuredClone(renamed);
-            renderThemeManager();
-            updateThemeSourceIndicators();
-            showToast('Theme renamed.', 'success');
-          } catch (error) { showToast(error.message, 'error'); }
-        });
-        addThemeAction(actions, 'Delete', async () => {
-          const confirmed = await openConfirmDialog({ title: 'Delete Theme', message: `Delete “${theme.name}”? This cannot be undone.`, confirmLabel: 'Delete', danger: true });
-          if (!confirmed) return;
-          try {
-            deleteCustomTheme(theme.id);
-            customThemes = loadCustomThemes();
-            defaultThemeId = loadDefaultThemeId();
-            if (appState.activeThemeId === theme.id) {
-              const fallback = getAvailableThemes().find(item => item.id === defaultThemeId)
-                || BUILT_IN_THEMES.find(item => item.id === DEFAULT_THEME_ID);
-              applyComponentTheme(fallback);
-            } else renderThemeManager();
-            showToast(`Deleted “${theme.name}”.`, 'success');
-            updateStorageMeter();
-          } catch (error) { showToast(error.message, 'error'); }
-        });
-      }
-      body.append(heading, meta, description, actions);
-      card.append(preview, body);
-      themeCards.appendChild(card);
-    });
-    renderContrastReport();
-  }
-
-  function downloadTheme(theme) {
-    const blob = new Blob([serializeTheme(theme)], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${theme.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'component-theme'}.theme.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  document.getElementById('btn-save-current-theme').addEventListener('click', async () => {
-    const name = await openPromptDialog({ title: 'Save Theme', label: 'Theme Name', initialValue: `${appState.activeTheme.name} Custom`, confirmLabel: 'Save' });
-    if (name === null) return;
-    try {
-      const theme = saveCustomTheme(createThemeFromCurrentStyling(name, appState.activeTheme, appState.componentOverrides));
-      customThemes = loadCustomThemes();
-      applyComponentTheme(theme, { clearOverrides: true });
-      showToast(`Saved “${theme.name}”.`, 'success');
-    } catch (error) { showToast(error.message, 'error'); }
-  });
-  document.getElementById('btn-import-theme').addEventListener('click', () => importThemeFile.click());
-  importThemeFile.addEventListener('change', async () => {
-    const file = importThemeFile.files?.[0];
-    if (!file) return;
-    try {
-      const imported = saveCustomTheme(importThemeJson(await file.text()));
-      customThemes = loadCustomThemes();
-      applyComponentTheme(imported, { clearOverrides: true });
-      showToast(`Imported “${imported.name}”.`, 'success');
-    } catch (error) { showToast(`Theme import failed: ${error.message}`, 'error', 6000); }
-    finally { importThemeFile.value = ''; }
-  });
-  document.getElementById('btn-export-theme').addEventListener('click', () => downloadTheme(appState.activeTheme));
-  document.getElementById('btn-reset-active-theme').addEventListener('click', () => {
-    const fallback = getAvailableThemes().find(theme => theme.id === defaultThemeId)
-      || BUILT_IN_THEMES.find(theme => theme.id === DEFAULT_THEME_ID);
-    applyComponentTheme(fallback, { clearOverrides: true });
-    showToast(`Reset to “${fallback.name}” with no component overrides.`, 'success');
-  });
-  document.getElementById('btn-reset-component-overrides').addEventListener('click', () => {
-    appState.componentOverrides = {};
-    syncResolvedThemeConfig();
-    syncEditorControls();
-    updateLivePreview();
-    showToast('Component overrides reset to theme values.', 'success');
-  });
 
   // ==========================================
   // ROUTING & NAVIGATION
@@ -714,42 +474,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateLivePreview();
     });
 
-    // 2. Color Sync (Picker <-> Text Input)
-    const syncColor = (picker, text, stateKey) => {
-      const overrideKey = {
-        colorPrimary: 'primary', colorAccent: 'accent', colorBg: 'background', colorText: 'text'
-      }[stateKey];
-      picker.addEventListener('input', (e) => {
-        text.value = e.target.value.toUpperCase();
-        setComponentOverride(overrideKey, e.target.value);
-      });
-      
-      text.addEventListener('input', (e) => {
-        let val = e.target.value;
-        if (val.match(/^#[0-9A-F]{6}$/i)) {
-          picker.value = val;
-          setComponentOverride(overrideKey, val);
-        }
-      });
-    };
-
-    syncColor(inputColorPrimary, inputColorPrimaryText, 'colorPrimary');
-    syncColor(inputColorAccent, inputColorAccentText, 'colorAccent');
-    syncColor(inputColorBg, inputColorBgText, 'colorBg');
-    syncColor(inputColorText, inputColorTextText, 'colorText');
-
-    // 3. Range Sliders
-    inputBorderRadius.addEventListener('input', (e) => {
-      radiusVal.innerText = `${e.target.value}px`;
-      setComponentOverride('borderRadius', Number(e.target.value));
-    });
-
-    // 4. Select dropdowns
-    selectShadow.addEventListener('change', (e) => {
-      setComponentOverride('shadow', e.target.value);
-    });
-
-    selectComponentFont.addEventListener('change', (e) => setComponentOverride('fontFamily', e.target.value));
+    // Colors, fonts, border radius, and shadow are permanently locked to the single AT&T
+    // theme (js/themes.js) — no per-component override UI exists in this build.
 
     selectIconStyle.addEventListener('change', (e) => {
       appState.config.iconStyle = e.target.value;
@@ -764,7 +490,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     };
 
-    syncCheckbox(inputBorderEnable, 'borderOutline');
     syncCheckbox(inputBehaviorAccordionMulti, 'accordionMulti');
     syncCheckbox(inputBehaviorAccordionAnimation, 'accordionAnimation');
     syncCheckbox(inputTrackCompletion, 'trackCompletion');
@@ -922,46 +647,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function openPromptDialog({ title, message = '', label, initialValue = '', placeholder = '', confirmLabel = 'Save' }) {
-    return new Promise(resolve => {
-      document.getElementById('modal-prompt-title').textContent = title;
-      const messageEl = document.getElementById('modal-prompt-message');
-      messageEl.textContent = message;
-      messageEl.hidden = !message;
-      document.getElementById('modal-prompt-label').textContent = label;
-      const input = document.getElementById('modal-prompt-input');
-      input.value = initialValue;
-      input.placeholder = placeholder;
-      const confirmBtn = document.getElementById('btn-prompt-dialog-action');
-      confirmBtn.textContent = confirmLabel;
-
-      let settled = false;
-      const settle = value => {
-        if (settled) return;
-        settled = true;
-        confirmBtn.removeEventListener('click', onConfirm);
-        input.removeEventListener('keydown', onKeydown);
-        resolve(value);
-      };
-      const onConfirm = () => {
-        settle(input.value);
-        closeModal('modal-prompt');
-      };
-      const onKeydown = event => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          onConfirm();
-        }
-      };
-      confirmBtn.addEventListener('click', onConfirm);
-      input.addEventListener('keydown', onKeydown);
-      modalDefaultSettlers.set('modal-prompt', () => settle(null));
-      openModal('modal-prompt');
-      input.focus();
-      input.select();
-    });
-  }
-
   document.addEventListener('keydown', event => {
     if (!modalStack.length) return;
     const topId = modalStack[modalStack.length - 1];
@@ -1016,14 +701,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputBlockDesc.value = config.blockDesc;
     config.blockHeadingLevel = normalizeHeadingLevel(config.blockHeadingLevel);
     selectHeadingLevel.value = config.blockHeadingLevel;
-    [[inputColorPrimary, inputColorPrimaryText, 'colorPrimary'], [inputColorAccent, inputColorAccentText, 'colorAccent'],
-      [inputColorBg, inputColorBgText, 'colorBg'], [inputColorText, inputColorTextText, 'colorText']]
-      .forEach(([picker, text, key]) => { picker.value = config[key]; text.value = config[key].toUpperCase(); });
-    inputBorderRadius.value = config.borderRadius;
-    radiusVal.innerText = `${config.borderRadius}px`;
-    selectShadow.value = config.shadowDepth;
-    selectComponentFont.value = config.themeTokens.fontFamily;
-    inputBorderEnable.checked = config.borderOutline;
     inputBehaviorAccordionMulti.checked = config.accordionMulti;
     inputBehaviorAccordionAnimation.checked = config.accordionAnimation;
     selectIconStyle.value = config.iconStyle;
@@ -1033,7 +710,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeComponentTitle.innerText = appState.selectedComponent.title;
     activeComponentCategory.innerText = appState.selectedComponent.category.toUpperCase();
     btnFavoriteToggle.classList.toggle('favorited', appState.favorites.has(appState.selectedComponent.id));
-    updateThemeSourceIndicators();
     renderDynamicItems();
   }
 
@@ -1290,7 +966,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           setupExportModalContent();
         }
         if (modalId === 'modal-settings') syncSettingsControls();
-        if (modalId === 'modal-theme-manager') renderThemeManager();
         if (modalId === 'modal-preflight') renderPreflightModal();
 
         openModal(modalId);

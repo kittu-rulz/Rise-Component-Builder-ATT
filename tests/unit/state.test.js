@@ -16,7 +16,7 @@ describe('application state', () => {
 
   test('initial state has a valid component config and independent UI/component themes', () => {
     expect(appState.config.items.length).toBeGreaterThan(0);
-    expect(appState.activeTheme.id).toBe('clean-light');
+    expect(appState.activeTheme.id).toBe('att-standard');
     expect(appState.uiTheme).toBe('light');
   });
 
@@ -28,14 +28,14 @@ describe('application state', () => {
   });
 
   test('theme application, component override, and reset produce predictable state', () => {
-    const healthcare = BUILT_IN_THEMES.find(theme => theme.id === 'healthcare');
-    appState.activeTheme = structuredClone(healthcare);
+    const theme = BUILT_IN_THEMES[0];
+    appState.activeTheme = structuredClone(theme);
     appState.componentOverrides = normalizeComponentOverrides({ primary: '#123456' });
     appState.config = applyThemeToConfig(appState.config, appState.activeTheme, appState.componentOverrides);
     expect(appState.config.colorPrimary).toBe('#123456');
     appState.componentOverrides = {};
     appState.config = applyThemeToConfig(appState.config, appState.activeTheme, appState.componentOverrides);
-    expect(appState.config.colorPrimary).toBe(healthcare.tokens.primary);
+    expect(appState.config.colorPrimary).toBe(theme.tokens.primary);
   });
 
   test('autosave state and draft restoration preserve the project snapshot', () => {
@@ -45,6 +45,6 @@ describe('application state', () => {
     saveDraft(validProject({ name: 'Restored Draft' }));
     const restored = loadDraft();
     expect(restored.name).toBe('Restored Draft');
-    expect(restored.theme.id).toBe('clean-light');
+    expect(restored.theme.id).toBe('att-standard');
   });
 });

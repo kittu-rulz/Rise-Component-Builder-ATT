@@ -107,15 +107,6 @@ test('image authoring surfaces missing-alt warnings', async ({ page }) => {
   await expect(page.locator('.field-warning').filter({ hasText: /alternative text/i }).first()).toBeVisible();
 });
 
-test('automatically detectable component color contrast is reported', async ({ page }) => {
-  await page.goto('/');
-  await page.locator('#btn-theme-manager').click();
-  await page.locator('.theme-card').filter({ hasText: 'Accessibility High Contrast' }).getByRole('button', { name: 'Apply' }).click();
-  const report = page.locator('#theme-contrast-report');
-  await expect(report.locator('.contrast-result')).toHaveCount(7);
-  await expect(report.locator('.contrast-result.fail')).toHaveCount(0);
-});
-
 test('builder modal traps focus while open', async ({ page }) => {
   await page.goto('/');
   await page.locator('#btn-settings').click();
