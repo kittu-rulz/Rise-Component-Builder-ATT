@@ -164,15 +164,14 @@ a {
 }
 
 .logo-icon {
-  background-color: var(--primary-light);
   color: var(--primary);
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
+}
+
+.logo-icon svg {
+  width: 82px;
+  height: 27px;
 }
 
 .logo-text h1 {
