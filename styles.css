@@ -1,15 +1,24 @@
-/* Rise Component Builder — Global Styles & Design System */
+/* Rise Component Builder — Global Styles & Design System (AT&T brand) */
 
 /* CSS Variables */
 :root {
-  /* Colors */
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-light: #EFF6FF;
+  /* Colors — AT&T brand: #009FDB is the brand identity color, #00388F is the CTA color
+     (per AT&T brand guidance). #009FDB only reaches 3.01:1 contrast against white, which
+     fails WCAG AA for text/button labels, so it's used for non-text UI (icons, borders,
+     focus rings, decorative fills) while --primary-text/--cta carry the CTA navy, which
+     passes comfortably (10.7:1), for anything rendering actual text. */
+  --primary: #009FDB;
+  --primary-hover: #008CC1;
+  --primary-light: #E0F3FB;
   /* Text-only usages of the brand color (never a filled background) — kept separate
      from --primary because a shade dark enough for white button text to read against
      is too dark, on this dark panel background, for its own text to read against. */
-  --primary-text: #2563EB;
+  --primary-text: #00388F;
+  /* Solid-fill CTA buttons (Export, Save, Copy) — same navy as --primary-text in light
+     mode; split into its own token because dark mode needs a different value for each
+     (see below). */
+  --cta: #00388F;
+  --cta-hover: #002A6B;
 
   --success: #10B981;
   --warning: #F59E0B;
@@ -53,18 +62,29 @@
   --bg-panel: #1E293B;
   --bg-sidebar: #0F172A;
   --bg-toolbar: #0F172A;
-  --primary-text: #60A5FA;
+  /* On dark panels, the brand blue itself passes AA for text (4.86–5.94:1) — no need
+     for the light-mode CTA navy, which would nearly disappear here (1.37:1). */
+  --primary-text: #009FDB;
+  /* Dark-mode CTA fill: AT&T's own darker gradient stop of #009FDB (also used as the
+     exported-component accent, js/themes.js) — keeps white button text readable
+     (4.81:1) while still standing out against the dark app chrome. */
+  --cta: #0079B1;
+  --cta-hover: #005F8C;
 
   --border-color: #334155;
   --border-hover: #475569;
-  
+
   --text-main: #F1F5F9;
   --text-muted: #94A3B8;
   --text-inverse: #0F172A;
-  
+
   --input-bg: #1E293B;
   --input-border: #334155;
-  --primary-light: rgba(37, 99, 235, 0.15);
+  /* Solid, not translucent: a translucent tint composites differently depending on
+     whatever's behind it, which measured as low as 4.45:1 against #009FDB text in
+     some contexts (axe color-contrast, tests/e2e/accessibility.spec.js) — just under
+     the 4.5:1 AA minimum. A solid color guarantees the ratio regardless of context. */
+  --primary-light: #0A2540;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
@@ -94,7 +114,7 @@
 }
 
 body {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'ATT Aleck Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-app);
   color: var(--text-main);
   height: 100vh;
@@ -170,7 +190,7 @@ a {
 .version-tag {
   font-size: 10px;
   font-weight: 500;
-  color: var(--primary);
+  color: var(--primary-text);
   background-color: var(--primary-light);
   padding: 1px 6px;
   border-radius: 20px;
@@ -225,14 +245,14 @@ a {
 }
 
 .btn-primary {
-  background-color: var(--primary);
+  background-color: var(--cta);
   color: var(--text-inverse);
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 56, 143, 0.2);
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-hover);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  background-color: var(--cta-hover);
+  box-shadow: 0 4px 8px rgba(0, 56, 143, 0.3);
 }
 
 .btn-danger {
@@ -390,7 +410,7 @@ a {
 
 .nav-item.active {
   background-color: var(--primary-light);
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .nav-icon {
@@ -419,7 +439,7 @@ a {
 }
 
 .nav-item.active .badge {
-  background-color: var(--primary);
+  background-color: var(--cta);
   color: var(--text-inverse);
 }
 
@@ -675,7 +695,7 @@ a {
 }
 
 .back-link:hover {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .editor-title-container h2 {
@@ -797,7 +817,7 @@ a {
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text);
   cursor: pointer;
 }
 
@@ -2076,7 +2096,7 @@ input[type="number"] {
 
 .compat-badge-confirmed { background-color: rgba(16, 185, 129, 0.14); color: #047857; }
 [data-theme="dark"] .compat-badge-confirmed { color: #34D399; }
-.compat-badge-experimental { background-color: rgba(37, 99, 235, 0.14); color: var(--primary); }
+.compat-badge-experimental { background-color: rgba(0, 56, 143, 0.14); color: var(--primary-text); }
 .compat-badge-fallback { background-color: rgba(245, 158, 11, 0.16); color: #92400E; }
 [data-theme="dark"] .compat-badge-fallback { color: #FBBF24; }
 .compat-badge-unsupported { background-color: rgba(239, 68, 68, 0.14); color: var(--danger); }
@@ -2183,16 +2203,16 @@ input[type="number"] {
   right: 10px;
   z-index: 1;
   min-width: 104px;
-  background-color: var(--primary);
-  border-color: #93C5FD;
+  background-color: var(--cta);
+  border-color: #A6B9D8;
   color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 56, 143, 0.45);
 }
 
 .copy-btn:hover {
-  background-color: var(--primary-hover);
-  border-color: #DBEAFE;
+  background-color: var(--cta-hover);
+  border-color: #D9E1EE;
   color: #FFFFFF;
 }
 

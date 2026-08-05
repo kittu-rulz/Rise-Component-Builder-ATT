@@ -12,7 +12,7 @@ test('application loads without console errors and renders the catalog', async (
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Rise Component Builder' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'AT&T Component Builder' })).toBeVisible();
   await expect(page.locator('.component-select-card')).toHaveCount(4);
   expect(errors).toEqual([]);
 });

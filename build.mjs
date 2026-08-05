@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(fileURLToPath(import.meta.url));
 const distDir = join(root, 'dist');
 
-const ROOT_FILES = ['index.html', 'styles.css', 'app.js'];
+const ROOT_FILES = ['index.html', 'styles.css', 'app.js', 'fonts.css'];
 const ROOT_DIRS = ['js', 'components'];
 
 async function exists(path) {
