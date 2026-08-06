@@ -55,8 +55,9 @@ function preset(id, name, description, organization, tokens, options = {}) {
 //   - buttonRadius (20): measured directly from the brand's own button spec
 //     artboard (a 150x40 button rectangle with a 20px corner radius — fully
 //     pill-shaped, not a modest rounding).
-//   - background/surface/text/border: Grey 1 (#F3F4F5), White, Black, Grey 2
-//     (#DCDFE3) from the brand's neutral-tones swatch.
+//   - background/surface/text/border: White, White, Black, Grey 2 (#DCDFE3) from
+//     the brand's neutral-tones swatch — background kept flat white (not Grey 1)
+//     per explicit direction to keep every component's base color white only.
 // Values the brand book never specifies (mutedText, success/warning/danger,
 // general container borderRadius, spacingDensity, animationSpeed) use
 // best-judgment defaults consistent with this project's other presets —
@@ -65,7 +66,7 @@ function preset(id, name, description, organization, tokens, options = {}) {
 export const BUILT_IN_THEMES = Object.freeze([
   preset('att-standard', 'AT&T Standard', 'The standardized AT&T brand theme — the only theme in this build.', 'AT&T', {
     fontFamily: 'ATT Aleck Sans', headingFontFamily: 'ATT Aleck Sans', primary: '#00388F', primaryHover: '#002A6B', accent: '#009FDB',
-    background: '#F3F4F5', surface: '#FFFFFF', text: '#000000', mutedText: '#4B5563', border: '#DCDFE3',
+    background: '#FFFFFF', surface: '#FFFFFF', text: '#000000', mutedText: '#4B5563', border: '#DCDFE3',
     success: '#087F5B', warning: '#9A6700', danger: '#B42318', borderRadius: 12, buttonRadius: 20,
     shadow: 'soft', spacingDensity: 'comfortable', animationSpeed: 200
   }, { isLocked: true })
