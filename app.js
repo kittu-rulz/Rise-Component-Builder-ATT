@@ -25,7 +25,7 @@ import { collectSyncIssues, runPreflight, summarizePreflight } from './js/valida
 import { collectMediaReferences, resolveMediaLimits, validateMediaAccessibility } from './js/media.js';
 import { downloadProjectPackage, exportProjectPackage, importProjectPackage, isProjectPackageFile } from './js/project-package.js';
 import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, restoreMediaReferences } from './js/media-storage.js';
-import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, normalizeComponentOverrides } from './js/themes.js';
+import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, getBuiltInTheme, normalizeComponentOverrides } from './js/themes.js';
 // Every catalog component is a real, isolated module (js/component-registry.js). The
 // preview/export compiler needs its renderer (generateHTML/CSS/JS) and version (embedded
 // in the completion adapter's message envelope, js/completion.js); the editor's save-time
@@ -727,8 +727,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyMissingSchemaDefaults(component);
     const mediaRestore = await restoreMediaReferences(appState.config);
     appState.settings = { ...project.settings };
-    appState.activeTheme = structuredClone(project.theme);
-    appState.activeThemeId = project.theme.id;
+    // This build is locked to a single theme (js/themes.js) — always re-resolve the
+    // current live theme rather than trust a project's stored snapshot, so a brand
+    // color update (e.g. the AT&T palette) reaches every previously-saved project
+    // and draft, not just newly-created ones.
+    appState.activeTheme = getBuiltInTheme(DEFAULT_THEME_ID);
+    appState.activeThemeId = appState.activeTheme.id;
     appState.componentOverrides = normalizeComponentOverrides(project.componentOverrides);
     appState.uiTheme = project.uiTheme;
     syncResolvedThemeConfig();
