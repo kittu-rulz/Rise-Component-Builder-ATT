@@ -30,7 +30,7 @@ This document specifies the guarantee that keeps the live preview and every expo
 
 ## The modular export pipeline
 
-Every one of the 22 catalog components is a real module in `components/*.js` implementing the full contract (`docs/ARCHITECTURE.md` §1). `generateIframeContent()` (`js/preview.js`) is a thin orchestrator over the following stages — nothing else in the codebase assembles a compiled document:
+Every one of the 20 catalog components is a real module in `components/*.js` implementing the full contract (`docs/ARCHITECTURE.md` §1). `generateIframeContent()` (`js/preview.js`) is a thin orchestrator over the following stages — nothing else in the codebase assembles a compiled document:
 
 1. **Shared design tokens** — `js/themes.js` resolves the active theme + per-component overrides into token values; `generateIframeContent()` turns them into the `:root { --primary: ...; }` CSS custom properties every component's CSS references.
 2. **Shared export shell** (`js/export-shell.js`) — owns the outer document shape: the `<!DOCTYPE html>`/`<head>`/CSP meta/fonts link, the `<style>`/`<script>` wrapper, the block header (title/headline/description), and the completion-tracker widget markup (`renderShell`, `renderCompletionTrackerHTML`).
@@ -42,7 +42,7 @@ Every one of the 22 catalog components is a real module in `components/*.js` imp
 8. **Export validation** — each component's `validate(config)` (where implemented) plus the schema-driven `minItems`/required-field checks in `js/editor.js` gate saving; `js/component-registry.js#validateRegistry` gates the registry itself at module load (duplicate ids, missing metadata, incomplete renderers all throw immediately with a specific message).
 9. **Deterministic output** — see below.
 
-**Requirement 1 in practice:** because stages 4–6 only ever call the *active* component's own module, an Accordion export structurally cannot contain `.quiz-option`, `.gallery-item-card`, `.audio-player-block`, `.ai-generator-preview`, or any other component's markers — this is proven by `tests/unit/export-isolation.test.js`, which compiles every one of the 22 components and asserts the output contains only its own group's markers and none of the other 20 (AI's two mock components are treated as one group, since they intentionally share their mock-UI code with each other — not with anything unrelated).
+**Requirement 1 in practice:** because stages 4–6 only ever call the *active* component's own module, an Accordion export structurally cannot contain `.quiz-option`, `.gallery-item-card`, `.audio-player-block`, or any other component's markers — this is proven by `tests/unit/export-isolation.test.js`, which compiles every one of the 20 components and asserts the output contains only its own group's markers and none of the other 19.
 
 ### Instance scoping and isolation strategy (Requirements 5 & 6)
 
@@ -106,7 +106,7 @@ The only communication a generated/exported component initiates toward its host 
 
 **Rise compatibility claim, precisely scoped:** this application produces the iframe-embed and HTML-fragment representations Articulate Rise's "Code" → "Add code" block is documented to accept (standard `<iframe srcdoc>` / raw HTML+CSS+JS), and the sandbox/CSP values are chosen to be compatible with that block type. **This has not been independently tested inside a live Rise course as part of this repository's automation** — all automated coverage (`tests/e2e/*`) runs against a local static server, not Rise, Moodle, or any LMS. Do not represent this as "tested and working in Rise" beyond what is stated here; if that testing is performed and recorded, this section should be updated with the specific Rise version and result.
 
-This claim, its Moodle/SCORM equivalents, and the per-browser/per-condition breakdown (keyboard-only operation, restricted networks, offline fonts) are formalized in **`docs/RISE-COMPATIBILITY-MATRIX.md`**, which classifies every export workflow and target surface into one of four tiers (Confirmed / Experimental / Fallback / Unsupported) and cites the exact evidence behind each. The same tiers drive the export compatibility report shown in the Export modal (`js/compatibility.js`, rendered by `renderExportCompatibilityReport()` in `app.js`) — the in-app UI and this document are required to never disagree. Manual test procedures live in `docs/RISE-TEST-CHECKLIST.md` and `docs/MOODLE-SCORM-TEST-CHECKLIST.md`; actual results (not just claims) are logged in `docs/COMPATIBILITY-RESULTS.md`.
+This claim, its Moodle/SCORM equivalents, and the per-browser/per-condition breakdown (keyboard-only operation, restricted networks, offline fonts) are formalized in **`docs/RISE-COMPATIBILITY-MATRIX.md`**, which classifies every export workflow and target surface into one of four tiers (Confirmed / Preview / Fallback / Unsupported) and cites the exact evidence behind each. The same tiers drive the export compatibility report shown in the Export modal (`js/compatibility.js`, rendered by `renderExportCompatibilityReport()` in `app.js`) — the in-app UI and this document are required to never disagree. Manual test procedures live in `docs/RISE-TEST-CHECKLIST.md` and `docs/MOODLE-SCORM-TEST-CHECKLIST.md`; actual results (not just claims) are logged in `docs/COMPATIBILITY-RESULTS.md`.
 
 ## Non-goals of this contract
 

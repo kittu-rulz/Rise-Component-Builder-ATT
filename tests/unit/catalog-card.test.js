@@ -20,9 +20,9 @@ describe('createCatalogCard', () => {
     expect(card.getAttribute('aria-label')).toBe('Responsive Accordion: Expand and collapse content sections.');
   });
 
-  test('shows an Experimental badge only for experimental-status components', () => {
+  test('shows a Preview badge only for experimental-status components', () => {
     const experimental = createCatalogCard(component({ status: 'experimental' }), () => {});
-    expect(experimental.querySelector('.card-status-badge').textContent).toBe('Experimental');
+    expect(experimental.querySelector('.card-status-badge').textContent).toBe('Preview');
 
     const production = createCatalogCard(component({ status: 'production' }), () => {});
     expect(production.querySelector('.card-status-badge')).toBeNull();

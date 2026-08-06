@@ -38,7 +38,7 @@ function getInstanceId(appState) {
 function getTrackableCount(compId, itemCount) {
   if (compId === 'flip-cards') return Math.max(Math.ceil(itemCount / 2), 1);
   if (compId === 'scenario') return Math.max(itemCount - 1, 1);
-  if (['audio-player', 'video-frame', 'ai-generator', 'ai-quiz-maker', 'fill-blank'].includes(compId)) return 1;
+  if (['audio-player', 'video-frame', 'fill-blank'].includes(compId)) return 1;
   return Math.max(itemCount, 1);
 }
 

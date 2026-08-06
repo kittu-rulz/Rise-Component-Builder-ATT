@@ -151,14 +151,6 @@ export const editorSchemas = {
       field('decorative', 'Image Is Decorative', 'checkbox', { default: false }),
       field('imageFit', 'Image Fit', 'select', { default: 'cover', options: [{ value: 'cover', label: 'Cover' }, { value: 'contain', label: 'Contain' }] })
     ]
-  },
-  'ai-generator': {
-    itemLabel: 'AI Prompt', minItems: 1,
-    itemFields: [field('title', 'Prompt Name', 'text', { required: true, default: 'AI Scenario Prompt' }), field('content', 'Prompt', 'textarea', { required: true, default: 'Describe the scenario to generate.' })]
-  },
-  'ai-quiz-maker': {
-    itemLabel: 'AI Quiz Prompt', minItems: 1,
-    itemFields: [field('title', 'Prompt Name', 'text', { required: true, default: 'AI Quiz Prompt' }), field('content', 'Prompt', 'textarea', { required: true, default: 'Describe the quiz to generate.' })]
   }
 };
 

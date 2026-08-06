@@ -114,8 +114,6 @@ The preview runtime calculates trackable counts per component. Content-reveal co
 | `audio-player`        | `title`, `content` (audio source), `contentDuration`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`, `transcript`   |
 | `video-frame`         | `title`, `content` (video source), `posterImage`, `posterAltText`, `posterDecorative`, `captionsUrl`, `transcript`, `audioDescription` |
 | `image-gallery`       | `content` (image source), `title`, `caption`, `altText`, `decorative`, `imageFit`                                                      |
-| `ai-generator`        | `title`, `content` (prompt) — simulated, see `docs/KNOWN-ISSUES.md`                                                                    |
-| `ai-quiz-maker`       | `title`, `content` (prompt) — simulated, see `docs/KNOWN-ISSUES.md`                                                                    |
 
 Rich text is supported for selected content fields and sanitized to an allowlist before rendering (`docs/SECURITY.md`).
 

@@ -385,7 +385,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateCategoryBadges() {
     getCategoriesWithCounts(COMPONENT_REGISTRY).forEach(({ id, count }) => {
-      if (id === 'ai') return; // AI category keeps its static "Beta" badge, not a count.
       const badge = document.querySelector(`.nav-item[data-category="${id}"] .badge`);
       if (badge) badge.textContent = String(count);
     });
@@ -679,7 +678,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('settings-default-font').value = appState.settings.defaultFont;
     document.getElementById('settings-export-format').value = appState.settings.exportFormat;
     document.getElementById('settings-enable-autosave').checked = appState.settings.autosave;
-    document.getElementById('settings-enable-ai').checked = appState.settings.aiEnabled;
     document.getElementById('settings-limit-image').value = appState.settings.mediaLimitsMb.image;
     document.getElementById('settings-limit-audio').value = appState.settings.mediaLimitsMb.audio;
     document.getElementById('settings-limit-video').value = appState.settings.mediaLimitsMb.video;
@@ -1023,7 +1021,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const selectFont = document.getElementById('settings-default-font');
       const selectExport = document.getElementById('settings-export-format');
       const checkAutosave = document.getElementById('settings-enable-autosave');
-      const checkAi = document.getElementById('settings-enable-ai');
       const limitImage = document.getElementById('settings-limit-image');
       const limitAudio = document.getElementById('settings-limit-audio');
       const limitVideo = document.getElementById('settings-limit-video');
@@ -1035,7 +1032,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           defaultFont: selectFont.value,
           exportFormat: selectExport.value,
           autosave: checkAutosave.checked,
-          aiEnabled: checkAi.checked,
           mediaLimitsMb: {
             image: Number(limitImage.value),
             audio: Number(limitAudio.value),

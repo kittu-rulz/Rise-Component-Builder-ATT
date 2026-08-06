@@ -35,7 +35,7 @@ export function validProject(overrides = {}) {
     id: 'fixture-project', schemaVersion: 2, name: 'Fixture Project', componentId: 'accordion',
     createdAt: now, updatedAt: now, config: componentConfig(), theme: structuredClone(cleanTheme),
     componentOverrides: {}, uiTheme: 'light',
-    settings: { defaultFont: 'Lato', exportFormat: 'web', autosave: true, aiEnabled: false },
+    settings: { defaultFont: 'Lato', exportFormat: 'web', autosave: true },
     ...structuredClone(overrides)
   };
 }

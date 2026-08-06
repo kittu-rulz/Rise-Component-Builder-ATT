@@ -6,17 +6,17 @@
 // the matching row in the matrix doc, and vice versa.
 
 /**
- * CONFIRMED    — verified by this project's own automated tests, or a recorded manual
- *                test run logged in docs/COMPATIBILITY-RESULTS.md.
- * EXPERIMENTAL — technically built to the target's own documented capability, but never
- *                independently run against that real target by this project.
- * FALLBACK     — degrades gracefully rather than breaking outright, under a known,
- *                documented condition (e.g. only with a non-default host setting).
- * UNSUPPORTED  — known not to work today, or no working implementation exists yet.
+ * CONFIRMED — verified by this project's own automated tests, or a recorded manual
+ *             test run logged in docs/COMPATIBILITY-RESULTS.md.
+ * PREVIEW   — technically built to the target's own documented capability, but never
+ *             independently run against that real target by this project.
+ * FALLBACK  — degrades gracefully rather than breaking outright, under a known,
+ *             documented condition (e.g. only with a non-default host setting).
+ * UNSUPPORTED — known not to work today, or no working implementation exists yet.
  */
 export const COMPATIBILITY_TIERS = {
   confirmed: { id: 'confirmed', label: 'Confirmed', badgeClass: 'compat-badge-confirmed' },
-  experimental: { id: 'experimental', label: 'Experimental', badgeClass: 'compat-badge-experimental' },
+  experimental: { id: 'experimental', label: 'Preview', badgeClass: 'compat-badge-experimental' },
   fallback: { id: 'fallback', label: 'Fallback', badgeClass: 'compat-badge-fallback' },
   unsupported: { id: 'unsupported', label: 'Unsupported', badgeClass: 'compat-badge-unsupported' }
 };

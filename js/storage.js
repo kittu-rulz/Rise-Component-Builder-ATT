@@ -21,7 +21,6 @@ const DEFAULT_SETTINGS = {
   defaultFont: 'Lato',
   exportFormat: 'web',
   autosave: true,
-  aiEnabled: false,
   mediaLimitsMb: { image: 10, audio: 30, video: 100, svg: 2 },
   // Empty string = unconfigured: exported components post/accept completion messages to/from
   // any origin ('*'), and accept them from any origin — documented default, see
@@ -104,7 +103,6 @@ export function normalizeSettings(value) {
     defaultFont: allowedFonts.includes(value.defaultFont) ? value.defaultFont : DEFAULT_SETTINGS.defaultFont,
     exportFormat: ['web', 'zip', 'scorm'].includes(value.exportFormat) ? value.exportFormat : DEFAULT_SETTINGS.exportFormat,
     autosave: typeof value.autosave === 'boolean' ? value.autosave : DEFAULT_SETTINGS.autosave,
-    aiEnabled: typeof value.aiEnabled === 'boolean' ? value.aiEnabled : DEFAULT_SETTINGS.aiEnabled,
     mediaLimitsMb: normalizeMediaLimitsMb(value.mediaLimitsMb),
     completionParentOrigin: normalizeCompletionParentOrigin(value.completionParentOrigin)
   };

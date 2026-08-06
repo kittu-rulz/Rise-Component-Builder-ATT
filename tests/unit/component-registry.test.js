@@ -93,13 +93,6 @@ describe('component registry integrity', () => {
     expect(filtered.length).toBe(4);
   });
 
-  test('experimental AI components are isolated from production ones', () => {
-    const experimental = COMPONENT_REGISTRY.filter(entry => entry.status === 'experimental');
-    expect(experimental.length).toBeGreaterThan(0);
-    experimental.forEach(entry => {
-      expect(entry.categoryId).toBe('ai');
-    });
-  });
 });
 
 describe('component registry validation', () => {
@@ -173,7 +166,7 @@ describe('search', () => {
 
   test('finds a component by description substring', () => {
     const results = searchComponents(COMPONENT_REGISTRY, 'branching');
-    expect(results.some(entry => entry.id === 'scenario' || entry.id === 'ai-generator')).toBe(true);
+    expect(results.some(entry => entry.id === 'scenario')).toBe(true);
   });
 
   test('finds a component by keyword substring', () => {

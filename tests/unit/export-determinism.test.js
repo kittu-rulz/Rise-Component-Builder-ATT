@@ -22,7 +22,7 @@ function buildAppState(componentId, currentProjectId) {
 }
 
 describe('export determinism', () => {
-  test.each(['accordion', 'multiple-choice', 'image-gallery', 'ai-generator'])('compiling %s twice from the same state yields byte-identical output', componentId => {
+  test.each(['accordion', 'multiple-choice', 'image-gallery'])('compiling %s twice from the same state yields byte-identical output', componentId => {
     const appState = buildAppState(componentId, 'fixture-project');
     const first = generateIframeContent(appState, componentRegistry, toRgba);
     const second = generateIframeContent(buildAppState(componentId, 'fixture-project'), componentRegistry, toRgba);

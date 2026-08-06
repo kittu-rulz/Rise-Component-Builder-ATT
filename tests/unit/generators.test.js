@@ -20,8 +20,6 @@ import * as pricingComparison from '../../components/pricing-comparison.js';
 import * as audioPlayer from '../../components/audio-player.js';
 import * as videoFrame from '../../components/video-frame.js';
 import * as imageGallery from '../../components/image-gallery.js';
-import * as aiGenerator from '../../components/ai-generator.js';
-import * as aiQuizMaker from '../../components/ai-quiz-maker.js';
 import { invalidUrls, longText, multilingualText, rtlText, unsafeText } from '../fixtures/index.js';
 import { sanitizePreviewConfig } from '../../js/utilities.js';
 
@@ -29,7 +27,7 @@ const generators = [
   accordion, tabs, flipCards, hotspots, buttonList, menuList, verticalTimeline,
   multipleChoice, multipleSelect, sortingActivity, fillBlank, horizontalTimeline,
   processFlow, scenario, profileCards, infoGrid, pricingComparison, audioPlayer,
-  videoFrame, imageGallery, aiGenerator, aiQuizMaker
+  videoFrame, imageGallery
 ];
 const answerOptionComponents = ['multiple-choice', 'multiple-select'];
 const INSTANCE_ID = 'rcb-test-instance';

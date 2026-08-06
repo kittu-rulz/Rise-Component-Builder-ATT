@@ -41,7 +41,6 @@ export const appState = {
     defaultFont: 'Lato',
     exportFormat: 'web',
     autosave: true,
-    aiEnabled: false,
     mediaLimitsMb: { image: 10, audio: 30, video: 100, svg: 2 }
   },
   config: structuredClone(initialConfig)

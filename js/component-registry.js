@@ -19,8 +19,6 @@ import * as pricingComparison from '../components/pricing-comparison.js';
 import * as audioPlayer from '../components/audio-player.js';
 import * as videoFrame from '../components/video-frame.js';
 import * as imageGallery from '../components/image-gallery.js';
-import * as aiGenerator from '../components/ai-generator.js';
-import * as aiQuizMaker from '../components/ai-quiz-maker.js';
 
 export const CATEGORIES = [
   { id: 'interactive', name: 'Interactive' },
@@ -29,8 +27,7 @@ export const CATEGORIES = [
   { id: 'timelines', name: 'Timelines' },
   { id: 'process', name: 'Process Flows' },
   { id: 'cards', name: 'Cards & Layouts' },
-  { id: 'media', name: 'Media Blocks' },
-  { id: 'ai', name: 'AI Components' }
+  { id: 'media', name: 'Media Blocks' }
 ];
 
 const MEDIA_FIELD_TYPES = ['image', 'audio', 'video'];
@@ -186,18 +183,6 @@ export const COMPONENT_REGISTRY = [
     description: 'Responsive photo gallery with beautiful modal popups and image detail descriptions.',
     keywords: ['gallery', 'photos', 'modal', 'grid'],
     icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>'
-  }),
-  fromModule(aiGenerator, {
-    description: 'Generate complete multi-decision branching scenario blocks powered by AI within seconds.',
-    keywords: ['ai', 'scenario generator', 'branching', 'automated'],
-    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline><polyline points="7.5 19.79 12 17.19 16.5 19.79"></polyline><polyline points="7.5 12 12 14.6 16.5 12"></polyline></svg>',
-    status: 'experimental'
-  }),
-  fromModule(aiQuizMaker, {
-    description: 'Prompt an assessment topic and generate comprehensive mock quiz question structures instantly.',
-    keywords: ['ai', 'quiz generator', 'assessment', 'automated'],
-    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>',
-    status: 'experimental'
   })
 ];
 

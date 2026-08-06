@@ -40,11 +40,11 @@ describe('versioned project persistence', () => {
   });
 
   test('settings, favorites, themes, and drafts survive serialization', () => {
-    saveSettings({ defaultFont: 'Roboto', exportFormat: 'zip', autosave: false, aiEnabled: true, mediaLimitsMb: { image: 5, audio: 20, video: 50, svg: 1 } });
+    saveSettings({ defaultFont: 'Roboto', exportFormat: 'zip', autosave: false, mediaLimitsMb: { image: 5, audio: 20, video: 50, svg: 1 } });
     saveFavorites(new Set(['accordion', 'tab-blocks']));
     saveDraft(validProject({ uiTheme: 'dark' }));
     expect(loadSettings()).toEqual({
-      defaultFont: 'Roboto', exportFormat: 'zip', autosave: false, aiEnabled: true,
+      defaultFont: 'Roboto', exportFormat: 'zip', autosave: false,
       mediaLimitsMb: { image: 5, audio: 20, video: 50, svg: 1 }, completionParentOrigin: ''
     });
     expect(loadFavorites()).toEqual(['accordion', 'tab-blocks']);

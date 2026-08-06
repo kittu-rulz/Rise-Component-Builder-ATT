@@ -18,7 +18,7 @@ test('application loads without console errors and renders the catalog', async (
 });
 
 test('every registered component opens in the builder editor and renders its live preview with no console/page errors', async ({ page }) => {
-  // Opens and closes all 22 registered components in sequence — comfortably under the
+  // Opens and closes all 20 registered components in sequence — comfortably under the
   // default 30s timeout when run alone, but slower under heavy parallel worker
   // contention (especially on WebKit), so this gets its own longer budget rather than
   // being treated as flaky.
@@ -35,7 +35,7 @@ test('every registered component opens in the builder editor and renders its liv
   page.on('pageerror', error => errors.push(`${error.message} (pageerror)`));
   await page.goto('/');
 
-  const dataCategories = ['interactive', 'navigation', 'knowledge', 'timelines', 'process', 'cards', 'media', 'ai'];
+  const dataCategories = ['interactive', 'navigation', 'knowledge', 'timelines', 'process', 'cards', 'media'];
   for (const dataCategory of dataCategories) {
     await page.locator(`.nav-item[data-category="${dataCategory}"]`).click();
     const cardCount = await page.locator('.component-select-card').count();

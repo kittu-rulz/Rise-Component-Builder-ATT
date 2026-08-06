@@ -150,14 +150,6 @@
           </a>
 
           <div class="sidebar-divider"></div>
-          
-          <a href="#" class="nav-item ai-item" data-category="ai">
-            <span class="nav-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-            </span>
-            <span class="nav-label">AI Components</span>
-            <span class="badge badge-accent">Experimental</span>
-          </a>
 
           <a href="#" class="nav-item" data-category="favorites">
             <span class="nav-icon">
@@ -455,7 +447,9 @@
           <p class="modal-desc">Copy the complete iframe code below and paste it into a <strong>Code &gt; Add code</strong> block in Rise 360. This nests a self-contained iframe inside that block — see the compatibility note above before relying on this in a live course.</p>
 
           <div class="code-export-box">
-            <pre><code id="export-iframe-code">&lt;iframe src="https://rise-builder.cloud.app/preview/accordion-abc123xyz" width="100%" height="450px" style="border:none;"&gt;&lt;/iframe&gt;</code></pre>
+            <div class="code-scroll-area">
+              <pre><code id="export-iframe-code">&lt;iframe src="https://rise-builder.cloud.app/preview/accordion-abc123xyz" width="100%" height="450px" style="border:none;"&gt;&lt;/iframe&gt;</code></pre>
+            </div>
             <button id="btn-copy-iframe" class="btn btn-secondary btn-small copy-btn">Copy Code</button>
           </div>
 
@@ -481,7 +475,8 @@
           <p class="modal-desc">Copy this fragment for a host that accepts raw HTML, CSS, and inline scripts directly (e.g. Rise's <strong>Code &gt; Add code</strong> block). The download button below still saves a complete standalone HTML file that this project has verified opens and works correctly in a plain browser — <strong>only when every asset is small enough to embed directly</strong>; if this component uses uploaded audio, video, or a large image, use <strong>Option C: Rise Project ZIP</strong> instead.</p>
 
           <div class="code-export-box">
-            <pre><code id="export-html-code">&lt;style&gt;
+            <div class="code-scroll-area">
+              <pre><code id="export-html-code">&lt;style&gt;
   /* Customized component styles */
 &lt;/style&gt;
 
@@ -492,6 +487,7 @@
 &lt;script&gt;
   /* Interactive behavior appears here */
 &lt;/script&gt;</code></pre>
+            </div>
             <button id="btn-copy-html" class="btn btn-secondary btn-small copy-btn">Copy Fragment</button>
           </div>
 
@@ -520,7 +516,7 @@
           </div>
           <details class="export-manifest-details">
             <summary>Asset manifest (also included in the ZIP as assets/manifest.json)</summary>
-            <div class="code-export-box"><pre><code id="rise-zip-manifest">[]</code></pre></div>
+            <div class="code-export-box"><div class="code-scroll-area"><pre><code id="rise-zip-manifest">[]</code></pre></div></div>
           </details>
         </div>
       </div>
@@ -583,11 +579,6 @@
         <div class="checkbox-wrapper">
           <input type="checkbox" id="settings-enable-autosave" checked>
           <label for="settings-enable-autosave">Enable automatic local backup every 60 seconds</label>
-        </div>
-
-        <div class="checkbox-wrapper">
-          <input type="checkbox" id="settings-enable-ai">
-          <label for="settings-enable-ai">Enable AI Component Generator assistant</label>
         </div>
 
         <h3 class="group-title">Completion Messaging (Advanced)</h3>

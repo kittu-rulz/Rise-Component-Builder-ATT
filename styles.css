@@ -445,7 +445,7 @@ a {
 .badge-accent {
   /* Darker than --warning on purpose: white text on the raw --warning amber only
      reaches 2.14:1 contrast (fails WCAG AA 4.5:1) — this shade is chosen to pass
-     while staying in the same amber family used for "Experimental" labelling. */
+     while staying in the same amber family used for "Preview" labelling. */
   background-color: #B45309;
   color: #FFFFFF !important;
 }
@@ -942,6 +942,7 @@ a {
 }
 
 .input-wrapper input[type="text"],
+.input-wrapper input[type="number"],
 .input-wrapper textarea,
 .input-wrapper select {
   width: 100%;
@@ -949,6 +950,7 @@ a {
   border-radius: 8px;
   border: 1px solid var(--input-border);
   background-color: var(--input-bg);
+  color: var(--text-main);
   font-size: 13px;
   outline: none;
   transition: all var(--transition-fast);
@@ -1168,98 +1170,67 @@ input[type="range"]::-webkit-slider-thumb:hover {
   padding: 0 10px;
 }
 
-/* Fix number input spinner visibility in dark mode */
+/* color-scheme is set per-theme, not "light dark" (which lets the browser pick
+   native form-control colors from the OS preference instead of this app's own
+   light/dark toggle — the previous unconditional "light dark" value is why number
+   inputs could render with dark native UA colors even while the page itself was
+   in light mode). */
+[data-theme="light"] input[type="number"] {
+  color-scheme: light;
+}
+
 [data-theme="dark"] input[type="number"] {
   color-scheme: dark;
 }
 
-/* Enhanced spinner UX - Improved visibility for light and dark modes */
 input[type="number"] {
-  -moz-appearance: textfield; /* Hide Firefox default arrows, we'll add custom ones */
+  -moz-appearance: textfield; /* Hide Firefox's default arrows; only WebKit gets a custom spinner below. */
 }
 
-/* Webkit browsers (Chrome, Safari, Edge) - Enhanced native spinners */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+/* Modern WebKit (Chrome/Edge/Safari) renders the up/down spinner as a single
+   ::-webkit-inner-spin-button box — ::-webkit-outer-spin-button no longer renders
+   anything in current versions. Styling inner/outer as two separately-visible
+   buttons (as this used to) left only a single up-chevron visible. One icon
+   containing both chevrons, on the one box that's actually there, is correct. */
+input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   appearance: none;
   margin: 0;
   width: 24px;
-  height: 36px;
+  height: 100%;
   cursor: pointer;
-  opacity: 1 !important;
-  display: block !important;
-  background-color: #F3F4F6;
+  opacity: 1;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 16px 16px;
-  transition: all 0.15s ease;
+  background-size: 14px 22px;
+  transition: background-color 0.15s ease;
 }
 
-/* Light mode - Dark gray arrows on light background */
 [data-theme="light"] input[type="number"]::-webkit-inner-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 15l7-7 7 7'/%3E%3C/svg%3E");
   background-color: #E5E7EB;
   border-left: 1px solid #D1D5DB;
-}
-
-[data-theme="light"] input[type="number"]::-webkit-outer-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-  background-color: #E5E7EB;
-  border-left: 1px solid #D1D5DB;
-}
-
-/* Light mode hover */
-[data-theme="light"] input[type="number"]:hover::-webkit-inner-spin-button,
-[data-theme="light"] input[type="number"]:hover::-webkit-outer-spin-button {
-  background-color: #D1D5DB;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 36' fill='none' stroke='%23374151' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 14L12 9L17 14'/%3E%3Cpath d='M7 22L12 27L17 22'/%3E%3C/svg%3E");
 }
 
 [data-theme="light"] input[type="number"]:hover::-webkit-inner-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 15l7-7 7 7'/%3E%3C/svg%3E");
+  background-color: #D1D5DB;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 36' fill='none' stroke='%2300388F' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 14L12 9L17 14'/%3E%3Cpath d='M7 22L12 27L17 22'/%3E%3C/svg%3E");
 }
 
-[data-theme="light"] input[type="number"]:hover::-webkit-outer-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-}
-
-/* Dark mode - Light arrows on dark background */
 [data-theme="dark"] input[type="number"]::-webkit-inner-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E5E7EB' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 15l7-7 7 7'/%3E%3C/svg%3E");
   background-color: #374151;
   border-left: 1px solid #4B5563;
-}
-
-[data-theme="dark"] input[type="number"]::-webkit-outer-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E5E7EB' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-  background-color: #374151;
-  border-left: 1px solid #4B5563;
-}
-
-/* Dark mode hover */
-[data-theme="dark"] input[type="number"]:hover::-webkit-inner-spin-button,
-[data-theme="dark"] input[type="number"]:hover::-webkit-outer-spin-button {
-  background-color: #4B5563;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 36' fill='none' stroke='%23E5E7EB' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 14L12 9L17 14'/%3E%3Cpath d='M7 22L12 27L17 22'/%3E%3C/svg%3E");
 }
 
 [data-theme="dark"] input[type="number"]:hover::-webkit-inner-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2360A5FA' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 15l7-7 7 7'/%3E%3C/svg%3E");
+  background-color: #4B5563;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 36' fill='none' stroke='%23009FDB' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 14L12 9L17 14'/%3E%3Cpath d='M7 22L12 27L17 22'/%3E%3C/svg%3E");
 }
 
-[data-theme="dark"] input[type="number"]:hover::-webkit-outer-spin-button {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2360A5FA' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-}
-
-/* Focus state */
-input[type="number"]:focus::-webkit-inner-spin-button,
-input[type="number"]:focus::-webkit-outer-spin-button {
+input[type="number"]:focus::-webkit-inner-spin-button {
   outline: 2px solid var(--primary);
   outline-offset: -2px;
-}
-
-/* Firefox - Show default but enhance with color-scheme */
-input[type="number"] {
-  color-scheme: light dark;
 }
 
 .schema-field input[type="color"] {
@@ -2179,9 +2150,15 @@ input[type="number"] {
   color: #E2E8F0;
   padding: 16px;
   border-radius: 8px;
+  border: 1px solid #1E293B;
+}
+
+/* Only this inner area scrolls — .copy-btn lives in .code-export-box itself (outside
+   this wrapper), so it stays pinned in the visible top-right corner instead of
+   scrolling away with the code underneath it. */
+.code-scroll-area {
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid #1E293B;
 }
 
 .code-export-box pre {

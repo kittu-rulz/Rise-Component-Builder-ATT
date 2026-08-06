@@ -21,10 +21,8 @@ function compile(componentId, { currentProjectId = 'fixture-project' } = {}) {
   return generateIframeContent(appState, componentRegistry, toRgba);
 }
 
-// Each component's genuinely exclusive markers. ai-generator/ai-quiz-maker are grouped
-// together because they intentionally share the same mock-AI markup/behavior — the
-// requirement is that UNRELATED categories (quiz, gallery, audio, video, AI, ...) never
-// leak into each other, not that the two AI components must be mutually exclusive.
+// Each component's genuinely exclusive markers — the requirement is that UNRELATED
+// categories (quiz, gallery, audio, video, ...) never leak into each other.
 const GROUPS = {
   accordion: { components: ['accordion'], markers: ['accordion-group', 'accordion-trigger', 'toggleAccordion'] },
   'flip-cards': { components: ['flip-cards'], markers: ['flip-cards-grid', 'flip-card-front', 'flip-card-back'] },
@@ -45,8 +43,7 @@ const GROUPS = {
   'pricing-comparison': { components: ['pricing-comparison'], markers: ['pricing-table-container', 'pricing-card-item'] },
   'audio-player': { components: ['audio-player'], markers: ['audio-player-block', 'audio-scrub-bar', 'toggleAudioPlayback'] },
   'video-frame': { components: ['video-frame'], markers: ['video-player-block', 'video-overlay-play', 'toggleVideoPlayback'] },
-  'image-gallery': { components: ['image-gallery'], markers: ['gallery-grid', 'lightbox-overlay', 'openGalleryLightbox'] },
-  ai: { components: ['ai-generator', 'ai-quiz-maker'], markers: ['ai-generator-preview', 'ai-spark-icon', 'triggerAiGeneration'] }
+  'image-gallery': { components: ['image-gallery'], markers: ['gallery-grid', 'lightbox-overlay', 'openGalleryLightbox'] }
 };
 
 const groupFor = componentId => Object.values(GROUPS).find(group => group.components.includes(componentId));
