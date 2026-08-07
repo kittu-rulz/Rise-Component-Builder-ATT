@@ -1,0 +1,5 @@
+# The compiled export pipeline (js/export-shell.js et al.) always emits LF. Without this,
+# Windows checkouts with core.autocrlf=true silently rewrite the committed fixtures to
+# CRLF, and tests/unit/export-fixtures.test.js's strict byte comparison against a fresh
+# (always-LF) compile starts failing for reasons that have nothing to do with the code.
+tests/fixtures/exports/*.html text eol=lf

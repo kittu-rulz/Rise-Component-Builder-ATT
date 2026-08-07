@@ -146,7 +146,9 @@ describe('component registry validation', () => {
 
 describe('editor schema resolution', () => {
   test('getEditorSchema returns the registered schema for a known component id', () => {
-    expect(getEditorSchema('accordion')).toBe(COMPONENT_REGISTRY.find(entry => entry.id === 'accordion').editorSchema);
+    // getEditorSchema merges in the shared componentFields (js/editor-schemas.js) on every
+    // call, so this is a structural match rather than the same cached object reference.
+    expect(getEditorSchema('accordion')).toEqual(COMPONENT_REGISTRY.find(entry => entry.id === 'accordion').editorSchema);
   });
 
   test('getEditorSchema falls back to a generic single-item-field schema for an unknown id', () => {

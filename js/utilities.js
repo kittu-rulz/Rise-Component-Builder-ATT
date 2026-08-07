@@ -272,5 +272,8 @@ export function sanitizePreviewConfig(config, componentId) {
   result.backgroundFit = result.backgroundFit === 'cover' ? 'cover' : 'contain';
   result.backgroundFocalX = String(sanitizeCSSNumber(result.backgroundFocalX, { minimum: 0, maximum: 100, fallback: 50 }));
   result.backgroundFocalY = String(sanitizeCSSNumber(result.backgroundFocalY, { minimum: 0, maximum: 100, fallback: 50 }));
+  // Shared across every component (js/editor-schemas.js's sharedComponentFields) — a
+  // purely decorative block background, unrelated to any component-specific image field.
+  result.blockBackgroundImage = sanitizeURL(result.blockBackgroundImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
   return result;
 }

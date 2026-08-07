@@ -157,6 +157,7 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
     componentHTML: entry.generateHTML(c, instanceId),
     completionTrackerHTML: renderCompletionTrackerHTML(instanceId, c.trackCompletion),
     sharedA11yScript,
-    componentJS: entry.generateJS(c, instanceId)
+    componentJS: entry.generateJS(c, instanceId),
+    blockBackgroundImage: c.blockBackgroundImage
   });
 }

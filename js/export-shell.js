@@ -3,7 +3,7 @@
 // markup/CSS/JS live in components/*.js and are composed in here — this file owns none
 // of it. See docs/EXPORT-CONTRACT.md for the full pipeline description.
 
-import { normalizeHeadingLevel } from './utilities.js';
+import { escapeAttribute, normalizeHeadingLevel } from './utilities.js';
 
 export const CSP_META = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob:; media-src 'self' http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
 
@@ -228,12 +228,20 @@ const BOOTSTRAP_JS = `
  */
 export function renderShell({
   instanceId, tokensCSS, fontQuery, customFontFaceCSS = '', componentCSS, blockLabel, blockHeadline, blockDesc,
-  blockHeadingLevel, componentHTML, completionTrackerHTML, sharedA11yScript, componentJS
+  blockHeadingLevel, componentHTML, completionTrackerHTML, sharedA11yScript, componentJS, blockBackgroundImage = ''
 }) {
   // Rise embeds this markup inside a lesson page that has its own h1, so the wrapping
   // headline's tag is author-configurable (defaults to h2) rather than a hardcoded h1 —
   // see docs/ACCESSIBILITY-CONFORMANCE.md.
   const headingTag = normalizeHeadingLevel(blockHeadingLevel);
+  // Purely decorative, opt-in per component (js/editor-schemas.js's sharedComponentFields
+  // "Block Background Image"). Already scheme-allowlisted by sanitizePreviewConfig
+  // (js/utilities.js#sanitizeURL) before it ever reaches here; escapeAttribute is
+  // defense-in-depth for the HTML-attribute interpolation itself. Omitted entirely (not
+  // just left empty) when unset, so components that never use it stay byte-identical.
+  const backgroundStyle = blockBackgroundImage
+    ? ` style="background-image:url('${escapeAttribute(blockBackgroundImage)}');background-size:cover;background-position:center;background-repeat:no-repeat;border-radius:var(--border-radius);padding:24px;"`
+    : '';
   // A theme's font families may be entirely self-hosted (js/custom-fonts.js) — in that case
   // fontQuery is empty and the Google Fonts <link> would otherwise request nothing useful
   // (or 400, depending on host), so it's only emitted when at least one family actually
@@ -259,7 +267,7 @@ ${SHARED_A11Y_CSS}
 </head>
 <body>
 
-  <main class="rise-block-wrapper" aria-labelledby="${instanceId}-block-headline">
+  <main class="rise-block-wrapper"${backgroundStyle} aria-labelledby="${instanceId}-block-headline">
     <div class="block-header">
       <div class="block-label">${blockLabel}</div>
       <${headingTag} class="block-headline" id="${instanceId}-block-headline">${blockHeadline}</${headingTag}>

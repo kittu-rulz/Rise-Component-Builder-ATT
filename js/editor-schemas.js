@@ -5,6 +5,15 @@ const contentFields = [
   field('content', 'Item Content', 'richtext', { required: true, default: 'Add content here.' })
 ];
 
+// Applies to every component (merged into componentFields by getEditorSchema below) —
+// a purely decorative background behind the block wrapper, unrelated to any
+// component-specific image field (e.g. hotspots' own interactive background).
+const sharedComponentFields = [
+  field('blockBackgroundImage', 'Block Background Image (Optional)', 'image', {
+    required: false, default: '', preferredDimensions: '1600 × 900 px or larger'
+  })
+];
+
 const visualIconFields = [
   field('iconImage', 'Custom Icon or Image (Optional)', 'image', { required: false, default: '', preferredDimensions: '256 × 256 px (square)' }),
   field('iconAltText', 'Icon or Image Alternative Text', 'textarea', {
@@ -155,7 +164,12 @@ export const editorSchemas = {
 };
 
 export function getEditorSchema(componentId) {
-  return editorSchemas[componentId] || { itemLabel: 'Item', minItems: 1, itemFields: contentFields };
+  const schema = editorSchemas[componentId] || { itemLabel: 'Item', minItems: 1, itemFields: contentFields };
+  return {
+    ...schema,
+    componentLabel: schema.componentLabel || 'Block Background',
+    componentFields: [...sharedComponentFields, ...(schema.componentFields || [])]
+  };
 }
 
 export function createDefaultItem(schema) {
