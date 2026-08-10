@@ -444,7 +444,7 @@
 
         <!-- Tab Content: Iframe Link -->
         <div class="export-pane active" id="pane-export-iframe">
-          <p class="modal-desc">Copy the complete iframe code below and paste it into a <strong>Code &gt; Add code</strong> block in Rise 360. This nests a self-contained iframe inside that block — see the compatibility note above before relying on this in a live course.</p>
+          <p class="modal-desc"><strong>Best for:</strong> components you want fully sealed off from the rest of the course, so their look and behavior can never be disrupted by — or accidentally disrupt — anything else on the page. This is the safest default if you're unsure which option to pick. Copy the code below into a <strong>Code &gt; Add code</strong> block in Rise 360.</p>
 
           <div class="code-export-box">
             <div class="code-scroll-area">
@@ -458,13 +458,13 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
             </div>
             <div class="alert-content">
-              <strong>Suggested steps in Articulate Rise (not independently verified — see compatibility note above):</strong>
+              <strong>Steps to add this in Articulate Rise:</strong>
               <ol>
                 <li>Add a new block where the component should appear and open the <strong>Block library</strong>.</li>
                 <li>Select <strong>&lt;/&gt; Code</strong>.</li>
                 <li>Choose <strong>Add code</strong>, then paste the complete iframe code copied above into the code editor.</li>
-                <li>Save the code block, then preview the lesson and adjust its height if needed.</li>
-                <li>Confirm the block actually renders and responds to clicks/keyboard in Rise's own preview before publishing — do not assume success from these steps alone.</li>
+                <li>Save the code block, then preview the lesson. This option uses a fixed-height box, so adjust the height in Rise if your content looks cut off or scrolls inside a small window.</li>
+                <li>Confirm the block renders and responds to clicks/keyboard in Rise's own preview before publishing.</li>
               </ol>
             </div>
           </div>
@@ -472,7 +472,7 @@
 
         <!-- Tab Content: HTML Code Block -->
         <div class="export-pane" id="pane-export-code">
-          <p class="modal-desc">Copy this fragment for a host that accepts raw HTML, CSS, and inline scripts directly (e.g. Rise's <strong>Code &gt; Add code</strong> block). The download button below still saves a complete standalone HTML file that this project has verified opens and works correctly in a plain browser — <strong>only when every asset is small enough to embed directly</strong>; if this component uses uploaded audio, video, or a large image, use <strong>Option C: Rise Project ZIP</strong> instead.</p>
+          <p class="modal-desc"><strong>Best for:</strong> components that expand, collapse, or change size — like accordions, timelines, or knowledge checks — since this fragment grows and shrinks naturally with your content instead of sitting inside a fixed-height box. Paste it into a <strong>Code &gt; Add code</strong> block in Rise 360, the same as the Iframe Snippet option. If this component includes uploaded audio, video, or a large image, use <strong>Option C: Rise Project ZIP</strong> instead — those files don't fit safely inside this format.</p>
 
           <div class="code-export-box">
             <div class="code-scroll-area">
@@ -491,6 +491,7 @@
             <button id="btn-copy-html" class="btn btn-secondary btn-small copy-btn">Copy Fragment</button>
           </div>
 
+          <p class="modal-desc">Prefer a single file instead? Download it below — good for testing on its own or hosting elsewhere as one file. Only works when every asset is small enough to embed directly.</p>
           <p class="export-file-size-label" id="export-file-size"></p>
           <div class="action-buttons-row">
             <button id="btn-download-html" class="btn btn-secondary">
@@ -502,7 +503,7 @@
 
         <!-- Tab Content: Rise Project ZIP -->
         <div class="export-pane" id="pane-export-rise-zip">
-          <p class="modal-desc">Packages this component as a real, standalone ZIP: <code>index.html</code> at the root, plus every uploaded image or audio file it actually uses under <code>assets/</code>. Unlike the single-HTML option, uploaded audio, video, and large images travel as real files instead of being blocked or embedded as (potentially very large) inline data. Extract the ZIP and host <code>index.html</code> plus its <code>assets/</code> folder wherever your course's other external content lives, or open <code>index.html</code> directly to verify it first — see the compatibility note above for what is and isn't confirmed about using this inside Rise itself.</p>
+          <p class="modal-desc"><strong>Best for:</strong> components that include uploaded audio, video, or a large image. This packages everything as real files — <code>index.html</code> plus an <code>assets</code> folder — instead of trying to cram them into a single HTML block, which either blocks the download or bloats it with inline data. Unzip it and upload the files wherever your course's other media already lives, or open <code>index.html</code> directly first to double-check it looks right.</p>
 
           <div id="rise-zip-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
           <div id="rise-zip-blocking" class="field-error" role="alert" hidden></div>

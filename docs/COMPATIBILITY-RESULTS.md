@@ -17,9 +17,9 @@ Add a new row every time you run `docs/RISE-TEST-CHECKLIST.md`, `docs/MOODLE-SCO
 
 | Date | Tester | Rise surface | Component(s) | Result | Notes |
 | --- | --- | --- | --- | --- | --- |
-| — | — | Rise authoring preview | — | **Not yet tested** | Follow `docs/RISE-TEST-CHECKLIST.md` Test A/B. |
+| 2026-08-07 | Project author | Rise authoring preview | Not recorded — tester did not specify which catalog component(s) | Pass | Both the Iframe Snippet (Option A) and HTML Block Fragment (Option B) export formats were manually pasted into a Rise 360 "Code › Add code" block and confirmed rendering/interactive in the authoring preview. |
 | — | — | Rise share-link preview | — | **Not yet tested** | Follow `docs/RISE-TEST-CHECKLIST.md` Test A/B step 7. |
-| — | — | Rise published course | — | **Not yet tested** | Follow `docs/RISE-TEST-CHECKLIST.md` Test A/B step 8. |
+| 2026-08-07 | Project author | Rise published course | Not recorded — tester did not specify which catalog component(s) | Pass | Both the Iframe Snippet (Option A) and HTML Block Fragment (Option B) export formats confirmed working after publishing the course. |
 | — | — | Rise web export (offline) | — | **Not yet tested** | Only applicable if your workflow uses Rise's static export instead of Rise 360 hosting; see Test C. |
 
 ## Manual results — Moodle / SCORM

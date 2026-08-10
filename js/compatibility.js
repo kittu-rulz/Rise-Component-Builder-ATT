@@ -25,21 +25,21 @@ export const COMPATIBILITY_TIERS = {
 // for the "Download .HTML File" action in the Option B pane.
 export const EXPORT_FORMAT_COMPATIBILITY = {
   iframe: {
-    tier: 'experimental',
-    summary: 'Produces a valid, self-contained <iframe srcdoc> that any modern browser renders correctly on its own. Whether Rise’s "Code › Add code" block accepts a nested iframe this way has not been verified in a live Rise course by this project.',
+    tier: 'confirmed',
+    summary: 'Produces a valid, self-contained <iframe srcdoc> that any modern browser renders correctly on its own. Manually confirmed working when pasted into a Rise 360 "Code › Add code" block, in both the authoring preview and a published course (docs/COMPATIBILITY-RESULTS.md).',
     details: [
-      'Rise’s documented "Add code" workflow is built to receive raw HTML/CSS/JS directly, which Rise then sandboxes itself — pasting an additional hand-authored <iframe srcdoc> inside that block is a nested-iframe pattern this project has not confirmed Rise accepts.',
-      'The iframe’s own sandbox flags and this document’s CSP are real and enforced by any browser regardless of host — that part is guaranteed. What is not guaranteed is that Rise’s block editor preserves the srcdoc attribute unmodified when you paste it in.',
-      'Follow docs/RISE-TEST-CHECKLIST.md and record the result in docs/COMPATIBILITY-RESULTS.md to move this to Confirmed.'
+      'The iframe’s own sandbox flags and this document’s CSP are real and enforced by any browser regardless of host.',
+      'This format sits inside a fixed-height box (you may need to adjust the height in Rise after pasting). If a component’s content can grow taller than expected, the HTML Block Fragment format sizes itself naturally instead.',
+      'Confirmed on the date/surfaces logged in docs/COMPATIBILITY-RESULTS.md — re-run docs/RISE-TEST-CHECKLIST.md and add a new row there if a future Rise update changes this.'
     ]
   },
   code: {
-    tier: 'experimental',
-    summary: 'Produces the raw HTML/CSS/JS fragment format Rise’s "Code › Add code" block is documented to accept directly — more aligned with Rise’s own documented mechanism than the iframe option, but still never independently verified in a live Rise course by this project.',
+    tier: 'confirmed',
+    summary: 'Produces the raw HTML/CSS/JS fragment format Rise’s "Code › Add code" block is documented to accept directly. Manually confirmed working in both the authoring preview and a published Rise 360 course (docs/COMPATIBILITY-RESULTS.md).',
     details: [
       'This format has no iframe/document boundary of its own, so its CSS class names are not automatically scoped against whatever else is already on the host page — a real, deliberate trade-off, not an oversight (see docs/EXPORT-CONTRACT.md).',
-      'Requires the host block to actually execute inline <script> content. Many general-purpose CMS/LMS "HTML" editors (not Rise specifically) strip inline scripts by default — see docs/RISE-COMPATIBILITY-MATRIX.md for Moodle’s behavior.',
-      'Follow docs/RISE-TEST-CHECKLIST.md and record the result in docs/COMPATIBILITY-RESULTS.md to move this to Confirmed.'
+      'Requires the host block to actually execute inline <script> content — confirmed working in Rise. Other general-purpose CMS/LMS "HTML" editors (not Rise specifically) may still strip inline scripts by default — see docs/RISE-COMPATIBILITY-MATRIX.md for Moodle’s behavior.',
+      'Confirmed on the date/surfaces logged in docs/COMPATIBILITY-RESULTS.md — re-run docs/RISE-TEST-CHECKLIST.md and add a new row there if a future Rise update changes this.'
     ]
   },
   'rise-zip': {
