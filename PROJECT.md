@@ -40,7 +40,7 @@ Rise Component Builder is a browser-based internal authoring tool for creating c
 - A schema-driven, component-specific export-preflight validation engine (Blocking/Warning/Recommendation severities) covering general content, knowledge-check, media, and hotspot rules, surfaced inline, via item-card badges, a consolidated Preflight panel, and an export gate that blocks only on genuine blocking failures — see `docs/VALIDATION-RULES.md`.
 - WCAG 2.2 AA accessibility coverage for both the builder UI and every exported component — automated axe/keyboard test coverage, an author-configurable embedded-heading level (avoids a forced second `<h1>` in a Rise lesson), builder-chrome contrast/reflow/target-size fixes, and an honest list of what remains manual-only — see `docs/ACCESSIBILITY-CONFORMANCE.md`.
 - A security-hardening pass covering prototype-pollution key rejection on imported project JSON, a minimized iframe sandbox (removed the previously-included `allow-same-origin`, verified unnecessary), a global unexpected-error handler that logs full detail to the console while showing only a generic toast to authors, and a clean dependency audit — see `docs/SECURITY.md`.
-- A productionized media pipeline: image-dimension limits with automatic downscale/compression, content-hash duplicate detection, always-visible local-vs-external and missing-asset indicators, a friendly IndexedDB storage-quota error, a real dependency-free ZIP writer/reader (`js/zip.js`) backing both a Rise Project ZIP export and a portable project package, and an explicit per-export-mode table of which assets are embedded, packaged, referenced, or unsupported — see `docs/MEDIA-ASSET-PIPELINE.md`.
+- A productionized media pipeline: image-dimension limits with automatic downscale/compression, content-hash duplicate detection, always-visible local-vs-external and missing-asset indicators, a friendly IndexedDB storage-quota error, a real dependency-free ZIP writer/reader (`js/zip.js`) backing both a Web Package ZIP export and a portable project package, and an explicit per-export-mode table of which assets are embedded, packaged, referenced, or unsupported — see `docs/MEDIA-ASSET-PIPELINE.md`.
 
 ## Supported component types
 
@@ -88,7 +88,7 @@ There is no application framework, production bundler, backend, or external data
 - Downloadable standalone HTML document
 - Versioned project JSON download and import
 - Versioned theme JSON download and import
-- Rise Project ZIP: a real, deterministic ZIP archive (`index.html` at the root + `assets/`) for components using uploaded media that can't travel through the single-file/paste formats — see `docs/MEDIA-ASSET-PIPELINE.md`
+- Web Package ZIP: a real, deterministic ZIP archive (`index.html` at the root + `assets/`) for components using uploaded media that can't travel through the single-file/paste formats — see `docs/MEDIA-ASSET-PIPELINE.md`
 - Portable project package (`.rise-project.zip`): a saved project's uploaded media travels with it (not just IndexedDB references), importable in a different browser/profile
 - SCORM packaging is visible in Settings as a selectable format, but no package is produced — this remains unimplemented
 
@@ -98,7 +98,7 @@ There is no application framework, production bundler, backend, or external data
 - Theme values are centralized, but some legacy component layout values remain in the shared preview stylesheet rather than being represented as design tokens.
 - Default content for remaining legacy components is coupled to `app.js`.
 - Media is local to the current browser profile and is not included in the plain project JSON export — use the portable project package export for that.
-- Single-file HTML export embeds only small raster images; SVG, large images, audio, video, and captions require the Rise Project ZIP instead (now implemented).
+- Single-file HTML export embeds only small raster images; SVG, large images, audio, video, and captions require the Web Package ZIP instead (now implemented).
 - SCORM export remains a placeholder — no package is produced.
 - AI generation is a local timed simulation, not a connected AI service.
 - Several generated examples depend on external media and Google Fonts being available online.

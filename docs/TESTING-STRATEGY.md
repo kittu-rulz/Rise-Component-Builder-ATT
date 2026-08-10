@@ -108,7 +108,7 @@ tests/
 ├── accessibility.test.mjs          Generated-output accessibility integration tests
 ├── media.test.mjs                  Media validation/storage/export tests
 ├── project-package.test.mjs        Portable project package (.rise-project.zip) round-trip tests
-├── rise-zip.test.mjs               Rise Project ZIP structural tests (asset paths, manifest, missing-asset gating)
+├── rise-zip.test.mjs               Web Package ZIP structural tests (asset paths, manifest, missing-asset gating)
 ├── security.test.mjs               Hostile-input and interpolation tests
 └── themes.test.mjs                 Theme model and persistence tests
 ```

@@ -1227,7 +1227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const zipSizeLabel = document.getElementById('rise-zip-file-size');
     const zipManifestCode = document.getElementById('rise-zip-manifest');
     const zipButton = document.getElementById('btn-download-rise-zip');
-    if (zipWarningBox) { zipWarningBox.hidden = false; zipWarningBox.classList.add('is-loading'); zipWarningBox.textContent = 'Preparing Rise Project ZIP…'; }
+    if (zipWarningBox) { zipWarningBox.hidden = false; zipWarningBox.classList.add('is-loading'); zipWarningBox.textContent = 'Preparing Web Package ZIP…'; }
     try {
       currentRiseZipBundle = await prepareRiseZipBundle();
     } catch (error) {
@@ -1249,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ? `Export blocked: ${bundle.missing.length} required asset${bundle.missing.length === 1 ? ' is' : 's are'} missing from local storage (${bundle.missing.join(', ')}). Re-upload the missing file(s) before exporting.`
         : '';
     }
-    if (zipSizeLabel) zipSizeLabel.textContent = blocked ? '' : `Rise Project ZIP size: ${formatExportedFileSize(bundle.size)}`;
+    if (zipSizeLabel) zipSizeLabel.textContent = blocked ? '' : `Web Package ZIP size: ${formatExportedFileSize(bundle.size)}`;
     if (zipButton) {
       const enabled = canExport && !blocked;
       zipButton.disabled = !enabled;
@@ -1270,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (bundle.warnings.length) {
         currentExportBundle = bundle;
-        showToast('Single-file export is blocked because one or more uploaded assets require separate files. Use the Rise Project ZIP option instead.', 'warning', 7000);
+        showToast('Single-file export is blocked because one or more uploaded assets require separate files. Use the Web Package ZIP option instead.', 'warning', 7000);
         return;
       }
       downloadHtml(title, bundle.html);
@@ -1293,7 +1293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       downloadZipFile(title, bundle.blob);
-      showToast(`Rise Project ZIP downloaded (${formatExportedFileSize(bundle.size)}).`, 'success');
+      showToast(`Web Package ZIP downloaded (${formatExportedFileSize(bundle.size)}).`, 'success');
     });
   }
 

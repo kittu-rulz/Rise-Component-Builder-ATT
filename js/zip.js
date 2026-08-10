@@ -2,7 +2,7 @@
 // compression). This app ships zero runtime dependencies and has no bundler (every
 // module is loaded by the browser as-is, see docs/ARCHITECTURE.md), so a normal npm zip
 // package isn't an option here; this hand-written implementation covers exactly what
-// docs/MEDIA-ASSET-PIPELINE.md's Rise Project ZIP export and the portable project
+// docs/MEDIA-ASSET-PIPELINE.md's Web Package ZIP export and the portable project
 // package need, and nothing more. STORE-only keeps the implementation small and fully
 // deterministic; it is still a fully spec-compliant ZIP archive, readable by any
 // standard unzip tool (Windows Explorer, macOS Archive Utility, 7-Zip, Rise's own

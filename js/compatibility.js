@@ -23,41 +23,48 @@ export const COMPATIBILITY_TIERS = {
 
 // Keyed by the export modal's own `data-export-type` values, plus `standaloneDownload`
 // for the "Download .HTML File" action in the Option B pane.
+// Popup copy stays decision-focused: what this format is for, and what to watch out for.
+// File paths and engineering detail (which test file, which doc) belong in the docs
+// themselves (docs/COMPATIBILITY-RESULTS.md, docs/RISE-COMPATIBILITY-MATRIX.md), not here.
 export const EXPORT_FORMAT_COMPATIBILITY = {
   iframe: {
     tier: 'confirmed',
-    summary: 'Produces a valid, self-contained <iframe srcdoc> that any modern browser renders correctly on its own. Manually confirmed working when pasted into a Rise 360 "Code › Add code" block, in both the authoring preview and a published course (docs/COMPATIBILITY-RESULTS.md).',
+    summary: 'Best for reliable isolation. Paste the snippet into a Rise 360 Code › Add code block.',
     details: [
-      'The iframe’s own sandbox flags and this document’s CSP are real and enforced by any browser regardless of host.',
-      'This format sits inside a fixed-height box (you may need to adjust the height in Rise after pasting). If a component’s content can grow taller than expected, the HTML Block Fragment format sizes itself naturally instead.',
-      'Confirmed on the date/surfaces logged in docs/COMPATIBILITY-RESULTS.md — re-run docs/RISE-TEST-CHECKLIST.md and add a new row there if a future Rise update changes this.'
+      'Keeps the component’s styles and scripts separate from the Rise page.',
+      'Uses a fixed height, which you may need to adjust after pasting.',
+      'Isolation holds as long as Rise accepts the pasted snippet unchanged — a host could still strip attributes or reject srcdoc, though that was not observed in testing.',
+      'If a component needs downloads, popups, forms, or autoplaying media, verify that specific behavior — sandboxing improves isolation but does not by itself guarantee every capability works.',
+      'Confirmed in Rise authoring preview and a published course.'
     ]
   },
   code: {
     tier: 'confirmed',
-    summary: 'Produces the raw HTML/CSS/JS fragment format Rise’s "Code › Add code" block is documented to accept directly. Manually confirmed working in both the authoring preview and a published Rise 360 course (docs/COMPATIBILITY-RESULTS.md).',
+    summary: 'Best when the component should expand naturally with its content. Paste it directly into a Rise 360 Code › Add code block.',
     details: [
-      'This format has no iframe/document boundary of its own, so its CSS class names are not automatically scoped against whatever else is already on the host page — a real, deliberate trade-off, not an oversight (see docs/EXPORT-CONTRACT.md).',
-      'Requires the host block to actually execute inline <script> content — confirmed working in Rise. Other general-purpose CMS/LMS "HTML" editors (not Rise specifically) may still strip inline scripts by default — see docs/RISE-COMPATIBILITY-MATRIX.md for Moodle’s behavior.',
-      'Confirmed on the date/surfaces logged in docs/COMPATIBILITY-RESULTS.md — re-run docs/RISE-TEST-CHECKLIST.md and add a new row there if a future Rise update changes this.'
+      'Automatically expands with its content.',
+      'Shares the host page, so styles could conflict with other content.',
+      'Requires the host platform to allow inline JavaScript.',
+      'Confirmed in Rise authoring preview and a published course.'
     ]
   },
   'rise-zip': {
     tier: 'experimental',
-    summary: 'Packages the exact same compiled document every other export format uses, plus every uploaded asset it references as real files under assets/ — automated by this project (a real ZIP, verified byte-for-byte deterministic and readable by standard unzip tools), but never independently run through an actual Rise course.',
+    summary: 'Best for components containing uploaded audio, video, or large images.',
     details: [
-      'This is not a Rise-native upload format — Rise has no documented "upload a ZIP for a custom block" mechanism. The realistic use is hosting the extracted index.html + assets/ wherever your course’s other external content already lives, then embedding it the same way you would any other externally-hosted page (e.g. an iframe pointed at that URL) — or opening index.html directly to verify it works.',
-      'This is also not a SCORM package (no imsmanifest.xml, no SCORM API wrapper) — see docs/RISE-COMPATIBILITY-MATRIX.md for why SCORM remains unsupported.',
-      'Uploaded audio, video, and large images travel as real files here instead of being blocked (single HTML) or limited to small inlineable images — the concrete reason to prefer this option whenever the component uses uploaded media.',
-      'Follow docs/RISE-TEST-CHECKLIST.md and record the result in docs/COMPATIBILITY-RESULTS.md to move this to Confirmed.'
+      'Includes index.html and referenced media files in an assets folder.',
+      'Extract and host the files on a web server, then embed the hosted page in Rise.',
+      'Cannot be uploaded directly to Rise as a custom block.',
+      'This is not a SCORM package.',
+      'The hosted index.html has not yet been tested embedded inside a published Rise course.'
     ]
   },
   standaloneDownload: {
     tier: 'confirmed',
-    summary: 'Opening the downloaded .html file directly in a browser is the one export path this project has actually automated: the compiled document is exercised by this project’s own Playwright suite in real Chromium, Firefox, and WebKit builds.',
+    summary: 'Opening the downloaded .html file directly works as a plain web page in Chrome, Firefox, and Safari (WebKit).',
     details: [
-      'Automated coverage runs against a local static server and standalone fixture files (tests/e2e/exported-fixtures.spec.js), not against Rise, Moodle, or any LMS — this tier covers "opens and works as a plain web page," nothing about a specific host.',
-      'See docs/RISE-COMPATIBILITY-MATRIX.md for the per-browser breakdown (Firefox and WebKit have caveats noted there).'
+      'This confirms the file opens and runs correctly on its own — it says nothing about compatibility with Rise or any other host.',
+      'Firefox and WebKit pass with minor caveats specific to this project’s own test environment.'
     ]
   }
 };

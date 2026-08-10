@@ -437,14 +437,14 @@
         <div class="export-tabs-container">
           <button class="export-tab active" data-export-type="iframe">Option A: Iframe Snippet (srcdoc)</button>
           <button class="export-tab" data-export-type="code">Option B: HTML Block Fragment</button>
-          <button class="export-tab" data-export-type="rise-zip" id="export-tab-rise-zip">Option C: Rise Project ZIP<span id="rise-zip-recommended-badge" class="badge badge-accent" hidden>Recommended</span></button>
+          <button class="export-tab" data-export-type="rise-zip" id="export-tab-rise-zip">Option C: Web Package ZIP<span id="rise-zip-recommended-badge" class="badge badge-accent" hidden>Recommended</span></button>
         </div>
 
         <div id="export-media-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
 
         <!-- Tab Content: Iframe Link -->
         <div class="export-pane active" id="pane-export-iframe">
-          <p class="modal-desc"><strong>Best for:</strong> components you want fully sealed off from the rest of the course, so their look and behavior can never be disrupted by — or accidentally disrupt — anything else on the page. This is the safest default if you're unsure which option to pick. Copy the code below into a <strong>Code &gt; Add code</strong> block in Rise 360.</p>
+          <p class="modal-desc">Copy the code below and paste it into a <strong>Code &gt; Add code</strong> block in Rise 360.</p>
 
           <div class="code-export-box">
             <div class="code-scroll-area">
@@ -472,7 +472,7 @@
 
         <!-- Tab Content: HTML Code Block -->
         <div class="export-pane" id="pane-export-code">
-          <p class="modal-desc"><strong>Best for:</strong> components that expand, collapse, or change size — like accordions, timelines, or knowledge checks — since this fragment grows and shrinks naturally with your content instead of sitting inside a fixed-height box. Paste it into a <strong>Code &gt; Add code</strong> block in Rise 360, the same as the Iframe Snippet option. If this component includes uploaded audio, video, or a large image, use <strong>Option C: Rise Project ZIP</strong> instead — those files don't fit safely inside this format.</p>
+          <p class="modal-desc">Paste it directly into a <strong>Code &gt; Add code</strong> block in Rise 360. If this component includes uploaded audio, video, or a large image, use <strong>Option C: Web Package ZIP</strong> instead — those files don't fit safely inside this format.</p>
 
           <div class="code-export-box">
             <div class="code-scroll-area">
@@ -501,9 +501,9 @@
           </div>
         </div>
 
-        <!-- Tab Content: Rise Project ZIP -->
+        <!-- Tab Content: Web Package ZIP -->
         <div class="export-pane" id="pane-export-rise-zip">
-          <p class="modal-desc"><strong>Best for:</strong> components that include uploaded audio, video, or a large image. This packages everything as real files — <code>index.html</code> plus an <code>assets</code> folder — instead of trying to cram them into a single HTML block, which either blocks the download or bloats it with inline data. Unzip it and upload the files wherever your course's other media already lives, or open <code>index.html</code> directly first to double-check it looks right.</p>
+          <p class="modal-desc">Extract the ZIP and host <code>index.html</code> plus its <code>assets</code> folder on a web server, then embed that hosted page in Rise the same way you would any other externally-hosted page — this cannot be uploaded to Rise directly as a custom block.</p>
 
           <div id="rise-zip-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
           <div id="rise-zip-blocking" class="field-error" role="alert" hidden></div>
@@ -512,7 +512,7 @@
           <div class="action-buttons-row">
             <button id="btn-download-rise-zip" class="btn btn-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              <span>Download Rise Project ZIP</span>
+              <span>Download Web Package ZIP</span>
             </button>
           </div>
           <details class="export-manifest-details">

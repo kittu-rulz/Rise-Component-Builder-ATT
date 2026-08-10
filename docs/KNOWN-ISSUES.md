@@ -4,7 +4,7 @@ Only confirmed or directly observable implementation limitations are listed here
 
 ## Placeholders
 
-- **Resolved**: ZIP export is now real — "Rise Project ZIP" (component + its media, `js/export.js#buildRiseProjectZip`) and "Project package" (a re-importable Builder project + its media, `js/project-package.js`) both produce genuine, deterministic ZIP archives (`js/zip.js`). See `docs/MEDIA-ASSET-PIPELINE.md` and `docs/EXPORT-CONTRACT.md`. **SCORM packaging remains entirely unimplemented** — no `imsmanifest.xml`, no SCORM API wrapper.
+- **Resolved**: ZIP export is now real — "Web Package ZIP" (component + its media, `js/export.js#buildRiseProjectZip`) and "Project package" (a re-importable Builder project + its media, `js/project-package.js`) both produce genuine, deterministic ZIP archives (`js/zip.js`). See `docs/MEDIA-ASSET-PIPELINE.md` and `docs/EXPORT-CONTRACT.md`. **SCORM packaging remains entirely unimplemented** — no `imsmanifest.xml`, no SCORM API wrapper.
 - The export modal contains initial example code in the HTML source, although `app.js` replaces it with generated output when the modal opens.
 
 ## Coupling and duplication (the primary architecture debt) — resolved
@@ -46,7 +46,7 @@ See `docs/EXPORT-CONTRACT.md` for the full specification; the confirmed gaps are
 - HTML fragment export assumes the target accepts inline styles and scripts.
 - External media requires network access after export; Google Fonts does too, but degrades gracefully to a system sans-serif font when unreachable (confirmed by `tests/e2e/exported-fixtures.spec.js`) rather than breaking.
 - Small raster images can be embedded in standalone HTML. SVG, large images, audio, video, and captions are converted to asset-relative paths and block the single-file download with a warning.
-- **Resolved**: the Rise Project ZIP export now produces a real, downloadable archive (`index.html` + `assets/` + `assets/manifest.json`) — see `docs/MEDIA-ASSET-PIPELINE.md`. SCORM 1.2/2004 packaging still does not exist at all.
+- **Resolved**: the Web Package ZIP export now produces a real, downloadable archive (`index.html` + `assets/` + `assets/manifest.json`) — see `docs/MEDIA-ASSET-PIPELINE.md`. SCORM 1.2/2004 packaging still does not exist at all.
 - Full Rise/Moodle/SCORM compatibility classification, an in-app compatibility report, and manual test checklists are now tracked in `docs/RISE-COMPATIBILITY-MATRIX.md`, `docs/RISE-TEST-CHECKLIST.md`, `docs/MOODLE-SCORM-TEST-CHECKLIST.md`, and `docs/COMPATIBILITY-RESULTS.md` — see those for exactly what is Confirmed vs. Preview vs. Fallback vs. Unsupported, and why.
 - Completion is a `postMessage` signal only (`docs/COMPLETION-INTEGRATION.md`), sent when a completion-tracked component is embedded. Rise lesson completion, SCORM completion (1.2/2004), LMS course completion, and xAPI statement generation are all **unsupported** — no code exists for any of them, and whether any host actually consumes the completion message is not verified.
 
