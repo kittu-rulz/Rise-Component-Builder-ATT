@@ -225,10 +225,10 @@ function checkCompletionConfig(config, settings) {
   }
   if (settings && !settings.completionParentOrigin) {
     issues.push(issue('general-invalid-completion-config', SEVERITY.RECOMMENDATION, CATEGORY.GENERAL,
-      'Consider setting an expected parent frame origin in Builder Settings to target the completion message at a specific origin instead of any origin — see docs/COMPLETION-INTEGRATION.md.'));
+      'Optional: Builder Settings has an "Expected parent frame origin" field for extra security. Most authors can leave it blank.'));
   }
   issues.push(issue('general-completion-iframe-format', SEVERITY.WARNING, CATEGORY.GENERAL,
-    'Completion tracking is on. If you export this using Option A (Iframe Snippet), Rise\'s own sandbox already isolates whatever you paste, and wrapping it in another iframe nests it one level too deep for Rise\'s Continue-block gating to detect completion — confirmed by live testing (docs/COMPATIBILITY-RESULTS.md, 2026-08-12). Use Option B (HTML Block Fragment) instead when completion tracking is required.'));
+    'Completion tracking is on — when pasting into Rise, use Option B (HTML Block Fragment). Option A (Iframe Snippet) won\'t let Rise detect that this block is complete.'));
   return issues;
 }
 
