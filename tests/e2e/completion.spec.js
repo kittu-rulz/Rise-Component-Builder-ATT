@@ -55,6 +55,24 @@ test.describe('viewing all required accordion items', () => {
   });
 });
 
+test.describe('completion success message', () => {
+  test('the configured completion message becomes visible on screen once every item is viewed', async ({ page }) => {
+    const html = compileExportFixture('accordion', {
+      configOverrides: { trackCompletion: true, completionMsg: 'Nice work, all done!' }
+    });
+    const frame = await embedInHost(page, html);
+    const messageLocator = frame.locator('[id$="-completion-message"]');
+    await expect(messageLocator).toBeHidden();
+
+    const triggers = frame.locator('.accordion-trigger');
+    const count = await triggers.count();
+    for (let i = 0; i < count; i += 1) await triggers.nth(i).click();
+
+    await expect(messageLocator).toBeVisible();
+    await expect(messageLocator).toHaveText('Nice work, all done!');
+  });
+});
+
 test.describe('revisiting an item', () => {
   test('opening the same item repeatedly does not fire completion early', async ({ page }) => {
     const html = compileExportFixture('accordion', { configOverrides: { trackCompletion: true } });

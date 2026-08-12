@@ -270,6 +270,13 @@
       transition: width 0.3s ease;
     }
 
+    .completion-success-message {
+      margin: 12px 0 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         scroll-behavior: auto !important;
@@ -318,6 +325,7 @@
         <div class="progress-bar-container" id="rcb-fixture-flip-cards-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-flip-cards-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
           <div class="progress-fill" id="rcb-fixture-flip-cards-progress-fill"></div>
         </div>
+        <p id="rcb-fixture-flip-cards-completion-message" class="completion-success-message" hidden></p>
       </div>
     <div id="rcb-fixture-flip-cards-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   </main>
@@ -352,6 +360,11 @@
       if (percent < 100) return;
       if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
       announce(completionMessage);
+      var messageEl = document.getElementById('rcb-fixture-flip-cards-completion-message');
+      if (messageEl) {
+        messageEl.textContent = completionMessage;
+        messageEl.hidden = false;
+      }
       RiseComponentCompletion.notifyComplete();
     }
 

@@ -114,6 +114,13 @@ export const SHARED_A11Y_CSS = `
       transition: width 0.3s ease;
     }
 
+    .completion-success-message {
+      margin: 12px 0 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         scroll-behavior: auto !important;
@@ -174,6 +181,11 @@ export function renderSharedA11yScript({ instanceId, trackCompletion, totalItems
       if (percent < 100) return;
       if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
       announce(completionMessage);
+      var messageEl = document.getElementById('${instanceId}-completion-message');
+      if (messageEl) {
+        messageEl.textContent = completionMessage;
+        messageEl.hidden = false;
+      }
       RiseComponentCompletion.notifyComplete();
     }
 
@@ -295,5 +307,6 @@ export function renderCompletionTrackerHTML(instanceId, trackCompletion) {
         <div class="progress-bar-container" id="${instanceId}-progress-bar" role="progressbar" aria-labelledby="${instanceId}-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
           <div class="progress-fill" id="${instanceId}-progress-fill"></div>
         </div>
+        <p id="${instanceId}-completion-message" class="completion-success-message" hidden></p>
       </div>`;
 }
