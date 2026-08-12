@@ -36,7 +36,11 @@ export const editorSchemas = {
     itemFields: [field('title', 'Tab Label', 'text', { required: true, default: 'New Tab', maxLength: 40 }), field('content', 'Tab Content', 'richtext', { required: true, default: 'Add tab content.' })]
   },
   'flip-cards': {
-    itemLabel: 'Card Face', minItems: 2,
+    // Items pair up two-at-a-time into one flip card each (index 0+1 = card 1's
+    // front+back, 2+3 = card 2's, ...) — see components/flip-cards.js#generateHTML.
+    // pairLabels makes that pairing visible in the editor's item headings instead of
+    // a flat "Card Face 1, 2, 3, 4" that gives no hint two entries make one card.
+    itemLabel: 'Card Face', minItems: 2, pairLabels: ['Front', 'Back'],
     itemFields: [
       field('title', 'Face Title', 'text', { required: true, default: 'Card Face' }),
       field('content', 'Face Content', 'richtext', { required: true, default: 'Add card content.' }),

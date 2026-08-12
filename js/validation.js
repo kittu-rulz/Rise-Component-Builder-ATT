@@ -24,7 +24,7 @@
 import { validateSchemaField } from './field-validation.js';
 import { isMediaReference, resolveMediaLimits, validateMediaAccessibility } from './media.js';
 import { getMediaRecord } from './media-storage.js';
-import { sanitizeRichText, sanitizeURL } from './utilities.js';
+import { formatItemLabel, sanitizeRichText, sanitizeURL } from './utilities.js';
 import { contrastRatio, resolveThemeTokens } from './themes.js';
 
 export const SEVERITY = Object.freeze({
@@ -202,7 +202,7 @@ function checkDuplicateItems(schema, config) {
     const key = `${primary}::${secondary}`;
     if (seen.has(key)) {
       issues.push(issue('general-duplicate-items', SEVERITY.WARNING, CATEGORY.GENERAL,
-        `${schema.itemLabel || 'Item'} ${itemIndex + 1} appears to duplicate ${schema.itemLabel || 'item'} ${seen.get(key) + 1} — same title and content.`,
+        `${formatItemLabel(schema, itemIndex)} appears to duplicate ${formatItemLabel(schema, seen.get(key))} — same title and content.`,
         { itemIndex }));
     } else {
       seen.set(key, itemIndex);

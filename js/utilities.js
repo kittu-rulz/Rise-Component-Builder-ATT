@@ -60,6 +60,17 @@ export async function copyTextToClipboard(value, options = {}) {
   return true;
 }
 
+// Numbers a schema item for display. Most schemas number flatly ("Tab 1", "Tab 2").
+// A schema with `pairLabels` (e.g. flip-cards' ['Front', 'Back']) numbers by pair
+// instead, so items that combine N-at-a-time into one output unit read as
+// "Card Face 1 (Front)"/"Card Face 1 (Back)" rather than a flat, unrelated-looking
+// 1/2/3/4 that gives no hint which entries belong together.
+export function formatItemLabel(schema, index) {
+  if (!schema.pairLabels) return `${schema.itemLabel} ${index + 1}`;
+  const pairSize = schema.pairLabels.length;
+  return `${schema.itemLabel} ${Math.floor(index / pairSize) + 1} (${schema.pairLabels[index % pairSize]})`;
+}
+
 export function generateHtmlFragment(fullHtml) {
   const styleMatch = fullHtml.match(/<style>([\s\S]*?)<\/style>/i);
   const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);

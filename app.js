@@ -18,7 +18,7 @@ import {
   buildExportPayload, buildRiseProjectZip, downloadHtml, downloadProjectJson,
   downloadZipFile, formatExportedFileSize, getExportedFileSize, prepareMediaExport
 } from './js/export.js';
-import { copyTextToClipboard, escapeHTML, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
+import { copyTextToClipboard, escapeHTML, formatItemLabel, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
 import { showToast } from './js/toast.js';
 import { COMPATIBILITY_TIERS, getExportFormatCompatibility } from './js/compatibility.js';
 import { collectSyncIssues, runPreflight, summarizePreflight } from './js/validation.js';
@@ -777,7 +777,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     items.forEach((item, index) => {
       (schema.itemFields || []).forEach(field => {
         validateSchemaField(field, item[field.id], items)
-          .forEach(message => errors.push(`${schema.itemLabel} ${index + 1}: ${message}`));
+          .forEach(message => errors.push(`${formatItemLabel(schema, index)}: ${message}`));
       });
     });
 

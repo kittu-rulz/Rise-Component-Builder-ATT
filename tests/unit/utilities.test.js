@@ -1,11 +1,27 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
-  copyTextToClipboard, escapeAttribute, escapeHTML, escapeJavaScriptString, sanitizeRichText, sanitizeURL, slugify, toRgba
+  copyTextToClipboard, escapeAttribute, escapeHTML, escapeJavaScriptString, formatItemLabel, sanitizeRichText, sanitizeURL, slugify, toRgba
 } from '../../js/utilities.js';
 import { sanitizeAssetFilename } from '../../js/media.js';
 import { createProjectId, validateProject } from '../../js/storage.js';
 import { contrastRatio, validateTheme } from '../../js/themes.js';
 import { invalidProject, invalidTheme, multilingualText, unsafeText, validProject } from '../fixtures/index.js';
+
+describe('formatItemLabel', () => {
+  test('numbers flatly for a schema with no pairLabels', () => {
+    const schema = { itemLabel: 'Tab' };
+    expect(formatItemLabel(schema, 0)).toBe('Tab 1');
+    expect(formatItemLabel(schema, 3)).toBe('Tab 4');
+  });
+
+  test('numbers by pair for a schema with pairLabels, cycling through the labels', () => {
+    const schema = { itemLabel: 'Card Face', pairLabels: ['Front', 'Back'] };
+    expect(formatItemLabel(schema, 0)).toBe('Card Face 1 (Front)');
+    expect(formatItemLabel(schema, 1)).toBe('Card Face 1 (Back)');
+    expect(formatItemLabel(schema, 2)).toBe('Card Face 2 (Front)');
+    expect(formatItemLabel(schema, 3)).toBe('Card Face 2 (Back)');
+  });
+});
 
 describe('context-specific utilities', () => {
   test('copyTextToClipboard uses the Clipboard API when it is available', async () => {

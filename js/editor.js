@@ -1,5 +1,5 @@
 import { createDefaultItem } from './editor-schemas.js';
-import { sanitizeRichText } from './utilities.js';
+import { formatItemLabel, sanitizeRichText } from './utilities.js';
 import { isMediaReference } from './media.js';
 import { createMediaUploadControl } from './media-upload.js';
 import { getAccessibilityWarning, isEmpty, validateSchemaField } from './field-validation.js';
@@ -246,7 +246,7 @@ export function createSchemaItemEditor({ container, onChange }) {
       const summaryField = schema.itemFields.find(schemaField => !isEmpty(item[schemaField.id]));
       const summaryValue = summaryField ? item[summaryField.id] : '';
       const summary = summaryField ? String(isMediaReference(summaryValue) ? summaryValue.name : summaryValue).replace(/\s+/g, ' ').slice(0, 48) : '';
-      heading.textContent = `${collapsed ? '▸' : '▾'} ${schema.itemLabel} ${index + 1}${summary ? ` — ${summary}` : ''}`;
+      heading.textContent = `${collapsed ? '▸' : '▾'} ${formatItemLabel(schema, index)}${summary ? ` — ${summary}` : ''}`;
       heading.setAttribute('aria-expanded', String(!collapsed));
       heading.addEventListener('click', () => {
         if (collapsed) collapsedItems.delete(item); else collapsedItems.add(item);
