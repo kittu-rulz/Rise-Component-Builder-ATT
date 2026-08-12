@@ -64,8 +64,15 @@ export async function copyTextToClipboard(value, options = {}) {
 // A schema with `pairLabels` (e.g. flip-cards' ['Front', 'Back']) numbers by pair
 // instead, so items that combine N-at-a-time into one output unit read as
 // "Card Face 1 (Front)"/"Card Face 1 (Back)" rather than a flat, unrelated-looking
-// 1/2/3/4 that gives no hint which entries belong together.
+// 1/2/3/4 that gives no hint which entries belong together. A schema with `roleLabels`
+// (e.g. scenario's ['Prompt', 'Choice']) marks item 0 as playing a different role than
+// every item after it, which is otherwise invisible since every item shares the same
+// fields regardless of role — see components/scenario.js#generateHTML.
 export function formatItemLabel(schema, index) {
+  if (schema.roleLabels) {
+    const role = index === 0 ? schema.roleLabels[0] : `${schema.roleLabels[1]} ${index}`;
+    return `${schema.itemLabel} ${index + 1} (${role})`;
+  }
   if (!schema.pairLabels) return `${schema.itemLabel} ${index + 1}`;
   const pairSize = schema.pairLabels.length;
   return `${schema.itemLabel} ${Math.floor(index / pairSize) + 1} (${schema.pairLabels[index % pairSize]})`;

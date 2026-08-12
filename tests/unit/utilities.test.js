@@ -21,6 +21,14 @@ describe('formatItemLabel', () => {
     expect(formatItemLabel(schema, 2)).toBe('Card Face 2 (Front)');
     expect(formatItemLabel(schema, 3)).toBe('Card Face 2 (Back)');
   });
+
+  test('marks item 0 with the first role label and numbers every later item under the second, for a schema with roleLabels', () => {
+    const schema = { itemLabel: 'Scenario Entry', roleLabels: ['Prompt', 'Choice'] };
+    expect(formatItemLabel(schema, 0)).toBe('Scenario Entry 1 (Prompt)');
+    expect(formatItemLabel(schema, 1)).toBe('Scenario Entry 2 (Choice 1)');
+    expect(formatItemLabel(schema, 2)).toBe('Scenario Entry 3 (Choice 2)');
+    expect(formatItemLabel(schema, 3)).toBe('Scenario Entry 4 (Choice 3)');
+  });
 });
 
 describe('context-specific utilities', () => {

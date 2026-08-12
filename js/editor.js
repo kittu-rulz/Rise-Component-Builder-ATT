@@ -269,13 +269,14 @@ export function createSchemaItemEditor({ container, onChange }) {
       addButton('⠿', 'Drag to reorder', event => event.preventDefault(), false, 'drag-handle');
       addButton('↑', 'Move item up', () => move(index, index - 1), index === 0);
       addButton('↓', 'Move item down', () => move(index, index + 1), index === items.length - 1);
-      addButton('⧉', 'Duplicate item', () => {
+      const atMaxItems = Number.isInteger(schema.maxItems) && items.length >= schema.maxItems;
+      addButton('⧉', atMaxItems ? `Only ${schema.maxItems} ${schema.itemLabel.toLowerCase()}${schema.maxItems === 1 ? '' : 's'} allowed` : 'Duplicate item', () => {
         const duplicate = structuredClone(item);
         schema.itemFields.filter(field => field.groupAcrossItems).forEach(field => { duplicate[field.id] = false; });
         items.splice(index + 1, 0, duplicate);
         onChange();
         render(lastRender);
-      });
+      }, atMaxItems);
       addButton('×', 'Delete item', () => {
         items.splice(index, 1);
         onChange();

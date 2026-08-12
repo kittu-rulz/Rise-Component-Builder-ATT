@@ -517,6 +517,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const schema = appState.selectedComponent?.editorSchema || componentCatalog[0].editorSchema;
     schemaItemEditor.render({ schema, items: appState.config.items, config: appState.config, limits: resolveMediaLimits(appState.settings.mediaLimitsMb) });
     refreshItemIssueBadges();
+    updateAddItemButtonState(schema);
+  }
+
+  // Some components (audio-player, video-frame) only ever render their first item —
+  // maxItems stops the author from adding a 2nd/3rd entry that would be accepted and
+  // saved but never appear anywhere. See js/editor-schemas.js for which schemas set it.
+  function updateAddItemButtonState(schema) {
+    const atMaxItems = Number.isInteger(schema.maxItems) && appState.config.items.length >= schema.maxItems;
+    btnAddItem.disabled = atMaxItems;
+    const title = atMaxItems
+      ? `This component only supports ${schema.maxItems} ${schema.itemLabel.toLowerCase()}${schema.maxItems === 1 ? '' : 's'}.`
+      : '';
+    btnAddItem.title = title;
+    if (title) btnAddItem.setAttribute('aria-label', `Add Item — ${title}`); else btnAddItem.removeAttribute('aria-label');
   }
 
   function refreshItemIssueBadges() {

@@ -110,7 +110,12 @@ export const editorSchemas = {
     itemFields: [...contentFields, field('durationMinutes', 'Estimated Duration', 'number', { required: false, default: 5, min: 0, max: 999, step: 1 })]
   },
   scenario: {
-    itemLabel: 'Scenario Entry', minItems: 2,
+    // Item 0 is the dialogue prompt; every item after it is a selectable choice button
+    // — see components/scenario.js#generateHTML (`items[0]` vs `items.slice(1)`).
+    // roleLabels makes that first-item-is-different-in-kind structure visible in the
+    // editor instead of a flat "Scenario Entry 1, 2, 3" that reads as if all entries
+    // are the same kind of thing.
+    itemLabel: 'Scenario Entry', minItems: 2, roleLabels: ['Prompt', 'Choice'],
     itemFields: [field('title', 'Scene or Choice Label', 'text', { required: true, default: 'New Scenario Entry' }), field('content', 'Dialogue or Feedback', 'richtext', { required: true, default: 'Add scenario content.' })]
   },
   'profile-cards': {
@@ -133,7 +138,11 @@ export const editorSchemas = {
     itemFields: [...contentFields, field('highlighted', 'Highlight This Option', 'checkbox', { default: false }), field('actionUrl', 'Action URL', 'url', { required: false, default: '' })]
   },
   'audio-player': {
-    itemLabel: 'Audio Track', minItems: 1,
+    // The player only ever renders items[0] (components/audio-player.js#generateHTML)
+    // — it plays one track, not a playlist. maxItems stops the editor from letting an
+    // author add a 2nd/3rd track that would be silently accepted but never shown
+    // anywhere (not in preview, not in the export).
+    itemLabel: 'Audio Track', minItems: 1, maxItems: 1,
     itemFields: [
       field('title', 'Audio Title', 'text', { required: true, default: 'New Audio Track' }),
       field('content', 'Audio Source', 'audio', { required: true, default: '' }),
@@ -142,7 +151,9 @@ export const editorSchemas = {
     ]
   },
   'video-frame': {
-    itemLabel: 'Video', minItems: 1,
+    // Same reasoning as audio-player above: only items[0] is ever rendered
+    // (components/video-frame.js#generateHTML) — one embedded video, not a playlist.
+    itemLabel: 'Video', minItems: 1, maxItems: 1,
     itemFields: [
       field('title', 'Accessible Video Title', 'text', { required: true, default: 'New Video' }),
       field('content', 'Video Source', 'video', { required: true, default: '' }),
