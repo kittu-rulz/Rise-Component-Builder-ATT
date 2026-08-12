@@ -136,9 +136,6 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
   // "Required vs. optional completion".
   const completionAdapterScript = c.trackCompletion
     ? renderCompletionAdapterScript({
-        componentId: compId,
-        componentVersion: entry.version,
-        instanceId,
         allowedOrigin: appState.settings?.completionParentOrigin || null
       })
     : '';

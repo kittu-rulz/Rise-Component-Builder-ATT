@@ -200,16 +200,6 @@ export function renderSharedA11yScript({ instanceId, trackCompletion, totalItems
       }
       setProgressAccessibility(100);
       evaluateComponentCompletion(100);
-    }
-
-    // Inbound-reset target (js/completion.js calls this by name after validating a
-    // 'reset' message): clears interaction progress and re-arms completion so a fresh
-    // completion can fire again later.
-    function resetComponentProgress() {
-      viewedItems = new Set();
-      updateProgress();
-      if (typeof RiseComponentCompletion !== 'undefined') RiseComponentCompletion.reset();
-      announce('Progress reset.');
     }`;
 }
 

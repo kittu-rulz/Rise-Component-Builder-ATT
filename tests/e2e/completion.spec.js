@@ -7,6 +7,9 @@ import { compileExportFixture } from '../fixtures/export-fixture-definitions.mjs
 // file doesn't duplicate). A minimal host page embeds the compiled accordion export via
 // a plain <iframe> (no builder app involved), exactly modeling "an exported component
 // pasted into some host page" without assuming that host is Rise or Moodle.
+//
+// The outbound message is exactly Rise's own documented "Vibe Coding" completion contract:
+// window.parent.postMessage({ type: 'complete' }, '*') — no envelope, no reset protocol.
 
 const HOST_HTML = `<!doctype html>
 <html>
@@ -39,7 +42,7 @@ function collectErrors(page) {
 }
 
 test.describe('viewing all required accordion items', () => {
-  test('viewing every item fires exactly one completion message with the documented envelope', async ({ page }) => {
+  test('viewing every item fires exactly one completion message matching Rise\'s documented contract', async ({ page }) => {
     const html = compileExportFixture('accordion', { configOverrides: { trackCompletion: true } });
     const frame = await embedInHost(page, html);
     const triggers = frame.locator('.accordion-trigger');
@@ -48,12 +51,7 @@ test.describe('viewing all required accordion items', () => {
 
     await expect.poll(() => page.evaluate(() => window.__messages.length)).toBe(1);
     const message = await page.evaluate(() => window.__messages[0]);
-    expect(message).toMatchObject({
-      channel: 'rise-component-builder', schemaVersion: 1, type: 'completion',
-      componentId: 'accordion', componentVersion: '1.0.0', status: 'completed'
-    });
-    expect(typeof message.instanceId).toBe('string');
-    expect(typeof message.timestamp).toBe('string');
+    expect(message).toEqual({ type: 'complete' });
   });
 });
 
@@ -97,34 +95,6 @@ test.describe('completion firing once', () => {
     for (let i = 0; i < count; i += 1) { await triggers.nth(i).click(); await triggers.nth(i).click(); }
     await page.waitForTimeout(200);
     expect(await page.evaluate(() => window.__messages.length)).toBe(1);
-  });
-});
-
-test.describe('resetting', () => {
-  test('a valid reset message clears progress and re-arms completion for a second cycle', async ({ page }) => {
-    const html = compileExportFixture('accordion', { configOverrides: { trackCompletion: true } });
-    const frame = await embedInHost(page, html);
-    const triggers = frame.locator('.accordion-trigger');
-    const count = await triggers.count();
-    for (let i = 0; i < count; i += 1) await triggers.nth(i).click();
-    await expect.poll(() => page.evaluate(() => window.__messages.length)).toBe(1);
-
-    await page.evaluate(() => {
-      document.getElementById('frame').contentWindow.postMessage(
-        { channel: 'rise-component-builder', schemaVersion: 1, type: 'reset' }, '*'
-      );
-    });
-    await expect(frame.locator('[role="progressbar"]')).toHaveAttribute('aria-valuenow', '0');
-
-    // reset() clears tracked progress only — it does not close the accordion's own
-    // already-open items (a deliberate separation: reset is a completion-tracking
-    // concern, not a UI-state concern). All items are still open from the first pass,
-    // so re-viewing them means collapse-then-reopen each one to generate a fresh
-    // "expand" interaction the accordion actually counts as a view.
-    for (let i = 0; i < count; i += 1) { await triggers.nth(i).click(); await triggers.nth(i).click(); }
-    await expect.poll(() => page.evaluate(() => window.__messages.length)).toBe(2);
-    const second = await page.evaluate(() => window.__messages[1]);
-    expect(second.type).toBe('completion');
   });
 });
 
@@ -175,35 +145,8 @@ test.describe('unsupported parent integration', () => {
   });
 });
 
-test.describe('malformed parent messages', () => {
-  test('unrecognized or malformed inbound messages are ignored, never causing a reset or a crash', async ({ page }) => {
-    const html = compileExportFixture('accordion', { configOverrides: { trackCompletion: true } });
-    const errors = collectErrors(page);
-    const frame = await embedInHost(page, html);
-    const triggers = frame.locator('.accordion-trigger');
-    await triggers.first().click();
-    await triggers.nth(1).click();
-
-    const bogusMessages = [
-      null, 'a plain string', 42, { type: 'reset' }, // missing channel/schemaVersion
-      { channel: 'some-other-channel', schemaVersion: 1, type: 'reset' },
-      { channel: 'rise-component-builder', schemaVersion: 999, type: 'reset' },
-      { channel: 'rise-component-builder', schemaVersion: 1, type: 'not-a-real-type' }
-    ];
-    for (const payload of bogusMessages) {
-      await page.evaluate(data => {
-        document.getElementById('frame').contentWindow.postMessage(data, '*');
-      }, payload);
-    }
-    await page.waitForTimeout(200);
-
-    // Progress must be unaffected (2 of 3 items still viewed — not reset to 0).
-    const bar = frame.locator('[role="progressbar"]');
-    expect(await bar.getAttribute('aria-valuenow')).not.toBe('0');
-    expect(errors).toEqual([]);
-  });
-
-  test('a configured expected origin rejects messages from a different origin', async ({ page }) => {
+test.describe('configured target origin', () => {
+  test('a configured completionParentOrigin that does not match the real host origin means the message never arrives', async ({ page }) => {
     const html = compileExportFixture('accordion', {
       configOverrides: { trackCompletion: true },
       settings: { completionParentOrigin: 'https://example.com' }
@@ -220,15 +163,5 @@ test.describe('malformed parent messages', () => {
     // own postMessage delivery rules silently drop mismatched targetOrigin messages.
     await page.waitForTimeout(200);
     expect(await page.evaluate(() => window.__messages.length)).toBe(0);
-
-    // And a same-origin (i.e. real, mismatched-vs-configured) reset attempt is also
-    // rejected by the adapter's own inbound origin check — progress stays at 100.
-    await page.evaluate(() => {
-      document.getElementById('frame').contentWindow.postMessage(
-        { channel: 'rise-component-builder', schemaVersion: 1, type: 'reset' }, '*'
-      );
-    });
-    await page.waitForTimeout(200);
-    await expect(frame.locator('[id$="-completion-text"]')).toHaveText('100%');
   });
 });

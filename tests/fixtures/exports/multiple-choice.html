@@ -387,36 +387,11 @@
       evaluateComponentCompletion(100);
     }
 
-    // Inbound-reset target (js/completion.js calls this by name after validating a
-    // 'reset' message): clears interaction progress and re-arms completion so a fresh
-    // completion can fire again later.
-    function resetComponentProgress() {
-      viewedItems = new Set();
-      updateProgress();
-      if (typeof RiseComponentCompletion !== 'undefined') RiseComponentCompletion.reset();
-      announce('Progress reset.');
-    }
-
     var RiseComponentCompletion = (function() {
-      var CHANNEL = "rise-component-builder";
-      var SCHEMA_VERSION = 1;
-      var componentId = "multiple-choice";
-      var componentVersion = "1.0.0";
-      var instanceId = "rcb-fixture-multiple-choice";
       var allowedOrigin = null;
       var hasCompletedFlag = false;
 
       function targetOrigin() { return allowedOrigin || '*'; }
-
-      function buildEnvelope(type, extra) {
-        var envelope = {
-          channel: CHANNEL, schemaVersion: SCHEMA_VERSION, type: type,
-          componentId: componentId, componentVersion: componentVersion, instanceId: instanceId,
-          timestamp: new Date().toISOString()
-        };
-        if (extra) { for (var key in extra) { if (extra.hasOwnProperty(key)) envelope[key] = extra[key]; } }
-        return envelope;
-      }
 
       function isEmbedded() {
         try { return Boolean(window.parent) && window.parent !== window; }
@@ -432,38 +407,17 @@
 
       var adapterName = selectAdapterName();
 
-      function send(envelope) {
-        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
-        try { window.parent.postMessage(envelope, targetOrigin()); }
-        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
-      }
-
       function notifyComplete() {
         if (hasCompletedFlag) return; // prevent duplicate completion events
         hasCompletedFlag = true;
-        send(buildEnvelope('completion', { status: 'completed' }));
+        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
+        try { window.parent.postMessage({ type: 'complete' }, targetOrigin()); }
+        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
       }
 
       function hasCompleted() { return hasCompletedFlag; }
 
-      function resetCompletionState() { hasCompletedFlag = false; }
-
-      function isValidInboundMessage(data) {
-        if (!data || typeof data !== 'object') return false;
-        if (data.channel !== CHANNEL || data.schemaVersion !== SCHEMA_VERSION) return false;
-        if (data.type !== 'reset') return false; // 'reset' is the only supported inbound command today
-        if (data.instanceId && data.instanceId !== instanceId) return false; // targeted at a different instance
-        return true;
-      }
-
-      window.addEventListener('message', function(event) {
-        if (allowedOrigin && event.origin !== allowedOrigin) return; // origin check, when configured
-        if (!isValidInboundMessage(event.data)) return; // silently ignore anything malformed/unrecognized
-        resetCompletionState();
-        if (typeof resetComponentProgress === 'function') resetComponentProgress();
-      });
-
-      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, reset: resetCompletionState, adapterName: adapterName };
+      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
     })();
 
     var selectedOptionIndex = null;
