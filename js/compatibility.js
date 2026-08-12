@@ -35,6 +35,7 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
       'Uses a fixed height, which you may need to adjust after pasting.',
       'Isolation holds as long as Rise accepts the pasted snippet unchanged — a host could still strip attributes or reject srcdoc, though that was not observed in testing.',
       'If a component needs downloads, popups, forms, or autoplaying media, verify that specific behavior — sandboxing improves isolation but does not by itself guarantee every capability works.',
+      'If this component uses completion tracking, use Option B (HTML Block Fragment) instead — Rise already sandboxes whatever you paste, and this format\'s extra iframe nests it one level too deep for Rise\'s own Continue-block gating to detect completion (confirmed by live testing, 2026-08-12).',
       'Confirmed in Rise authoring preview and a published course.'
     ]
   },

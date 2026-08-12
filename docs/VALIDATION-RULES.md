@@ -40,6 +40,7 @@ This is the full catalog of the schema-driven, component-specific validation eng
 | `general-insufficient-contrast` | Warning | Checks the color pairs this specific component actually renders (body text/card background, muted text/card background, button text/primary), using the fully resolved theme + per-component-override colors, against the WCAG AA 4.5:1 minimum for normal text. |
 | `general-duplicate-items` | Warning | Two items share the same normalized primary field (`title`/`label`) *and* the same `content` — see "Duplicate IDs", below, for why this is the rule's actual scope. |
 | `general-invalid-completion-config` | Blocking / Warning / Recommendation | Blocking: completion required with zero items (can never complete). Warning: completion required with an empty completion message. Recommendation: completion required with no configured parent origin (see `docs/COMPLETION-INTEGRATION.md`). |
+| `general-completion-iframe-format` | Warning | Completion tracking is on. Confirmed by live testing (`docs/COMPATIBILITY-RESULTS.md`, 2026-08-12): Option A (Iframe Snippet) nests the component one level too deep inside Rise's own sandbox for Rise's Continue-block gating to detect the completion signal — Option B (HTML Block Fragment) does not have this problem. Fires unconditionally whenever completion tracking is on, since Preflight runs before the author picks an export format. |
 
 ### "Duplicate IDs", precisely scoped
 

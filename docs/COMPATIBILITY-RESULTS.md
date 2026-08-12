@@ -21,6 +21,7 @@ Add a new row every time you run `docs/RISE-TEST-CHECKLIST.md`, test the Web Pac
 | — | — | Rise share-link preview | — | **Not yet tested** | Follow `docs/RISE-TEST-CHECKLIST.md` Test A/B step 7. |
 | 2026-08-07 | Project author | Rise published course | Not recorded — tester did not specify which catalog component(s) | Pass | Both the Iframe Snippet (Option A) and HTML Block Fragment (Option B) export formats confirmed working after publishing the course. |
 | — | — | Rise web export (offline) | — | **Not yet tested** | Only applicable if your workflow uses Rise's static export instead of Rise 360 hosting; see Test C. |
+| 2026-08-12 | Project author | Rise authoring preview, published course | Accordion, with completion tracking on and Rise's own "Set completion requirements" toggle enabled on the code block | Fail (Option A) / Pass (Option B) | Option A (Iframe Snippet): internal progress reached 100%, but Rise's sidebar completion % and the Continue block gated on this component never unlocked, reproduced twice from a fresh reload. Option B (HTML Block Fragment), same component/config: Rise's Continue block unlocked correctly. Root cause: Rise's "Add code" block renders pasted content inside its own sandboxed bridge (`sandbox.articulateusercontent.com`); Option A's extra `<iframe srcdoc="...">` wrapper adds a second level of nesting the `postMessage` call must cross, so it never reaches Rise. See `docs/COMPLETION-INTEGRATION.md` "Export-format caveat" and `docs/RISE-COMPATIBILITY-MATRIX.md`. |
 
 ## Manual results — Web Package ZIP
 

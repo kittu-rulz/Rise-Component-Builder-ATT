@@ -215,6 +215,20 @@ describe('General: invalid completion configuration', () => {
   });
 });
 
+describe('General: Iframe Snippet format incompatible with completion tracking', () => {
+  test('completion on warns about the Iframe Snippet format not reaching Rise\'s Continue-block gating', () => {
+    const config = buildConfig('accordion', { trackCompletion: true });
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(i => i.ruleId === 'general-completion-iframe-format' && i.severity === SEVERITY.WARNING)).toBe(true);
+  });
+
+  test('completion off does not warn about export format', () => {
+    const config = buildConfig('accordion', { trackCompletion: false });
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(i => i.ruleId === 'general-completion-iframe-format')).toBe(false);
+  });
+});
+
 describe('Media: unsupported file type, oversized file', () => {
   const mediaReference = overrides => ({
     source: 'upload', mediaId: 'media-1', schemaVersion: 1, kind: 'image', name: 'photo.png',

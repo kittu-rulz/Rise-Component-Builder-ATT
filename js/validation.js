@@ -227,6 +227,8 @@ function checkCompletionConfig(config, settings) {
     issues.push(issue('general-invalid-completion-config', SEVERITY.RECOMMENDATION, CATEGORY.GENERAL,
       'Consider setting an expected parent frame origin in Builder Settings for stricter completion-message validation — see docs/COMPLETION-INTEGRATION.md.'));
   }
+  issues.push(issue('general-completion-iframe-format', SEVERITY.WARNING, CATEGORY.GENERAL,
+    'Completion tracking is on. If you export this using Option A (Iframe Snippet), Rise\'s own sandbox already isolates whatever you paste, and wrapping it in another iframe nests it one level too deep for Rise\'s Continue-block gating to detect completion — confirmed by live testing (docs/COMPATIBILITY-RESULTS.md, 2026-08-12). Use Option B (HTML Block Fragment) instead when completion tracking is required.'));
   return issues;
 }
 
