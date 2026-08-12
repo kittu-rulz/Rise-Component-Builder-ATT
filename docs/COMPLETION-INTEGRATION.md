@@ -12,7 +12,7 @@ Completion is not one thing. Conflating these is exactly what the old naming did
 | 2 | **Internal component completion** — the one-time transition when progress reaches 100% | `js/export-shell.js` (`evaluateComponentCompletion()`) | **Implemented.** Purely internal state. Happens identically whether or not anything is embedding the component (see `tests/e2e/completion.spec.js` "standalone mode" and "unsupported parent integration"). |
 | 3 | **Parent-window notification** — telling an embedding host page that the component completed | `js/completion.js` (`RiseComponentCompletion`) | **Implemented and tested**, scoped exactly to: sending one documented `postMessage` to `window.parent`, when embedded. This project has no way to know what, if anything, is listening on the other end. |
 | 4 | **Rise lesson completion** — Rise's own course-player marking its lesson complete | Rise itself, not this project | **Not verified.** No public, documented Rise API for a "Code › Add code" block to mark its own lesson complete is known to this project. See `docs/RISE-COMPATIBILITY-MATRIX.md`. |
-| 5 | **SCORM completion** — writing `cmi.core.lesson_status` (SCORM 1.2) or `cmi.completion_status` (SCORM 2004) via the SCORM runtime API | Not implemented | **Unsupported.** No SCORM API discovery/wrapper code exists anywhere in this project. The "SCORM 1.2 Package" option in Builder Settings' export-format list does not change export behavior today — see `docs/KNOWN-ISSUES.md`. |
+| 5 | **SCORM completion** — writing `cmi.core.lesson_status` (SCORM 1.2) or `cmi.completion_status` (SCORM 2004) via the SCORM runtime API | Out of scope | **Out of scope for this project** (deliberate decision, `docs/RISE-COMPATIBILITY-MATRIX.md` "Scope", 2026-08-12), not a pending gap. No SCORM API discovery/wrapper code exists anywhere in this project, and none is planned — see `docs/KNOWN-ISSUES.md`. |
 | 6 | **LMS course completion** — an LMS marking an entire course/module complete based on this block | The LMS, not this project | **Unsupported / not verified.** Would require #4 or #5 to work first, plus LMS-specific configuration this project cannot control. |
 | 7 | **xAPI statement generation** — emitting an xAPI (Tin Can) statement to a Learning Record Store | Not implemented | **Unsupported.** No xAPI library, LRS endpoint configuration, or statement-shape code exists. `connect-src 'none'` in the compiled document's CSP means an exported component could not make an LRS network call even if statement generation existed — an xAPI adapter would need to hand the statement to the host via `postMessage` instead (see "Extension points" below), not call an LRS directly. |
 
@@ -92,8 +92,8 @@ Two exports pasted onto the same host page each get their own `RiseComponentComp
 
 ## What this document is not
 
-- Not a guarantee that Rise, Moodle, any SCORM player, or any LRS does anything with the `completion` message — see `docs/RISE-COMPATIBILITY-MATRIX.md` for the compatibility tiers and `docs/RISE-TEST-CHECKLIST.md` / `docs/MOODLE-SCORM-TEST-CHECKLIST.md` for how to actually find out.
-- Not a SCORM or xAPI implementation — see "Extension points" above.
+- Not a guarantee that Rise or any LRS does anything with the `completion` message — see `docs/RISE-COMPATIBILITY-MATRIX.md` for the compatibility tiers and `docs/RISE-TEST-CHECKLIST.md` for how to actually find out. Moodle/SCORM completion consumption is out of scope for this project (see "Scope" in the matrix).
+- Not a SCORM or xAPI implementation, and neither is planned — see "Extension points" above.
 - Not a promise that this schema is final — `schemaVersion` exists precisely so a future breaking change to the envelope shape can be introduced without silently breaking whatever a host built against version 1.
 
 ## Tests

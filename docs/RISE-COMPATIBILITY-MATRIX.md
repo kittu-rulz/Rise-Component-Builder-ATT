@@ -13,6 +13,10 @@ The same four tiers back the in-app export compatibility report (`js/compatibili
 | **Fallback** | Degrades gracefully rather than failing outright, under a known, documented condition (often: only with a non-default host setting). |
 | **Unsupported** | Known not to work today, or no working implementation exists yet. |
 
+## Scope
+
+This project targets **Rise 360 delivery only**. Moodle compatibility and SCORM packaging are explicitly **out of scope** — a deliberate decision (recorded `docs/COMPATIBILITY-RESULTS.md`, 2026-08-12), not a gap this project is tracking toward "Confirmed." They're still classified below (mostly **Unsupported**) so this matrix stays literally accurate about what does and doesn't work today, but for those rows specifically, "Unsupported" means "not a goal of this project," not "broken and pending a fix."
+
 ## Export workflows
 
 | Workflow | Tier | Why |
@@ -22,9 +26,9 @@ The same four tiers back the in-app export compatibility report (`js/compatibili
 | HTML fragment (style + markup + script) pasted into Rise's **Code › Add code** block | **Confirmed** | Manually tested in both the Rise authoring preview and a published Rise 360 course — see `docs/COMPATIBILITY-RESULTS.md` (2026-08-07). Its CSS class names are still not scoped against the host page — a known, deliberate trade-off (`docs/EXPORT-CONTRACT.md` "CSS isolation, by format"), not a bug, and unrelated to whether Rise accepts the format. |
 | HTML fragment pasted into a generic (non-Rise) CMS/LMS rich-text HTML field, default configuration | **Unsupported** | Most rich-text editors (Moodle's Atto/TinyMCE included — see below) strip inline `<script>` tags by default unless the site/user has an elevated "trust content" capability. The static markup may render; the interactive behavior will not run. |
 | Standalone `.html` file uploaded to a host and displayed via an iframe/file-resource embed (no script-stripping involved) | **Fallback** | Sidesteps the rich-text-editor script-stripping problem entirely, at the cost of an extra authoring step (upload + embed instead of paste). Not independently tested against a specific host by this project. |
-| Web Package ZIP, extracted and hosted externally, embedded the same way as the standalone-`.html`-plus-iframe row above | **Preview** | The ZIP itself cannot be "run through Rise" — it isn't a Rise-native upload format, and Rise has no documented "upload a ZIP for a custom block" mechanism. The meaningful, still-untested question is whether the extracted `index.html`, once hosted externally, works correctly when embedded inside a published Rise course the same way any other externally-hosted page would be. This is the recommended path whenever the component uses uploaded audio, video, or a large image, since those can't travel through the single-file/paste formats at all (`docs/MEDIA-ASSET-PIPELINE.md`). |
-| SCORM 1.2 package | **Unsupported** | No archive is produced — the Web Package ZIP above is a plain static bundle (`index.html` + `assets/`), not a SCORM-conformant package (no `imsmanifest.xml`, no SCORM API wrapper). |
-| SCORM 2004 package | **Unsupported** | Same as SCORM 1.2 — no SCORM packaging of any version exists yet. |
+| Web Package ZIP, extracted and hosted externally, embedded the same way as the standalone-`.html`-plus-iframe row above | **Confirmed** | The ZIP itself cannot be "run through Rise" — it isn't a Rise-native upload format, and Rise has no documented "upload a ZIP for a custom block" mechanism. What's now confirmed is that the extracted `index.html`, hosted externally, works correctly when embedded inside a Rise 360 course — see `docs/COMPATIBILITY-RESULTS.md` (2026-08-12). This is the recommended path whenever the component uses uploaded audio, video, or a large image, since those can't travel through the single-file/paste formats at all (`docs/MEDIA-ASSET-PIPELINE.md`). |
+| SCORM 1.2 package | **Unsupported** | Out of scope for this project (see "Scope" above), not a pending gap. No archive is produced — the Web Package ZIP above is a plain static bundle (`index.html` + `assets/`), not a SCORM-conformant package (no `imsmanifest.xml`, no SCORM API wrapper), and none is planned. |
+| SCORM 2004 package | **Unsupported** | Same as SCORM 1.2 — out of scope for this project, not a pending gap. |
 
 ## Rise-specific surfaces
 
@@ -37,12 +41,14 @@ The same four tiers back the in-app export compatibility report (`js/compatibili
 
 ## Learning management systems
 
+**Out of scope for this project** — see "Scope" above. The rows below are kept for reference (they're still factually accurate descriptions of generic Moodle behavior, useful if this scope ever changes), not because Moodle support is planned or being tracked.
+
 | Surface | Tier | Why |
 | --- | --- | --- |
 | Moodle desktop (browser), HTML pasted into a default rich-text field | **Unsupported** | Moodle's default HTML filtering strips `<script>` content for any user without the "trust content" capability — a standard, widely-documented Moodle behavior, not specific to this tool's output. |
 | Moodle desktop (browser), standalone `.html` uploaded as a File resource and embedded via an IFrame-type activity/plugin | **Fallback** | A well-known Moodle workaround that avoids the rich-text filter entirely. Plausible and commonly used, but not independently tested by this project against a specific Moodle version. |
-| Moodle desktop (browser), via SCORM package | **Unsupported** | No SCORM package exists yet (see above). |
-| Moodle mobile app | **Unsupported / unverified** | The Moodle mobile app renders content in its own constrained webview and requires a downloaded SCORM package for full offline support — neither condition is met here. Assume it behaves worse than desktop browser Moodle, not the same, until tested. |
+| Moodle desktop (browser), via SCORM package | **Unsupported** | This project produces no SCORM package — out of scope (see above). |
+| Moodle mobile app | **Unsupported / unverified** | The Moodle mobile app renders content in its own constrained webview and requires a downloaded SCORM package for full offline support — neither condition is met here. |
 
 ## Browsers (opening the standalone export directly)
 
@@ -66,8 +72,8 @@ The same four tiers back the in-app export compatibility report (`js/compatibili
 
 ## How to move a Preview row to Confirmed
 
-1. Follow `docs/RISE-TEST-CHECKLIST.md` (for Rise surfaces) or `docs/MOODLE-SCORM-TEST-CHECKLIST.md` (for Moodle/SCORM).
-2. Record the exact result — pass, fail, or partial, with the specific Rise/Moodle version — in `docs/COMPATIBILITY-RESULTS.md`.
+1. Follow `docs/RISE-TEST-CHECKLIST.md`. (`docs/MOODLE-SCORM-TEST-CHECKLIST.md` exists for reference only — Moodle/SCORM are out of scope for this project, see "Scope" above.)
+2. Record the exact result — pass, fail, or partial, with the specific Rise version — in `docs/COMPATIBILITY-RESULTS.md`.
 3. Update the tier in this file and in `js/compatibility.js` together.
 
 ## Non-goals of this matrix

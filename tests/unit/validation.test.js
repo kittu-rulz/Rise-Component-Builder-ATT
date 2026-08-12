@@ -215,20 +215,6 @@ describe('General: invalid completion configuration', () => {
   });
 });
 
-describe('General: unsupported export features', () => {
-  test('an unimplemented default export format (SCORM) is a warning', () => {
-    const config = buildConfig('accordion');
-    const issues = issuesFor('accordion', config, { settings: { exportFormat: 'scorm', mediaLimitsMb: { image: 10, audio: 30, video: 100, svg: 2 } } });
-    expect(issues.some(i => i.ruleId === 'general-unsupported-export-feature' && i.severity === SEVERITY.WARNING)).toBe(true);
-  });
-
-  test('the working "web" (single HTML file) format is not flagged', () => {
-    const config = buildConfig('accordion');
-    const issues = issuesFor('accordion', config, { settings: { exportFormat: 'web', mediaLimitsMb: { image: 10, audio: 30, video: 100, svg: 2 } } });
-    expect(issues.some(i => i.ruleId === 'general-unsupported-export-feature')).toBe(false);
-  });
-});
-
 describe('Media: unsupported file type, oversized file', () => {
   const mediaReference = overrides => ({
     source: 'upload', mediaId: 'media-1', schemaVersion: 1, kind: 'image', name: 'photo.png',

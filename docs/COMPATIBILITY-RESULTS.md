@@ -2,7 +2,7 @@
 
 This is the empirical record: what has actually been run, when, by whom, and what happened. `docs/RISE-COMPATIBILITY-MATRIX.md` is the reasoning/classification; this file is the evidence that classification is supposed to be pinned to. When a tier in the matrix changes, there should be a row here justifying it — a tier with no corresponding row here is a claim, not a result.
 
-Add a new row every time you run `docs/RISE-TEST-CHECKLIST.md`, `docs/MOODLE-SCORM-TEST-CHECKLIST.md`, or re-run the automated suite in a new environment. Do not overwrite old rows — append, so drift over time (e.g. a Rise update that breaks something that used to pass) stays visible.
+Add a new row every time you run `docs/RISE-TEST-CHECKLIST.md`, test the Web Package ZIP path, or re-run the automated suite in a new environment. Do not overwrite old rows — append, so drift over time (e.g. a Rise update that breaks something that used to pass) stays visible. (Moodle/SCORM are out of scope for this project — see below — so `docs/MOODLE-SCORM-TEST-CHECKLIST.md` is not part of this cadence.)
 
 ## Automated results
 
@@ -22,14 +22,15 @@ Add a new row every time you run `docs/RISE-TEST-CHECKLIST.md`, `docs/MOODLE-SCO
 | 2026-08-07 | Project author | Rise published course | Not recorded — tester did not specify which catalog component(s) | Pass | Both the Iframe Snippet (Option A) and HTML Block Fragment (Option B) export formats confirmed working after publishing the course. |
 | — | — | Rise web export (offline) | — | **Not yet tested** | Only applicable if your workflow uses Rise's static export instead of Rise 360 hosting; see Test C. |
 
-## Manual results — Moodle / SCORM
+## Manual results — Web Package ZIP
 
-| Date | Tester | Moodle version | Surface | Result | Notes |
-| --- | --- | --- | --- | --- | --- |
-| — | — | — | Default rich-text HTML field | **Not yet tested** | Follow `docs/MOODLE-SCORM-TEST-CHECKLIST.md` Test A. Expected to fail (script stripped) under default configuration. |
-| — | — | — | File resource / IFrame embed | **Not yet tested** | Follow Test B. |
-| — | — | — | Moodle mobile app | **Not yet tested** | Follow Test C. |
-| — | — | — | SCORM 1.2 / 2004 package | **N/A — no package exists to test** | Confirmed absent by design today (`docs/KNOWN-ISSUES.md`); re-check this row if ZIP/SCORM packaging is ever implemented. |
+| Date | Tester | Method | Result | Notes |
+| --- | --- | --- | --- | --- |
+| 2026-08-12 | Project author | Extracted the ZIP, hosted `index.html` + `assets/` externally, embedded that hosted page in a Rise 360 course | Pass | Confirms the documented Fallback path (`docs/RISE-COMPATIBILITY-MATRIX.md` "Web Package ZIP, extracted and hosted externally, embedded...") — moves this format from Preview to Confirmed. |
+
+## Out of scope for this project
+
+Moodle compatibility and SCORM packaging are not goals of this project — it targets Rise 360 delivery only. This is a deliberate scope decision (confirmed 2026-08-12), not an outstanding gap. `docs/MOODLE-SCORM-TEST-CHECKLIST.md` is kept for reference only, in case that scope ever changes; no rows are expected here.
 
 ## How to add a row
 

@@ -35,8 +35,8 @@ Rise Component Builder is a browser-based internal authoring tool for creating c
 - Visible image-upload guidance listing supported formats, limits, and schema-specific preferred dimensions
 - IndexedDB storage for uploaded images, audio, video, posters, and WebVTT captions
 - Media-aware standalone export validation and ZIP asset-manifest preparation
-- An in-app export compatibility report (Confirmed/Preview/Fallback/Unsupported per export format), backed by `docs/RISE-COMPATIBILITY-MATRIX.md`, manual Rise/Moodle/SCORM test checklists, and a results log — see `docs/COMPATIBILITY-RESULTS.md`
-- A completion adapter system (standalone/parent-message/no-op) with a documented, versioned `postMessage` schema, configurable target-origin, duplicate-prevention, and inbound-message validation — see `docs/COMPLETION-INTEGRATION.md`. Rise/SCORM/LMS/xAPI completion consumption is explicitly unimplemented and unverified.
+- An in-app export compatibility report (Confirmed/Preview/Fallback/Unsupported per export format), backed by `docs/RISE-COMPATIBILITY-MATRIX.md`, a manual Rise test checklist, and a results log — see `docs/COMPATIBILITY-RESULTS.md`. Moodle/SCORM are out of scope for this project (see "Scope" in the matrix); their checklist is kept for reference only.
+- A completion adapter system (standalone/parent-message/no-op) with a documented, versioned `postMessage` schema, configurable target-origin, duplicate-prevention, and inbound-message validation — see `docs/COMPLETION-INTEGRATION.md`. Rise/LMS/xAPI completion consumption is explicitly unimplemented and unverified. SCORM completion is out of scope for this project.
 - A schema-driven, component-specific export-preflight validation engine (Blocking/Warning/Recommendation severities) covering general content, knowledge-check, media, and hotspot rules, surfaced inline, via item-card badges, a consolidated Preflight panel, and an export gate that blocks only on genuine blocking failures — see `docs/VALIDATION-RULES.md`.
 - WCAG 2.2 AA accessibility coverage for both the builder UI and every exported component — automated axe/keyboard test coverage, an author-configurable embedded-heading level (avoids a forced second `<h1>` in a Rise lesson), builder-chrome contrast/reflow/target-size fixes, and an honest list of what remains manual-only — see `docs/ACCESSIBILITY-CONFORMANCE.md`.
 - A security-hardening pass covering prototype-pollution key rejection on imported project JSON, a minimized iframe sandbox (removed the previously-included `allow-same-origin`, verified unnecessary), a global unexpected-error handler that logs full detail to the console while showing only a generic toast to authors, and a clean dependency audit — see `docs/SECURITY.md`.
@@ -90,7 +90,7 @@ There is no application framework, production bundler, backend, or external data
 - Versioned theme JSON download and import
 - Web Package ZIP: a real, deterministic ZIP archive (`index.html` at the root + `assets/`) for components using uploaded media that can't travel through the single-file/paste formats — see `docs/MEDIA-ASSET-PIPELINE.md`
 - Portable project package (`.rise-project.zip`): a saved project's uploaded media travels with it (not just IndexedDB references), importable in a different browser/profile
-- SCORM packaging is visible in Settings as a selectable format, but no package is produced — this remains unimplemented
+- SCORM packaging is out of scope for this project (deliberate decision, `docs/RISE-COMPATIBILITY-MATRIX.md` "Scope", 2026-08-12) — no package is produced, and it is not a selectable export format in Settings
 
 ## Known limitations
 
@@ -99,11 +99,11 @@ There is no application framework, production bundler, backend, or external data
 - Default content for remaining legacy components is coupled to `app.js`.
 - Media is local to the current browser profile and is not included in the plain project JSON export — use the portable project package export for that.
 - Single-file HTML export embeds only small raster images; SVG, large images, audio, video, and captions require the Web Package ZIP instead (now implemented).
-- SCORM export remains a placeholder — no package is produced.
+- SCORM export is out of scope for this project (see above) — no package is produced, and none is planned.
 - AI generation is a local timed simulation, not a connected AI service.
 - Several generated examples depend on external media and Google Fonts being available online.
 - The application is a local browser MVP and has no collaboration, authentication, server sync, or deployment workflow.
-- Chromium is the initial automated browser target; Firefox, WebKit, Rise, Moodle, and assistive-technology verification remain manual.
+- Chromium is the initial automated browser target; Firefox, WebKit, Rise, and assistive-technology verification remain manual. Moodle is out of scope for this project.
 
 See `docs/KNOWN-ISSUES.md` for confirmed implementation details, `docs/ARCHITECTURE.md` for module boundaries, `docs/COMPONENT-SCHEMA.md` for the data model, `docs/EXPORT-CONTRACT.md` for how preview and export stay in sync, `docs/SECURITY.md` for the sanitization/threat model, `docs/TESTING-STRATEGY.md` for the test/lint/typecheck/build pipeline, `docs/RISE-COMPATIBILITY-MATRIX.md` (with `docs/RISE-TEST-CHECKLIST.md`, `docs/MOODLE-SCORM-TEST-CHECKLIST.md`, and `docs/COMPATIBILITY-RESULTS.md`) for Rise/LMS/browser compatibility classification, `docs/COMPLETION-INTEGRATION.md` for exactly what "completion" does and does not mean, `docs/VALIDATION-RULES.md` for the full export-preflight rule catalog, `docs/ACCESSIBILITY-CONFORMANCE.md` for WCAG 2.2 AA conformance status, automated coverage, and required manual testing, and `docs/MEDIA-ASSET-PIPELINE.md` for the full media upload/validation/export pipeline.
 

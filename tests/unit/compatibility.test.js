@@ -32,8 +32,8 @@ describe('compatibility tier classification', () => {
     expect(getExportFormatCompatibility(undefined)).toBeNull();
   });
 
-  test('the iframe, fragment, and standalone download paths are confirmed; the ZIP path is not yet', () => {
+  test('every export format is confirmed', () => {
     const confirmed = Object.entries(EXPORT_FORMAT_COMPATIBILITY).filter(([, entry]) => entry.tier === 'confirmed');
-    expect(confirmed.map(([key]) => key).sort()).toEqual(['code', 'iframe', 'standaloneDownload']);
+    expect(confirmed.map(([key]) => key).sort()).toEqual(['code', 'iframe', 'rise-zip', 'standaloneDownload']);
   });
 });

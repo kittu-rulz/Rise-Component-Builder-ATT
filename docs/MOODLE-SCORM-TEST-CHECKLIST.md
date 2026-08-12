@@ -1,5 +1,7 @@
 # Manual Moodle / SCORM test checklist
 
+> **Out of scope for this project.** Moodle compatibility and SCORM packaging are not goals of this project — it targets Rise 360 delivery only (deliberate decision, `docs/RISE-COMPATIBILITY-MATRIX.md` "Scope", `docs/COMPATIBILITY-RESULTS.md`, 2026-08-12). This checklist is kept for reference only, in case that scope ever changes — it is not part of the regular testing cadence and no failing/incomplete row here blocks anything.
+
 **Requires:** a real Moodle site you can edit a course on (a local Moodle sandbox/Docker instance is enough), teacher/manager permissions, and ideally the Moodle mobile app installed on a phone. Like the Rise checklist, this cannot be automated — see `docs/RISE-COMPATIBILITY-MATRIX.md`.
 
 ## Before you start

@@ -111,9 +111,9 @@ Automation does not replace these manual checks:
 
 Standalone, iframe, and fragment output must still be tested manually inside supported Articulate Rise blocks. Verify iframe sizing, CSP/sandbox behavior, focus movement between Rise and the component, course navigation, completion expectations, hosted media paths, and the exact publishing/LMS environment. Automated local-browser tests cannot reproduce Rise's editor or hosted runtime.
 
-## Manual Moodle testing still required
+## Moodle/SCORM testing — out of scope
 
-Test exported HTML in the Moodle content type actually used by the organization. Verify HTML filtering, iframe permissions, theme CSS collisions, responsive sizing, keyboard navigation, media paths, completion/grade behavior, and the target Moodle version's security policy. No Moodle or SCORM deployment is performed by this repository.
+Moodle compatibility and SCORM packaging are not goals of this project — it targets Rise 360 delivery only (deliberate decision, `docs/RISE-COMPATIBILITY-MATRIX.md` "Scope", `docs/COMPATIBILITY-RESULTS.md`, 2026-08-12). `docs/MOODLE-SCORM-TEST-CHECKLIST.md` is kept for reference only, in case that scope ever changes. No Moodle or SCORM deployment is performed by this repository.
 
 ## CI behavior
 

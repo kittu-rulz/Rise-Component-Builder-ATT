@@ -40,7 +40,6 @@ This is the full catalog of the schema-driven, component-specific validation eng
 | `general-insufficient-contrast` | Warning | Checks the color pairs this specific component actually renders (body text/card background, muted text/card background, button text/primary), using the fully resolved theme + per-component-override colors, against the WCAG AA 4.5:1 minimum for normal text. |
 | `general-duplicate-items` | Warning | Two items share the same normalized primary field (`title`/`label`) *and* the same `content` — see "Duplicate IDs", below, for why this is the rule's actual scope. |
 | `general-invalid-completion-config` | Blocking / Warning / Recommendation | Blocking: completion required with zero items (can never complete). Warning: completion required with an empty completion message. Recommendation: completion required with no configured parent origin (see `docs/COMPLETION-INTEGRATION.md`). |
-| `general-unsupported-export-feature` | Warning | Builder Settings' default export format is set to "ZIP" or "SCORM 1.2", neither of which is actually implemented (`docs/KNOWN-ISSUES.md`) — only a single HTML file genuinely downloads. |
 
 ### "Duplicate IDs", precisely scoped
 

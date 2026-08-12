@@ -49,14 +49,14 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
     ]
   },
   'rise-zip': {
-    tier: 'experimental',
+    tier: 'confirmed',
     summary: 'Best for components containing uploaded audio, video, or large images.',
     details: [
       'Includes index.html and referenced media files in an assets folder.',
       'Extract and host the files on a web server, then embed the hosted page in Rise.',
       'Cannot be uploaded directly to Rise as a custom block.',
-      'This is not a SCORM package.',
-      'The hosted index.html has not yet been tested embedded inside a published Rise course.'
+      'This is not a SCORM package — SCORM packaging is out of scope for this project.',
+      'Confirmed: hosted externally and embedded in a Rise 360 course.'
     ]
   },
   standaloneDownload: {

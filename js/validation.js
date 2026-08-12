@@ -230,14 +230,6 @@ function checkCompletionConfig(config, settings) {
   return issues;
 }
 
-const UNSUPPORTED_EXPORT_FORMATS = { zip: 'ZIP package', scorm: 'SCORM 1.2 package' };
-
-function checkUnsupportedExportFeatures(settings) {
-  if (!settings || !UNSUPPORTED_EXPORT_FORMATS[settings.exportFormat]) return [];
-  return [issue('general-unsupported-export-feature', SEVERITY.WARNING, CATEGORY.GENERAL,
-    `Default export package is set to "${UNSUPPORTED_EXPORT_FORMATS[settings.exportFormat]}", but that packaging is not implemented yet — only a single HTML file actually downloads. See docs/RISE-COMPATIBILITY-MATRIX.md.`)];
-}
-
 // ---------------------------------------------------------------------------
 // Media rules — schema-driven: scans every image/audio/video field, regardless of
 // which component owns it, rather than a hardcoded per-component list.
@@ -430,7 +422,6 @@ export function collectSyncIssues({ componentId, schema, config, theme, componen
     ...checkColorContrast(theme, componentOverrides),
     ...checkDuplicateItems(schema, config),
     ...checkCompletionConfig(config, settings),
-    ...checkUnsupportedExportFeatures(settings),
     ...checkMediaRules(schema, config, settings),
     ...checkKnowledgeCheckRules(componentId, schema, config),
     ...checkHotspotRules(componentId, config)

@@ -101,7 +101,7 @@ export function normalizeSettings(value) {
   const allowedFonts = ['Merriweather', 'Lato', 'Roboto', 'Montserrat', 'Open Sans'];
   return {
     defaultFont: allowedFonts.includes(value.defaultFont) ? value.defaultFont : DEFAULT_SETTINGS.defaultFont,
-    exportFormat: ['web', 'zip', 'scorm'].includes(value.exportFormat) ? value.exportFormat : DEFAULT_SETTINGS.exportFormat,
+    exportFormat: ['web', 'zip'].includes(value.exportFormat) ? value.exportFormat : DEFAULT_SETTINGS.exportFormat,
     autosave: typeof value.autosave === 'boolean' ? value.autosave : DEFAULT_SETTINGS.autosave,
     mediaLimitsMb: normalizeMediaLimitsMb(value.mediaLimitsMb),
     completionParentOrigin: normalizeCompletionParentOrigin(value.completionParentOrigin)

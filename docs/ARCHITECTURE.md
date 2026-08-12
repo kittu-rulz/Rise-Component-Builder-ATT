@@ -126,7 +126,7 @@ A schema is data, not behavior: a list of field descriptors (`id`, `label`, `typ
 - rewrites uploaded-media references into inlined data URLs (small raster images only) or `assets/...` relative paths plus a manifest (`prepareMediaExport`, reading Blobs from §9),
 - and triggers browser downloads for standalone HTML, project JSON, or the asset manifest.
 
-Full behavior, including the current single-file inlining limits and the ZIP/SCORM placeholder status, is specified in `docs/EXPORT-CONTRACT.md`.
+Full behavior, including the current single-file inlining limits and SCORM's out-of-scope status (ZIP export is real, not a placeholder — see `docs/MEDIA-ASSET-PIPELINE.md`), is specified in `docs/EXPORT-CONTRACT.md`.
 
 **Note on `build.mjs`:** this new script (added for this phase) assembles the _builder application itself_ into `dist/` for static hosting (GitHub Pages). It is unrelated to a user's exported _component_ output — it does not run the preview compiler, does not touch `appState`, and does not change what ships inside a user's downloaded HTML. See "Build" further down in this document.
 

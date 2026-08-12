@@ -36,7 +36,7 @@
         </div>
         <div class="logo-text">
           <h1>Component Builder</h1>
-          <span class="version-tag">2026-08-07 · v3.0</span>
+          <span class="version-tag">2026-08-12 · v3.0</span>
         </div>
       </div>
       
@@ -301,7 +301,7 @@
                     <input type="checkbox" id="input-track-completion">
                     <label for="input-track-completion">Required: learner must view every item to complete this block</label>
                   </div>
-                  <p class="field-hint field-hint-inset">Leave unchecked for optional/no completion tracking — no progress bar is shown and nothing is ever sent anywhere. Checked, this always tracks progress internally and shows a progress bar. If this block is embedded in a host page, it <em>additionally</em> sends a one-time completion message to that host — see docs/COMPLETION-INTEGRATION.md for the exact message and what "embedded" means. Whether Rise, Moodle, or any other host actually listens for that message and marks its own lesson/course complete is not verified by this project — see docs/RISE-COMPATIBILITY-MATRIX.md.</p>
+                  <p class="field-hint field-hint-inset">Leave unchecked for optional/no completion tracking — no progress bar is shown and nothing is ever sent anywhere. Checked, this always tracks progress internally and shows a progress bar. If this block is embedded in a host page, it <em>additionally</em> sends a one-time completion message to that host — see docs/COMPLETION-INTEGRATION.md for the exact message and what "embedded" means. Whether Rise or any other host actually listens for that message and marks its own lesson/course complete is not verified by this project — see docs/RISE-COMPATIBILITY-MATRIX.md. (Moodle is out of scope for this project.)</p>
 
                   <div class="input-wrapper">
                     <label for="input-completion-msg">Completion Success Message</label>
@@ -554,8 +554,7 @@
           <label for="settings-export-format">Default Export Package</label>
           <select id="settings-export-format">
             <option value="web">Single HTML File (Web)</option>
-            <option value="zip">ZIP Package (Static HTML/CSS/JS)</option>
-            <option value="scorm">SCORM 1.2 Package (Rise tracking)</option>
+            <option value="zip">Web Package ZIP (Static HTML/CSS/JS)</option>
           </select>
         </div>
 

@@ -71,7 +71,7 @@ Every component (regardless of row above) inherits, via `js/export-shell.js`, th
 - **No automated 3.2.6 Consistent Help check.** Not applicable in the traditional sense (no persistent "help" mechanism exists across pages to be consistent or inconsistent), but not formally assessed either.
 - **Six components have no dedicated keyboard test** (Fill in the Blank, Process Flow, Branching Scenario, Profile Cards, Information Grid, Comparison Cards, Quick Link Buttons, Secondary Menu Drawer) — see the table above.
 - **`target-size` (axe) is a heuristic, not a full WCAG 2.5.8 audit.** It currently passes for both surfaces at the specific viewport/state tested, but 2.5.8 has additional exceptions and edge cases (inline-text, essential exceptions, equivalent-target availability) that a single automated rule cannot fully resolve.
-- **Rise/Moodle/SCORM-specific assistive-technology behavior remains entirely manual** — see `docs/RISE-TEST-CHECKLIST.md` and `docs/MOODLE-SCORM-TEST-CHECKLIST.md`. A component passing every check in this document is not the same as it having been verified inside an actual Rise lesson or Moodle course with a screen reader.
+- **Rise-specific assistive-technology behavior remains entirely manual** — see `docs/RISE-TEST-CHECKLIST.md`. A component passing every check in this document is not the same as it having been verified inside an actual Rise lesson with a screen reader. Moodle/SCORM assistive-technology testing is out of scope for this project (`docs/RISE-COMPATIBILITY-MATRIX.md` "Scope"); `docs/MOODLE-SCORM-TEST-CHECKLIST.md` is kept for reference only.
 - **Captions/transcripts are author-supplied, not generated.** The Video Player's `<track kind="captions">` and both media components' transcript fields only produce accessible output if the author actually provides that content — there is no automatic captioning or transcription.
 
 ## Manual tests required before shipping to an external audience
@@ -81,4 +81,4 @@ Every component (regardless of row above) inherits, via `js/export-shell.js`, th
 3. `forced-colors` mode (Windows High Contrast) — visually verify both surfaces, not just that the CSS rule exists.
 4. Real touch-device target-size and gesture check, particularly for the Image Gallery lightbox's arrow-key navigation (no touch equivalent currently exists for "next/previous image" — only Escape-to-close and tap-to-open have touch equivalents).
 5. The six components listed under "Known limitations" — manual keyboard-only pass for each.
-6. Rise-hosted and Moodle-hosted screen-reader passes per `docs/RISE-TEST-CHECKLIST.md` / `docs/MOODLE-SCORM-TEST-CHECKLIST.md`.
+6. Rise-hosted screen-reader passes per `docs/RISE-TEST-CHECKLIST.md`. (Moodle-hosted passes are out of scope for this project — see "Known limitations" above.)
