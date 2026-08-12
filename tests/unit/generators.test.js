@@ -141,3 +141,99 @@ describe('custom flip-card artwork', () => {
     expect(new JSDOM(html).window.document.querySelector('.flip-card-front svg')).not.toBeNull();
   });
 });
+
+describe('pricing comparison: per-item highlight and action URL', () => {
+  test('highlights whichever item has highlighted: true, not a fixed index', () => {
+    const html = pricingComparison.generateHTML({
+      items: [
+        { title: 'Basic', content: 'Feature' },
+        { title: 'Pro', content: 'Feature' },
+        { title: 'Elite', content: 'Feature', highlighted: true }
+      ]
+    });
+    const cards = new JSDOM(html).window.document.querySelectorAll('.pricing-card-item');
+    expect(cards[0].classList.contains('premium-highlight')).toBe(false);
+    expect(cards[1].classList.contains('premium-highlight')).toBe(false);
+    expect(cards[2].classList.contains('premium-highlight')).toBe(true);
+    expect(cards[2].querySelector('.popular-ribbon')).not.toBeNull();
+  });
+
+  test('embeds each item\'s actionUrl on its own Choose Plan button', () => {
+    const html = pricingComparison.generateHTML({
+      items: [
+        { title: 'Basic', content: 'Feature', actionUrl: 'https://example.com/basic' },
+        { title: 'Pro', content: 'Feature' }
+      ]
+    });
+    const buttons = new JSDOM(html).window.document.querySelectorAll('.pricing-action-btn');
+    expect(buttons[0].getAttribute('data-action-url')).toBe('https://example.com/basic');
+    expect(buttons[1].getAttribute('data-action-url')).toBe('');
+  });
+});
+
+describe('process flow: per-item estimated duration', () => {
+  test('shows the duration line when durationMinutes is a positive number', () => {
+    const html = processFlow.generateHTML({ items: [{ title: 'Step', content: 'Desc', durationMinutes: 5 }] }, INSTANCE_ID);
+    expect(new JSDOM(html).window.document.querySelector('.process-step-duration')?.textContent).toBe('Estimated time: 5 min');
+  });
+
+  test('still shows it when durationMinutes arrives as a string, matching what the number input actually stores', () => {
+    const html = processFlow.generateHTML({ items: [{ title: 'Step', content: 'Desc', durationMinutes: '12' }] }, INSTANCE_ID);
+    expect(new JSDOM(html).window.document.querySelector('.process-step-duration')?.textContent).toBe('Estimated time: 12 min');
+  });
+
+  test('omits the duration line when durationMinutes is 0, empty, or missing', () => {
+    const htmlZero = processFlow.generateHTML({ items: [{ title: 'Step', content: 'Desc', durationMinutes: 0 }] }, INSTANCE_ID);
+    const htmlEmpty = processFlow.generateHTML({ items: [{ title: 'Step', content: 'Desc', durationMinutes: '' }] }, INSTANCE_ID);
+    const htmlMissing = processFlow.generateHTML({ items: [{ title: 'Step', content: 'Desc' }] }, INSTANCE_ID);
+    expect(new JSDOM(htmlZero).window.document.querySelector('.process-step-duration')).toBeNull();
+    expect(new JSDOM(htmlEmpty).window.document.querySelector('.process-step-duration')).toBeNull();
+    expect(new JSDOM(htmlMissing).window.document.querySelector('.process-step-duration')).toBeNull();
+  });
+});
+
+describe('info grid: per-item accent color', () => {
+  test('applies a valid hex accentColor as the icon color', () => {
+    const html = infoGrid.generateHTML({ items: [{ title: 'Card', content: 'Desc', accentColor: '#16A34A' }] });
+    expect(new JSDOM(html).window.document.querySelector('.info-grid-icon').getAttribute('style')).toBe('color:#16A34A;');
+  });
+
+  test('falls back to the theme accent (no inline color) when accentColor is unset', () => {
+    const html = infoGrid.generateHTML({ items: [{ title: 'Card', content: 'Desc' }] });
+    expect(new JSDOM(html).window.document.querySelector('.info-grid-icon').getAttribute('style')).toBe('');
+  });
+
+  test('rejects a non-hex accentColor rather than embedding it unvalidated', () => {
+    const html = infoGrid.generateHTML({ items: [{ title: 'Card', content: 'Desc', accentColor: 'red; background:url(evil)' }] });
+    const style = new JSDOM(html).window.document.querySelector('.info-grid-icon').getAttribute('style');
+    expect(style).toBe('');
+    expect(html).not.toContain('evil');
+  });
+});
+
+describe('video frame: poster alt text', () => {
+  test('describes the poster via aria-describedby when alt text is supplied and not decorative', () => {
+    const html = videoFrame.generateHTML({
+      items: [{ title: 'Video', content: 'https://example.com/v.mp4', posterImage: 'https://example.com/p.jpg', posterAltText: 'A presenter at a whiteboard', posterDecorative: false }]
+    }, INSTANCE_ID);
+    const document = new JSDOM(html).window.document;
+    const video = document.querySelector('video');
+    const describedById = video.getAttribute('aria-describedby');
+    expect(describedById).toBeTruthy();
+    expect(document.getElementById(describedById).textContent).toBe('A presenter at a whiteboard');
+  });
+
+  test('adds no description when the poster is marked decorative, even with alt text set', () => {
+    const html = videoFrame.generateHTML({
+      items: [{ title: 'Video', content: 'https://example.com/v.mp4', posterImage: 'https://example.com/p.jpg', posterAltText: 'Ignored text', posterDecorative: true }]
+    }, INSTANCE_ID);
+    const document = new JSDOM(html).window.document;
+    expect(document.querySelector('video').getAttribute('aria-describedby')).toBeNull();
+    expect(html).not.toContain('Ignored text');
+  });
+
+  test('adds no description when posterAltText is empty', () => {
+    const html = videoFrame.generateHTML({ items: [{ title: 'Video', content: 'https://example.com/v.mp4' }] }, INSTANCE_ID);
+    expect(new JSDOM(html).window.document.querySelector('video').getAttribute('aria-describedby')).toBeNull();
+  });
+});

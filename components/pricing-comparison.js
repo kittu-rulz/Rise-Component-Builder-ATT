@@ -1,5 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeHTML } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML } from '../js/utilities.js';
 
 export const id = 'pricing-comparison';
 export const name = 'Product Matrix Cards';
@@ -7,7 +7,7 @@ export const category = 'cards';
 export const defaultConfig = {
   items: [
     { title: 'Starter Plan', content: '1 User • 5 Components/mo • Community Support' },
-    { title: 'Professional', content: 'Unlimited Builders • 20 Components/mo • Priority Support' },
+    { title: 'Professional', content: 'Unlimited Builders • 20 Components/mo • Priority Support', highlighted: true },
     { title: 'Enterprise Suite', content: 'Custom Domains • Unlimited Builders • Dedicated Success Agent' }
   ]
 };
@@ -17,8 +17,8 @@ export function generateHTML(config) {
   return `
     <div class="pricing-table-container">
       ${config.items.map((item, idx) => `
-        <div class="pricing-card-item ${idx === 1 ? 'premium-highlight' : ''}">
-          ${idx === 1 ? '<div class="popular-ribbon">RECOMMENDED</div>' : ''}
+        <div class="pricing-card-item ${item.highlighted ? 'premium-highlight' : ''}">
+          ${item.highlighted ? '<div class="popular-ribbon">RECOMMENDED</div>' : ''}
           <div class="pricing-tier-header">
             <h4>${escapeHTML(item.title || 'Service Plan')}</h4>
           </div>
@@ -30,7 +30,7 @@ export function generateHTML(config) {
               </div>
             `).join('')}
           </div>
-          <button class="pricing-action-btn">Choose Plan</button>
+          <button class="pricing-action-btn" type="button" data-idx="${idx}" data-action-url="${escapeAttribute(item.actionUrl || '')}">Choose Plan</button>
         </div>
       `).join('')}
     </div>
@@ -139,6 +139,8 @@ export function generateJS() {
           button.textContent = 'Selected';
           viewedItems.add(idx);
           updateProgress();
+          var actionUrl = button.getAttribute('data-action-url');
+          if (actionUrl) window.open(actionUrl, '_blank', 'noopener,noreferrer');
         });
       });
     }`;

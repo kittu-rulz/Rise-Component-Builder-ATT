@@ -282,6 +282,8 @@ export function sanitizePreviewConfig(config, componentId) {
     if (item.iconFit !== undefined) safeItem.iconFit = item.iconFit === 'cover' ? 'cover' : 'contain';
     if (item.x !== undefined) safeItem.x = String(sanitizeCSSNumber(item.x, { minimum: 0, maximum: 100, fallback: 50 }));
     if (item.y !== undefined) safeItem.y = String(sanitizeCSSNumber(item.y, { minimum: 0, maximum: 100, fallback: 50 }));
+    if (item.accentColor !== undefined) safeItem.accentColor = sanitizeCSSColor(item.accentColor, '#2563EB');
+    if (item.durationMinutes !== undefined) safeItem.durationMinutes = sanitizeCSSNumber(item.durationMinutes, { minimum: 0, maximum: 999, fallback: 0 });
     return safeItem;
   });
   result.backgroundImage = sanitizeURL(result.backgroundImage, { allowDataImage: true, allowBlob: true, allowRelative: true });

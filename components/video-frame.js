@@ -1,5 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeAttribute } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML } from '../js/utilities.js';
 
 export const id = 'video-frame';
 export const name = 'Custom Video Embed';
@@ -16,10 +16,16 @@ export function generateHTML(config, instanceId) {
   const captionsUrl = config.items[0]?.captionsUrl || '';
   const audioDescription = config.items[0]?.audioDescription || '';
   const poster = config.items[0]?.posterImage || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800';
+  // <video poster> has no native alt-text mechanism (unlike <img>), so a meaningful
+  // poster's description is exposed via aria-describedby on the video itself instead —
+  // only when the author both supplied posterAltText and didn't mark it decorative.
+  const posterAltText = config.items[0]?.posterAltText || '';
+  const posterDecorative = config.items[0]?.posterDecorative === true;
+  const describePoster = !posterDecorative && posterAltText;
   return `
     <div class="video-player-block">
       <div class="video-wrapper">
-        <video id="${instanceId}-html5-video-element" poster="${escapeAttribute(poster)}" width="100%" height="auto" controls aria-label="${escapeAttribute(config.items[0]?.title || 'Instructional video')}">
+        <video id="${instanceId}-html5-video-element" poster="${escapeAttribute(poster)}" width="100%" height="auto" controls aria-label="${escapeAttribute(config.items[0]?.title || 'Instructional video')}" ${describePoster ? `aria-describedby="${instanceId}-poster-desc"` : ''}>
           <source src="${escapeAttribute(src)}" type="video/mp4">
           ${captionsUrl ? `<track kind="captions" src="${escapeAttribute(captionsUrl)}" srclang="en" label="English" default>` : ''}
         </video>
@@ -27,6 +33,7 @@ export function generateHTML(config, instanceId) {
           <svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         </button>
       </div>
+      ${describePoster ? `<span id="${instanceId}-poster-desc" class="sr-only">${escapeHTML(posterAltText)}</span>` : ''}
       <div class="video-control-strip">
         <button type="button" class="video-mini-play" aria-label="Play video" aria-pressed="false">Play</button>
         <div class="video-timeline-scrub" role="slider" tabindex="0" aria-label="Video position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent">

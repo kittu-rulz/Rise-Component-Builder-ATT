@@ -1,5 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeAttribute, escapeHTML } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, sanitizeCSSColor } from '../js/utilities.js';
 
 export const id = 'info-grid';
 export const name = 'Multi-Column Info Grid';
@@ -23,15 +23,21 @@ function renderCustomItemArtwork(item, fallbackMarkup = '') {
 export function generateHTML(config) {
   return `
     <div class="info-grid-container">
-      ${config.items.map((item) => `
+      ${config.items.map((item) => {
+        // sanitizeCSSColor here (not just in js/utilities.js#sanitizePreviewConfig) means
+        // this generator stays safe even called directly with an unvalidated config, the
+        // same defense-in-depth already used for flip-cards' custom icon URLs.
+        const accentColor = item.accentColor ? sanitizeCSSColor(item.accentColor, '') : '';
+        return `
         <div class="info-grid-item">
-          <div class="info-grid-icon">
+          <div class="info-grid-icon" style="${accentColor ? `color:${accentColor};` : ''}">
             ${renderCustomItemArtwork(item, '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="13" y2="17"></line></svg>')}
           </div>
           <h4>${escapeHTML(item.title || 'Feature Key')}</h4>
           <p>${item.content || 'Description layout parameters.'}</p>
         </div>
-      `).join('')}
+      `;
+      }).join('')}
     </div>
   `;
 }

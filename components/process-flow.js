@@ -23,12 +23,22 @@ export function generateHTML(config, instanceId) {
         </div>
       </div>
       <div class="process-slides-wrapper">
-        ${config.items.map((item, idx) => `
+        ${config.items.map((item, idx) => {
+          // durationMinutes arrives as a string once the author edits the number input
+          // (control.value is always a string — see js/editor.js), so it must be coerced
+          // rather than checked with Number.isFinite directly on the raw item value.
+          const duration = Number(item.durationMinutes);
+          const durationLine = Number.isFinite(duration) && duration > 0
+            ? `<p class="process-step-duration">Estimated time: ${Math.round(duration)} min</p>`
+            : '';
+          return `
           <div class="process-slide ${idx === 0 ? 'active' : ''}" id="${instanceId}-process-slide-${idx}" role="group" aria-roledescription="step" aria-label="Step ${idx + 1} of ${config.items.length}" tabindex="-1" ${idx === 0 ? '' : 'hidden'}>
             <h3>${escapeHTML(item.title || 'Step Headline')}</h3>
+            ${durationLine}
             <p>${item.content || 'Step content description details go here.'}</p>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
       <div class="process-controls-row">
         <button class="btn btn-secondary btn-small" id="${instanceId}-btn-process-prev" disabled>Previous</button>
@@ -99,6 +109,12 @@ export function generateCSS() {
       font-size: 13px;
       line-height: 1.6;
       color: var(--text-muted);
+    }
+    .process-step-duration {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 8px;
     }
     .process-controls-row {
       display: flex;
