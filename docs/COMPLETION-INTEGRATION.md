@@ -60,7 +60,7 @@ This is Rise's own documented "Vibe Coding" completion contract (`window.parent.
 
 ## Export-format caveat: Iframe Snippet vs HTML Block Fragment
 
-Confirmed by live testing in a real Rise 360 course (`docs/COMPATIBILITY-RESULTS.md`, 2026-08-12): **this signal only reaches Rise's own Continue-block gating when the component is exported using Option B (HTML Block Fragment).** Using Option A (Iframe Snippet) instead, the internal progress bar correctly reaches 100%, but Rise's sidebar completion percentage and any Continue block gated on this code block never unlock.
+**This signal only reaches Rise's own Continue-block gating when the component is exported using Option B (HTML Block Fragment).** Using Option A (Iframe Snippet) instead, the internal progress bar correctly reaches 100%, but Rise's sidebar completion percentage and any Continue block gated on this code block never unlock. See `docs/COMPATIBILITY-RESULTS.md` for the test record.
 
 Root cause: Rise's "Add code" block already renders whatever you paste inside its own sandboxed bridge (a cross-origin `sandbox.articulateusercontent.com` iframe Rise adds automatically — not something this project controls). Rise's completion detection expects the `postMessage` call to fire from *that* level. Option B pastes raw HTML/CSS/JS directly, so the script runs exactly where Rise's sandbox expects it. Option A additionally wraps the whole document in this project's *own* `<iframe srcdoc="...">`, adding a second level of nesting — the `postMessage` call then fires from one level too deep, and its `window.parent` targets the wrapper iframe rather than Rise's sandbox bridge, so the signal never reaches Rise.
 

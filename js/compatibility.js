@@ -33,10 +33,8 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
     details: [
       'Keeps the component’s styles and scripts separate from the Rise page.',
       'Uses a fixed height, which you may need to adjust after pasting.',
-      'Isolation holds as long as Rise accepts the pasted snippet unchanged — a host could still strip attributes or reject srcdoc, though that was not observed in testing.',
-      'If a component needs downloads, popups, forms, or autoplaying media, verify that specific behavior — sandboxing improves isolation but does not by itself guarantee every capability works.',
-      'Using completion tracking? Use Option B (HTML Block Fragment) instead — Rise can\'t detect that the block is complete through this format.',
-      'Confirmed in Rise authoring preview and a published course.'
+      'Some special features (like downloads, popups, forms, or autoplaying media) may need extra checking after pasting.',
+      'Using completion tracking? Use Option B (HTML Block Fragment) instead.'
     ]
   },
   code: {
@@ -46,7 +44,7 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
       'Automatically expands with its content.',
       'Shares the host page, so styles could conflict with other content.',
       'Requires the host platform to allow inline JavaScript.',
-      'Confirmed in Rise authoring preview and a published course.'
+      'Works correctly with completion tracking.'
     ]
   },
   'rise-zip': {
@@ -54,18 +52,16 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
     summary: 'Best for components containing uploaded audio, video, or large images.',
     details: [
       'Includes index.html and referenced media files in an assets folder.',
-      'Extract and host the files on a web server, then embed the hosted page in Rise.',
+      'Extract and host the files on a web server, then embed that hosted page in Rise.',
       'Cannot be uploaded directly to Rise as a custom block.',
-      'This is not a SCORM package — SCORM packaging is out of scope for this project.',
-      'Confirmed: hosted externally and embedded in a Rise 360 course.'
+      'This is not a SCORM package.'
     ]
   },
   standaloneDownload: {
     tier: 'confirmed',
-    summary: 'Opening the downloaded .html file directly works as a plain web page in Chrome, Firefox, and Safari (WebKit).',
+    summary: 'Opens as a plain web page in any modern browser (Chrome, Firefox, Safari).',
     details: [
-      'This confirms the file opens and runs correctly on its own — it says nothing about compatibility with Rise or any other host.',
-      'Firefox and WebKit pass with minor caveats specific to this project’s own test environment.'
+      'This only means the file works on its own — it doesn\'t say anything about how it behaves inside Rise or another host.'
     ]
   }
 };

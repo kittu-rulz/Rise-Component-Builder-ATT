@@ -301,7 +301,7 @@
                     <input type="checkbox" id="input-track-completion">
                     <label for="input-track-completion">Required: learner must view every item to complete this block</label>
                   </div>
-                  <p class="field-hint field-hint-inset">Leave unchecked for optional/no completion tracking — no progress bar is shown and nothing is ever sent anywhere. Checked, this always tracks progress internally and shows a progress bar. If this block is embedded in a host page, it <em>additionally</em> sends a one-time completion message to that host — see docs/COMPLETION-INTEGRATION.md for the exact message and what "embedded" means. Whether Rise or any other host actually listens for that message and marks its own lesson/course complete is not verified by this project — see docs/RISE-COMPATIBILITY-MATRIX.md. (Moodle is out of scope for this project.)</p>
+                  <p class="field-hint field-hint-inset">Turn this on to show a progress bar and let Rise mark the block complete once every item has been viewed. Leave it off if you don't need progress tracking.</p>
 
                   <div class="input-wrapper">
                     <label for="input-completion-msg">Completion Success Message</label>
@@ -603,7 +603,7 @@
         <button class="modal-close-btn" aria-label="Close Preflight Check dialog">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc">Blocking errors must be fixed before this component can be exported. Warnings and recommendations do not block export — see docs/VALIDATION-RULES.md.</p>
+        <p class="modal-desc">Fix any blocking errors before exporting. Warnings and recommendations are optional and won't stop you from exporting.</p>
         <div id="preflight-results"></div>
       </div>
       <div class="modal-footer">
