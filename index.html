@@ -36,7 +36,7 @@
         </div>
         <div class="logo-text">
           <h1>Component Builder</h1>
-          <span class="version-tag">2026-08-12 · v3.0</span>
+          <span class="version-tag">2026-08-13 · v3.0</span>
         </div>
       </div>
       
@@ -301,7 +301,7 @@
                     <input type="checkbox" id="input-track-completion">
                     <label for="input-track-completion">Required: learner must view every item to complete this block</label>
                   </div>
-                  <p class="field-hint field-hint-inset">Turn this on to show a progress bar and let Rise mark the block complete once every item has been viewed. Leave it off if you don't need progress tracking.</p>
+                  <p class="field-hint field-hint-inset">Turn this on to show a progress bar and require learners to view every item before this component reports completion. Rise course completion support requires the Rise Code Block export and a compatible host configuration. Leave it off if you don't need progress tracking.</p>
 
                   <div class="input-wrapper">
                     <label for="input-completion-msg">Completion Success Message</label>
@@ -432,49 +432,22 @@
       </div>
       <div class="modal-body">
         <div id="export-preflight-results" role="status" aria-live="polite"></div>
-        <div id="export-compatibility-report" class="compat-report" role="status" aria-live="polite"></div>
 
-        <div class="export-tabs-container">
-          <button class="export-tab active" data-export-type="iframe">Option A: Iframe Snippet (srcdoc)</button>
-          <button class="export-tab" data-export-type="code">Option B: HTML Block Fragment</button>
-          <button class="export-tab" data-export-type="rise-zip" id="export-tab-rise-zip">Option C: Web Package ZIP<span id="rise-zip-recommended-badge" class="badge badge-accent" hidden>Recommended</span></button>
-        </div>
+        <div class="export-primary-section">
+          <h4 id="export-primary-title">Copy for Rise</h4>
+          <p class="modal-desc" id="export-primary-desc">Paste this into a <strong>Code &gt; Add code</strong> block in Rise 360.</p>
 
-        <div id="export-media-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
-
-        <!-- Tab Content: Iframe Link -->
-        <div class="export-pane active" id="pane-export-iframe">
-          <p class="modal-desc">Copy the code below and paste it into a <strong>Code &gt; Add code</strong> block in Rise 360.</p>
-
-          <div class="code-export-box">
-            <div class="code-scroll-area">
-              <pre><code id="export-iframe-code">&lt;iframe src="https://rise-builder.cloud.app/preview/accordion-abc123xyz" width="100%" height="450px" style="border:none;"&gt;&lt;/iframe&gt;</code></pre>
-            </div>
-            <button id="btn-copy-iframe" class="btn btn-secondary btn-small copy-btn">Copy Code</button>
-          </div>
-
-          <div class="instructions-alert">
+          <div id="export-primary-zip-notice" class="instructions-alert" role="status" hidden>
             <div class="alert-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
             </div>
             <div class="alert-content">
-              <strong>Steps to add this in Articulate Rise:</strong>
-              <ol>
-                <li>Add a new block where the component should appear and open the <strong>Block library</strong>.</li>
-                <li>Select <strong>&lt;/&gt; Code</strong>.</li>
-                <li>Choose <strong>Add code</strong>, then paste the complete iframe code copied above into the code editor.</li>
-                <li>Save the code block, then preview the lesson. This option uses a fixed-height box, so adjust the height in Rise if your content looks cut off or scrolls inside a small window.</li>
-                <li>Confirm the block renders and responds to clicks/keyboard in Rise's own preview before publishing.</li>
-              </ol>
+              <strong>This component needs to be hosted, not pasted.</strong>
+              It includes audio, video, or a large image that can't fit inside Rise's code block. Open <strong>Advanced export options</strong> below and use <strong>Web Package ZIP</strong> instead.
             </div>
           </div>
-        </div>
 
-        <!-- Tab Content: HTML Code Block -->
-        <div class="export-pane" id="pane-export-code">
-          <p class="modal-desc">Paste it directly into a <strong>Code &gt; Add code</strong> block in Rise 360. If this component includes uploaded audio, video, or a large image, use <strong>Option C: Web Package ZIP</strong> instead — those files don't fit safely inside this format.</p>
-
-          <div class="code-export-box">
+          <div class="code-export-box" id="export-primary-code-box">
             <div class="code-scroll-area">
               <pre><code id="export-html-code">&lt;style&gt;
   /* Customized component styles */
@@ -488,38 +461,80 @@
   /* Interactive behavior appears here */
 &lt;/script&gt;</code></pre>
             </div>
-            <button id="btn-copy-html" class="btn btn-secondary btn-small copy-btn">Copy Fragment</button>
+            <button id="btn-copy-html" class="btn btn-primary copy-btn">Copy for Rise</button>
           </div>
 
-          <p class="modal-desc">Prefer a single file instead? Download it below — good for testing on its own or hosting elsewhere as one file. Only works when every asset is small enough to embed directly.</p>
-          <p class="export-file-size-label" id="export-file-size"></p>
-          <div class="action-buttons-row">
-            <button id="btn-download-html" class="btn btn-secondary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              <span>Download .HTML File</span>
-            </button>
+          <div id="export-media-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
+
+          <div class="instructions-alert" id="export-primary-steps">
+            <div class="alert-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </div>
+            <div class="alert-content">
+              <strong>Steps to add this in Articulate Rise:</strong>
+              <ol>
+                <li>Add a new block where the component should appear and open the <strong>Block library</strong>.</li>
+                <li>Select <strong>&lt;/&gt; Code</strong>.</li>
+                <li>Choose <strong>Add code</strong>, then paste the code copied above into the code editor.</li>
+                <li>Save the code block, then preview the lesson to confirm it renders and responds to clicks/keyboard before publishing.</li>
+              </ol>
+            </div>
           </div>
         </div>
 
-        <!-- Tab Content: Web Package ZIP -->
-        <div class="export-pane" id="pane-export-rise-zip">
-          <p class="modal-desc">Extract the ZIP and host <code>index.html</code> plus its <code>assets</code> folder on a web server, then embed that hosted page in Rise the same way you would any other externally-hosted page — this cannot be uploaded to Rise directly as a custom block.</p>
+        <details class="advanced-export-options" id="export-advanced-options">
+          <summary>Advanced export options</summary>
 
-          <div id="rise-zip-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
-          <div id="rise-zip-blocking" class="field-error" role="alert" hidden></div>
+          <div id="export-compatibility-report" class="compat-report" role="status" aria-live="polite"></div>
 
-          <p class="export-file-size-label" id="rise-zip-file-size"></p>
-          <div class="action-buttons-row">
-            <button id="btn-download-rise-zip" class="btn btn-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              <span>Download Web Package ZIP</span>
-            </button>
+          <div class="export-tabs-container">
+            <button class="export-tab active" data-export-type="iframe">Iframe Snippet (srcdoc)</button>
+            <button class="export-tab" data-export-type="rise-zip" id="export-tab-rise-zip">Web Package ZIP</button>
           </div>
-          <details class="export-manifest-details">
-            <summary>Asset manifest (also included in the ZIP as assets/manifest.json)</summary>
-            <div class="code-export-box"><div class="code-scroll-area"><pre><code id="rise-zip-manifest">[]</code></pre></div></div>
-          </details>
-        </div>
+
+          <!-- Tab Content: Iframe Link -->
+          <div class="export-pane active" id="pane-export-iframe">
+            <p class="modal-desc">An alternative way to paste into Rise's <strong>Code &gt; Add code</strong> block. Keeps this component's styles and scripts fully separate from the Rise page, at the cost of a fixed height. If completion tracking is on, use <strong>Copy for Rise</strong> above instead — Rise can't detect completion through this format.</p>
+
+            <div class="code-export-box">
+              <div class="code-scroll-area">
+                <pre><code id="export-iframe-code">&lt;iframe src="https://rise-builder.cloud.app/preview/accordion-abc123xyz" width="100%" height="450px" style="border:none;"&gt;&lt;/iframe&gt;</code></pre>
+              </div>
+              <button id="btn-copy-iframe" class="btn btn-secondary btn-small copy-btn">Copy Code</button>
+            </div>
+          </div>
+
+          <!-- Tab Content: Web Package ZIP -->
+          <div class="export-pane" id="pane-export-rise-zip">
+            <p class="modal-desc">Extract the ZIP and host <code>index.html</code> plus its <code>assets</code> folder on a web server, then embed that hosted page in Rise the same way you would any other externally-hosted page — this cannot be uploaded to Rise directly as a custom block.</p>
+
+            <div id="rise-zip-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
+            <div id="rise-zip-blocking" class="field-error" role="alert" hidden></div>
+
+            <p class="export-file-size-label" id="rise-zip-file-size"></p>
+            <div class="action-buttons-row">
+              <button id="btn-download-rise-zip" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Download Web Package ZIP</span>
+              </button>
+            </div>
+            <details class="export-manifest-details">
+              <summary>Asset manifest (also included in the ZIP as assets/manifest.json)</summary>
+              <div class="code-export-box"><div class="code-scroll-area"><pre><code id="rise-zip-manifest">[]</code></pre></div></div>
+            </details>
+          </div>
+
+          <div class="export-standalone-section">
+            <p class="modal-desc">Prefer a single downloadable file? Good for testing on its own or hosting elsewhere as one file. Only works when every asset is small enough to embed directly.</p>
+            <p class="export-file-size-label" id="export-file-size"></p>
+            <div class="action-buttons-row">
+              <button id="btn-download-html" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Download .HTML File</span>
+              </button>
+            </div>
+          </div>
+        </details>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary modal-cancel-btn">Close</button>

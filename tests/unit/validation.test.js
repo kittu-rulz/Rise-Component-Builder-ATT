@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { COMPONENT_REGISTRY, getComponentById, getDefaultConfig } from '../../js/component-registry.js';
 import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID } from '../../js/themes.js';
-import { collectSyncIssues, runPreflight, SEVERITY, summarizePreflight } from '../../js/validation.js';
+import { checkCompletionExportFormatIssue, collectSyncIssues, runPreflight, SEVERITY, summarizePreflight } from '../../js/validation.js';
 
 const theme = BUILT_IN_THEMES.find(entry => entry.id === DEFAULT_THEME_ID);
 
@@ -226,6 +226,42 @@ describe('General: Iframe Snippet format incompatible with completion tracking',
     const config = buildConfig('accordion', { trackCompletion: false });
     const issues = issuesFor('accordion', config);
     expect(issues.some(i => i.ruleId === 'general-completion-iframe-format')).toBe(false);
+  });
+});
+
+describe('General: checkCompletionExportFormatIssue — Blocking gate for a specific selected export format (P02)', () => {
+  test('completion on + code format (the only compatible one) never blocks', () => {
+    const config = buildConfig('accordion', { trackCompletion: true });
+    expect(checkCompletionExportFormatIssue(config, 'code')).toBeNull();
+  });
+
+  test('completion on + iframe format is Blocking with a direct fix', () => {
+    const config = buildConfig('accordion', { trackCompletion: true });
+    const result = checkCompletionExportFormatIssue(config, 'iframe');
+    expect(result).not.toBeNull();
+    expect(result.severity).toBe(SEVERITY.BLOCKING);
+    expect(result.ruleId).toBe('general-completion-export-incompatible');
+    expect(result.message).toMatch(/Copy for Rise/);
+  });
+
+  test('completion on + rise-zip format is Blocking with a direct fix', () => {
+    const config = buildConfig('accordion', { trackCompletion: true });
+    const result = checkCompletionExportFormatIssue(config, 'rise-zip');
+    expect(result).not.toBeNull();
+    expect(result.severity).toBe(SEVERITY.BLOCKING);
+    expect(result.ruleId).toBe('general-completion-export-incompatible');
+  });
+
+  test('completion off never blocks, regardless of format', () => {
+    const config = buildConfig('accordion', { trackCompletion: false });
+    ['code', 'iframe', 'rise-zip', 'standaloneDownload'].forEach(formatKey => {
+      expect(checkCompletionExportFormatIssue(config, formatKey)).toBeNull();
+    });
+  });
+
+  test('no format supplied never blocks, even with completion on', () => {
+    const config = buildConfig('accordion', { trackCompletion: true });
+    expect(checkCompletionExportFormatIssue(config, undefined)).toBeNull();
   });
 });
 

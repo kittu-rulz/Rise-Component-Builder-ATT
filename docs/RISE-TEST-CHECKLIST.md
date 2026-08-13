@@ -10,9 +10,9 @@ Run this once per component you need Confirmed for, and once per Rise-side chang
 2. Read the compatibility report at the top of the modal for whichever option you're about to test — it names the specific thing that's unverified.
 3. Have `docs/COMPATIBILITY-RESULTS.md` open in another tab; you'll fill in a row at the end.
 
-## Test A — Option A: Iframe snippet (srcdoc)
+## Test A — Iframe snippet (srcdoc)
 
-1. With **Option A: Iframe Snippet (srcdoc)** selected, click **Copy Code**.
+1. Open **Advanced export options**, select the **Iframe Snippet (srcdoc)** tab, and click **Copy Code**.
 2. In Rise, open the lesson where the block should appear → **Block library** → **`</>` Code** → **Add code**.
 3. Paste the copied code into the code editor exactly as copied. Do not manually edit the `srcdoc` attribute.
 4. Save the code block.
@@ -26,9 +26,9 @@ Run this once per component you need Confirmed for, and once per Rise-side chang
 7. Repeat step 6 in Rise's **share-link preview** (a shareable pre-publish link, not just the in-editor preview) if your Rise plan supports it — this is a separate row in the matrix.
 8. If you have access to publish to a test/sandbox course, repeat step 6 once more against the fully published lesson.
 
-## Test B — Option B: HTML block fragment
+## Test B — HTML block fragment
 
-1. Switch to **Option B: HTML Block Fragment**, click **Copy Fragment**.
+1. Click **Copy for Rise** in the main export panel (this is the primary/default recommendation).
 2. Repeat steps 2–8 above, pasting the fragment instead of the iframe snippet.
 3. Additionally check: does anything on the *rest* of the Rise lesson page look visually broken after adding this block (unexpected color/spacing changes elsewhere on the page)? This format's CSS class names are not scoped against the host page by design — a collision here is expected to be possible, not a surprise.
 

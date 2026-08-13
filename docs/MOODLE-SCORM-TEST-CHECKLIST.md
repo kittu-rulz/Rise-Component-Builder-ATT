@@ -17,7 +17,7 @@ Everything below tests the two *actually available* export formats (iframe snipp
 
 This test exists to confirm the matrix's "Unsupported" call is still accurate, not to find a workaround.
 
-1. Export the component (Option B: HTML Block Fragment), copy it.
+1. Export the component (click **Copy for Rise** in the main export panel), copy it.
 2. In Moodle, add a **Label** or **Page** resource to a course section, using the default Atto (or TinyMCE) editor.
 3. Switch the editor to its **HTML source** view (the `<>` icon) and paste the fragment in, including the `<script>` block.
 4. Save and view the resulting page as a student/teacher without site-wide "Trust content" enabled for that content.
@@ -26,7 +26,7 @@ This test exists to confirm the matrix's "Unsupported" call is still accurate, n
 
 ## Test B — File resource + IFrame embed (expected: Fallback)
 
-1. Export the component (Option B, or download the standalone `.html` file).
+1. Export the component (click **Copy for Rise**, or open **Advanced export options** and download the standalone `.html` file).
 2. In Moodle, add a **File** resource and upload the standalone `.html` file (or, if your Moodle has the IFrame/embed plugin, point it at the uploaded file).
 3. Set the display mode to open the file in an embedded frame (Moodle's File resource supports an "Embed" display option) rather than forcing a download.
 4. View the resulting activity as a student.

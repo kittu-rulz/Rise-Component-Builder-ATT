@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { COMPATIBILITY_TIERS, EXPORT_FORMAT_COMPATIBILITY, getExportFormatCompatibility } from '../../js/compatibility.js';
+import { COMPATIBILITY_TIERS, EXPORT_FORMAT_COMPATIBILITY, getExportFormatCompatibility, isExportFormatCompletionCompatible } from '../../js/compatibility.js';
 
 describe('compatibility tier classification', () => {
   test('every tier has a stable id, label, and badge class', () => {
@@ -35,5 +35,22 @@ describe('compatibility tier classification', () => {
   test('every export format is confirmed', () => {
     const confirmed = Object.entries(EXPORT_FORMAT_COMPATIBILITY).filter(([, entry]) => entry.tier === 'confirmed');
     expect(confirmed.map(([key]) => key).sort()).toEqual(['code', 'iframe', 'rise-zip', 'standaloneDownload']);
+  });
+});
+
+describe('completion-compatibility rule (single source of truth for P02)', () => {
+  test('only the HTML fragment ("code") format is completion-compatible', () => {
+    expect(isExportFormatCompletionCompatible('code')).toBe(true);
+  });
+
+  test('iframe and rise-zip are not completion-compatible', () => {
+    expect(isExportFormatCompletionCompatible('iframe')).toBe(false);
+    expect(isExportFormatCompletionCompatible('rise-zip')).toBe(false);
+  });
+
+  test('an unknown or missing format key is not completion-compatible', () => {
+    expect(isExportFormatCompletionCompatible('standaloneDownload')).toBe(false);
+    expect(isExportFormatCompletionCompatible('not-a-real-format')).toBe(false);
+    expect(isExportFormatCompletionCompatible(undefined)).toBe(false);
   });
 });

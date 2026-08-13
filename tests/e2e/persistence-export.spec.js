@@ -56,10 +56,10 @@ test('export contains selected content and theme, excludes unsafe executable mar
   ['quiz-option', 'gallery-item-card', 'audio-player-block', 'video-wrapper', 'ai-generator-preview']
     .forEach(marker => expect(exported).not.toContain(marker));
 
-  // The generated file size must be visible to the author before download.
+  // The single-file download lives under Advanced export options.
+  await page.locator('#export-advanced-options > summary').click();
   await expect(page.locator('#export-file-size')).toContainText(/\d+(\.\d+)?\s*(B|KB|MB)/);
 
-  await page.getByRole('button', { name: 'Option B: HTML Block Fragment' }).click();
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#btn-download-html').click();
   const download = await downloadPromise;
@@ -101,6 +101,9 @@ test('export copy button copies iframe code and shows visible confirmation', asy
   const riseInstructions = page.locator('.instructions-alert').filter({ hasText: 'Steps to add this in Articulate Rise' });
   await expect(riseInstructions).toContainText('Code');
   await expect(riseInstructions).toContainText('Add code');
+
+  // The iframe snippet lives under Advanced export options.
+  await page.locator('#export-advanced-options > summary').click();
   const expectedCode = await page.locator('#export-iframe-code').textContent();
   const copyButton = page.locator('#btn-copy-iframe');
   await copyButton.click();
@@ -112,4 +115,36 @@ test('export copy button copies iframe code and shows visible confirmation', asy
   if (browserName === 'chromium') {
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(expectedCode);
   }
+});
+
+test('completion tracking blocks the Iframe Snippet and Web Package ZIP exports, and guides back to Copy for Rise', async ({ page }) => {
+  await openAccordion(page);
+  await page.locator('.editor-tab[data-tab="settings"]').click();
+  await page.locator('#input-track-completion').check();
+  await page.locator('#btn-export').click();
+
+  // The primary "Copy for Rise" action is always the completion-compatible format —
+  // never blocked by this gate.
+  await expect(page.locator('#export-primary-title')).toHaveText('Rise Code Block with completion');
+  await expect(page.locator('#btn-copy-html')).toBeEnabled();
+
+  await page.locator('#export-advanced-options > summary').click();
+
+  const iframeButton = page.locator('#btn-copy-iframe');
+  await expect(iframeButton).toBeDisabled();
+  await expect(page.locator('#pane-export-iframe .completion-export-block')).toContainText('Copy for Rise');
+
+  await page.locator('.export-tab[data-export-type="rise-zip"]').click();
+  const zipButton = page.locator('#btn-download-rise-zip');
+  await expect(zipButton).toBeDisabled();
+  await expect(page.locator('#pane-export-rise-zip .completion-export-block')).toContainText('Copy for Rise');
+
+  // Turning completion off releases both blocks.
+  await page.locator('#modal-export .modal-close-btn').click();
+  await page.locator('#input-track-completion').uncheck();
+  await page.locator('#btn-export').click();
+  await page.locator('#export-advanced-options > summary').click();
+  await expect(page.locator('#btn-copy-iframe')).toBeEnabled();
+  await expect(page.locator('#btn-download-rise-zip')).toBeEnabled();
+  await expect(page.locator('#pane-export-iframe .completion-export-block')).toHaveCount(0);
 });

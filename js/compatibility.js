@@ -34,7 +34,7 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
       'Keeps the component’s styles and scripts separate from the Rise page.',
       'Uses a fixed height, which you may need to adjust after pasting.',
       'Some special features (like downloads, popups, forms, or autoplaying media) may need extra checking after pasting.',
-      'Using completion tracking? Use Option B (HTML Block Fragment) instead.'
+      'Using completion tracking? This format does not report completion to Rise — use "Copy for Rise" in the main panel instead.'
     ]
   },
   code: {
@@ -44,7 +44,7 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
       'Automatically expands with its content.',
       'Shares the host page, so styles could conflict with other content.',
       'Requires the host platform to allow inline JavaScript.',
-      'Works correctly with completion tracking.'
+      'This is the only export format confirmed to report completion to Rise.'
     ]
   },
   'rise-zip': {
@@ -54,7 +54,8 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
       'Includes index.html and referenced media files in an assets folder.',
       'Extract and host the files on a web server, then embed that hosted page in Rise.',
       'Cannot be uploaded directly to Rise as a custom block.',
-      'This is not a SCORM package.'
+      'This is not a SCORM package.',
+      'Using completion tracking? Reporting completion to Rise through this format is not confirmed to work — use "Copy for Rise" in the main panel instead if you need completion tracking.'
     ]
   },
   standaloneDownload: {
@@ -68,4 +69,16 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
 
 export function getExportFormatCompatibility(formatKey) {
   return EXPORT_FORMAT_COMPATIBILITY[formatKey] || null;
+}
+
+// Central completion-compatibility rule (single source of truth — do not re-derive this
+// condition anywhere else). Only the HTML fragment ("code") export format is confirmed to
+// let Rise detect this component's completion; see docs/COMPLETION-INTEGRATION.md
+// "Export-format caveat". Both the export modal's own guidance (js/compatibility.js) and
+// the Preflight blocking check (js/validation.js) call this function rather than each
+// keeping their own copy of the condition.
+const COMPLETION_COMPATIBLE_EXPORT_FORMAT = 'code';
+
+export function isExportFormatCompletionCompatible(formatKey) {
+  return formatKey === COMPLETION_COMPATIBLE_EXPORT_FORMAT;
 }

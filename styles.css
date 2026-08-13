@@ -2094,6 +2094,49 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   .media-upload-details { grid-template-columns: 1fr; }
 }
 
+/* Export Modal: primary recommendation + advanced disclosure */
+.export-primary-section {
+  margin-bottom: 20px;
+}
+
+.export-primary-section h4 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.export-primary-section .modal-desc {
+  margin-top: 0;
+}
+
+.export-primary-section .instructions-alert {
+  margin-bottom: 16px;
+}
+
+.advanced-export-options {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.advanced-export-options summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.advanced-export-options[open] summary {
+  color: var(--text-main);
+}
+
+.export-standalone-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
 /* Export Modal Code Box & Tabs */
 .export-tabs-container {
   display: flex;

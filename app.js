@@ -21,8 +21,8 @@ import {
 import { copyTextToClipboard, escapeHTML, formatItemLabel, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
 import { showToast } from './js/toast.js';
 import { COMPATIBILITY_TIERS, getExportFormatCompatibility } from './js/compatibility.js';
-import { collectSyncIssues, runPreflight, summarizePreflight } from './js/validation.js';
-import { collectMediaReferences, resolveMediaLimits, validateMediaAccessibility } from './js/media.js';
+import { checkCompletionExportFormatIssue, collectSyncIssues, runPreflight, summarizePreflight } from './js/validation.js';
+import { resolveMediaLimits, validateMediaAccessibility } from './js/media.js';
 import { downloadProjectPackage, exportProjectPackage, importProjectPackage, isProjectPackageFile } from './js/project-package.js';
 import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, restoreMediaReferences } from './js/media-storage.js';
 import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, getBuiltInTheme, normalizeComponentOverrides } from './js/themes.js';
@@ -1160,7 +1160,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
+  // Tracked so applyCompletionExportGate() (a second, independent gate layered on top —
+  // see below) never re-enables a button the general preflight gate already disabled.
+  let lastExportGateEnabled = true;
+
   function setExportActionsEnabled(enabled) {
+    lastExportGateEnabled = enabled;
     ['btn-copy-iframe', 'btn-copy-html', 'btn-download-html'].forEach(id => {
       const button = document.getElementById(id);
       if (!button) return;
@@ -1175,6 +1180,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       zipButton.disabled = true;
       zipButton.title = 'Fix the blocking errors listed above before exporting.';
     }
+  }
+
+  // A second, independent Blocking gate (Requirement 4, P02) layered on top of the general
+  // preflight gate above: when completion tracking is on, the Iframe Snippet and Web
+  // Package ZIP formats can't report completion to Rise (js/compatibility.js's single
+  // source of truth), so their actions are disabled with a direct fix — use "Copy for
+  // Rise" in the primary panel instead — regardless of whether the rest of the component
+  // is otherwise clean. Only relaxes a button when the general gate also allows it.
+  function applyCompletionExportGate() {
+    [['iframe', 'btn-copy-iframe'], ['rise-zip', 'btn-download-rise-zip']].forEach(([formatKey, buttonId]) => {
+      const gateIssue = checkCompletionExportFormatIssue(appState.config, formatKey);
+      const button = document.getElementById(buttonId);
+      const pane = document.getElementById(`pane-export-${formatKey}`);
+      let banner = pane?.querySelector('.completion-export-block');
+      if (gateIssue) {
+        if (pane && !banner) {
+          banner = document.createElement('div');
+          banner.className = 'field-error completion-export-block';
+          banner.setAttribute('role', 'alert');
+          pane.insertBefore(banner, pane.firstChild);
+        }
+        if (banner) banner.textContent = gateIssue.message;
+        if (button) { button.disabled = true; button.title = 'Switch to "Copy for Rise" in the main panel — this format doesn\'t report completion to Rise.'; }
+      } else {
+        if (banner) banner.remove();
+        if (button && lastExportGateEnabled) { button.disabled = false; button.title = ''; }
+      }
+    });
   }
 
   async function runExportPreflightGate() {
@@ -1194,15 +1227,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function updateRiseZipRecommendedBadge() {
-    const badge = document.getElementById('rise-zip-recommended-badge');
-    if (badge) badge.hidden = collectMediaReferences(appState.config).length === 0;
+  // Primary export recommendation: the Fragment/"Copy for Rise" box is the one dominant
+  // action, relabeled when completion tracking is on and superseded entirely by a
+  // "use Web Package ZIP" notice when media can't be safely inlined into it.
+  function updatePrimaryExportSection(payload) {
+    const trackCompletion = Boolean(appState.config.trackCompletion);
+    const title = document.getElementById('export-primary-title');
+    const desc = document.getElementById('export-primary-desc');
+    const zipNotice = document.getElementById('export-primary-zip-notice');
+    const codeBox = document.getElementById('export-primary-code-box');
+    const steps = document.getElementById('export-primary-steps');
+    const advancedDetails = document.getElementById('export-advanced-options');
+    const zipRequired = payload.warnings.length > 0;
+
+    if (title) title.textContent = zipRequired
+      ? 'This component needs to be hosted'
+      : (trackCompletion ? 'Rise Code Block with completion' : 'Copy for Rise');
+    if (desc) desc.textContent = zipRequired
+      ? ''
+      : (trackCompletion
+        ? 'Paste this into a Code > Add code block in Rise 360. This format is required for Rise to detect when this component is complete.'
+        : 'Paste this into a Code > Add code block in Rise 360.');
+
+    if (zipNotice) zipNotice.hidden = !zipRequired;
+    if (codeBox) codeBox.hidden = zipRequired;
+    if (steps) steps.hidden = zipRequired;
+
+    if (zipRequired && advancedDetails) {
+      advancedDetails.open = true;
+      const zipTab = document.querySelector('.export-tab[data-export-type="rise-zip"]');
+      if (zipTab && !zipTab.classList.contains('active')) zipTab.click();
+    }
   }
 
   async function setupExportModalContent() {
     const activeTab = document.querySelector('.export-tab.active');
     renderExportCompatibilityReport(activeTab ? activeTab.getAttribute('data-export-type') : 'iframe');
-    updateRiseZipRecommendedBadge();
     const canExport = await runExportPreflightGate();
     const warningBox = document.getElementById('export-media-warning');
     if (warningBox) { warningBox.hidden = false; warningBox.classList.add('is-loading'); warningBox.textContent = 'Preparing media export…'; }
@@ -1229,10 +1289,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       warningBox.textContent = payload.warnings.join(' ');
     }
 
+    updatePrimaryExportSection(payload);
+
     const fileSizeLabel = document.getElementById('export-file-size');
     if (fileSizeLabel) fileSizeLabel.textContent = `Standalone HTML file size: ${formatExportedFileSize(getExportedFileSize(payload.html))}`;
 
     await setupRiseZipPane(canExport);
+    // setupRiseZipPane() sets the ZIP button's disabled/title state purely from the
+    // general gate + missing-asset check, with no knowledge of the completion gate above —
+    // re-apply last so it always has the final word (mirrors the completion gate also
+    // running after setExportActionsEnabled() for the same reason).
+    applyCompletionExportGate();
   }
 
   async function setupRiseZipPane(canExport) {

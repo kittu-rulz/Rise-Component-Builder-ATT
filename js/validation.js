@@ -26,6 +26,13 @@ import { isMediaReference, resolveMediaLimits, validateMediaAccessibility } from
 import { getMediaRecord } from './media-storage.js';
 import { formatItemLabel, sanitizeRichText, sanitizeURL } from './utilities.js';
 import { contrastRatio, resolveThemeTokens } from './themes.js';
+import { isExportFormatCompletionCompatible } from './compatibility.js';
+
+// Requirement wording (P02): the one sentence describing what "completion" means here,
+// reused verbatim everywhere this is explained — Behavior tab help text, Preflight
+// messages, and the export modal — so authors never see two different explanations of
+// the same thing.
+export const COMPLETION_CLAIM_STATEMENT = 'Require learners to view every item before this component reports completion. Rise course completion support requires the Rise Code Block export and a compatible host configuration.';
 
 export const SEVERITY = Object.freeze({
   BLOCKING: 'blocking',
@@ -228,8 +235,25 @@ function checkCompletionConfig(config, settings) {
       'Optional: Builder Settings has an "Expected parent frame origin" field for extra security. Most authors can leave it blank.'));
   }
   issues.push(issue('general-completion-iframe-format', SEVERITY.WARNING, CATEGORY.GENERAL,
-    'Completion tracking is on — when pasting into Rise, use Option B (HTML Block Fragment). Option A (Iframe Snippet) won\'t let Rise detect that this block is complete.'));
+    `${COMPLETION_CLAIM_STATEMENT} Use "Copy for Rise" in the Export panel — the Iframe Snippet and Web Package ZIP formats are not confirmed to report completion.`));
   return issues;
+}
+
+/**
+ * Central Preflight blocking check (Requirement 4, P02) for a specific export format the
+ * author is actively about to use (e.g. the Advanced "Iframe Snippet" or "Web Package ZIP"
+ * pane). Unlike checkCompletionConfig above — which fires an informational Warning with no
+ * format context — this is Blocking, because a specific, incompatible format has actually
+ * been selected. Not part of collectSyncIssues/runPreflight's default aggregate, since
+ * those run before any export format is chosen; called directly wherever a specific format
+ * is about to be used (js/compatibility.js#isExportFormatCompletionCompatible is the single
+ * source of truth this defers to).
+ */
+export function checkCompletionExportFormatIssue(config, exportFormat) {
+  if (!config.trackCompletion || !exportFormat) return null;
+  if (isExportFormatCompletionCompatible(exportFormat)) return null;
+  return issue('general-completion-export-incompatible', SEVERITY.BLOCKING, CATEGORY.GENERAL,
+    `${COMPLETION_CLAIM_STATEMENT} This export format doesn't. Use "Copy for Rise" in the main panel instead.`);
 }
 
 // ---------------------------------------------------------------------------

@@ -64,7 +64,7 @@ test('a full authoring session: create, edit, save, reopen, preflight, export, a
   // 10. Export the component.
   await page.locator('#btn-export').click();
   await expect(page.locator('#export-html-code')).toContainText('Full Journey Tabs');
-  await page.getByRole('button', { name: 'Option B: HTML Block Fragment' }).click();
+  await page.locator('#export-advanced-options > summary').click();
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#btn-download-html').click();
   const download = await downloadPromise;
