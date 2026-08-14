@@ -135,6 +135,16 @@ test('flip-card custom artwork uploads per face and removal restores the built-i
   await expect(front.locator('.card-icon-badge svg')).toBeVisible();
 });
 
+test('Builder Settings shows a read-only AT&T Aleck Sans brand summary, not a font picker', async ({ page }) => {
+  await page.locator('#btn-settings').click();
+  await expect(page.locator('#modal-settings')).toContainText('Brand font: AT&T Aleck Sans');
+  await expect(page.locator('#modal-settings')).toContainText('Embedded automatically in exported components.');
+  await expect(page.locator('#settings-default-font')).toHaveCount(0);
+  await expect(page.locator('#modal-settings')).not.toContainText('Merriweather');
+  await expect(page.locator('#modal-settings')).not.toContainText('Roboto');
+  await expect(page.locator('#modal-settings')).not.toContainText('Montserrat');
+});
+
 test('media size-limit settings enforce a configurable maximum on image uploads', async ({ page }) => {
   await page.locator('#btn-settings').click();
   await page.locator('#settings-limit-image').fill('1');

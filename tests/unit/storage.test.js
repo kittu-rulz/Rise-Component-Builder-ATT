@@ -95,6 +95,33 @@ describe('versioned project persistence', () => {
     });
   });
 
+  // P03: the Builder Settings font picker is gone from the UI, but a version-1 project
+  // saved back when it existed can still carry a non-AT&T font choice in its embedded
+  // settings snapshot — that legacy data must keep migrating into componentOverrides.fontFamily
+  // exactly as before, even though nothing can create a new project shaped like this anymore.
+  test('a version-1 project carrying a legacy (pre-brand-lock) font choice still migrates it into componentOverrides.fontFamily', () => {
+    const current = validProject();
+    const legacy = { ...current, schemaVersion: 1, theme: 'light', settings: { ...current.settings, defaultFont: 'Roboto' } };
+    delete legacy.uiTheme;
+    delete legacy.componentOverrides;
+    expect(validateProject(legacy)).toMatchObject({
+      valid: true,
+      project: { schemaVersion: 2, componentOverrides: { fontFamily: 'Roboto' } }
+    });
+  });
+
+  // Settings no longer send defaultFont at all (the UI field is gone) — normalizeSettings
+  // must still parse a legacy stored settings blob that has one without throwing, and simply
+  // stop surfacing it as a live, user-facing choice going forward.
+  test('a stored settings blob with a legacy defaultFont value still loads without error', () => {
+    globalThis.localStorage.setItem(KEYS.settings, JSON.stringify({
+      defaultFont: 'Montserrat', exportFormat: 'web', autosave: true,
+      mediaLimitsMb: { image: 10, audio: 30, video: 100, svg: 2 }
+    }));
+    expect(() => loadSettings()).not.toThrow();
+    expect(loadSettings().exportFormat).toBe('web');
+  });
+
   test('version-0 (pre-versioning) projects migrate all the way through v1 to the current schema', () => {
     const current = validProject();
     // Pre-versioning projects had no schemaVersion field at all and used `title` instead of `name`.

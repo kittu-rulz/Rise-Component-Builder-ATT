@@ -689,7 +689,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function syncSettingsControls() {
-    document.getElementById('settings-default-font').value = appState.settings.defaultFont;
     document.getElementById('settings-export-format').value = appState.settings.exportFormat;
     document.getElementById('settings-enable-autosave').checked = appState.settings.autosave;
     document.getElementById('settings-limit-image').value = appState.settings.mediaLimitsMb.image;
@@ -1032,7 +1031,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnSaveSettings = document.getElementById('btn-save-settings');
   if (btnSaveSettings) {
     btnSaveSettings.addEventListener('click', () => {
-      const selectFont = document.getElementById('settings-default-font');
       const selectExport = document.getElementById('settings-export-format');
       const checkAutosave = document.getElementById('settings-enable-autosave');
       const limitImage = document.getElementById('settings-limit-image');
@@ -1043,7 +1041,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         appState.settings = saveSettings({
-          defaultFont: selectFont.value,
           exportFormat: selectExport.value,
           autosave: checkAutosave.checked,
           mediaLimitsMb: {
