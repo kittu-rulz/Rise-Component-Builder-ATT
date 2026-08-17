@@ -16,15 +16,62 @@ This is the full catalog of the schema-driven, component-specific validation eng
 
 1. **Existing inline field errors/warnings** (`.field-error`/`.field-warning`, `js/editor.js`) — unchanged: required-field, format (URL/number/color), and accessibility (alt-text/transcript) messages continue to appear directly under their field as the author types, exactly as before this system existed. These reuse the same underlying checks the new engine also calls (`js/field-validation.js`), so there is one source of truth, not two competing ones.
 2. **Item-card issue badges** — a small count badge (red for blocking, amber for warning/recommendation) on each item's collapsed-card header, live-updated on every edit via `schemaItemEditor.refreshIssueBadges()` — a targeted DOM patch, not a full re-render, so typing never loses focus or collapsed state.
-3. **The consolidated Preflight panel** (`#modal-preflight`, opened via the "Preflight" button in the editor header) — every issue from every rule, grouped by severity, each with a "Go to field" button that closes the panel and scrolls/focuses the exact field.
+3. **The consolidated Preflight panel** (`#modal-preflight`, opened via the "Preflight" button in the editor header) — every issue from every rule, grouped by severity (Blocking first, both by section order and by a colored left-border accent on each individual issue — Requirement 3, P05), each with a "Go to field"/"Go to item" button that closes the panel, expands the item if it was collapsed, and scrolls/focuses the exact target (`jumpToPreflightField`, `app.js`).
 4. **The Export modal** — runs the same full check (including the one async rule) every time it opens, shows the same grouped results above the compatibility report, and disables Copy/Download when blocking issues exist.
+
+Both panel and Export modal also update a separate, visually-hidden `aria-live="polite"` region (`#preflight-announcement` / `#export-preflight-announcement`) with one short sentence — `summarizePreflightForAnnouncement()`, e.g. "2 issues: 1 blocking, 1 warning." or "No issues found." — instead of making the detailed issue list itself the live region (Requirement 5, P05). The full list re-reading itself aloud on every render was a real problem, not a hypothetical one: the Export modal's results container used to carry `aria-live="polite"` directly, so opening it with several issues present read every issue's full text aloud. The concise region is updated only from a full preflight run (panel open, export gate) — never from the per-keystroke inline-badge refresh path, so typing never triggers an announcement.
 
 ## Architecture
 
-- `collectSyncIssues(context)` — every rule except one, pure and synchronous. Safe to call on every keystroke (badges, the editor header's live badge) and is the bulk of the consolidated panel.
+- `collectSyncIssues(context)` — runs every *registered* rule except one (see "Rule registry" below), pure and synchronous. Safe to call on every keystroke (badges, the editor header's live badge) and is the bulk of the consolidated panel.
 - `runPreflight(context)` — `collectSyncIssues` plus `checkBrokenMediaReferences` (the one rule needing an IndexedDB read). Used by the Preflight panel and the Export modal, where an async round-trip is acceptable.
 - Reuses rather than re-implements: `validateSchemaField`/`getAccessibilityWarning` (`js/field-validation.js`, extracted from `js/editor.js` specifically so neither module has to import the other), `validateMediaAccessibility` (`js/media.js`), `resolveThemeTokens` + `contrastRatio` (`js/themes.js`).
 - **Fails open.** If the preflight check itself throws (a bug in this engine), the Export modal logs it inline but does not disable export — a broken validator must never become a way to brick a working export.
+
+## Result shape (P05)
+
+Every issue that leaves this module — from `collectSyncIssues`, `runPreflight`, or `checkCompletionExportFormatIssue` — has this stable shape:
+
+| Field | Meaning |
+| --- | --- |
+| `ruleId` | Stable machine identifier, e.g. `general-required-field`. One rule id can be emitted at different severities in different situations (`general-invalid-completion-config`) — see `RULE_TITLES` below for why title and explanation are separate. |
+| `severity` | `SEVERITY.BLOCKING` / `WARNING` / `RECOMMENDATION`. |
+| `category` | Internal grouping (`general`/`knowledge`/`media`/`hotspots`) — not currently surfaced in the UI, kept for potential future filtering. |
+| `title` | Short, static, rule-level label (`RULE_TITLES[ruleId]`, e.g. "Required field is empty") — the same for every instance of that rule. |
+| `explanation` | The detailed, instance-specific text — which field, which item, which count. This is what used to be called `message`. |
+| `fieldId` / `itemIndex` | Kept at the top level (existing call sites read them directly) *and* mirrored into `target` below. |
+| `target` | `{ componentId, itemIndex, fieldId }` — a single structured pointer to where in the config this issue lives. |
+| `fix` | `{ type: 'goToField' \| 'goToItem', label }` when there's something to navigate to, else `null`. `itemIndex` alone (no `fieldId`) still gets a `goToItem` fix — `jumpToPreflightField` (`app.js`) falls back to focusing the item card itself when there's no more specific field. |
+
+## Rule registry (P05) — adding a rule
+
+Rules are **registered**, not hardcoded into a conditional chain. `collectSyncIssues(ctx)` runs every entry in the registry whose `appliesTo(ctx)` (if present) returns true, and enriches whatever issues each `check(ctx)` returns into the result shape above.
+
+```js
+import { registerValidationRule, SEVERITY } from './validation.js';
+
+registerValidationRule({
+  id: 'my-new-rule',                          // unique registry key — required
+  appliesTo: ({ componentId }) => componentId === 'my-component', // omit to run for every component
+  check: ({ config }) => {
+    if (config.someField) return [];
+    return [{
+      ruleId: 'my-new-rule-issue',             // your own stable id — add it to RULE_TITLES for a custom title
+      severity: SEVERITY.WARNING,
+      category: 'general',
+      explanation: 'Explain exactly what is wrong and why it matters.',
+      fieldId: 'someField',                    // or null
+      itemIndex: null                          // or the item's index
+    }];
+  }
+});
+```
+
+- `ctx` is the same context object `collectSyncIssues`/`runPreflight` receive: `{ componentId, schema, config, theme, componentOverrides, settings }` (plus `mediaStore` for the one async rule).
+- No edit to `collectSyncIssues` itself, and no `if (componentId !== 'x') return []` guard buried in a shared module — `appliesTo` is the whole mechanism (Requirement 2).
+- A `ruleId` with no `RULE_TITLES` entry still gets a title — it falls back to the ruleId string itself, so a new rule never ships with a blank title.
+- `unregisterValidationRule(id)` removes a registry entry (mainly for tests — register a rule, assert behavior, unregister it in `afterEach`). `listRegisteredRuleIds()` lists the current registry, in run order.
+- This is deliberately not wired up for any component module to self-register today — the deliverable for this pass is the mechanism and migrating the existing rules onto it, not expanding the catalog.
 
 ## General rules
 
@@ -88,7 +135,8 @@ Hotspot keyboard behavior itself (Escape to close, native `<button>` Enter/Space
 
 ## Testing
 
-- `tests/unit/validation.test.js` — one or more tests per rule ID, both a triggering case and (for the less obvious rules) a non-triggering case, plus a sanity sweep asserting every component's *default* configuration produces zero blocking issues.
+- `tests/unit/validation.test.js` — one or more tests per rule ID, both a triggering case and (for the less obvious rules) a non-triggering case, a sanity sweep asserting every component's *default* configuration produces zero blocking issues, and (P05) coverage of the result model (title/explanation/target/fix on every issue shape), the rule registry (`registerValidationRule`/`unregisterValidationRule`/`listRegisteredRuleIds`, `appliesTo` scoping), severity grouping/counts, and `summarizePreflightForAnnouncement`'s no-issue/singular/plural/mixed-severity output.
+- `tests/e2e/preflight.spec.js` (P05) — real-browser field targeting: "Go to field"/"Go to item" closes the panel, expands a collapsed item, and focuses the live (not stale) target element, both by mouse and by keyboard; the no-issue state; the concise accessible announcement.
 - `tests/unit/completion.test.js` covers `general-invalid-completion-config`'s interaction with the completion adapter system (`docs/COMPLETION-INTEGRATION.md`) at the compiled-output level.
 
 ## Non-goals

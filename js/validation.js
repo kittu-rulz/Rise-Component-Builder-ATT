@@ -1,6 +1,7 @@
 // Production-grade, schema-driven preflight validation. See docs/VALIDATION-RULES.md for
-// the full rule catalog, severity definitions, and the reasoning behind every rule below —
-// this file's comments point at *what*, that doc explains *why* in depth.
+// the full rule catalog, severity definitions, the reasoning behind every rule below, and
+// (P05) how to register a new rule — this file's comments point at *what*, that doc
+// explains *why* in depth.
 //
 // Three severities, and only one of them ever blocks export:
 //   BLOCKING       — export must not proceed (the output would be broken, empty, or
@@ -11,11 +12,18 @@
 //                    (missing hotspot background image, empty per-option feedback).
 //
 // Two layers:
-//   collectSyncIssues(...)  — pure, synchronous, safe to call on every keystroke. Covers
-//                             every rule except media-existence (needs an IndexedDB read).
+//   collectSyncIssues(...)  — pure, synchronous, safe to call on every keystroke. Runs
+//                             every registered rule except media-existence (needs an
+//                             IndexedDB read).
 //   runPreflight(...)       — async wrapper: sync issues + the one async rule (broken
 //                             media references), for the consolidated preflight panel and
 //                             the export gate, where an async round-trip is acceptable.
+//
+// P05: rules live in a registry (REGISTERED_RULES / registerValidationRule below), not a
+// hardcoded conditional chain — see "Rule registry" for the extensibility model this
+// replaces the old flat function-call list with. Every result is enriched into a stable
+// shape (ruleId, severity, title, explanation, target, fix) before it leaves this module —
+// see "Result shape".
 //
 // Reuses existing, already-tested logic rather than re-implementing it: validateSchemaField
 // (js/editor.js) for required/format checks, validateMediaAccessibility (js/media.js) for
@@ -47,8 +55,70 @@ const CATEGORY = Object.freeze({
   HOTSPOTS: 'hotspots'
 });
 
-function issue(ruleId, severity, category, message, extra = {}) {
-  return { ruleId, severity, category, message, fieldId: extra.fieldId ?? null, itemIndex: extra.itemIndex ?? null };
+// Short, static, human-readable label for each rule — the "title" half of the result
+// model (Requirement 1, P05). The detailed, instance-specific text (which field, which
+// item, which count) is the separate "explanation". One rule id can still emit issues at
+// different severities in different situations (e.g. general-invalid-completion-config) —
+// the title describes the rule, the explanation describes the specific case.
+const RULE_TITLES = Object.freeze({
+  'general-required-field': 'Required field is empty',
+  'general-empty-component': 'Component has no content',
+  'general-excessive-length': 'Field content is unusually long',
+  'general-unsupported-rich-html': 'Unsupported formatting was removed',
+  'general-invalid-url': 'Invalid URL',
+  'general-missing-accessible-name': 'Missing accessible name',
+  'general-missing-alt-text': 'Missing alt text or transcript',
+  'general-insufficient-contrast': 'Insufficient color contrast',
+  'general-duplicate-items': 'Duplicate item content',
+  'general-invalid-completion-config': 'Completion tracking configuration issue',
+  'general-completion-iframe-format': 'Export format may not report completion',
+  'general-completion-export-incompatible': "Selected export format can't report completion",
+  'media-unsupported-file-type': 'Unsupported media file type',
+  'media-oversized-file': 'Media file exceeds size limit',
+  'media-external-asset-dependency': 'External media URL, not an uploaded file',
+  'media-insecure-http-url': 'Insecure media URL',
+  'media-broken-reference': 'Uploaded media file is missing',
+  'knowledge-no-correct-answer': 'No correct answer marked',
+  'knowledge-impossible-passing': 'Knowledge check can never be passed',
+  'knowledge-multiple-correct-single-allowed': 'Multiple correct answers on a single-answer question',
+  'knowledge-duplicate-options': 'Duplicate answer option wording',
+  'knowledge-empty-feedback': 'Missing answer feedback',
+  'hotspot-missing-image': 'No background image set',
+  'hotspot-out-of-range-position': 'Hotspot position out of range',
+  'hotspot-overlapping': 'Hotspots may overlap',
+  'hotspot-keyboard-accessibility': 'Hotspots share the same label'
+});
+
+function issue(ruleId, severity, category, explanation, extra = {}) {
+  return { ruleId, severity, category, explanation, fieldId: extra.fieldId ?? null, itemIndex: extra.itemIndex ?? null };
+}
+
+/**
+ * Result shape (Requirement 1, P05): every issue leaving this module — from
+ * collectSyncIssues, runPreflight, or checkCompletionExportFormatIssue — has been passed
+ * through this enrichment, so callers never need to special-case which rule produced a
+ * result. `fieldId`/`itemIndex` stay at the top level too (existing call sites read them
+ * directly); `target`/`fix` are additive, structured equivalents.
+ *   - title: short, static, rule-level label (RULE_TITLES, falling back to the owning
+ *     registry entry's own `title`, then the ruleId itself so nothing is ever blank).
+ *   - explanation: the detailed, instance-specific text (was called `message`).
+ *   - target: `{ componentId, itemIndex, fieldId }` — where in the config this issue lives.
+ *   - fix: `{ type, label }` when there's something to navigate to (a field, or at least
+ *     the item card), else `null`. `itemIndex` alone (no `fieldId`) still gets a fix action
+ *     — jumpToPreflightField (app.js) already falls back to focusing the item card itself
+ *     when there's no more specific field to target.
+ */
+function enrichIssue(rawIssue, componentId, ruleTitle) {
+  const hasField = rawIssue.fieldId !== null && rawIssue.fieldId !== undefined;
+  const hasItem = rawIssue.itemIndex !== null && rawIssue.itemIndex !== undefined;
+  return {
+    ...rawIssue,
+    title: RULE_TITLES[rawIssue.ruleId] || ruleTitle || rawIssue.ruleId,
+    target: { componentId: componentId ?? null, itemIndex: rawIssue.itemIndex, fieldId: rawIssue.fieldId },
+    fix: hasField || hasItem
+      ? { type: hasField ? 'goToField' : 'goToItem', label: hasField ? 'Go to field' : 'Go to item' }
+      : null
+  };
 }
 
 function plainText(value) {
@@ -244,16 +314,20 @@ function checkCompletionConfig(config, settings) {
  * author is actively about to use (e.g. the Advanced "Iframe Snippet" or "Web Package ZIP"
  * pane). Unlike checkCompletionConfig above — which fires an informational Warning with no
  * format context — this is Blocking, because a specific, incompatible format has actually
- * been selected. Not part of collectSyncIssues/runPreflight's default aggregate, since
- * those run before any export format is chosen; called directly wherever a specific format
- * is about to be used (js/compatibility.js#isExportFormatCompletionCompatible is the single
- * source of truth this defers to).
+ * been selected. Not part of the rule registry below (it needs an `exportFormat` argument
+ * the registry's `check(ctx)` signature doesn't carry, and it runs at a different time —
+ * once a format is chosen, not during general preflight); called directly wherever a
+ * specific format is about to be used. Still passed through the same enrichIssue() as
+ * every registry result, so its shape is identical (Requirement 1, P05).
+ * js/compatibility.js#isExportFormatCompletionCompatible is the single source of truth
+ * this defers to.
  */
 export function checkCompletionExportFormatIssue(config, exportFormat) {
   if (!config.trackCompletion || !exportFormat) return null;
   if (isExportFormatCompletionCompatible(exportFormat)) return null;
-  return issue('general-completion-export-incompatible', SEVERITY.BLOCKING, CATEGORY.GENERAL,
+  const raw = issue('general-completion-export-incompatible', SEVERITY.BLOCKING, CATEGORY.GENERAL,
     `${COMPLETION_CLAIM_STATEMENT} This export format doesn't. Use "Copy for Rise" in the main panel instead.`);
+  return enrichIssue(raw, null, RULE_TITLES['general-completion-export-incompatible']);
 }
 
 // ---------------------------------------------------------------------------
@@ -428,42 +502,99 @@ function checkHotspotRules(componentId, config) {
 }
 
 // ---------------------------------------------------------------------------
+// Rule registry (Requirement 2, P05)
+//
+// Each entry is `{ id, title, appliesTo, check }`:
+//   id       — a short, unique registry key (distinct from the ruleId(s) its check may
+//              emit — one entry can emit issues under more than one ruleId, e.g.
+//              'completion-config' below covers both general-invalid-completion-config
+//              and general-completion-iframe-format).
+//   title    — fallback title for any ruleId this entry emits that RULE_TITLES doesn't
+//              separately cover.
+//   appliesTo — `(ctx) => boolean`, or omitted to run for every component. This is the
+//              mechanism component-specific rules use instead of a hardcoded
+//              `if (componentId !== 'x') return []` buried in a shared module — see
+//              registerValidationRule() below to add one from anywhere.
+//   check    — `(ctx) => Issue[]`, where ctx is the same context object collectSyncIssues
+//              receives: { componentId, schema, config, theme, componentOverrides, settings }.
+//
+// To add a new rule: call registerValidationRule({ id, appliesTo, check }) — from this
+// file, or (since it's an exported function) from any other module loaded before the rule
+// needs to run. No edit to collectSyncIssues itself is required. See docs/VALIDATION-RULES.md
+// "Adding a rule" for a worked example.
+// ---------------------------------------------------------------------------
+
+const registry = [];
+
+export function registerValidationRule(rule) {
+  if (!rule || typeof rule.check !== 'function') throw new Error('A validation rule needs a check(ctx) function.');
+  if (!rule.id) throw new Error('A validation rule needs a unique id.');
+  registry.push({ appliesTo: null, title: null, ...rule });
+  return rule;
+}
+
+/** Test/extensibility helper — removes a previously registered rule by id. */
+export function unregisterValidationRule(id) {
+  const index = registry.findIndex(rule => rule.id === id);
+  if (index !== -1) registry.splice(index, 1);
+}
+
+/** The registry's current rule ids, in run order — mainly useful for tests/debugging. */
+export function listRegisteredRuleIds() {
+  return registry.map(rule => rule.id);
+}
+
+registerValidationRule({ id: 'required-fields', check: ({ schema, config }) => checkRequiredFields(schema, config) });
+registerValidationRule({ id: 'empty-component', check: ({ schema, config }) => checkEmptyComponent(schema, config) });
+registerValidationRule({ id: 'excessive-length', check: ({ schema, config }) => checkExcessiveLength(schema, config) });
+registerValidationRule({ id: 'unsupported-rich-html', check: ({ schema, config }) => checkUnsupportedRichHtml(schema, config) });
+registerValidationRule({ id: 'invalid-urls', check: ({ schema, config }) => checkInvalidUrls(schema, config) });
+registerValidationRule({ id: 'missing-accessible-name', check: ({ config }) => checkMissingAccessibleName(config) });
+registerValidationRule({ id: 'missing-alt-text', check: ({ config, componentId }) => checkMissingAltText(config, componentId) });
+registerValidationRule({ id: 'color-contrast', check: ({ theme, componentOverrides }) => checkColorContrast(theme, componentOverrides) });
+registerValidationRule({ id: 'duplicate-items', check: ({ schema, config }) => checkDuplicateItems(schema, config) });
+registerValidationRule({ id: 'completion-config', check: ({ config, settings }) => checkCompletionConfig(config, settings) });
+registerValidationRule({ id: 'media-rules', check: ({ schema, config, settings }) => checkMediaRules(schema, config, settings) });
+registerValidationRule({
+  id: 'knowledge-check-rules',
+  appliesTo: ({ componentId }) => KNOWLEDGE_CHECK_COMPONENTS.has(componentId),
+  check: ({ componentId, schema, config }) => checkKnowledgeCheckRules(componentId, schema, config)
+});
+registerValidationRule({
+  id: 'hotspot-rules',
+  appliesTo: ({ componentId }) => componentId === 'hotspots',
+  check: ({ componentId, config }) => checkHotspotRules(componentId, config)
+});
+
+// ---------------------------------------------------------------------------
 // Orchestration
 // ---------------------------------------------------------------------------
 
 /**
  * Every rule that can run without an I/O round-trip. Safe to call frequently (e.g. on
  * every editor change) — used by both the inline field UI and as the bulk of the
- * consolidated preflight panel.
+ * consolidated preflight panel. Runs every registered rule whose `appliesTo` (if any)
+ * matches this context, then enriches each raw issue into the stable result shape.
  */
-export function collectSyncIssues({ componentId, schema, config, theme, componentOverrides, settings }) {
-  return [
-    ...checkRequiredFields(schema, config),
-    ...checkEmptyComponent(schema, config),
-    ...checkExcessiveLength(schema, config),
-    ...checkUnsupportedRichHtml(schema, config),
-    ...checkInvalidUrls(schema, config),
-    ...checkMissingAccessibleName(config),
-    ...checkMissingAltText(config, componentId),
-    ...checkColorContrast(theme, componentOverrides),
-    ...checkDuplicateItems(schema, config),
-    ...checkCompletionConfig(config, settings),
-    ...checkMediaRules(schema, config, settings),
-    ...checkKnowledgeCheckRules(componentId, schema, config),
-    ...checkHotspotRules(componentId, config)
-  ];
+export function collectSyncIssues(ctx) {
+  return registry
+    .filter(rule => !rule.appliesTo || rule.appliesTo(ctx))
+    .flatMap(rule => rule.check(ctx).map(rawIssue => enrichIssue(rawIssue, ctx.componentId, rule.title)));
 }
 
 /**
  * Full preflight: sync issues plus the one rule that requires an IndexedDB read (broken
- * media references). Used by the consolidated preflight panel and the export gate.
+ * media references). Used by the consolidated preflight panel and the export gate. Kept
+ * outside the sync registry above since it's async and needs `mediaStore` — see
+ * checkBrokenMediaReferences's own comment for why this is the sole exception to the
+ * registry pattern.
  */
-export async function runPreflight({ componentId, schema, config, theme, componentOverrides, settings, mediaStore }) {
+export async function runPreflight(ctx) {
   const [syncIssues, brokenMediaIssues] = await Promise.all([
-    Promise.resolve(collectSyncIssues({ componentId, schema, config, theme, componentOverrides, settings })),
-    checkBrokenMediaReferences(schema, config, mediaStore)
+    Promise.resolve(collectSyncIssues(ctx)),
+    checkBrokenMediaReferences(ctx.schema, ctx.config, ctx.mediaStore)
   ]);
-  return [...syncIssues, ...brokenMediaIssues];
+  return [...syncIssues, ...brokenMediaIssues.map(rawIssue => enrichIssue(rawIssue, ctx.componentId, null))];
 }
 
 export function summarizePreflight(issues) {
@@ -471,4 +602,21 @@ export function summarizePreflight(issues) {
   const warnings = issues.filter(item => item.severity === SEVERITY.WARNING);
   const recommendations = issues.filter(item => item.severity === SEVERITY.RECOMMENDATION);
   return { blocking, warnings, recommendations, canExport: blocking.length === 0 };
+}
+
+/**
+ * A short, human-readable summary of a preflight run — "No issues found.", "2 issues: 1
+ * blocking, 1 warning.", etc. — for a single concise accessible announcement (Requirement
+ * 5, P05), instead of a screen reader re-reading the entire detailed issue list on every
+ * update. See app.js's `#preflight-announcement`/`#export-preflight-announcement`.
+ */
+export function summarizePreflightForAnnouncement(issues) {
+  const summary = summarizePreflight(issues);
+  const total = summary.blocking.length + summary.warnings.length + summary.recommendations.length;
+  if (total === 0) return 'No issues found.';
+  const parts = [];
+  if (summary.blocking.length) parts.push(`${summary.blocking.length} blocking`);
+  if (summary.warnings.length) parts.push(`${summary.warnings.length} warning${summary.warnings.length === 1 ? '' : 's'}`);
+  if (summary.recommendations.length) parts.push(`${summary.recommendations.length} recommendation${summary.recommendations.length === 1 ? '' : 's'}`);
+  return `${total} issue${total === 1 ? '' : 's'}: ${parts.join(', ')}.`;
 }

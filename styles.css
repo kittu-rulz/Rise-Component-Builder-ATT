@@ -802,11 +802,21 @@ a {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  border-left-width: 3px;
   background-color: var(--bg-panel);
   font-size: 13px;
 }
 
-.preflight-issue-message { color: var(--text-main); }
+/* Each issue carries its own severity cue (Requirement 3, P05), not just its section
+   header — Blocking stays visually strongest (danger-red, thicker accent) even if a list
+   is later filtered/reordered/displayed out of its section context. */
+.preflight-issue.is-blocking { border-left-color: var(--danger); }
+.preflight-issue.is-warning { border-left-color: var(--warning); }
+.preflight-issue.is-recommendation { border-left-color: var(--border-color); }
+
+.preflight-issue-text { display: flex; flex-direction: column; gap: 2px; }
+.preflight-issue-title { font-weight: 700; color: var(--text-main); }
+.preflight-issue-message { color: var(--text-muted); }
 
 .preflight-issue-jump {
   flex-shrink: 0;

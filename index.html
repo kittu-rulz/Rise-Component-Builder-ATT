@@ -431,7 +431,8 @@
         <button class="modal-close-btn" aria-label="Close Export Custom Block dialog">&times;</button>
       </div>
       <div class="modal-body">
-        <div id="export-preflight-results" role="status" aria-live="polite"></div>
+        <div id="export-preflight-announcement" class="sr-only" role="status" aria-live="polite"></div>
+        <div id="export-preflight-results"></div>
 
         <div class="export-primary-section">
           <h4 id="export-primary-title">Copy for Rise</h4>
@@ -628,6 +629,7 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">Fix any blocking errors before exporting. Warnings and recommendations are optional and won't stop you from exporting.</p>
+        <div id="preflight-announcement" class="sr-only" role="status" aria-live="polite"></div>
         <div id="preflight-results"></div>
       </div>
       <div class="modal-footer">

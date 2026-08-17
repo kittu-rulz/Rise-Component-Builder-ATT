@@ -21,7 +21,9 @@ import {
 import { copyTextToClipboard, escapeHTML, formatItemLabel, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
 import { showToast } from './js/toast.js';
 import { COMPATIBILITY_TIERS, getExportFormatCompatibility } from './js/compatibility.js';
-import { checkCompletionExportFormatIssue, collectSyncIssues, runPreflight, summarizePreflight } from './js/validation.js';
+import {
+  checkCompletionExportFormatIssue, collectSyncIssues, runPreflight, summarizePreflight, summarizePreflightForAnnouncement
+} from './js/validation.js';
 import { resolveMediaLimits, validateMediaAccessibility } from './js/media.js';
 import { downloadProjectPackage, exportProjectPackage, importProjectPackage, isProjectPackageFile } from './js/project-package.js';
 import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, restoreMediaReferences } from './js/media-storage.js';
@@ -1198,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           banner.setAttribute('role', 'alert');
           pane.insertBefore(banner, pane.firstChild);
         }
-        if (banner) banner.textContent = gateIssue.message;
+        if (banner) banner.textContent = gateIssue.explanation;
         if (button) { button.disabled = true; button.title = 'Switch to "Copy for Rise" in the main panel — this format doesn\'t report completion to Rise.'; }
       } else {
         if (banner) banner.remove();
@@ -1215,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const issues = await runPreflight(context);
       const summary = renderPreflightResults(container, issues);
       updatePreflightBadge(summary);
+      announcePreflightSummary('export-preflight-announcement', issues);
       setExportActionsEnabled(summary.canExport);
       return summary.canExport;
     } catch (error) {
@@ -1468,8 +1471,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.setTimeout(() => {
       let target = null;
       if (Number.isInteger(itemIndex)) {
-        const card = dynamicItemsContainer.querySelector(`.dynamic-item-card[data-index="${itemIndex}"]`);
-        if (card?.classList.contains('collapsed')) card.querySelector('.item-collapse-btn')?.click();
+        let card = dynamicItemsContainer.querySelector(`.dynamic-item-card[data-index="${itemIndex}"]`);
+        if (card?.classList.contains('collapsed')) {
+          card.querySelector('.item-collapse-btn')?.click();
+          // Expanding an item re-renders the whole items container (js/editor.js) — the
+          // pre-click `card` reference is now a detached node, so re-query for the live one
+          // or focus() below silently lands on nothing.
+          card = dynamicItemsContainer.querySelector(`.dynamic-item-card[data-index="${itemIndex}"]`);
+        }
         target = card?.querySelector(`[data-field-id="${fieldId}"]`) || card;
       } else if (fieldId === 'blockHeadline') {
         target = inputBlockHeadline;
@@ -1481,6 +1490,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 60);
   }
 
+  // Concise accessible summary (Requirement 5, P05) — a single short sentence in its own
+  // aria-live region, instead of the full detailed issue list itself being live (which
+  // would re-read every issue's full text aloud on every update — real chatter, not just a
+  // theoretical risk, since the export modal used to do exactly that). Deliberately not
+  // called from refreshPreflightBadge()'s per-keystroke path — only from a full preflight
+  // render (modal open, export gate), so typing never triggers an announcement.
+  function announcePreflightSummary(regionId, issues) {
+    const region = document.getElementById(regionId);
+    if (region) region.textContent = summarizePreflightForAnnouncement(issues);
+  }
+
   function renderPreflightResults(container, issues) {
     const summary = summarizePreflight(issues);
     const sections = [['blocking', summary.blocking], ['warning', summary.warnings], ['recommendation', summary.recommendations]];
@@ -1489,9 +1509,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="preflight-section-title is-${severity}">${SEVERITY_LABELS[severity]} (${list.length})</div>
         <ul class="preflight-issue-list">
           ${list.map(item => `
-            <li class="preflight-issue">
-              <span class="preflight-issue-message">${escapeHTML(item.message)}</span>
-              ${item.fieldId ? `<button type="button" class="preflight-issue-jump" data-field-id="${escapeHTML(item.fieldId)}" data-item-index="${item.itemIndex ?? ''}">Go to field</button>` : ''}
+            <li class="preflight-issue is-${item.severity}">
+              <div class="preflight-issue-text">
+                <span class="preflight-issue-title">${escapeHTML(item.title)}</span>
+                <span class="preflight-issue-message">${escapeHTML(item.explanation)}</span>
+              </div>
+              ${item.fix ? `<button type="button" class="preflight-issue-jump" data-field-id="${escapeHTML(item.fieldId ?? '')}" data-item-index="${item.itemIndex ?? ''}">${escapeHTML(item.fix.label)}</button>` : ''}
             </li>`).join('')}
         </ul>
       </div>`).join('');
@@ -1512,6 +1535,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const issues = await runPreflight(context);
       const summary = renderPreflightResults(container, issues);
       updatePreflightBadge(summary);
+      announcePreflightSummary('preflight-announcement', issues);
     } catch (error) {
       container.innerHTML = `<div class="preflight-empty">Preflight check failed: ${escapeHTML(error.message)}</div>`;
     }

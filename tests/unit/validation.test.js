@@ -1,7 +1,10 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { COMPONENT_REGISTRY, getComponentById, getDefaultConfig } from '../../js/component-registry.js';
 import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID } from '../../js/themes.js';
-import { checkCompletionExportFormatIssue, collectSyncIssues, runPreflight, SEVERITY, summarizePreflight } from '../../js/validation.js';
+import {
+  checkCompletionExportFormatIssue, collectSyncIssues, listRegisteredRuleIds, registerValidationRule,
+  runPreflight, SEVERITY, summarizePreflight, summarizePreflightForAnnouncement, unregisterValidationRule
+} from '../../js/validation.js';
 
 const theme = BUILT_IN_THEMES.find(entry => entry.id === DEFAULT_THEME_ID);
 
@@ -49,7 +52,7 @@ describe('General: required fields', () => {
     const config = buildConfig('multiple-choice');
     config.items.forEach(item => { item.correct = false; });
     const issues = issuesFor('multiple-choice', config);
-    const requiredOneIssues = issues.filter(i => i.ruleId === 'general-required-field' && i.message.includes('Select one'));
+    const requiredOneIssues = issues.filter(i => i.ruleId === 'general-required-field' && i.explanation.includes('Select one'));
     expect(requiredOneIssues).toHaveLength(1);
   });
 });
@@ -241,7 +244,7 @@ describe('General: checkCompletionExportFormatIssue — Blocking gate for a spec
     expect(result).not.toBeNull();
     expect(result.severity).toBe(SEVERITY.BLOCKING);
     expect(result.ruleId).toBe('general-completion-export-incompatible');
-    expect(result.message).toMatch(/Copy for Rise/);
+    expect(result.explanation).toMatch(/Copy for Rise/);
   });
 
   test('completion on + rise-zip format is Blocking with a direct fix', () => {
@@ -477,5 +480,147 @@ describe('summarizePreflight', () => {
     expect(clean.canExport).toBe(true);
     const broken = summarizePreflight([{ severity: SEVERITY.BLOCKING }, { severity: SEVERITY.WARNING }]);
     expect(broken.canExport).toBe(false);
+  });
+
+  test('groups and counts are consistent — every issue lands in exactly one bucket', () => {
+    const config = buildConfig('multiple-choice');
+    config.items.forEach(item => { item.correct = false; }); // forces a mix of severities
+    const issues = issuesFor('multiple-choice', config);
+    const summary = summarizePreflight(issues);
+    expect(summary.blocking.length + summary.warnings.length + summary.recommendations.length).toBe(issues.length);
+    expect(summary.blocking.every(item => item.severity === SEVERITY.BLOCKING)).toBe(true);
+    expect(summary.warnings.every(item => item.severity === SEVERITY.WARNING)).toBe(true);
+    expect(summary.recommendations.every(item => item.severity === SEVERITY.RECOMMENDATION)).toBe(true);
+  });
+});
+
+describe('summarizePreflightForAnnouncement (Requirement 5, P05 — concise, chatter-free)', () => {
+  test('no-issue state announces plainly, not as "0 issues"', () => {
+    expect(summarizePreflightForAnnouncement([])).toBe('No issues found.');
+  });
+
+  test('a single blocking issue is announced in the singular', () => {
+    expect(summarizePreflightForAnnouncement([{ severity: SEVERITY.BLOCKING }]))
+      .toBe('1 issue: 1 blocking.');
+  });
+
+  test('a mix of severities is announced as one concise sentence, correctly pluralized', () => {
+    const issues = [
+      { severity: SEVERITY.BLOCKING }, { severity: SEVERITY.BLOCKING },
+      { severity: SEVERITY.WARNING },
+      { severity: SEVERITY.RECOMMENDATION }, { severity: SEVERITY.RECOMMENDATION }
+    ];
+    expect(summarizePreflightForAnnouncement(issues)).toBe('5 issues: 2 blocking, 1 warning, 2 recommendations.');
+  });
+
+  test('a real run against a clean default config announces "No issues found."', () => {
+    const config = buildConfig('accordion');
+    const issues = issuesFor('accordion', config);
+    expect(summarizePreflightForAnnouncement(issues)).toBe('No issues found.');
+  });
+});
+
+describe('P05: stable result model — every issue has title/explanation/target/fix', () => {
+  test('every field is present on every issue a real component produces', () => {
+    const config = buildConfig('hotspots');
+    config.items = [{ title: '', content: '', x: 999, y: -5 }]; // triggers several rules at once
+    const issues = issuesFor('hotspots', config);
+    expect(issues.length).toBeGreaterThan(0);
+    issues.forEach(item => {
+      expect(typeof item.ruleId).toBe('string');
+      expect(Object.values(SEVERITY)).toContain(item.severity);
+      expect(typeof item.title).toBe('string');
+      expect(item.title.length).toBeGreaterThan(0);
+      expect(typeof item.explanation).toBe('string');
+      expect(item.target).toEqual({ componentId: 'hotspots', itemIndex: item.itemIndex, fieldId: item.fieldId });
+    });
+  });
+
+  test('an issue with a fieldId gets a "goToField" fix action', () => {
+    const config = buildConfig('accordion', { blockHeadline: '' });
+    const issues = issuesFor('accordion', config);
+    const headlineIssue = issues.find(item => item.ruleId === 'general-missing-accessible-name');
+    expect(headlineIssue.fix).toEqual({ type: 'goToField', label: 'Go to field' });
+  });
+
+  test('an issue with only an itemIndex (no fieldId) still gets a "goToItem" fix action', () => {
+    const config = buildConfig('accordion');
+    config.items = [
+      { title: 'Same', content: 'Same' },
+      { title: 'Same', content: 'Same' }
+    ];
+    const issues = issuesFor('accordion', config);
+    const duplicateIssue = issues.find(item => item.ruleId === 'general-duplicate-items');
+    expect(duplicateIssue.fieldId).toBeNull();
+    expect(duplicateIssue.itemIndex).not.toBeNull();
+    expect(duplicateIssue.fix).toEqual({ type: 'goToItem', label: 'Go to item' });
+  });
+
+  test('a whole-component issue with neither fieldId nor itemIndex gets no fix action', () => {
+    const config = buildConfig('multiple-choice');
+    config.items.forEach(item => { item.correct = false; });
+    const issues = issuesFor('multiple-choice', config);
+    const impossiblePassing = issues.find(item => item.ruleId === 'knowledge-impossible-passing');
+    expect(impossiblePassing.fieldId).toBeNull();
+    expect(impossiblePassing.itemIndex).toBeNull();
+    expect(impossiblePassing.fix).toBeNull();
+  });
+
+  test('checkCompletionExportFormatIssue results are enriched the same way as registry results', () => {
+    const config = buildConfig('accordion', { trackCompletion: true });
+    const result = checkCompletionExportFormatIssue(config, 'iframe');
+    expect(result.title).toBe("Selected export format can't report completion");
+    expect(typeof result.explanation).toBe('string');
+    expect(result.target).toEqual({ componentId: null, itemIndex: null, fieldId: null });
+    expect(result.fix).toBeNull();
+  });
+});
+
+describe('P05: rule registry extensibility', () => {
+  afterEach(() => { unregisterValidationRule('test-only-rule'); });
+
+  test('a newly registered rule runs and its issues are enriched like any built-in rule', () => {
+    registerValidationRule({
+      id: 'test-only-rule',
+      appliesTo: ({ componentId }) => componentId === 'accordion',
+      check: () => [{ ruleId: 'test-only-issue', severity: SEVERITY.WARNING, category: 'general', explanation: 'Test-only issue.', fieldId: null, itemIndex: null }]
+    });
+    expect(listRegisteredRuleIds()).toContain('test-only-rule');
+
+    const accordionIssues = issuesFor('accordion', buildConfig('accordion'));
+    expect(accordionIssues.some(item => item.ruleId === 'test-only-issue')).toBe(true);
+    const enriched = accordionIssues.find(item => item.ruleId === 'test-only-issue');
+    expect(enriched.title).toBe('test-only-issue'); // no RULE_TITLES entry -> falls back to the ruleId itself
+  });
+
+  test('appliesTo scopes a rule to only the matching component — no large conditional chain needed elsewhere', () => {
+    registerValidationRule({
+      id: 'test-only-rule',
+      appliesTo: ({ componentId }) => componentId === 'accordion',
+      check: () => [{ ruleId: 'test-only-issue', severity: SEVERITY.WARNING, category: 'general', explanation: 'Test-only issue.', fieldId: null, itemIndex: null }]
+    });
+    const tabsIssues = issuesFor('tab-blocks', buildConfig('tab-blocks'));
+    expect(tabsIssues.some(item => item.ruleId === 'test-only-issue')).toBe(false);
+  });
+
+  test('unregisterValidationRule removes a rule from the registry and from future runs', () => {
+    registerValidationRule({ id: 'test-only-rule', check: () => [{ ruleId: 'test-only-issue', severity: SEVERITY.WARNING, category: 'general', explanation: 'x', fieldId: null, itemIndex: null }] });
+    expect(listRegisteredRuleIds()).toContain('test-only-rule');
+    unregisterValidationRule('test-only-rule');
+    expect(listRegisteredRuleIds()).not.toContain('test-only-rule');
+    const issues = issuesFor('accordion', buildConfig('accordion'));
+    expect(issues.some(item => item.ruleId === 'test-only-issue')).toBe(false);
+  });
+
+  test('registerValidationRule rejects a rule with no check function or no id', () => {
+    expect(() => registerValidationRule({ id: 'no-check' })).toThrow(/check/i);
+    expect(() => registerValidationRule({ check: () => [] })).toThrow(/id/i);
+  });
+
+  test('migrated built-in rules are present in the registry', () => {
+    const ids = listRegisteredRuleIds();
+    ['required-fields', 'empty-component', 'knowledge-check-rules', 'hotspot-rules', 'media-rules'].forEach(id => {
+      expect(ids).toContain(id);
+    });
   });
 });
