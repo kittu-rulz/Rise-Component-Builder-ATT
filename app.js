@@ -15,7 +15,7 @@ import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditor
 import { writePreview, openPreview, generateIframeContent as compilePreview, COMPONENT_MAX_WIDTH } from './js/preview.js';
 import { getDeviceWidthLabel } from './js/device-preview.js';
 import {
-  buildExportPayload, buildRiseProjectZip, downloadHtml, downloadProjectJson,
+  buildExportPayload, buildLargePasteWarning, buildRiseProjectZip, downloadHtml, downloadProjectJson,
   downloadZipFile, formatExportedFileSize, getExportedFileSize, prepareMediaExport
 } from './js/export.js';
 import { copyTextToClipboard, escapeHTML, formatItemLabel, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
@@ -1235,6 +1235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const codeBox = document.getElementById('export-primary-code-box');
     const steps = document.getElementById('export-primary-steps');
     const advancedDetails = document.getElementById('export-advanced-options');
+    const pasteWarningBox = document.getElementById('export-large-paste-warning');
     const zipRequired = payload.warnings.length > 0;
 
     if (title) title.textContent = zipRequired
@@ -1249,6 +1250,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (zipNotice) zipNotice.hidden = !zipRequired;
     if (codeBox) codeBox.hidden = zipRequired;
     if (steps) steps.hidden = zipRequired;
+    // The paste-size warning is about the Fragment code specifically — irrelevant once
+    // that box is hidden in favor of the "needs to be hosted" ZIP notice.
+    if (zipRequired && pasteWarningBox) pasteWarningBox.hidden = true;
 
     if (zipRequired && advancedDetails) {
       advancedDetails.open = true;
@@ -1276,10 +1280,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Iframe Embed Code using self-contained srcdoc
     const iframeCode = document.getElementById('export-iframe-code');
     iframeCode.textContent = payload.iframe;
+    const iframeSizeLabel = document.getElementById('export-iframe-size');
+    if (iframeSizeLabel) iframeSizeLabel.textContent = formatExportedFileSize(getExportedFileSize(payload.iframe));
 
     // Paste-friendly HTML fragment for custom HTML blocks
     const htmlCode = document.getElementById('export-html-code');
     htmlCode.textContent = payload.fragment;
+    const htmlSize = getExportedFileSize(payload.fragment);
+    const htmlSizeLabel = document.getElementById('export-html-size');
+    if (htmlSizeLabel) htmlSizeLabel.textContent = formatExportedFileSize(htmlSize);
+    const pasteWarningBox = document.getElementById('export-large-paste-warning');
+    if (pasteWarningBox) {
+      const pasteWarning = buildLargePasteWarning(htmlSize);
+      pasteWarningBox.hidden = !pasteWarning;
+      pasteWarningBox.textContent = pasteWarning || '';
+    }
     if (warningBox) {
       warningBox.classList.remove('is-loading');
       warningBox.hidden = payload.warnings.length === 0;

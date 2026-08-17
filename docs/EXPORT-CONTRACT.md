@@ -71,6 +71,28 @@ Every one of the 20 catalog components is a real module in `components/*.js` imp
 
 The exported file size (`getExportedFileSize`/`formatExportedFileSize`, `js/export.js`) is computed and shown in the export modal (`#export-file-size`) before the author downloads — Requirement 13.
 
+## Export size baseline (P04, 2026-08-14)
+
+Every compiled export embeds the same five AT&T Aleck Sans weights (Regular/Italic/Medium/Bold/BoldItalic) inline as base64 — before P04 this was the single largest fixed cost in every export by a wide margin, dwarfing a typical component's own markup.
+
+**What changed:** each weight's source `.ttf` (`ATT Design System/All_ATTAleck_Fonts/ATTAleckSans/*.ttf`, gitignored/local-only) was converted to brotli-compressed WOFF2 and subsetted to drop 5 unused private-use glyphs (U+F600–U+F604 — legacy icon-font codepoints; verified via `grep` that no component in this codebase ever emits them, since every icon here is an inline SVG). Every other codepoint is retained unchanged (full Latin Extended-A, combining diacritics, general punctuation, currency symbols — the set this project's own multilingual test fixtures exercise). See `js/custom-fonts.js`'s header comment for the full glyph-coverage verification and the licensing decision behind performing this conversion at all (the font's EULA restricts "adapt, modify, alter, translate, convert" — this was done only after explicit AT&T permission was confirmed for this engagement).
+
+**Measured, reproducible baseline** (measured via `compileExportFixture()` against `tests/fixtures/export-fixture-definitions.mjs`'s representative components — no uploaded media in any of these, since the fixtures don't carry any; see "Largest practical export," below, for the media case):
+
+| Font asset (raw, per weight × 5) | Before (TTF) | After (WOFF2, subsetted) | Change |
+| --- | --- | --- | --- |
+| Total, 5 weights | 270,076 bytes | 98,024 bytes | −63.7% |
+
+| Compiled export (accordion, representative) | Before | After | Change |
+| --- | --- | --- | --- |
+| Standalone HTML | 377,347 bytes | 147,946 bytes | −60.8% |
+| HTML fragment (Copy for Rise) | 376,905 bytes | 147,504 bytes | −60.9% |
+| Iframe snippet | 381,730 bytes | 152,329 bytes | −60.1% |
+
+Every other cataloged component measured within a few KB of the accordion figures above (374–379 KB before, 146–155 KB after) — the font dominates every export's size regardless of which component it is, so the percentage improvement is consistent catalog-wide. `tests/unit/export-fixtures.test.js` enforces a 220 KB regression ceiling (generous headroom above the ~150 KB actuals) so a reverted font conversion fails loudly rather than silently creeping back in.
+
+**Largest practical export (with media):** components that accept uploaded audio/video/images (Custom Video Embed, Custom Audio Player, Grid Photo Gallery) add the uploaded file's own size on top of the ~150 KB font baseline — media size dominates for these, not the font, and is unaffected by this optimization (uploaded media is never re-encoded by this project). See `docs/RISE-TEST-CHECKLIST.md` "Before you start" for testing this case manually against a real Rise course.
+
 ## Error handling (Requirement 14)
 
 `setupExportModalContent()` and both download button handlers (`app.js`) wrap the compile step (`prepareCurrentExport()`) in a try/catch. If a component's registry entry is missing (`generateIframeContent` throws a specific "no registered component module for …" error) or media resolution fails, the author sees a toast naming the failure instead of a silent no-op or a broken download.

@@ -2216,6 +2216,48 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   word-break: break-all;
 }
 
+/* Compact summary shown instead of always-expanded code (P04) — the size/description
+   line the copy button sits beside, with padding-right clearing the button's absolute
+   position so long descriptions never run under it. */
+.code-export-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 120px;
+}
+
+.code-export-size {
+  font-size: 13px;
+  font-weight: 700;
+  color: #E2E8F0;
+}
+
+.code-export-desc {
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.code-technical-preview {
+  margin-top: 10px;
+}
+
+.code-technical-preview summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+}
+
+.code-technical-preview[open] summary {
+  margin-bottom: 8px;
+}
+
+/* The button only overlaps the summary row above, not the code itself once it's inside
+   this collapsed disclosure — undo .code-export-box pre's button-clearance padding here. */
+.code-technical-preview pre {
+  padding-top: 0;
+}
+
 .copy-btn {
   position: absolute;
   top: 10px;

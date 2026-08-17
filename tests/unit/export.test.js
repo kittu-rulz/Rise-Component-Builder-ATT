@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { buildRiseProjectZip, formatExportedFileSize, getExportedFileSize, prepareMediaExport } from '../../js/export.js';
+import {
+  buildLargePasteWarning, buildRiseProjectZip, formatExportedFileSize, getExportedFileSize,
+  LARGE_PASTE_WARNING_BYTES, prepareMediaExport
+} from '../../js/export.js';
 import { readZip } from '../../js/zip.js';
 
 describe('export file size reporting', () => {
@@ -23,6 +26,28 @@ describe('export file size reporting', () => {
     expect(formatExportedFileSize(-1)).toBe('Unknown size');
     expect(formatExportedFileSize(NaN)).toBe('Unknown size');
     expect(formatExportedFileSize(undefined)).toBe('Unknown size');
+  });
+});
+
+// P04: a practical (not a claimed Rise-enforced) paste-size threshold — the Export modal
+// warns instead of always rendering enormous code as an expanded field.
+describe('buildLargePasteWarning', () => {
+  test('below the threshold produces no warning', () => {
+    expect(buildLargePasteWarning(0)).toBeNull();
+    expect(buildLargePasteWarning(LARGE_PASTE_WARNING_BYTES)).toBeNull();
+  });
+
+  test('above the threshold warns about editor slowness, not a Rise limit', () => {
+    const warning = buildLargePasteWarning(LARGE_PASTE_WARNING_BYTES + 1);
+    expect(warning).not.toBeNull();
+    expect(warning).toMatch(/slow to work with/i);
+    expect(warning.toLowerCase()).not.toMatch(/rise (limit|rejects|enforces|blocks)/);
+    expect(warning).toContain(formatExportedFileSize(LARGE_PASTE_WARNING_BYTES + 1));
+  });
+
+  test('invalid input produces no warning rather than a broken message', () => {
+    expect(buildLargePasteWarning(NaN)).toBeNull();
+    expect(buildLargePasteWarning(undefined)).toBeNull();
   });
 });
 

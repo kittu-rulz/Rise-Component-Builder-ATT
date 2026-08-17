@@ -7,6 +7,14 @@ import { createZip } from './zip.js';
 // this is advisory, not enforced: the ZIP is still produced, the author is just told.
 const LARGE_ZIP_WARNING_BYTES = 50 * 1024 * 1024;
 
+// P04 (2026-08-14): a practical usability threshold, not a documented Rise limit — this
+// project has no evidence Rise's own "Add code" editor enforces any specific paste-size
+// cap, so the warning below is careful to say "can be slow to work with," never "Rise
+// rejects this." Picked from general code-editor/textarea UX experience: pasting and
+// scrolling through a plain-text block much past ~200 KB gets noticeably sluggish in most
+// browsers' contenteditable/textarea implementations, independent of Rise specifically.
+export const LARGE_PASTE_WARNING_BYTES = 200 * 1024;
+
 /** Byte size of the compiled export (UTF-8), for display before download. */
 export function getExportedFileSize(html) {
   return new Blob([html]).size;
@@ -18,6 +26,16 @@ export function formatExportedFileSize(bytes) {
   const kb = bytes / 1024;
   if (kb < 1024) return `${kb.toFixed(1)} KB`;
   return `${(kb / 1024).toFixed(2)} MB`;
+}
+
+/**
+ * Returns a warning message string when `bytes` exceeds the practical paste-size
+ * threshold, or null when it doesn't need one. Kept as a pure function (no DOM) so it's
+ * directly unit-testable and reusable across every export format's size check.
+ */
+export function buildLargePasteWarning(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= LARGE_PASTE_WARNING_BYTES) return null;
+  return `This code is large (${formatExportedFileSize(bytes)}). Pasting very large blocks into Rise's code editor can be slow to work with. If this component includes uploaded audio, video, or a large image, consider Web Package ZIP instead.`;
 }
 
 export function buildExportPayload(fullHtml, options = {}) {

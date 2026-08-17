@@ -448,8 +448,15 @@
           </div>
 
           <div class="code-export-box" id="export-primary-code-box">
-            <div class="code-scroll-area">
-              <pre><code id="export-html-code">&lt;style&gt;
+            <div class="code-export-summary">
+              <span class="code-export-size" id="export-html-size">—</span>
+              <span class="code-export-desc">HTML fragment: style, markup, and script for one Rise code block</span>
+            </div>
+            <button id="btn-copy-html" class="btn btn-primary copy-btn">Copy for Rise</button>
+            <details class="code-technical-preview">
+              <summary>Technical preview</summary>
+              <div class="code-scroll-area">
+                <pre><code id="export-html-code">&lt;style&gt;
   /* Customized component styles */
 &lt;/style&gt;
 
@@ -460,10 +467,11 @@
 &lt;script&gt;
   /* Interactive behavior appears here */
 &lt;/script&gt;</code></pre>
-            </div>
-            <button id="btn-copy-html" class="btn btn-primary copy-btn">Copy for Rise</button>
+              </div>
+            </details>
           </div>
 
+          <div id="export-large-paste-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
           <div id="export-media-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
 
           <div class="instructions-alert" id="export-primary-steps">
@@ -497,10 +505,17 @@
             <p class="modal-desc">An alternative way to paste into Rise's <strong>Code &gt; Add code</strong> block. Keeps this component's styles and scripts fully separate from the Rise page, at the cost of a fixed height. If completion tracking is on, use <strong>Copy for Rise</strong> above instead — Rise can't detect completion through this format.</p>
 
             <div class="code-export-box">
-              <div class="code-scroll-area">
-                <pre><code id="export-iframe-code">&lt;iframe src="https://rise-builder.cloud.app/preview/accordion-abc123xyz" width="100%" height="450px" style="border:none;"&gt;&lt;/iframe&gt;</code></pre>
+              <div class="code-export-summary">
+                <span class="code-export-size" id="export-iframe-size">—</span>
+                <span class="code-export-desc">Self-contained iframe snippet</span>
               </div>
               <button id="btn-copy-iframe" class="btn btn-secondary btn-small copy-btn">Copy Code</button>
+              <details class="code-technical-preview">
+                <summary>Technical preview</summary>
+                <div class="code-scroll-area">
+                  <pre><code id="export-iframe-code">&lt;iframe src="https://rise-builder.cloud.app/preview/accordion-abc123xyz" width="100%" height="450px" style="border:none;"&gt;&lt;/iframe&gt;</code></pre>
+                </div>
+              </details>
             </div>
           </div>
 

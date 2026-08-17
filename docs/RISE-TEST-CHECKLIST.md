@@ -10,6 +10,8 @@ Run this once per component you need Confirmed for, and once per Rise-side chang
 2. Read the compatibility report at the top of the modal for whichever option you're about to test — it names the specific thing that's unverified.
 3. Have `docs/COMPATIBILITY-RESULTS.md` open in another tab; you'll fill in a row at the end.
 
+**Run the checklist at least once against the largest practical export, not just a default/empty component.** Since P04 (2026-08-14) optimized the embedded brand font (~150 KB baseline across every export, down from ~380 KB), the remaining size variation between components comes almost entirely from author-uploaded media. Build the largest-practical case by configuring a media-capable component (Custom Video Embed, Custom Audio Player, or Grid Photo Gallery are the largest by typical file size) with real uploaded audio/video/images close to the Builder Settings media-size limits, then run the full checklist below against that export — this is the case most likely to trip the paste-size warning in the Export modal or a real Rise paste-size ceiling this project hasn't otherwise encountered.
+
 ## Test A — Iframe snippet (srcdoc)
 
 1. Open **Advanced export options**, select the **Iframe Snippet (srcdoc)** tab, and click **Copy Code**.

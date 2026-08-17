@@ -157,7 +157,11 @@ test('a self-hosted custom font (ATT Aleck Sans) is embedded as @font-face and s
   const state = { selectedComponent: { id: 'accordion' }, activeTheme: theme, componentOverrides: {}, config: baseConfig() };
   const html = generateIframeContent(state, { accordion }, toRgba);
   assert.match(html, /@font-face/);
-  assert.match(html, /data:font\/ttf;base64,/);
+  // P04: fonts are embedded as brotli-compressed WOFF2 (was TTF) — ~36% of the original
+  // byte size, with no TTF fallback (WOFF2 has universal support in every browser capable
+  // of running this app's own ES-module pipeline).
+  assert.match(html, /data:font\/woff2;base64,/);
+  assert.ok(!html.includes('data:font/ttf'), 'no TTF fallback should be embedded alongside WOFF2');
   assert.ok(!html.includes('<link href="https://fonts.googleapis.com'), 'no Google Fonts request should be made when every font role is self-hosted');
   assert.match(html, new RegExp(`--font-family: '${ATT_ALECK_SANS_FONT_FAMILY}'`));
 });

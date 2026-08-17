@@ -117,6 +117,41 @@ test('export copy button copies iframe code and shows visible confirmation', asy
   }
 });
 
+test('Export modal shows a compact size summary with code collapsed by default, and copy works without expanding it', async ({ page, context, browserName }) => {
+  if (browserName === 'chromium') {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://127.0.0.1:4173' });
+  }
+  await openAccordion(page);
+  await page.locator('#btn-export').click();
+
+  // Compact summary (size + description) is visible without expanding anything.
+  await expect(page.locator('#export-html-size')).toContainText(/\d+(\.\d+)?\s*(B|KB|MB)/);
+  await expect(page.locator('#export-primary-code-box')).toContainText('HTML fragment');
+
+  // The full code is collapsed behind a "Technical preview" disclosure, not always-expanded.
+  const technicalPreview = page.locator('#export-primary-code-box .code-technical-preview');
+  await expect(technicalPreview).not.toHaveAttribute('open', '');
+  await expect(page.locator('#export-html-code')).toBeHidden();
+
+  // Copying works without opening the technical preview.
+  const expectedCode = await page.locator('#export-html-code').textContent();
+  const copyButton = page.locator('#btn-copy-html');
+  await copyButton.click();
+  await expect(copyButton).toHaveText('Copied!');
+  if (browserName === 'chromium') {
+    // Windows normalizes \n -> \r\n on the system clipboard round-trip — irrelevant to
+    // pasting into Rise's editor, so compare with line endings normalized rather than
+    // asserting exact byte equality.
+    const normalize = value => value.replace(/\r\n/g, '\n');
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())
+      .then(normalize)).toBe(normalize(expectedCode));
+  }
+
+  // Expanding the disclosure reveals the same code, unhidden.
+  await technicalPreview.locator('summary').click();
+  await expect(page.locator('#export-html-code')).toBeVisible();
+});
+
 test('completion tracking blocks the Iframe Snippet and Web Package ZIP exports, and guides back to Copy for Rise', async ({ page }) => {
   await openAccordion(page);
   await page.locator('.editor-tab[data-tab="settings"]').click();

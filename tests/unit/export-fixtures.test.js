@@ -20,3 +20,26 @@ describe('export fixtures are in sync with the current export pipeline', () => {
     expect(committed, `tests/fixtures/exports/${filename} is stale — run "npm run fixtures:exports" and commit the result`).toBe(fresh);
   });
 });
+
+// P04: WOFF2 + subsetting cut every export's embedded-font cost from ~270 KB (5 TTF
+// weights) to ~98 KB (raw) / ~150 KB total compiled HTML for a typical component — this
+// guards that regression from silently creeping back in (e.g. someone re-embedding a TTF
+// fallback "for safety," or duplicating a font weight).
+describe('embedded font stays WOFF2, not TTF, and export size stays optimized', () => {
+  test.each(EXPORT_FIXTURES)('$filename embeds exactly 5 WOFF2 font-face declarations, no TTF', ({ componentId, filename }) => {
+    const html = compileExportFixture(componentId);
+    const woff2Matches = html.match(/data:font\/woff2;base64,/g) || [];
+    expect(woff2Matches, `${filename} should embed exactly 5 font weights (Regular/Italic/Medium/Bold/BoldItalic)`).toHaveLength(5);
+    expect(html).not.toContain('data:font/ttf');
+    expect(html).not.toContain("format('truetype')");
+  });
+
+  test.each(EXPORT_FIXTURES)('$filename compiles to well under the pre-P04 unoptimized baseline (~377 KB)', ({ componentId, filename }) => {
+    const html = compileExportFixture(componentId);
+    const bytes = new Blob([html]).size;
+    // Generous ceiling (220 KB): comfortably above every current fixture's actual size
+    // (~145–155 KB) so ordinary content growth doesn't make this test flaky, while still
+    // catching the ~230 KB regression a reverted font conversion would reintroduce.
+    expect(bytes, `${filename} is ${bytes} bytes — investigate before raising this ceiling`).toBeLessThan(220 * 1024);
+  });
+});
