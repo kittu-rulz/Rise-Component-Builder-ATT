@@ -70,6 +70,11 @@ const RULE_TITLES = Object.freeze({
   'general-missing-alt-text': 'Missing alt text or transcript',
   'general-insufficient-contrast': 'Insufficient color contrast',
   'general-duplicate-items': 'Duplicate item content',
+  'general-duplicate-titles': 'Duplicate item titles',
+  'general-item-count-exceeded': 'Extra items will not be exported',
+  'general-heading-level-outline': "Heading level may conflict with Rise's own outline",
+  'general-non-descriptive-link-text': 'Non-descriptive link text',
+  'general-external-url-destination': 'Links to an external destination',
   'general-invalid-completion-config': 'Completion tracking configuration issue',
   'general-completion-iframe-format': 'Export format may not report completion',
   'general-completion-export-incompatible': "Selected export format can't report completion",
@@ -285,6 +290,111 @@ function checkDuplicateItems(schema, config) {
       seen.set(key, itemIndex);
     }
   });
+  return issues;
+}
+
+// Same title, *different* content — a distinct concern from checkDuplicateItems above
+// (same title AND same content). Two items titled identically but saying different things
+// are ambiguous to navigate by title alone (a sighted user scanning headings, or a
+// screen-reader user jumping by heading/label), even though nothing is technically broken.
+// Skipped for components already covered by a more specific duplicate-label rule
+// (knowledge-check's answer options, hotspot pin labels) so the same pair of items never
+// gets flagged twice under two different rule ids.
+function checkDuplicateTitles(schema, config, componentId) {
+  if (KNOWLEDGE_CHECK_COMPONENTS.has(componentId) || componentId === 'hotspots') return [];
+  const items = Array.isArray(config.items) ? config.items : [];
+  const secondaryField = (schema.itemFields || []).find(field => field.id === 'content');
+  const seenTitles = new Map();
+  const issues = [];
+  items.forEach((item, itemIndex) => {
+    const primary = primaryFieldValue(schema, item);
+    if (!primary) return;
+    const secondary = secondaryField ? plainText(item[secondaryField.id]).toLowerCase() : '';
+    if (seenTitles.has(primary)) {
+      const firstIndex = seenTitles.get(primary);
+      const firstSecondary = secondaryField ? plainText(items[firstIndex][secondaryField.id]).toLowerCase() : '';
+      if (secondary !== firstSecondary) {
+        issues.push(issue('general-duplicate-titles', SEVERITY.WARNING, CATEGORY.GENERAL,
+          `${formatItemLabel(schema, itemIndex)}'s title matches ${formatItemLabel(schema, firstIndex)}'s, even though their content differs — this can be confusing for a learner navigating by title alone.`,
+          { itemIndex }));
+      }
+    } else {
+      seenTitles.set(primary, itemIndex);
+    }
+  });
+  return issues;
+}
+
+// Component-level item-count ceiling (Requirement, P06) — schema.maxItems (js/editor-schemas.js)
+// already prevents authoring past this limit through the normal "Add Item"/"Duplicate"
+// buttons (js/editor.js, app.js#updateAddItemButtonState), but a hand-edited or imported
+// project file can still carry more items than that. The generator for a maxItems: 1
+// component (audio-player, video-frame) only ever renders items[0] — anything beyond the
+// limit is silently dropped from the export with no other signal that it happened.
+function checkItemCountLimits(schema, config) {
+  const items = Array.isArray(config.items) ? config.items : [];
+  if (!Number.isInteger(schema.maxItems) || items.length <= schema.maxItems) return [];
+  const label = (schema.itemLabel || 'item').toLowerCase();
+  const extra = items.length - schema.maxItems;
+  return [issue('general-item-count-exceeded', SEVERITY.WARNING, CATEGORY.GENERAL,
+    `This component only uses the first ${schema.maxItems} ${label}${schema.maxItems === 1 ? '' : 's'} — ${extra} extra ${extra === 1 ? 'entry is' : 'entries are'} present but will not appear in the exported output.`)];
+}
+
+// Rise 360 lesson pages already have their own h1 (js/utilities.js#HEADING_LEVELS'
+// comment) — an author-selected h1 here creates a second, competing h1 in the host page's
+// heading outline, which is confusing for a screen-reader user navigating heading-by-heading.
+function checkHeadingLevelOutline(config) {
+  if (config.blockHeadingLevel !== 'h1') return [];
+  return [issue('general-heading-level-outline', SEVERITY.WARNING, CATEGORY.GENERAL,
+    'The headline heading level is set to Heading 1 (h1). Rise 360 lesson pages already have their own h1 — an additional h1 here can create a confusing, duplicate heading outline for screen-reader users navigating by heading. Heading 2 (h2) is the recommended default.',
+    { fieldId: 'blockHeadingLevel' })];
+}
+
+// A deliberately conservative, documented heuristic (Implementation note 2, P06) — flags
+// only the small set of phrases accessibility guidance (WCAG SC 2.4.4) most consistently
+// cites as non-descriptive out of context, not every vague-sounding label. Scoped to
+// button-list specifically: its items are a bare {label, URL} pair with no surrounding
+// descriptive text, so the button's own label is the *only* thing telling a screen-reader
+// user (who may be navigating a page's links out of context) where it goes.
+const NON_DESCRIPTIVE_LINK_PHRASES = new Set([
+  'click here', 'click', 'here', 'this link', 'link', 'read more', 'more', 'more info'
+]);
+
+function checkNonDescriptiveLinkText(componentId, config) {
+  if (componentId !== 'button-list') return [];
+  const items = Array.isArray(config.items) ? config.items : [];
+  const issues = [];
+  items.forEach((item, itemIndex) => {
+    if (isEmptyValue(item.content)) return;
+    const label = plainText(item.title).toLowerCase();
+    if (NON_DESCRIPTIVE_LINK_PHRASES.has(label)) {
+      issues.push(issue('general-non-descriptive-link-text', SEVERITY.WARNING, CATEGORY.GENERAL,
+        `"${plainText(item.title)}" doesn't describe where this link goes on its own — a screen-reader user often navigates by jumping between link labels out of context. Use a label that describes the destination (e.g. "Download the study guide" instead of "Click here").`,
+        { fieldId: 'title', itemIndex }));
+    }
+  });
+  return issues;
+}
+
+// Not a defect — every genuinely external destination gets the same advisory, so an
+// author can double-check a URL (a mistyped domain, a stale link) before publishing. Scoped
+// to every `url`-type field a schema declares (schema-driven, like checkInvalidUrls above),
+// excluding media references (those get their own, more specific media-* rules). Shows
+// `sanitizeURL`'s own canonicalized value, never the raw authored string, so what's
+// displayed is exactly what the export would actually use.
+function checkExternalUrlDestinations(schema, config) {
+  const issues = [];
+  const urlFields = [...(schema.componentFields || []), ...(schema.itemFields || [])].filter(field => field.type === 'url');
+  const checkField = (field, value, itemIndex) => {
+    if (isEmptyValue(value) || isMediaReference(value)) return;
+    const safe = sanitizeURL(value);
+    if (!safe) return; // invalid URLs are already Blocking via general-invalid-url
+    issues.push(issue('general-external-url-destination', SEVERITY.WARNING, CATEGORY.GENERAL,
+      `${field.label} points to ${safe} — confirm this is the destination you intend before publishing.`, { fieldId: field.id, itemIndex }));
+  };
+  urlFields.forEach(field => checkField(field, config[field.id], null));
+  (config.items || []).forEach((item, itemIndex) => urlFields.filter(field => (schema.itemFields || []).includes(field))
+    .forEach(field => checkField(field, item[field.id], itemIndex)));
   return issues;
 }
 
@@ -553,6 +663,15 @@ registerValidationRule({ id: 'missing-accessible-name', check: ({ config }) => c
 registerValidationRule({ id: 'missing-alt-text', check: ({ config, componentId }) => checkMissingAltText(config, componentId) });
 registerValidationRule({ id: 'color-contrast', check: ({ theme, componentOverrides }) => checkColorContrast(theme, componentOverrides) });
 registerValidationRule({ id: 'duplicate-items', check: ({ schema, config }) => checkDuplicateItems(schema, config) });
+registerValidationRule({ id: 'duplicate-titles', check: ({ schema, config, componentId }) => checkDuplicateTitles(schema, config, componentId) });
+registerValidationRule({ id: 'item-count-limits', check: ({ schema, config }) => checkItemCountLimits(schema, config) });
+registerValidationRule({ id: 'heading-level-outline', check: ({ config }) => checkHeadingLevelOutline(config) });
+registerValidationRule({
+  id: 'non-descriptive-link-text',
+  appliesTo: ({ componentId }) => componentId === 'button-list',
+  check: ({ componentId, config }) => checkNonDescriptiveLinkText(componentId, config)
+});
+registerValidationRule({ id: 'external-url-destinations', check: ({ schema, config }) => checkExternalUrlDestinations(schema, config) });
 registerValidationRule({ id: 'completion-config', check: ({ config, settings }) => checkCompletionConfig(config, settings) });
 registerValidationRule({ id: 'media-rules', check: ({ schema, config, settings }) => checkMediaRules(schema, config, settings) });
 registerValidationRule({

@@ -624,3 +624,158 @@ describe('P05: rule registry extensibility', () => {
     });
   });
 });
+
+// P06 — first production rule set built on the P05 framework. Each new rule gets a pass,
+// fail, boundary, duplicate, and/or empty case as applicable (Implementation note 5).
+describe('P06: general-duplicate-titles — same title, different content', () => {
+  test('fail: two items share a title but differ in content', () => {
+    const config = buildConfig('accordion');
+    config.items = [
+      { title: 'Overview', content: 'First description' },
+      { title: 'Overview', content: 'Second, different description' }
+    ];
+    const issues = issuesFor('accordion', config);
+    const duplicate = issues.find(item => item.ruleId === 'general-duplicate-titles');
+    expect(duplicate).toBeDefined();
+    expect(duplicate.severity).toBe(SEVERITY.WARNING);
+    expect(duplicate.itemIndex).toBe(1);
+  });
+
+  test('pass: distinct titles are not flagged', () => {
+    const config = buildConfig('accordion');
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(item => item.ruleId === 'general-duplicate-titles')).toBe(false);
+  });
+
+  test('does not double-report a full title+content duplicate already caught by general-duplicate-items', () => {
+    const config = buildConfig('accordion');
+    config.items = [
+      { title: 'Same', content: 'Same' },
+      { title: 'Same', content: 'Same' }
+    ];
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(item => item.ruleId === 'general-duplicate-items')).toBe(true);
+    expect(issues.some(item => item.ruleId === 'general-duplicate-titles')).toBe(false);
+  });
+
+  test('skips components already covered by a more specific duplicate-label rule (knowledge checks, hotspots)', () => {
+    const quizConfig = buildConfig('multiple-choice');
+    quizConfig.items = quizConfig.items.map(item => ({ ...item, label: 'Same label', content: 'Different feedback ' + Math.random() }));
+    quizConfig.items[0].correct = true;
+    const quizIssues = issuesFor('multiple-choice', quizConfig);
+    expect(quizIssues.some(item => item.ruleId === 'general-duplicate-titles')).toBe(false);
+  });
+});
+
+describe('P06: general-item-count-exceeded — maxItems ceiling', () => {
+  test('fail: more items than the schema allows (only reachable via import/hand-edit, not the normal Add Item UI)', () => {
+    const config = buildConfig('audio-player');
+    config.items = [config.items[0], structuredClone(config.items[0])];
+    const issues = issuesFor('audio-player', config);
+    const exceeded = issues.find(item => item.ruleId === 'general-item-count-exceeded');
+    expect(exceeded).toBeDefined();
+    expect(exceeded.severity).toBe(SEVERITY.WARNING);
+    expect(exceeded.explanation).toMatch(/1 extra entry/);
+  });
+
+  test('boundary: exactly at maxItems is not flagged', () => {
+    const config = buildConfig('audio-player');
+    expect(config.items).toHaveLength(1); // audio-player's maxItems is 1
+    const issues = issuesFor('audio-player', config);
+    expect(issues.some(item => item.ruleId === 'general-item-count-exceeded')).toBe(false);
+  });
+
+  test('pass: components with no maxItems are never flagged regardless of item count', () => {
+    const config = buildConfig('accordion');
+    config.items = Array.from({ length: 12 }, (_, index) => ({ title: `Item ${index}`, content: `Content ${index}` }));
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(item => item.ruleId === 'general-item-count-exceeded')).toBe(false);
+  });
+});
+
+describe('P06: general-heading-level-outline — h1 conflicts with Rise\'s own outline', () => {
+  test('fail: blockHeadingLevel is h1', () => {
+    const config = buildConfig('accordion', { blockHeadingLevel: 'h1' });
+    const issues = issuesFor('accordion', config);
+    const outline = issues.find(item => item.ruleId === 'general-heading-level-outline');
+    expect(outline).toBeDefined();
+    expect(outline.severity).toBe(SEVERITY.WARNING);
+    expect(outline.fieldId).toBe('blockHeadingLevel');
+  });
+
+  test('pass: the default (h2) and every other non-h1 level are not flagged', () => {
+    ['h2', 'h3', 'h4', 'h5', 'h6'].forEach(level => {
+      const config = buildConfig('accordion', { blockHeadingLevel: level });
+      const issues = issuesFor('accordion', config);
+      expect(issues.some(item => item.ruleId === 'general-heading-level-outline')).toBe(false);
+    });
+  });
+});
+
+describe('P06: general-non-descriptive-link-text — button-list only, conservative phrase list', () => {
+  test('fail: a classic non-descriptive phrase', () => {
+    const config = buildConfig('button-list');
+    config.items = [{ title: 'Click here', content: 'https://example.com/guide' }];
+    const issues = issuesFor('button-list', config);
+    const linkText = issues.find(item => item.ruleId === 'general-non-descriptive-link-text');
+    expect(linkText).toBeDefined();
+    expect(linkText.severity).toBe(SEVERITY.WARNING);
+    expect(linkText.fieldId).toBe('title');
+  });
+
+  test('pass: a descriptive label is not flagged', () => {
+    const config = buildConfig('button-list');
+    config.items = [{ title: 'Download the study guide', content: 'https://example.com/guide' }];
+    const issues = issuesFor('button-list', config);
+    expect(issues.some(item => item.ruleId === 'general-non-descriptive-link-text')).toBe(false);
+  });
+
+  test('empty: no destination URL means nothing to flag yet', () => {
+    const config = buildConfig('button-list');
+    config.items = [{ title: 'Click here', content: '' }];
+    const issues = issuesFor('button-list', config);
+    expect(issues.some(item => item.ruleId === 'general-non-descriptive-link-text')).toBe(false);
+  });
+
+  test('scoped to button-list — the same phrase elsewhere is not flagged', () => {
+    const config = buildConfig('accordion');
+    config.items = [{ title: 'Click here', content: 'Some content' }];
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(item => item.ruleId === 'general-non-descriptive-link-text')).toBe(false);
+  });
+});
+
+describe('P06: general-external-url-destination — advisory, shows the sanitized destination', () => {
+  test('fail (advisory): a valid external URL always gets the destination surfaced', () => {
+    const config = buildConfig('button-list');
+    config.items = [{ title: 'Download the guide', content: 'https://example.com/guide?ref=course' }];
+    const issues = issuesFor('button-list', config);
+    const destination = issues.find(item => item.ruleId === 'general-external-url-destination');
+    expect(destination).toBeDefined();
+    expect(destination.severity).toBe(SEVERITY.WARNING);
+    expect(destination.explanation).toContain('example.com');
+  });
+
+  test('empty: no URL means nothing to surface', () => {
+    const config = buildConfig('pricing-comparison');
+    config.items.forEach(item => { item.actionUrl = ''; });
+    const issues = issuesFor('pricing-comparison', config);
+    expect(issues.some(item => item.ruleId === 'general-external-url-destination')).toBe(false);
+  });
+
+  test('an invalid URL is only reported as Blocking (general-invalid-url), not also as this advisory', () => {
+    const config = buildConfig('button-list');
+    config.items = [{ title: 'Broken link', content: 'not a url' }];
+    const issues = issuesFor('button-list', config);
+    expect(issues.some(item => item.ruleId === 'general-invalid-url')).toBe(true);
+    expect(issues.some(item => item.ruleId === 'general-external-url-destination')).toBe(false);
+  });
+
+  test('the displayed destination is sanitizeURL\'s own canonicalized value, sanitized before display', () => {
+    const config = buildConfig('button-list');
+    config.items = [{ title: 'Download', content: 'https://EXAMPLE.com/Guide' }];
+    const issues = issuesFor('button-list', config);
+    const destination = issues.find(item => item.ruleId === 'general-external-url-destination');
+    expect(destination.explanation).not.toContain('<script');
+  });
+});
