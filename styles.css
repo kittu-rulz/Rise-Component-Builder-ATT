@@ -164,17 +164,12 @@ a {
 }
 
 .logo-icon {
-  /* The globe path in index.html's logo SVG has its own explicit AT&T Blue fill; this
-     color is only for the wordmark path (fill="currentColor"), which should read as
-     black per brand direction — --text-main keeps it legible in dark mode too, where a
-     literal black wordmark would vanish against the dark toolbar background. */
-  color: var(--text-main);
   display: flex;
   align-items: center;
 }
 
 .logo-icon svg {
-  width: 82px;
+  width: 144px;
   height: 27px;
 }
 
