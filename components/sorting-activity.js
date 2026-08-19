@@ -117,7 +117,9 @@ export function generateCSS() {
     .target-btn.active {
       border-color: var(--accent);
       background-color: var(--accent);
-      color: var(--on-accent);
+      /* Not --on-accent (white): at 11px this is well under the brand's 19px
+         threshold for white text on an AT&T Blue background. */
+      color: var(--text-main);
     }
     .sorting-categories-columns {
       display: grid;
@@ -208,7 +210,9 @@ export function generateJS(config, instanceId) {
       var card = document.getElementById('${instanceId}-sort-card-' + idx);
       var indicator = card.querySelector('.sort-status-indicator');
       indicator.textContent = '-> assigned to ' + cat;
-      indicator.style.color = 'var(--primary)';
+      // Not the brand's clickable-only Cobalt (--primary) — this is a status readout,
+      // not a control.
+      indicator.style.color = 'var(--text-main)';
 
       document.querySelectorAll('.target-btn[data-idx="' + idx + '"]').forEach(function(targetBtn) {
         targetBtn.classList.toggle('active', targetBtn === btn);

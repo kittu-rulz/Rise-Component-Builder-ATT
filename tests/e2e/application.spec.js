@@ -63,14 +63,26 @@ test('every registered component opens in the builder editor and renders its liv
 
 test('an unanticipated runtime error surfaces a generic toast and logs full detail to the console, not to the user', async ({ page }) => {
   await page.goto('/');
-  const consoleErrors = [];
-  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  // Reads each console.error argument's real value from the page (via arg.evaluate, pulling
+  // .message off an Error instance) rather than relying on message.text()'s browser-native
+  // string formatting of a non-primitive argument — that formatting is not consistent
+  // between Chromium and Firefox, and app.js's own handler (reportUnexpectedError, app.js)
+  // logs the raw Error object, not a pre-stringified message.
+  let loggedDetail = '';
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    message.args().forEach(arg => {
+      arg.evaluate(value => (value instanceof Error ? value.message : String(value)))
+        .then(text => { loggedDetail += text; })
+        .catch(() => {});
+    });
+  });
   await page.evaluate(() => window.dispatchEvent(new ErrorEvent('error', { error: new Error('harmless test error: internal detail xyz123'), message: 'harmless test error: internal detail xyz123' })));
   const toast = page.locator('.toast-error');
   await expect(toast).toBeVisible();
   await expect(toast).not.toContainText('xyz123');
   await expect(toast).toContainText(/unexpected/i);
-  expect(consoleErrors.some(text => text.includes('xyz123'))).toBe(true);
+  await expect.poll(() => loggedDetail).toContain('xyz123');
 });
 
 test('sidebar storage meter reports measured browser storage usage', async ({ page }) => {

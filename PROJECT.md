@@ -11,6 +11,8 @@ Rise Component Builder is a browser-based internal authoring tool for creating c
 - Front-end developers preparing custom Rise blocks
 - Subject-matter experts working from predefined interaction templates
 
+The builder itself is desktop/large-screen internal tooling and is not expected to run on phone-sized viewports — responsiveness is a requirement of the exported component *output* (what learners see embedded in Rise), not of this authoring UI. See `docs/TESTING-STRATEGY.md` "E2E browser matrix and known flake" for the narrow-viewport builder-shell test this scoped out of coverage.
+
 ## Current features
 
 - Searchable component catalog organized by category

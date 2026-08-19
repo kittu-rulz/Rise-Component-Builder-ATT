@@ -169,7 +169,9 @@
       height: 28px;
       background-color: var(--accent);
       border: 2px solid #FFFFFF;
-      color: var(--on-accent);
+      /* Not --on-accent (white): at 12px this is well under the brand's 19px
+         threshold for white text on an AT&T Blue background. */
+      color: var(--text-main);
       border-radius: 50%;
       display: flex;
       align-items: center;

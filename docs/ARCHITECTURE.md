@@ -90,6 +90,25 @@ Recording happens exactly once per selection, in `app.js#recordRecentlyUsed(comp
 
 **Length guidance** — `js/field-validation.js#getLengthGuidance(field)` returns a short, always-visible note for text/select/textarea/richtext fields that have no explicit `maxLength` (fields that already declare one are already hard-capped at save time and don't need it). It is guidance only — it never adds a `maxLength` attribute or blocks typing — and shares its two length thresholds (`RECOMMENDED_TEXT_LENGTH` = 200, `RECOMMENDED_RICH_LENGTH` = 4000) with `js/validation.js`'s pre-existing `general-excessive-length` Preflight rule, so the inline hint shown while typing and the later save/export-time warning agree on the same numbers.
 
+## Initial selection state and export readiness (P12)
+
+**What "the accordion on entry" actually was.** `appState.config` (`js/state.js`) has always defaulted to a real, populated accordion configuration — there is no other sensible initial shape for a config object that many other functions read unconditionally. But a genuinely fresh launch (no saved draft) never *selects* that accordion: `appState.selectedComponent` stays `null`, and the static catalog screen (`#catalog-state`, no inline style) is what's actually visible — `#editor-state` starts `display: none` in `index.html`. The accordion default was never shown to the user as "the current component" on a bare launch; it only leaked in through two gaps this prompt closed:
+
+1. The live preview panel (`.preview-panel`) is a permanent sibling of `#catalog-state`/`#editor-state`, not hidden by `showState()` — so `updateLivePreview()`'s old unconditional `writePreview(...)` call rendered the sample accordion's compiled HTML into it even on a bare catalog screen, visually contradicting the catalog's own "Select a Component Template" empty state right next to it.
+2. `runExportPreflightGate()`'s `!container || !context` branch fail-opened (`setExportActionsEnabled(true)`) whenever `buildPreflightContext()` returned `null` — which it does specifically when nothing is selected — conflating "the preflight check itself is broken" (a real reason to fail open, so a tooling bug never bricks a working export) with "there's nothing to check because nothing is selected" (which should fail *closed*).
+
+**Chosen model: Option A — no component selected by default, an explicit empty state, Export/Save disabled.** Not Option B (auto-load the accordion as a labeled "sample" requiring an explicit "Use this component" action): the app already defaults to the catalog screen with nothing selected on a fresh launch, so Option A required closing two leaks rather than introducing a new "sample" concept and a new confirmation step the rest of the app (favorites, recently used, search) isn't built around.
+
+**`appState.selectedComponent` is the single source of truth** for "is there a real component currently loaded to save/export," checked in exactly one place per concern:
+- `updateToolbarActionAvailability()` (called from every `showState()` transition) disables `#btn-save`/`#btn-export` and swaps their `title`/`aria-label` to explain why, whenever it's `null`.
+- `updatePreviewEmptyState()` (same call site) shows `#preview-empty-state` instead of `#live-preview-iframe`.
+- `updateLivePreview()` now returns immediately after that empty-state toggle when nothing is selected — it never compiles or writes preview content for a phantom selection.
+- `runExportPreflightGate()` now fails *closed* (`Select a component before exporting.`, actions disabled) specifically when `buildPreflightContext()` returns `null`, separately from the unchanged fail-*open* catch-block for a genuinely broken preflight run.
+
+**Every path that reaches either screen goes through this the same way** (Requirement 5): a fresh launch, `performNewProject()`, and `performBackToCatalog()` (which now also clears `appState.selectedComponent` — previously it left the stale value in place, the one real behavior change here) all land on the catalog with nothing selected. Picking a catalog card (`loadComponentToEditor`) and opening/restoring a saved project or draft (`applyProject` → `syncEditorControls`) both set `selectedComponent` before showing the editor. None of favorites, recently used, template category filtering, or project import bypass these two functions — they're all just different ways of arriving at the same `component-select-card` click or `applyProject` call already covered above.
+
+**Blocking vs. Warning vs. Recommendation is unchanged** — `docs/VALIDATION-RULES.md` already documents and enforces the decision this requirement asked for: `canExport = blocking.length === 0`, so only Blocking issues gate export; Warnings and Recommendations are advisory and never disable the Export modal's actions. That policy predates P12 and was reviewed, not altered, by it.
+
 ## The eleven architectural boundaries
 
 Each boundary below names the file(s) that own it, what may cross the boundary, and what must not.

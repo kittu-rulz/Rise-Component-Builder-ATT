@@ -164,7 +164,11 @@ a {
 }
 
 .logo-icon {
-  color: var(--primary);
+  /* The globe path in index.html's logo SVG has its own explicit AT&T Blue fill; this
+     color is only for the wordmark path (fill="currentColor"), which should read as
+     black per brand direction — --text-main keeps it legible in dark mode too, where a
+     literal black wordmark would vanish against the dark toolbar background. */
+  color: var(--text-main);
   display: flex;
   align-items: center;
 }
@@ -189,10 +193,15 @@ a {
 .version-tag {
   font-size: 10px;
   font-weight: 500;
-  color: var(--primary-text);
+  /* Not Cobalt: a static label, not a clickable control (brand rule — Cobalt is
+     reserved for clickable elements). AT&T Blue is fine here since it's a
+     non-text/background use, not a text-color-carrying role. */
+  color: var(--text-muted);
   background-color: var(--primary-light);
   padding: 1px 6px;
-  border-radius: 20px;
+  /* Not a capsule: this is a static label, not a clickable control (brand rule —
+     capsule/pill shapes are reserved for clickable items). */
+  border-radius: 6px;
   align-self: flex-start;
   margin-top: 2px;
 }
@@ -204,7 +213,8 @@ a {
   font-weight: 500;
   color: var(--text-muted);
   padding: 3px 10px;
-  border-radius: 20px;
+  /* Not a capsule: a status readout, not a clickable control. */
+  border-radius: 6px;
   background-color: var(--bg-panel);
   border: 1px solid var(--border-color);
   margin-left: 16px;
@@ -462,7 +472,9 @@ a {
   background-color: var(--bg-app);
   color: var(--text-muted);
   padding: 2px 8px;
-  border-radius: 12px;
+  /* Not a capsule: a count readout, not its own clickable control (it sits inside a
+     clickable nav-item, but isn't independently the click target). */
+  border-radius: 6px;
   transition: all var(--transition-fast);
 }
 
@@ -747,7 +759,8 @@ a {
 .category-pill {
   font-size: 11px;
   font-weight: 500;
-  color: var(--primary-text);
+  /* Not Cobalt: a static category label, not a clickable control. */
+  color: var(--text-muted);
   background-color: var(--primary-light);
   padding: 2px 8px;
   border-radius: 6px;
@@ -877,7 +890,8 @@ a {
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 999px;
+  /* Not a capsule: a static issue-count readout, not a clickable control. */
+  border-radius: 6px;
   font-size: 10px;
   font-weight: 700;
   margin-left: 6px;
@@ -1677,6 +1691,17 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   height: 100%;
 }
 
+.preview-empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* Modals styles */
 .modal-overlay {
   position: fixed;
@@ -2128,7 +2153,8 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   display: inline-flex;
   align-items: center;
   padding: 2px 10px;
-  border-radius: 999px;
+  /* Not a capsule: a static compatibility-tier label, not a clickable control. */
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2137,7 +2163,10 @@ input[type="number"]:focus::-webkit-inner-spin-button {
 
 .compat-badge-confirmed { background-color: rgba(16, 185, 129, 0.14); color: #047857; }
 [data-theme="dark"] .compat-badge-confirmed { color: #34D399; }
-.compat-badge-experimental { background-color: rgba(0, 56, 143, 0.14); color: var(--primary-text); }
+/* Not Cobalt: a static compatibility-tier label, not a clickable control — a distinct
+   purple/preview hue instead, so it doesn't reuse the clickable-only brand blue. */
+.compat-badge-experimental { background-color: rgba(109, 40, 217, 0.14); color: #6D28D9; }
+[data-theme="dark"] .compat-badge-experimental { color: #A78BFA; }
 .compat-badge-fallback { background-color: rgba(245, 158, 11, 0.16); color: #92400E; }
 [data-theme="dark"] .compat-badge-fallback { color: #FBBF24; }
 .compat-badge-unsupported { background-color: rgba(239, 68, 68, 0.14); color: var(--danger); }
@@ -2440,7 +2469,7 @@ input[type="number"]:focus::-webkit-inner-spin-button {
     border-right: none;
     border-bottom: 1px solid var(--border-color);
   }
-  
+
   .categories-nav {
     flex-direction: row;
     overflow-x: auto;
@@ -2449,21 +2478,21 @@ input[type="number"]:focus::-webkit-inner-spin-button {
     white-space: nowrap;
     align-items: center;
   }
-  
+
   .nav-item {
     padding: 6px 12px;
   }
-  
+
   .sidebar-footer {
     display: none;
   }
-  
+
   .config-panel {
     flex: 1;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
   }
-  
+
   .preview-panel {
     width: 100%;
     height: 50vh;

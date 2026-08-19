@@ -183,6 +183,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (draft && await applyProject(draft, true)) {
       showToast(`Restored draft “${draft.name}”.`, 'success');
     } else {
+      // P12: a genuinely fresh launch (no draft) starts on the catalog with nothing
+      // selected — explicit rather than relying on index.html's static default markup, so
+      // updateToolbarActionAvailability()/updatePreviewEmptyState() run on this path too.
+      showState('catalog');
       renderDynamicItems();
       updateLivePreview();
     }
@@ -266,6 +270,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Switch editor tabs back to the first 'content' tab
       switchEditorTab('content');
     }
+    // P12: the single chokepoint every catalog<->editor transition passes through, so the
+    // toolbar's Save/Export availability and the preview panel's empty state never need a
+    // separate call site of their own to stay in sync with what's actually on screen.
+    updateToolbarActionAvailability();
+    updatePreviewEmptyState();
+  }
+
+  // P12 Requirement 3: there is no valid selected component to save or export while the
+  // catalog screen is showing — whether that's a fresh launch, "New Project," or "Back to
+  // Templates" (which also clears appState.selectedComponent, see performBackToCatalog).
+  // Explains why near the disabled action via `title`/`aria-label`, matching the existing
+  // pattern setExportActionsEnabled() uses for the Blocking-issues case inside the modal.
+  function updateToolbarActionAvailability() {
+    const hasSelection = Boolean(appState.selectedComponent);
+    const noSelectionReason = 'Select a component to enable this.';
+    [document.getElementById('btn-save'), document.getElementById('btn-export')].forEach(button => {
+      if (!button) return;
+      if (!button.dataset.defaultTitle) button.dataset.defaultTitle = button.title;
+      button.disabled = !hasSelection;
+      const title = hasSelection ? button.dataset.defaultTitle : noSelectionReason;
+      button.title = title;
+      button.setAttribute('aria-label', title);
+    });
+  }
+
+  // P12: the live preview panel is a permanent sibling of the catalog/editor screens (not
+  // hidden by showState() the way #catalog-state/#editor-state are), so without this it
+  // would keep silently rendering appState.config's leftover content — the sample
+  // accordion's own default data — even on a bare catalog screen where nothing is
+  // selected, contradicting what the catalog screen itself is showing.
+  function updatePreviewEmptyState() {
+    const emptyState = document.getElementById('preview-empty-state');
+    if (!emptyState || !livePreviewIframe) return;
+    const hasSelection = Boolean(appState.selectedComponent);
+    livePreviewIframe.hidden = !hasSelection;
+    emptyState.hidden = hasSelection;
   }
 
   // P08: header identity/save-status ("Untitled project · Unsaved changes" /
@@ -457,6 +497,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function performBackToCatalog() {
+    // P12: "Back to Templates" is a deselection, not just a screen change — makes
+    // appState.selectedComponent the single source of truth for "is a component currently
+    // loaded," rather than needing callers to also check which screen is visible. Any
+    // unsaved edits were already resolved by guardUnsavedChanges() before this runs.
+    appState.selectedComponent = null;
     showState('catalog');
     renderCatalog();
   }
@@ -1378,8 +1423,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function runExportPreflightGate() {
     const container = document.getElementById('export-preflight-results');
+    if (!container) { setExportActionsEnabled(true); return true; } // fail open: a missing results panel is a tooling problem, not a content one
     const context = buildPreflightContext();
-    if (!container || !context) { setExportActionsEnabled(true); return true; }
+    // P12 Requirement 3: no selected component is a genuine reason to block export — the
+    // toolbar's Export button is already disabled in this case (updateToolbarActionAvailability),
+    // so this is defense-in-depth against anything that could still reach this modal.
+    if (!context) {
+      container.innerHTML = '<div class="preflight-empty">Select a component before exporting.</div>';
+      setExportActionsEnabled(false);
+      return false;
+    }
     try {
       await attachDomMeasurement(context);
       const issues = await runPreflight(context);
@@ -1596,6 +1649,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!livePreviewIframe) return;
     currentExportBundle = null;
     pruneMediaObjectURLs(appState.config);
+    updatePreviewEmptyState();
+    // P12: nothing selected means there is no real content to render or validate — without
+    // this, a bare catalog screen would still silently compile and preview
+    // appState.config's leftover/sample data (P12 Requirement 1's "accidental default").
+    if (!appState.selectedComponent) return;
     validateActiveComponent(appState, componentRegistry);
     writePreview(livePreviewIframe, generateIframeContent());
     scheduleDraftSave();
@@ -1605,13 +1663,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // overrides) — never a transient UI-only change like preview device mode or panel
     // state, which don't call updateLivePreview() at all. Load flows (applyProject,
     // component selection) also call this, then immediately reset isDirty back to false
-    // themselves, so this alone doesn't mark a freshly opened project dirty. Guarded on
-    // selectedComponent because init() also calls this once on a bare catalog screen (no
-    // draft to restore) — nothing has been authored yet, so there is nothing to be dirty.
-    if (appState.selectedComponent) {
-      appState.isDirty = true;
-      updateProjectStatusDisplay();
-    }
+    // themselves, so this alone doesn't mark a freshly opened project dirty.
+    appState.isDirty = true;
+    updateProjectStatusDisplay();
   }
 
   // ==========================================

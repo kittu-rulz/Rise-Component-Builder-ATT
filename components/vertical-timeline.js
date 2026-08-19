@@ -97,7 +97,9 @@ export function generateCSS() {
       background-color: var(--accent);
     }
     .timeline-step.active .step-num {
-      color: var(--on-accent);
+      /* Not --on-accent (white): at 11px this is well under the brand's 19px
+         threshold for white text on an AT&T Blue background. */
+      color: var(--text-main);
     }
     .timeline-step.active .step-card {
       border-color: var(--accent);

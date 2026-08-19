@@ -70,7 +70,9 @@ export function generateCSS() {
       left: 50%;
       transform: translateX(-50%);
       background-color: var(--accent);
-      color: var(--on-accent);
+      /* Not --on-accent (white): at 9px this is well under the brand's 19px
+         threshold for white text on an AT&T Blue background. */
+      color: var(--text-main);
       font-size: 9px;
       font-weight: 700;
       padding: 2px 8px;
