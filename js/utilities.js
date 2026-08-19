@@ -237,6 +237,48 @@ export function sanitizeCSSNumber(value, { minimum = 0, maximum = 100, fallback 
   return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, number)) : fallback;
 }
 
+// Formats a byte count into a compact human string, extending up to TB so a
+// browser's storage quota estimate (which can legitimately run into the
+// hundreds of GB on a large disk) never falls through to a raw, unrounded byte
+// count (P10 requirement 5, "very large values").
+export function formatStorageBytes(bytes) {
+  if (!Number.isFinite(bytes)) return 'Unknown';
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unitIndex]}`;
+}
+
+// Turns a navigator.storage.estimate() result (or its absence/failure) into
+// display-ready state. Kept separate from formatStorageBytes and free of DOM
+// access so every fallback branch (unsupported API, denied/zero estimate, and
+// the normal case) is unit-testable without mocking navigator.storage (P10
+// requirement 7). The percentage is always the primary label — never a raw
+// byte count like "0 B of 10 GB" — and every quantity is explicitly marked as
+// an approximation, since navigator.storage.estimate() itself is documented
+// as an estimate, not an exact figure (P10 requirement 4).
+export function describeStorageUsage({ supported, usage, quota, failed } = {}) {
+  if (!supported || failed || !Number.isFinite(quota) || quota <= 0) {
+    return {
+      percent: 0,
+      label: 'Usage unavailable',
+      tooltip: 'Your browser did not report a storage estimate.'
+    };
+  }
+  const safeUsage = Number.isFinite(usage) && usage > 0 ? usage : 0;
+  const percent = Math.min(100, Math.round((safeUsage / quota) * 100));
+  return {
+    percent,
+    label: `~${percent}% used`,
+    tooltip: `Estimate: ${formatStorageBytes(safeUsage)} of ${formatStorageBytes(quota)} used (approximate, as reported by your browser)`
+  };
+}
+
 export function sanitizePreviewConfig(config, componentId) {
   const result = structuredClone(config);
   result.colorPrimary = sanitizeCSSColor(config.colorPrimary, '#2563EB');

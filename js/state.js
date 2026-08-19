@@ -29,6 +29,11 @@ const initialConfig = applyThemeToConfig({
 export const appState = {
   currentProjectId: null,
   currentProjectName: '',
+  // P08: true once meaningful project data (config/theme/overrides) has changed since the
+  // last successful save/open/new — never set for transient UI state (open panels,
+  // preview device, search/category filters). See app.js#updateLivePreview and
+  // #applyProject/#performSave for where this flips.
+  isDirty: false,
   uiTheme: 'light',
   activeThemeId: initialTheme.id,
   activeTheme: initialTheme,
@@ -37,6 +42,9 @@ export const appState = {
   searchQuery: '',
   selectedComponent: null,
   favorites: new Set(),
+  // P11: most-recently-used first, deduplicated, bounded — see js/storage.js's
+  // RECENTLY_USED_LIMIT/withRecentlyUsedEntry.
+  recentlyUsed: [],
   settings: {
     defaultFont: 'Lato',
     exportFormat: 'web',

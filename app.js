@@ -3,22 +3,25 @@
 // Opt back in incrementally as sections of this file are typed or migrated into the component registry (docs/ARCHITECTURE.md §1).
 
 import { appState, resetConfig } from './js/state.js';
+import { APP_VERSION } from './js/version.js';
 import {
   buildProject, clearDraft, deleteProject, duplicateProject, getProject, importProjectJson,
   loadCustomThemes, loadDefaultThemeId, loadDraft, loadFavorites, loadPreviewDevice,
-  loadProjects, loadSettings, loadUiTheme, renameProject, saveDraft,
-  saveFavorites, savePreviewDevice, saveProject, saveSettings, saveUiTheme
+  loadProjects, loadRecentlyUsed, loadSettings, loadUiTheme, renameProject, saveDraft,
+  saveFavorites, savePreviewDevice, saveProject, saveRecentlyUsed, saveSettings, saveUiTheme,
+  withRecentlyUsedEntry
 } from './js/storage.js';
 import { componentCatalog, filterCatalog, createCatalogCard } from './js/catalog.js';
 import { COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById, getDefaultConfig } from './js/component-registry.js';
 import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField } from './js/editor.js';
 import { writePreview, openPreview, generateIframeContent as compilePreview, COMPONENT_MAX_WIDTH } from './js/preview.js';
 import { getDeviceWidthLabel } from './js/device-preview.js';
+import { measureRenderedDimensions } from './js/dom-measurement.js';
 import {
   buildExportPayload, buildLargePasteWarning, buildRiseProjectZip, downloadHtml, downloadProjectJson,
   downloadZipFile, formatExportedFileSize, getExportedFileSize, prepareMediaExport
 } from './js/export.js';
-import { copyTextToClipboard, escapeHTML, formatItemLabel, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
+import { copyTextToClipboard, describeStorageUsage, escapeHTML, formatItemLabel, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
 import { showToast } from './js/toast.js';
 import { COMPATIBILITY_TIERS, getExportFormatCompatibility } from './js/compatibility.js';
 import {
@@ -63,6 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   appState.uiTheme = loadUiTheme();
   appState.settings = loadSettings();
   appState.favorites = new Set(loadFavorites());
+  appState.recentlyUsed = loadRecentlyUsed();
   let customThemes = loadCustomThemes();
   let defaultThemeId = loadDefaultThemeId();
   const initialComponentTheme = [...BUILT_IN_THEMES, ...customThemes].find(theme => theme.id === defaultThemeId)
@@ -95,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const activeComponentCategory = document.getElementById('active-component-category');
   const btnFavoriteToggle = document.getElementById('btn-favorite-toggle');
   const favoritesCountBadge = document.getElementById('favorites-count-badge');
+  const recentCountBadge = document.getElementById('recent-count-badge');
   const preflightBadge = document.getElementById('preflight-badge');
   
   // Editor Tabs
@@ -117,6 +122,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Dynamic Content Items
   const dynamicItemsContainer = document.getElementById('dynamic-items-container');
   const btnAddItem = document.getElementById('btn-add-item');
+  const btnExpandAllItems = document.getElementById('btn-expand-all-items');
+  const btnCollapseAllItems = document.getElementById('btn-collapse-all-items');
   
   // Preview
   const deviceButtons = document.querySelectorAll('.device-btn');
@@ -143,6 +150,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // INITIALIZATION
   // ==========================================
   async function init() {
+    // P09: sourced from js/version.js — the one place this value is maintained — rather
+    // than a hand-typed string in index.html, which had drifted out of sync with
+    // package.json's own version before this. No date is shown alongside it (Requirement
+    // 5): this project has no real release-date tracking to source one from truthfully.
+    const versionTag = document.getElementById('app-version-tag');
+    if (versionTag) {
+      versionTag.textContent = `v${APP_VERSION}`;
+      versionTag.hidden = false;
+    }
+
     // 1. Load theme state
     setUiTheme(appState.uiTheme);
     document.documentElement.style.setProperty('--component-max-width', `${COMPONENT_MAX_WIDTH}px`);
@@ -152,8 +169,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderCatalog();
     updateCategoryBadges();
 
-    // 3. Update Favorites count
+    // 3. Update Favorites/Recently Used counts
     updateFavoritesBadge();
+    updateRecentBadge();
     updateStorageMeter();
 
     // 4. Hook up live sync for values in Form Inputs
@@ -211,9 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ROUTING & NAVIGATION
   // ==========================================
   navItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.preventDefault();
-      
+    item.addEventListener('click', () => {
       navItems.forEach(n => n.classList.remove('active'));
       item.classList.add('active');
       
@@ -231,8 +247,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   searchInput.addEventListener('input', (e) => {
-    appState.searchQuery = e.target.value.toLowerCase();
-    
+    appState.searchQuery = e.target.value;
+
     // Ensure we are on the catalog view when searching
     showState('catalog');
     renderCatalog();
@@ -242,6 +258,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (state === 'catalog') {
       catalogState.style.display = 'flex';
       editorState.style.display = 'none';
+      const status = document.getElementById('project-status');
+      if (status) status.hidden = true; // no project context on the catalog screen
     } else if (state === 'editor') {
       catalogState.style.display = 'none';
       editorState.style.display = 'flex';
@@ -250,31 +268,111 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // P08: header identity/save-status ("Untitled project · Unsaved changes" /
+  // "Project name · Saved") — updateLivePreview() calls this on every meaningful edit, but
+  // the DOM text only actually changes on a dirty-state transition (clean->dirty happens
+  // once per edit session, not per keystroke), so this never becomes noisy chatter despite
+  // being an aria-live region (Requirement 7).
+  function updateProjectStatusDisplay() {
+    const status = document.getElementById('project-status');
+    if (!status || !appState.selectedComponent) return;
+    status.hidden = false;
+    const name = appState.currentProjectName || 'Untitled project';
+    // A project with no backing save is always "Unsaved changes," regardless of the
+    // isDirty flag's raw value — there is nothing yet to have drifted from.
+    const isSaved = Boolean(appState.currentProjectId) && !appState.isDirty;
+    const label = `${name} · ${isSaved ? 'Saved' : 'Unsaved changes'}`;
+    if (status.textContent !== label) status.textContent = label; // avoid redundant aria-live re-announcement
+    status.classList.toggle('is-saved', isSaved);
+    status.classList.toggle('is-unsaved', !isSaved);
+  }
+
+  // Resumes whatever New/Open/Back-to-Templates action the user was attempting once a
+  // Save chosen from guardUnsavedChanges() actually succeeds (openSaveDialog's own
+  // modalDefaultSettlers entry, below, clears this if that save is cancelled instead).
+  let pendingActionAfterSave = null;
+
+  /**
+   * Requirement 4/5, P08: call before New Project, Back to Templates, or loading a
+   * different saved project. Returns `true` when the caller should proceed immediately
+   * (nothing dirty, or the user chose Discard), `false` when the caller must not proceed
+   * (Cancel), or `'deferred'` when the user chose Save — in that case this function has
+   * already opened the save dialog and stashed `action` in pendingActionAfterSave; the
+   * caller should not also run `action` itself.
+   */
+  async function guardUnsavedChanges(action) {
+    if (!appState.isDirty) return true;
+    const result = await openConfirmDialog({
+      title: 'Unsaved changes',
+      message: `“${appState.currentProjectName || 'Untitled project'}” has unsaved changes. Save before continuing?`,
+      confirmLabel: 'Discard',
+      cancelLabel: 'Cancel',
+      danger: true,
+      extraLabel: 'Save'
+    });
+    if (result === false) return false;
+    if (result === true) return true;
+    pendingActionAfterSave = action;
+    openSaveDialog('save');
+    return 'deferred';
+  }
+
   // ==========================================
   // CATALOG RENDERING
   // ==========================================
   function renderCatalog() {
     componentsGrid.innerHTML = '';
-    
+
     const filtered = filterCatalog(componentCatalog, appState);
 
     if (filtered.length === 0) {
-      const isFavoritesEmpty = appState.activeCategory === 'favorites' && !appState.searchQuery;
-      componentsGrid.innerHTML = isFavoritesEmpty
-        ? `
-        <div class="catalog-empty-state">
-          <div class="catalog-empty-icon" aria-hidden="true">★</div>
-          <h4>No Favorites Yet</h4>
-          <p>Click the star on any component to add it here for quick access.</p>
-        </div>
-      `
-        : `
-        <div class="catalog-empty-state">
-          <div class="catalog-empty-icon" aria-hidden="true">🔍</div>
-          <h4>No Components Found</h4>
-          <p>Try a different query or select another category from the sidebar.</p>
-        </div>
-      `;
+      const query = appState.searchQuery.trim();
+      if (query) {
+        // P11 Requirement 4: name the query back to the user and offer a one-click way out,
+        // rather than a generic "try something else" with no path forward.
+        componentsGrid.innerHTML = `
+          <div class="catalog-empty-state">
+            <div class="catalog-empty-icon" aria-hidden="true">🔍</div>
+            <h4>No results for “${escapeHTML(query)}”</h4>
+            <p>Try a different term, or clear the search to browse by category.</p>
+          </div>
+        `;
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'btn btn-text btn-small catalog-empty-clear';
+        clearButton.textContent = 'Clear search';
+        clearButton.addEventListener('click', () => {
+          searchInput.value = '';
+          appState.searchQuery = '';
+          renderCatalog();
+          searchInput.focus(); // P11 Requirement 8: this button is destroyed by the render() above it triggers — hand focus back to the search box rather than dropping it.
+        });
+        componentsGrid.querySelector('.catalog-empty-state').appendChild(clearButton);
+      } else if (appState.activeCategory === 'favorites') {
+        componentsGrid.innerHTML = `
+          <div class="catalog-empty-state">
+            <div class="catalog-empty-icon" aria-hidden="true">★</div>
+            <h4>No Favorites Yet</h4>
+            <p>Click the star on any component to add it here for quick access.</p>
+          </div>
+        `;
+      } else if (appState.activeCategory === 'recent') {
+        componentsGrid.innerHTML = `
+          <div class="catalog-empty-state">
+            <div class="catalog-empty-icon" aria-hidden="true">🕐</div>
+            <h4>Nothing Used Yet</h4>
+            <p>Components you open will show up here for quick access.</p>
+          </div>
+        `;
+      } else {
+        componentsGrid.innerHTML = `
+          <div class="catalog-empty-state">
+            <div class="catalog-empty-icon" aria-hidden="true">🔍</div>
+            <h4>No Components Found</h4>
+            <p>Select another category from the sidebar.</p>
+          </div>
+        `;
+      }
       return;
     }
 
@@ -316,15 +414,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     applyMissingSchemaDefaults(component);
     syncResolvedThemeConfig();
-    
+
+    // P11 Requirement 1: a freshly-picked component starts with only its first item
+    // expanded, not every item at once.
+    schemaItemEditor.resetToDefaultCollapse(appState.config.items);
     // Render dynamic item list inputs
     renderDynamicItems();
 
+    recordRecentlyUsed(component.id);
+
     // Show Editor Layout
     showState('editor');
-    
+
     // Force live preview frame refresh
     updateLivePreview();
+    // P08: an unmodified component's own schema defaults are not "meaningful project data
+    // changes" (Requirement 2) — nothing has actually been authored yet, so there's
+    // nothing to guard against losing. Same load-vs-edit reset updateLivePreview()'s own
+    // comment describes, applied here for the same reason applyProject() needs it.
+    appState.isDirty = false;
+    updateProjectStatusDisplay();
   }
 
   function setupComponentFields(id) {
@@ -347,9 +456,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }));
   }
 
-  btnBackToCatalog.addEventListener('click', () => {
+  function performBackToCatalog() {
     showState('catalog');
     renderCatalog();
+  }
+
+  btnBackToCatalog.addEventListener('click', async () => {
+    const guard = await guardUnsavedChanges(performBackToCatalog);
+    if (guard === true) performBackToCatalog();
   });
 
   // Favorite toggle
@@ -385,24 +499,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     favoritesCountBadge.innerText = appState.favorites.size;
   }
 
+  function updateRecentBadge() {
+    if (recentCountBadge) recentCountBadge.innerText = appState.recentlyUsed.length;
+  }
+
+  // P11 Requirement 5: recorded exactly once per selection — a fresh component pick
+  // (loadComponentToEditor) or opening/restoring a saved project (applyProject via
+  // syncEditorControls) — never on every keystroke or re-render.
+  function recordRecentlyUsed(componentId) {
+    appState.recentlyUsed = withRecentlyUsedEntry(appState.recentlyUsed, componentId);
+    updateRecentBadge();
+    try { saveRecentlyUsed(appState.recentlyUsed); }
+    catch (error) { showToast(error.message, 'error'); }
+    if (appState.activeCategory === 'recent') renderCatalog();
+  }
+
   function updateCategoryBadges() {
     getCategoriesWithCounts(COMPONENT_REGISTRY).forEach(({ id, count }) => {
       const badge = document.querySelector(`.nav-item[data-category="${id}"] .badge`);
       if (badge) badge.textContent = String(count);
     });
-  }
-
-  function formatStorageBytes(bytes) {
-    if (!Number.isFinite(bytes)) return 'Unknown';
-    if (bytes < 1024) return `${bytes} B`;
-    const units = ['KB', 'MB', 'GB'];
-    let value = bytes / 1024;
-    let unitIndex = 0;
-    while (value >= 1024 && unitIndex < units.length - 1) {
-      value /= 1024;
-      unitIndex += 1;
-    }
-    return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unitIndex]}`;
   }
 
   async function updateStorageMeter() {
@@ -411,32 +527,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const track = bar?.closest('.storage-bar');
     if (!label || !bar || !track) return;
 
+    let state;
     if (!navigator.storage?.estimate) {
-      label.textContent = 'Usage unavailable';
-      bar.style.width = '0%';
-      track.setAttribute('aria-valuenow', '0');
-      return;
+      state = describeStorageUsage({ supported: false });
+    } else {
+      try {
+        const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+        state = describeStorageUsage({ supported: true, usage, quota });
+      } catch {
+        state = describeStorageUsage({ supported: true, failed: true });
+      }
     }
 
-    try {
-      const { usage = 0, quota = 0 } = await navigator.storage.estimate();
-      if (!quota) {
-        label.textContent = 'Usage unavailable';
-        bar.style.width = '0%';
-        track.setAttribute('aria-valuenow', '0');
-        return;
-      }
-      const percent = Math.min(100, Math.round((usage / quota) * 100));
-      label.textContent = `${percent}% Used`;
-      label.title = `${formatStorageBytes(usage)} of ${formatStorageBytes(quota)} used`;
-      bar.style.width = `${percent}%`;
-      track.setAttribute('aria-valuenow', String(percent));
-      track.setAttribute('aria-label', `Local browser storage used: ${formatStorageBytes(usage)} of ${formatStorageBytes(quota)}`);
-    } catch {
-      label.textContent = 'Usage unavailable';
-      bar.style.width = '0%';
-      track.setAttribute('aria-valuenow', '0');
-    }
+    label.textContent = state.label;
+    label.title = state.tooltip;
+    bar.style.width = `${state.percent}%`;
+    track.setAttribute('aria-valuenow', String(state.percent));
+    track.setAttribute('aria-label', `Browser storage: ${state.label}`);
   }
 
   // ==========================================
@@ -501,7 +608,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   const schemaItemEditor = createSchemaItemEditor({
     container: dynamicItemsContainer,
-    onChange: updateLivePreview
+    onChange: updateLivePreview,
+    focusFallback: btnAddItem
   });
 
   function computeIssuesByItem(issues) {
@@ -546,6 +654,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderDynamicItems();
     updateLivePreview();
   });
+
+  // P11 Requirement 2: keyboard-accessible bulk expand/collapse near the item list.
+  btnExpandAllItems.addEventListener('click', () => schemaItemEditor.expandAll());
+  btnCollapseAllItems.addEventListener('click', () => schemaItemEditor.collapseAll());
 
   // ==========================================
   // DEVICE VIEWPORT CONTROLS
@@ -634,29 +746,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function openConfirmDialog({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false }) {
+  // extraLabel (P08) opts into a third button — e.g. unsaved-changes guards need
+  // Save/Discard/Cancel, not just Confirm/Cancel. Resolves 'extra' when clicked, keeping
+  // the existing true/false confirm/cancel contract unchanged for every other caller
+  // (only Delete used this before P08) — the button stays hidden unless extraLabel is
+  // passed, so nothing about the existing 2-button flow changes.
+  function openConfirmDialog({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false, extraLabel = null }) {
     return new Promise(resolve => {
       document.getElementById('modal-confirm-title').textContent = title;
       document.getElementById('modal-confirm-message').textContent = message;
       const confirmBtn = document.getElementById('btn-confirm-dialog-action');
       const cancelBtn = document.getElementById('btn-confirm-dialog-cancel');
+      const extraBtn = document.getElementById('btn-confirm-dialog-extra');
       confirmBtn.textContent = confirmLabel;
       confirmBtn.classList.toggle('btn-danger', danger);
       confirmBtn.classList.toggle('btn-primary', !danger);
       cancelBtn.textContent = cancelLabel;
+      extraBtn.hidden = !extraLabel;
+      extraBtn.textContent = extraLabel || '';
 
       let settled = false;
       const settle = value => {
         if (settled) return;
         settled = true;
         confirmBtn.removeEventListener('click', onConfirm);
+        extraBtn.removeEventListener('click', onExtra);
         resolve(value);
       };
       const onConfirm = () => {
         settle(true);
         closeModal('modal-confirm');
       };
+      const onExtra = () => {
+        settle('extra');
+        closeModal('modal-confirm');
+      };
       confirmBtn.addEventListener('click', onConfirm);
+      if (extraLabel) extraBtn.addEventListener('click', onExtra);
       modalDefaultSettlers.set('modal-confirm', () => settle(false));
       openModal('modal-confirm');
     });
@@ -723,7 +849,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeComponentTitle.innerText = appState.selectedComponent.title;
     activeComponentCategory.innerText = appState.selectedComponent.category.toUpperCase();
     btnFavoriteToggle.classList.toggle('favorited', appState.favorites.has(appState.selectedComponent.id));
+    // P11 Requirement 1: opening/restoring a project is also a fresh population of the
+    // items list — same "only first item open" default as picking a blank component.
+    schemaItemEditor.resetToDefaultCollapse(config.items);
     renderDynamicItems();
+    recordRecentlyUsed(appState.selectedComponent.id);
   }
 
   async function applyProject(project, isDraft = false) {
@@ -754,6 +884,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncEditorControls();
     showState('editor');
     updateLivePreview();
+    // P08: resets what updateLivePreview() just set — an open/restore is a "load," not an
+    // edit. Draft restores of a never-explicitly-saved project still correctly show
+    // "Unsaved changes" (updateProjectStatusDisplay ignores isDirty when currentProjectId
+    // is null, which getProject(project.id) above already resolved to null for that case).
+    appState.isDirty = false;
+    updateProjectStatusDisplay();
     if (mediaRestore.missing.length) {
       showToast(`${mediaRestore.missing.length} uploaded media file${mediaRestore.missing.length === 1 ? ' is' : 's are'} missing from this browser.`, 'warning', 6000);
     }
@@ -811,6 +947,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveNameInput.value = target?.name || appState.currentProjectName || appState.selectedComponent?.title || '';
     document.getElementById('btn-confirm-save').textContent = isRename ? 'Rename' : 'Save';
     btnConfirmSaveAs.style.display = isRename ? 'none' : '';
+    // P08: if this dialog closes (any way — Cancel, X, Escape) while still dirty, no save
+    // actually happened, so any action deferred by guardUnsavedChanges() must not run
+    // later on some unrelated future save. Re-registered on every open since closeModal()
+    // deletes the entry after each fire (see modalDefaultSettlers, above).
+    modalDefaultSettlers.set('modal-save', () => { if (appState.isDirty) pendingActionAfterSave = null; });
     openModal('modal-save');
     saveNameInput.focus();
     saveNameInput.select();
@@ -828,11 +969,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       appState.currentProjectId = saved.id;
       appState.currentProjectName = saved.name;
       saveDraft(saved);
+      // Set before closeModal() so modal-save's own settler (above) sees isDirty already
+      // false and correctly leaves pendingActionAfterSave alone for this success path.
+      appState.isDirty = false;
       closeModal('modal-save');
+      updateProjectStatusDisplay();
       showToast(`Saved “${saved.name}”.`, 'success');
       updateStorageMeter();
       const accessibilityWarnings = validateMediaAccessibility(appState.config, appState.selectedComponent.id);
       if (accessibilityWarnings.length) showToast(accessibilityWarnings[0], 'warning', 6000);
+      if (pendingActionAfterSave) {
+        const action = pendingActionAfterSave;
+        pendingActionAfterSave = null;
+        action();
+      }
     } catch (error) {
       showToast(error.message, 'error', 5000);
     }
@@ -874,11 +1024,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         button.addEventListener('click', handler);
         actions.appendChild(button);
       };
-      addAction('Load', async () => {
+      const performLoad = async () => {
         if (await applyProject(project)) {
           closeModal('modal-open');
           showToast(`Opened “${project.name}”.`, 'success');
         }
+      };
+      addAction('Load', async () => {
+        const guard = await guardUnsavedChanges(performLoad);
+        if (guard === true) await performLoad();
       });
       addAction('Rename', () => openSaveDialog('rename', project.id));
       addAction('Duplicate', () => {
@@ -912,7 +1066,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  document.getElementById('btn-new').addEventListener('click', () => {
+  function performNewProject() {
     clearDraft();
     resetConfig();
     const defaultTheme = getAvailableThemes().find(theme => theme.id === defaultThemeId)
@@ -924,10 +1078,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     appState.currentProjectId = null;
     appState.currentProjectName = '';
     appState.selectedComponent = null;
+    appState.isDirty = false; // P08: a blank slate hasn't been edited yet
     releaseAllMediaObjectURLs();
     showState('catalog');
     renderCatalog();
     showToast('New project started. Choose a component to begin.', 'success');
+  }
+
+  document.getElementById('btn-new').addEventListener('click', async () => {
+    const guard = await guardUnsavedChanges(performNewProject);
+    if (guard === true) performNewProject();
   });
 
   document.getElementById('btn-open').addEventListener('click', () => {
@@ -1059,7 +1219,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('Settings applied successfully.', 'success');
         closeModal('modal-settings');
         renderDynamicItems();
+        // P08: Builder Settings (media limits, autosave, export format) are a global app
+        // preference, not project data — updateLivePreview() re-renders the preview using
+        // the new settings (e.g. an updated media-size limit), but must not flip the
+        // *project's* dirty state as a side effect of that. Preserve whatever it was.
+        const wasDirty = appState.isDirty;
         updateLivePreview();
+        appState.isDirty = wasDirty;
+        updateProjectStatusDisplay();
       } catch (error) {
         showToast(error.message, 'error', 5000);
       }
@@ -1214,6 +1381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const context = buildPreflightContext();
     if (!container || !context) { setExportActionsEnabled(true); return true; }
     try {
+      await attachDomMeasurement(context);
       const issues = await runPreflight(context);
       const summary = renderPreflightResults(container, issues);
       updatePreflightBadge(summary);
@@ -1433,6 +1601,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     scheduleDraftSave();
     refreshPreflightBadge();
     refreshItemIssueBadges();
+    // P08: every call here follows a meaningful project-data change (config/theme/
+    // overrides) — never a transient UI-only change like preview device mode or panel
+    // state, which don't call updateLivePreview() at all. Load flows (applyProject,
+    // component selection) also call this, then immediately reset isDirty back to false
+    // themselves, so this alone doesn't mark a freshly opened project dirty. Guarded on
+    // selectedComponent because init() also calls this once on a bare catalog screen (no
+    // draft to restore) — nothing has been authored yet, so there is nothing to be dirty.
+    if (appState.selectedComponent) {
+      appState.isDirty = true;
+      updateProjectStatusDisplay();
+    }
   }
 
   // ==========================================
@@ -1456,6 +1635,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const context = buildPreflightContext();
     if (!context) return;
     updatePreflightBadge(summarizePreflight(collectSyncIssues(context)));
+  }
+
+  // Clipping-risk/mobile-overflow (P07) need a real hidden-iframe render — too expensive
+  // to run on every keystroke (Requirement 6), so this is only ever called from a full
+  // preflight run (panel open, export gate), never from refreshPreflightBadge()'s
+  // per-keystroke path. `domMeasurementAbort` cancels a still-in-flight measurement when a
+  // newer one starts (e.g. the author reopens Preflight before the previous run finished)
+  // so a stale result can never land after a fresher request superseded it.
+  let domMeasurementAbort = null;
+
+  async function attachDomMeasurement(context) {
+    domMeasurementAbort?.abort();
+    const controller = new AbortController();
+    domMeasurementAbort = controller;
+    try {
+      const html = generateIframeContent();
+      context.domMeasurement = await measureRenderedDimensions(html, { signal: controller.signal });
+    } catch {
+      context.domMeasurement = null; // measured-but-failed, not "never attempted" — still surfaces the manual-check recommendation
+    }
+    return context;
   }
 
   function updatePreflightBadge(summary) {
@@ -1532,6 +1732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!context) { container.innerHTML = '<div class="preflight-empty">Select a component first.</div>'; return; }
     container.innerHTML = '<div class="preflight-empty">Running preflight checks…</div>';
     try {
+      await attachDomMeasurement(context);
       const issues = await runPreflight(context);
       const summary = renderPreflightResults(container, issues);
       updatePreflightBadge(summary);
@@ -1543,6 +1744,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Run the initialization
   window.addEventListener('beforeunload', releaseAllMediaObjectURLs);
+  // P08: the browser's own native "leave site?" prompt — the one unsaved-changes guard
+  // that can't use openConfirmDialog (a page already mid-unload can't await a promise or
+  // show a custom modal). Setting returnValue is what triggers the native prompt; the
+  // message string itself is ignored by every modern browser, which shows its own fixed
+  // text instead — set anyway for older engines that still honor it.
+  window.addEventListener('beforeunload', event => {
+    if (!appState.isDirty) return;
+    event.preventDefault();
+    event.returnValue = 'You have unsaved changes. Leaving now will lose them.';
+  });
   await init();
 
 });

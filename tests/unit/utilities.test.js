@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
-  copyTextToClipboard, escapeAttribute, escapeHTML, escapeJavaScriptString, formatItemLabel, sanitizeRichText, sanitizeURL, slugify, toRgba
+  copyTextToClipboard, describeStorageUsage, escapeAttribute, escapeHTML, escapeJavaScriptString, formatItemLabel, formatStorageBytes, sanitizeRichText, sanitizeURL, slugify, toRgba
 } from '../../js/utilities.js';
 import { sanitizeAssetFilename } from '../../js/media.js';
 import { createProjectId, validateProject } from '../../js/storage.js';
@@ -118,5 +118,60 @@ describe('context-specific utilities', () => {
     expect(validateProject(validProject()).valid).toBe(true);
     expect(validateProject(invalidProject).valid).toBe(false);
     expect(validateTheme(invalidTheme).valid).toBe(false);
+  });
+});
+
+describe('formatStorageBytes', () => {
+  test.each([
+    [0, '0 B'], [1023, '1023 B'],
+    [1536, '1.5 KB'], [1024 * 1024 * 2.5, '2.5 MB'],
+    [1024 * 1024 * 1024 * 12, '12 GB'],
+    [1024 * 1024 * 1024 * 1024 * 3.2, '3.2 TB']
+  ])('formats %i bytes as %s', (bytes, expected) => expect(formatStorageBytes(bytes)).toBe(expected));
+
+  test('non-finite input is reported as Unknown rather than NaN text', () => {
+    expect(formatStorageBytes(NaN)).toBe('Unknown');
+    expect(formatStorageBytes(undefined)).toBe('Unknown');
+    expect(formatStorageBytes(Infinity)).toBe('Unknown');
+  });
+});
+
+describe('describeStorageUsage', () => {
+  test('unsupported API falls back to an unavailable state, not false-precision text', () => {
+    const result = describeStorageUsage({ supported: false });
+    expect(result).toEqual({ percent: 0, label: 'Usage unavailable', tooltip: expect.any(String) });
+  });
+
+  test('a failed/denied estimate call falls back the same as unsupported', () => {
+    const result = describeStorageUsage({ supported: true, failed: true });
+    expect(result.label).toBe('Usage unavailable');
+  });
+
+  test('a zero or missing quota is treated as unavailable rather than dividing by zero', () => {
+    expect(describeStorageUsage({ supported: true, usage: 0, quota: 0 }).label).toBe('Usage unavailable');
+    expect(describeStorageUsage({ supported: true, usage: 0, quota: undefined }).label).toBe('Usage unavailable');
+  });
+
+  test('zero usage against a real quota reports 0%, not an unavailable state', () => {
+    const result = describeStorageUsage({ supported: true, usage: 0, quota: 1024 * 1024 * 1024 });
+    expect(result.percent).toBe(0);
+    expect(result.label).toBe('~0% used');
+  });
+
+  test('a normal estimate reports a rounded percentage marked as approximate', () => {
+    const result = describeStorageUsage({ supported: true, usage: 512, quota: 1024 });
+    expect(result.percent).toBe(50);
+    expect(result.label).toBe('~50% used');
+    expect(result.tooltip).toContain('approximate');
+  });
+
+  test('usage is clamped at 100% even if the browser reports usage over quota', () => {
+    const result = describeStorageUsage({ supported: true, usage: 2048, quota: 1024 });
+    expect(result.percent).toBe(100);
+  });
+
+  test('a very large quota still produces a readable tooltip rather than raw bytes', () => {
+    const result = describeStorageUsage({ supported: true, usage: 1024 * 1024 * 1024 * 40, quota: 1024 * 1024 * 1024 * 1024 * 2 });
+    expect(result.tooltip).toContain('TB');
   });
 });

@@ -29,12 +29,13 @@
 // (js/editor.js) for required/format checks, validateMediaAccessibility (js/media.js) for
 // alt-text/transcript checks, resolveThemeTokens + contrastRatio (js/themes.js) for contrast.
 
-import { validateSchemaField } from './field-validation.js';
+import { RECOMMENDED_RICH_LENGTH, RECOMMENDED_TEXT_LENGTH, validateSchemaField } from './field-validation.js';
 import { isMediaReference, resolveMediaLimits, validateMediaAccessibility } from './media.js';
 import { getMediaRecord } from './media-storage.js';
 import { formatItemLabel, sanitizeRichText, sanitizeURL } from './utilities.js';
 import { contrastRatio, resolveThemeTokens } from './themes.js';
 import { isExportFormatCompletionCompatible } from './compatibility.js';
+import { formatExportedFileSize } from './export.js';
 
 // Requirement wording (P02): the one sentence describing what "completion" means here,
 // reused verbatim everywhere this is explained — Behavior tab help text, Preflight
@@ -75,6 +76,10 @@ const RULE_TITLES = Object.freeze({
   'general-heading-level-outline': "Heading level may conflict with Rise's own outline",
   'general-non-descriptive-link-text': 'Non-descriptive link text',
   'general-external-url-destination': 'Links to an external destination',
+  'general-clipping-risk': 'May be clipped in the Iframe Snippet format',
+  'general-clipping-risk-unmeasured': 'Height could not be measured automatically',
+  'general-mobile-overflow': 'May overflow on mobile width',
+  'general-mobile-overflow-unmeasured': 'Mobile width could not be measured automatically',
   'general-invalid-completion-config': 'Completion tracking configuration issue',
   'general-completion-iframe-format': 'Export format may not report completion',
   'general-completion-export-incompatible': "Selected export format can't report completion",
@@ -179,18 +184,15 @@ function checkEmptyComponent(schema, config) {
 // limit — long-form richtext/textarea content that's still technically valid but likely
 // to overflow the fixed-width block layout, or a short text/select field that's
 // unusually long for what's meant to be a short label.
-const LONG_TEXT_WARNING_LENGTH = 200;
-const LONG_RICH_CONTENT_RECOMMENDATION_LENGTH = 4000;
-
 function checkExcessiveLength(schema, config) {
   const issues = [];
   const checkField = (field, value, itemIndex) => {
     if (field.maxLength || isEmptyValue(value)) return; // already hard-capped, or nothing to measure
     const length = plainText(value).length;
-    if (['text', 'select'].includes(field.type) && length > LONG_TEXT_WARNING_LENGTH) {
+    if (['text', 'select'].includes(field.type) && length > RECOMMENDED_TEXT_LENGTH) {
       issues.push(issue('general-excessive-length', SEVERITY.WARNING, CATEGORY.GENERAL,
         `${field.label} is ${length} characters — unusually long for a short label field.`, { fieldId: field.id, itemIndex }));
-    } else if (['textarea', 'richtext'].includes(field.type) && length > LONG_RICH_CONTENT_RECOMMENDATION_LENGTH) {
+    } else if (['textarea', 'richtext'].includes(field.type) && length > RECOMMENDED_RICH_LENGTH) {
       issues.push(issue('general-excessive-length', SEVERITY.RECOMMENDATION, CATEGORY.GENERAL,
         `${field.label} is ${length} characters — consider splitting this into multiple items for readability.`, { fieldId: field.id, itemIndex }));
     }
@@ -245,25 +247,43 @@ function checkMissingAltText(config, componentId) {
     issue('general-missing-alt-text', SEVERITY.WARNING, CATEGORY.GENERAL, message));
 }
 
+// WCAG 2.x 1.4.3: "large text" gets a relaxed 3:1 minimum instead of 4.5:1 — 18pt (24px)
+// at any weight, or 14pt (18.66px) at bold (700+). (P07) Exported as a standalone,
+// pure function so the threshold math is directly unit-testable without a theme/DOM.
+export function requiredContrastRatio(fontSizePx, fontWeight = 400) {
+  const isLarge = fontSizePx >= 24 || (fontSizePx >= 18.66 && fontWeight >= 700);
+  return isLarge ? 3 : 4.5;
+}
+
 // Checks the pairs actually rendered by every generated component (js/export-shell.js's
 // BASE_RESET_CSS/shared chrome plus the component's own card): body text on the card
 // background, muted text on the card background, and button text on the primary color.
 // This is a focused subset of js/themes.js#validateThemeContrast (which checks the full
 // theme-manager token set) — validation is scoped to what this specific component
 // actually displays, using its fully resolved (theme + per-component override) colors.
+//
+// fontSize/fontWeight (P07) are the actual rendered values for these roles, surveyed
+// across the catalog (e.g. components/accordion.js's .accordion-trigger/.accordion-body,
+// components/multiple-choice.js's .quiz-submit-btn) — every component's implementation of
+// each role sits well under the WCAG large-text bar today (13-14px, none at 700+/18.66px+),
+// so requiredContrastRatio() below currently always resolves to 4.5:1 for all three. The
+// values are still tracked explicitly rather than hardcoding "always 4.5" so this check
+// stays *correct by construction* if a future theme/component ever pushed one of these
+// roles into large-text territory, instead of silently under- or over-flagging it.
 const CONTRAST_PAIRS = [
-  { label: 'Body text on card background', fg: 'text', bg: 'surface' },
-  { label: 'Muted text on card background', fg: 'mutedText', bg: 'surface' },
-  { label: 'Button text on primary color', fg: 'surface', bg: 'primary' }
+  { label: 'Body text on card background', fg: 'text', bg: 'surface', fontSizePx: 14, fontWeight: 600 },
+  { label: 'Muted text on card background', fg: 'mutedText', bg: 'surface', fontSizePx: 13, fontWeight: 400 },
+  { label: 'Button text on primary color', fg: 'surface', bg: 'primary', fontSizePx: 13, fontWeight: 600 }
 ];
 
 function checkColorContrast(theme, componentOverrides) {
   const tokens = resolveThemeTokens(theme, componentOverrides);
-  return CONTRAST_PAIRS.flatMap(({ label, fg, bg }) => {
+  return CONTRAST_PAIRS.flatMap(({ label, fg, bg, fontSizePx, fontWeight }) => {
     const ratio = contrastRatio(tokens[fg], tokens[bg]);
-    if (ratio >= 4.5) return [];
+    const required = requiredContrastRatio(fontSizePx, fontWeight);
+    if (ratio >= required) return [];
     return [issue('general-insufficient-contrast', SEVERITY.WARNING, CATEGORY.GENERAL,
-      `${label} has a contrast ratio of ${ratio.toFixed(2)}:1, below the WCAG AA minimum of 4.5:1 for normal text.`)];
+      `${label} has a contrast ratio of ${ratio.toFixed(2)}:1, below the WCAG AA minimum of ${required}:1 for ${required === 3 ? 'large' : 'normal'} text.`)];
   });
 }
 
@@ -467,8 +487,11 @@ function checkMediaRules(schema, config, settings) {
           `${field.label}: "${value.mimeType}" is not a supported ${field.type} type for export.`, { fieldId: field.id, itemIndex }));
       }
       if (Number.isFinite(value.size) && value.size > limits[field.type]) {
+        // (P07) Show the actual measured size and the configured threshold, not just "too
+        // big" — both formatExportedFileSize (js/export.js) and limits (js/media.js's
+        // resolveMediaLimits, driven by Builder Settings) already carry real byte values.
         issues.push(issue('media-oversized-file', SEVERITY.WARNING, CATEGORY.MEDIA,
-          `${field.label}: file is larger than the configured ${field.type} limit and may block single-file export or slow the page down.`, { fieldId: field.id, itemIndex }));
+          `${field.label} is ${formatExportedFileSize(value.size)} — larger than the configured ${formatExportedFileSize(limits[field.type])} ${field.type} limit and may block single-file export or slow the page down.`, { fieldId: field.id, itemIndex }));
       }
     } else if (typeof value === 'string' && !value.startsWith('data:')) {
       issues.push(issue('media-external-asset-dependency', SEVERITY.RECOMMENDATION, CATEGORY.MEDIA,
@@ -504,6 +527,55 @@ async function checkBrokenMediaReferences(schema, config, mediaStore) {
   await Promise.all((config.items || []).flatMap((item, itemIndex) =>
     fields.filter(field => (schema.itemFields || []).includes(field)).map(field => checkOne(field, item[field.id], itemIndex))));
   return issues;
+}
+
+// ---------------------------------------------------------------------------
+// DOM-measurement rules (P07) — clipping risk and mobile overflow. Unlike every rule
+// above, these can't be computed from config data alone; they need `ctx.domMeasurement`,
+// a value only `runPreflight` (never collectSyncIssues's per-keystroke path) populates,
+// via js/dom-measurement.js#measureRenderedDimensions called from app.js. Kept as pure
+// functions taking an already-resolved measurement (or null/undefined) so the threshold
+// logic itself is unit-testable without a real DOM or iframe.
+//
+// Both are explicit heuristics, not certainties (Requirement 3): measured in a hidden
+// iframe inside this app, not inside Rise's own sandbox, so real-world results can differ
+// (font rendering, host page zoom, Rise's own chrome around the block). Every result —
+// pass, fail, or "couldn't measure" — says so, and a failed/unavailable measurement
+// becomes an explicit manual-check Recommendation rather than a silent pass
+// (Requirement 5).
+// ---------------------------------------------------------------------------
+
+// Matches js/export.js#buildExportPayload's hardcoded Iframe Snippet height exactly — if
+// that ever changes, this must change with it (not independently re-guessed).
+const IFRAME_EXPORT_HEIGHT_PX = 500;
+// Small buffer so a few px of sub-pixel/font-rendering rounding doesn't false-positive.
+const CLIPPING_RISK_MARGIN_PX = 20;
+
+function checkClippingRisk(measurement) {
+  if (!measurement || measurement.desktopContentHeight == null) {
+    return [issue('general-clipping-risk-unmeasured', SEVERITY.RECOMMENDATION, CATEGORY.GENERAL,
+      `This component's rendered height couldn't be automatically measured. Manually check, in Rise's own preview, that the Iframe Snippet format (a fixed ${IFRAME_EXPORT_HEIGHT_PX}px height) doesn't clip or force scrolling — required regardless of what Preflight reports.`)];
+  }
+  if (measurement.desktopContentHeight <= IFRAME_EXPORT_HEIGHT_PX + CLIPPING_RISK_MARGIN_PX) return [];
+  return [issue('general-clipping-risk', SEVERITY.WARNING, CATEGORY.GENERAL,
+    `Heuristic: this component rendered about ${Math.round(measurement.desktopContentHeight)}px tall — taller than the Iframe Snippet export's fixed ${IFRAME_EXPORT_HEIGHT_PX}px height, so it may get clipped or force scrolling inside Rise's code block. Measured in this Builder's own preview, not inside Rise itself — confirm in Rise's own preview before publishing. "Copy for Rise" (the HTML fragment format) expands with its content instead of using a fixed height, and may be a better fit.`)];
+}
+
+// Matches js/device-preview.js's 'mobile' DEVICE_MODES width (375px) so this rule and the
+// Builder's own Mobile preview mode can never disagree about which width "mobile" means.
+const MOBILE_OVERFLOW_WIDTH_PX = 375;
+// Matches the tolerance tests/e2e/preview-device-modes.spec.js already uses for the same
+// scrollWidth-vs-clientWidth measurement, so the two systems apply the same bar.
+const MOBILE_OVERFLOW_TOLERANCE_PX = 2;
+
+function checkMobileOverflow(measurement) {
+  if (!measurement || measurement.mobileOverflowPx == null) {
+    return [issue('general-mobile-overflow-unmeasured', SEVERITY.RECOMMENDATION, CATEGORY.GENERAL,
+      `This component's width at ${MOBILE_OVERFLOW_WIDTH_PX}px (mobile) couldn't be automatically measured. Manually check the Mobile preview width in this Builder, and Rise's own mobile preview, for horizontal scrolling or clipped content.`)];
+  }
+  if (measurement.mobileOverflowPx <= MOBILE_OVERFLOW_TOLERANCE_PX) return [];
+  return [issue('general-mobile-overflow', SEVERITY.WARNING, CATEGORY.GENERAL,
+    `Heuristic: this component overflows its container by about ${Math.round(measurement.mobileOverflowPx)}px at ${MOBILE_OVERFLOW_WIDTH_PX}px width (mobile), which can force horizontal scrolling on a phone. Measured in this Builder's own preview — confirm in Rise's own mobile preview before publishing.`)];
 }
 
 // ---------------------------------------------------------------------------
@@ -713,7 +785,19 @@ export async function runPreflight(ctx) {
     Promise.resolve(collectSyncIssues(ctx)),
     checkBrokenMediaReferences(ctx.schema, ctx.config, ctx.mediaStore)
   ]);
-  return [...syncIssues, ...brokenMediaIssues.map(rawIssue => enrichIssue(rawIssue, ctx.componentId, null))];
+  // ctx.domMeasurement is only ever supplied by callers that already ran
+  // js/dom-measurement.js#measureRenderedDimensions (app.js) — undefined means "not
+  // attempted" (skip silently, e.g. any future caller that doesn't need this), while an
+  // explicit `null` means "attempted and failed" (surfaces the manual-check
+  // Recommendation inside checkClippingRisk/checkMobileOverflow themselves).
+  const domIssues = ctx.domMeasurement !== undefined
+    ? [...checkClippingRisk(ctx.domMeasurement), ...checkMobileOverflow(ctx.domMeasurement)]
+    : [];
+  return [
+    ...syncIssues,
+    ...brokenMediaIssues.map(rawIssue => enrichIssue(rawIssue, ctx.componentId, null)),
+    ...domIssues.map(rawIssue => enrichIssue(rawIssue, ctx.componentId, null))
+  ];
 }
 
 export function summarizePreflight(issues) {

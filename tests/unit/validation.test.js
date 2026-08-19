@@ -3,7 +3,8 @@ import { COMPONENT_REGISTRY, getComponentById, getDefaultConfig } from '../../js
 import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID } from '../../js/themes.js';
 import {
   checkCompletionExportFormatIssue, collectSyncIssues, listRegisteredRuleIds, registerValidationRule,
-  runPreflight, SEVERITY, summarizePreflight, summarizePreflightForAnnouncement, unregisterValidationRule
+  requiredContrastRatio, runPreflight, SEVERITY, summarizePreflight, summarizePreflightForAnnouncement,
+  unregisterValidationRule
 } from '../../js/validation.js';
 
 const theme = BUILT_IN_THEMES.find(entry => entry.id === DEFAULT_THEME_ID);
@@ -777,5 +778,144 @@ describe('P06: general-external-url-destination — advisory, shows the sanitize
     const issues = issuesFor('button-list', config);
     const destination = issues.find(item => item.ruleId === 'general-external-url-destination');
     expect(destination.explanation).not.toContain('<script');
+  });
+});
+
+describe('P07: requiredContrastRatio — WCAG large-text exception', () => {
+  test('normal-size, normal-weight text requires 4.5:1', () => {
+    expect(requiredContrastRatio(14, 400)).toBe(4.5);
+  });
+
+  test('normal-weight text just under the 24px large-text bar still requires 4.5:1', () => {
+    expect(requiredContrastRatio(23.9, 400)).toBe(4.5);
+  });
+
+  test('normal-weight text at/above 24px only requires 3:1', () => {
+    expect(requiredContrastRatio(24, 400)).toBe(3);
+    expect(requiredContrastRatio(32, 400)).toBe(3);
+  });
+
+  test('bold (700+) text at/above 18.66px only requires 3:1', () => {
+    expect(requiredContrastRatio(18.66, 700)).toBe(3);
+    expect(requiredContrastRatio(20, 900)).toBe(3);
+  });
+
+  test('bold text just under 18.66px still requires 4.5:1', () => {
+    expect(requiredContrastRatio(18, 700)).toBe(4.5);
+  });
+
+  test('a weight of exactly 600 (semi-bold, not bold) does not qualify for the large-text exception below 24px', () => {
+    expect(requiredContrastRatio(20, 600)).toBe(4.5);
+  });
+
+  test('defaults to normal weight (400) when none is supplied', () => {
+    expect(requiredContrastRatio(14)).toBe(4.5);
+  });
+});
+
+describe('P07: general-insufficient-contrast reports the correct threshold in its message', () => {
+  test('the failing-contrast message names 4.5:1 for these normal-size pairs', () => {
+    const failingTheme = { ...theme, tokens: { ...theme.tokens, text: '#AAAAAA', surface: '#FFFFFF' } };
+    const issues = collectSyncIssues({
+      componentId: 'accordion', schema: getComponentById(COMPONENT_REGISTRY, 'accordion').editorSchema,
+      config: buildConfig('accordion'), theme: failingTheme, componentOverrides: {},
+      settings: { mediaLimitsMb: { image: 10, audio: 30, video: 100, svg: 2 } }
+    });
+    const contrastIssue = issues.find(item => item.ruleId === 'general-insufficient-contrast' && item.explanation.includes('Body text'));
+    expect(contrastIssue).toBeDefined();
+    expect(contrastIssue.explanation).toMatch(/4\.5:1 for normal text/);
+  });
+});
+
+describe('P07: media-oversized-file shows the actual measured size and the configured threshold', () => {
+  test('the message includes both real numbers, not just "too large"', () => {
+    const config = buildConfig('hotspots');
+    config.backgroundImage = {
+      source: 'upload', mediaId: 'media-1', schemaVersion: 1, kind: 'image', name: 'photo.png',
+      mimeType: 'image/png', size: 15 * 1024 * 1024, createdAt: '2026-01-01T00:00:00.000Z' // 15MB > 10MB default limit
+    };
+    const issues = issuesFor('hotspots', config);
+    const oversized = issues.find(item => item.ruleId === 'media-oversized-file');
+    expect(oversized).toBeDefined();
+    expect(oversized.explanation).toContain('15.00 MB');
+    expect(oversized.explanation).toContain('10.00 MB');
+  });
+});
+
+// P07: clipping-risk and mobile-overflow need a real hidden-iframe DOM measurement
+// (js/dom-measurement.js) that only a real browser can perform meaningfully — jsdom has no
+// layout engine, so scrollHeight/scrollWidth/clientWidth are always 0 there, making a
+// jsdom-based test of the actual measurement meaningless. The threshold/message logic
+// itself is still fully unit-tested here by injecting a synthetic, already-resolved
+// `domMeasurement` value directly — exactly the shape app.js's attachDomMeasurement()
+// would have produced from a real measurement. The real hidden-iframe plumbing (iframe
+// creation, postMessage round-trip, cleanup) is covered by tests/e2e/preflight.spec.js
+// against an actual browser instead.
+describe('P07: general-clipping-risk / general-mobile-overflow — DOM-measurement rules', () => {
+  const schema = getComponentById(COMPONENT_REGISTRY, 'accordion').editorSchema;
+  const baseCtx = () => ({
+    componentId: 'accordion', schema, config: buildConfig('accordion'), theme, componentOverrides: {},
+    settings: { mediaLimitsMb: { image: 10, audio: 30, video: 100, svg: 2 } }, mediaStore: { get: async () => undefined }
+  });
+
+  test('undefined domMeasurement (not attempted) never adds either DOM-measurement rule', async () => {
+    const issues = await runPreflight(baseCtx());
+    expect(issues.some(item => item.ruleId.startsWith('general-clipping-risk'))).toBe(false);
+    expect(issues.some(item => item.ruleId.startsWith('general-mobile-overflow'))).toBe(false);
+  });
+
+  test('null domMeasurement (attempted and failed) surfaces both as manual-check Recommendations', async () => {
+    const issues = await runPreflight({ ...baseCtx(), domMeasurement: null });
+    const clipping = issues.find(item => item.ruleId === 'general-clipping-risk-unmeasured');
+    const overflow = issues.find(item => item.ruleId === 'general-mobile-overflow-unmeasured');
+    expect(clipping?.severity).toBe(SEVERITY.RECOMMENDATION);
+    expect(overflow?.severity).toBe(SEVERITY.RECOMMENDATION);
+    expect(clipping.explanation).toMatch(/manually check/i);
+  });
+
+  test('pass: content well under the 500px iframe-export height and no mobile overflow', async () => {
+    const issues = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 300, mobileOverflowPx: 0 } });
+    expect(issues.some(item => item.ruleId === 'general-clipping-risk')).toBe(false);
+    expect(issues.some(item => item.ruleId === 'general-mobile-overflow')).toBe(false);
+  });
+
+  test('boundary: exactly at the clipping margin is not flagged, one px over is', async () => {
+    const atBoundary = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 520, mobileOverflowPx: 0 } }); // 500 + 20px margin
+    expect(atBoundary.some(item => item.ruleId === 'general-clipping-risk')).toBe(false);
+    const overBoundary = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 521, mobileOverflowPx: 0 } });
+    expect(overBoundary.some(item => item.ruleId === 'general-clipping-risk')).toBe(true);
+  });
+
+  test('fail: content taller than the iframe export height is a heuristic Warning, labeled as such, naming both formats', async () => {
+    const issues = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 900, mobileOverflowPx: 0 } });
+    const clipping = issues.find(item => item.ruleId === 'general-clipping-risk');
+    expect(clipping.severity).toBe(SEVERITY.WARNING);
+    expect(clipping.explanation).toMatch(/heuristic/i);
+    expect(clipping.explanation).toMatch(/confirm in rise/i);
+    expect(clipping.explanation).toContain('900px');
+    expect(clipping.explanation).toContain('500px');
+  });
+
+  test('boundary: exactly at the mobile-overflow tolerance is not flagged, one px over is', async () => {
+    const atTolerance = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 300, mobileOverflowPx: 2 } });
+    expect(atTolerance.some(item => item.ruleId === 'general-mobile-overflow')).toBe(false);
+    const overTolerance = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 300, mobileOverflowPx: 3 } });
+    expect(overTolerance.some(item => item.ruleId === 'general-mobile-overflow')).toBe(true);
+  });
+
+  test('fail: overflowing content at mobile width is a heuristic Warning naming the 375px width', async () => {
+    const issues = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 300, mobileOverflowPx: 40 } });
+    const overflow = issues.find(item => item.ruleId === 'general-mobile-overflow');
+    expect(overflow.severity).toBe(SEVERITY.WARNING);
+    expect(overflow.explanation).toMatch(/heuristic/i);
+    expect(overflow.explanation).toMatch(/confirm in rise/i);
+    expect(overflow.explanation).toContain('375px');
+    expect(overflow.explanation).toContain('40px');
+  });
+
+  test('a partial measurement (height measured, width failed) reports one rule cleanly and the other as unmeasured', async () => {
+    const issues = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 300, mobileOverflowPx: null } });
+    expect(issues.some(item => item.ruleId === 'general-clipping-risk')).toBe(false);
+    expect(issues.some(item => item.ruleId === 'general-mobile-overflow-unmeasured')).toBe(true);
   });
 });

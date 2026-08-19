@@ -30,8 +30,14 @@ test('items can be added, duplicated, deleted, moved, and collapsed', async ({ p
   const secondSummary = await cards.nth(1).locator('.item-collapse-btn').textContent();
   await cards.first().getByRole('button', { name: 'Move item down' }).click();
   await expect(cards.first().locator('.item-collapse-btn')).toContainText(secondSummary.split('—').pop().trim());
+
+  // P11: items other than the first start collapsed by default, so which original item
+  // ends up as cards.first() here carries its own already-collapsed state — assert the
+  // toggle itself rather than assuming a starting state.
+  const wasCollapsed = await cards.first().evaluate(el => el.classList.contains('collapsed'));
   await cards.first().locator('.item-collapse-btn').click();
-  await expect(cards.first()).toHaveClass(/collapsed/);
+  if (wasCollapsed) await expect(cards.first()).not.toHaveClass(/collapsed/);
+  else await expect(cards.first()).toHaveClass(/collapsed/);
 });
 
 test('range sliders inside draggable item cards are not hijacked by drag-to-reorder', async ({ page }) => {

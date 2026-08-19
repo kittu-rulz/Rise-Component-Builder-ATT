@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import {
   buildProject, clearDraft, deleteProject, duplicateProject, getProject, importProjectJson,
-  KEYS, loadDraft, loadFavorites, loadProjects, loadSettings, renameProject, saveDraft, saveFavorites,
-  saveProject, saveSettings, validateProject
+  KEYS, loadDraft, loadFavorites, loadProjects, loadRecentlyUsed, loadSettings, RECENTLY_USED_LIMIT,
+  renameProject, saveDraft, saveFavorites, saveProject, saveRecentlyUsed, saveSettings, validateProject,
+  withRecentlyUsedEntry
 } from '../../js/storage.js';
 import { createMediaReference } from '../../js/media.js';
 import { cleanTheme, componentConfig, memoryLocalStorage, validProject } from '../fixtures/index.js';
@@ -52,6 +53,11 @@ describe('versioned project persistence', () => {
     expect(loadDraft().uiTheme).toBe('dark');
     clearDraft();
     expect(loadDraft()).toBeNull();
+  });
+
+  test('recently-used persists in order and round-trips', () => {
+    saveRecentlyUsed(['accordion', 'tabs']);
+    expect(loadRecentlyUsed()).toEqual(['accordion', 'tabs']);
   });
 
   test('media size limit settings are clamped to safe bounds and invalid values fall back to defaults', () => {
@@ -135,6 +141,24 @@ describe('versioned project persistence', () => {
       valid: true,
       project: { schemaVersion: 2, name: current.name, componentOverrides: { primary: current.config.colorPrimary } }
     });
+  });
+});
+
+describe('withRecentlyUsedEntry', () => {
+  test('a new id is added to the front', () => {
+    expect(withRecentlyUsedEntry(['a', 'b'], 'c')).toEqual(['c', 'a', 'b']);
+  });
+
+  test('re-selecting an existing id moves it to the front instead of duplicating it', () => {
+    expect(withRecentlyUsedEntry(['a', 'b', 'c'], 'b')).toEqual(['b', 'a', 'c']);
+  });
+
+  test('the list never grows past RECENTLY_USED_LIMIT', () => {
+    const full = Array.from({ length: RECENTLY_USED_LIMIT }, (_, i) => `id-${i}`);
+    const result = withRecentlyUsedEntry(full, 'new-id');
+    expect(result.length).toBe(RECENTLY_USED_LIMIT);
+    expect(result[0]).toBe('new-id');
+    expect(result).not.toContain(`id-${RECENTLY_USED_LIMIT - 1}`);
   });
 });
 

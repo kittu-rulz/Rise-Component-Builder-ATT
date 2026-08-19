@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { getAccessibilityWarning, isEmpty, validateSchemaField } from '../../js/field-validation.js';
+import { getAccessibilityWarning, getLengthGuidance, isEmpty, validateSchemaField } from '../../js/field-validation.js';
 
 describe('isEmpty', () => {
   test('treats undefined, null, and whitespace-only strings as empty', () => {
@@ -79,6 +79,28 @@ describe('validateSchemaField', () => {
   test('multiple violations on the same field are all reported', () => {
     const field = { id: 'title', label: 'Title', required: true, maxLength: 3 };
     expect(validateSchemaField(field, '')).toEqual(['Title is required.']);
+  });
+});
+
+describe('getLengthGuidance', () => {
+  test('a field with an explicit maxLength gets no guidance — it already has a hard cap', () => {
+    expect(getLengthGuidance({ id: 'title', label: 'Title', type: 'text', maxLength: 40 })).toBe('');
+  });
+
+  test('short-label field types (text, select) get the short-length recommendation', () => {
+    expect(getLengthGuidance({ id: 'title', label: 'Title', type: 'text' })).toMatch(/200 characters/);
+    expect(getLengthGuidance({ id: 'variant', label: 'Variant', type: 'select' })).toMatch(/200 characters/);
+  });
+
+  test('long-form field types (textarea, richtext) get the long-length recommendation', () => {
+    expect(getLengthGuidance({ id: 'content', label: 'Content', type: 'textarea' })).toMatch(/4000 characters/);
+    expect(getLengthGuidance({ id: 'body', label: 'Body', type: 'richtext' })).toMatch(/4000 characters/);
+  });
+
+  test('field types with no overflow risk (number, checkbox, color, media) get no guidance', () => {
+    expect(getLengthGuidance({ id: 'count', label: 'Count', type: 'number' })).toBe('');
+    expect(getLengthGuidance({ id: 'flag', label: 'Flag', type: 'checkbox' })).toBe('');
+    expect(getLengthGuidance({ id: 'icon', label: 'Icon', type: 'image' })).toBe('');
   });
 });
 

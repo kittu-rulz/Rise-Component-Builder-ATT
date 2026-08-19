@@ -93,6 +93,14 @@ describe('component registry integrity', () => {
     expect(filtered.length).toBe(4);
   });
 
+  test('the recent category is ordered by recency, not catalog order, and drops unknown ids', () => {
+    const filtered = filterCatalog(componentCatalog, {
+      activeCategory: 'recent', searchQuery: '', favorites: new Set(),
+      recentlyUsed: ['scenario', 'not-a-real-id', 'accordion']
+    });
+    expect(filtered.map(item => item.id)).toEqual(['scenario', 'accordion']);
+  });
+
 });
 
 describe('component registry validation', () => {
@@ -183,6 +191,17 @@ describe('search', () => {
   test('catalog search matches names, descriptions, and keywords', () => {
     const byKeyword = filterCatalog(componentCatalog, { activeCategory: 'interactive', searchQuery: 'faq', favorites: new Set() });
     expect(byKeyword.some(item => item.id === 'accordion')).toBe(true);
+  });
+
+  test('catalog search trims surrounding whitespace and ignores case', () => {
+    const padded = filterCatalog(componentCatalog, { activeCategory: 'interactive', searchQuery: '  ACCORDION  ', favorites: new Set() });
+    expect(padded.some(item => item.id === 'accordion')).toBe(true);
+
+    // A whitespace-only query must behave like no query, not literally match every
+    // title that happens to contain a space (e.g. "Multiple Choice").
+    const whitespaceOnly = filterCatalog(componentCatalog, { activeCategory: 'interactive', searchQuery: '   ', favorites: new Set() });
+    const noQuery = filterCatalog(componentCatalog, { activeCategory: 'interactive', searchQuery: '', favorites: new Set() });
+    expect(whitespaceOnly.length).toBe(noQuery.length);
   });
 });
 

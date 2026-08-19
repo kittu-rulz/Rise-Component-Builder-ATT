@@ -197,6 +197,34 @@ a {
   margin-top: 2px;
 }
 
+/* Project name/save-status (P08) — sits beside the brand lockup, hidden until a
+   component/project is selected (no project context exists on the catalog screen). */
+.project-status {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 3px 10px;
+  border-radius: 20px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  margin-left: 16px;
+  white-space: nowrap;
+}
+
+.project-status.is-unsaved {
+  color: var(--warning-dark, #92400e);
+  background-color: rgba(245, 158, 11, 0.12);
+  border-color: transparent;
+}
+
+.project-status.is-saved {
+  color: #047857;
+  background-color: rgba(16, 185, 129, 0.12);
+  border-color: transparent;
+}
+
+[data-theme="dark"] .project-status.is-saved { color: #34D399; }
+
 .toolbar-actions {
   display: flex;
   align-items: center;
@@ -394,11 +422,17 @@ a {
 .nav-item {
   display: flex;
   align-items: center;
+  width: 100%;
   padding: 10px 12px;
+  border: none;
   border-radius: 8px;
+  background: none;
   color: var(--text-muted);
+  font: inherit;
   font-size: 13px;
   font-weight: 500;
+  text-align: left;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 
@@ -571,6 +605,10 @@ a {
 .catalog-empty-state p {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.catalog-empty-clear {
+  margin-top: 12px;
 }
 
 /* Component Selector Card */
@@ -936,6 +974,12 @@ a {
 .group-header-with-action .group-title {
   border: none;
   padding: 0;
+}
+
+.item-list-actions {
+  display: flex;
+  gap: 6px;
+  margin: -4px 0 4px;
 }
 
 /* Input Fields Styling */
@@ -1600,9 +1644,11 @@ input[type="number"]:focus::-webkit-inner-spin-button {
 .rise-header-spacer {
   background-color: #F8FAFC;
   border-bottom: 1px solid #F1F5F9;
-  padding: 12px;
+  padding: 10px 12px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
 }
 
 .rise-badge {
@@ -1614,6 +1660,14 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   padding: 2px 8px;
   border-radius: 4px;
   letter-spacing: 0.6px;
+}
+
+/* P09 Requirement 2 — a small, deliberately unobtrusive reminder that this preview is
+   this app's own rendering, not Rise's; placed right where the "preview" framing already
+   is, rather than as a separate banner elsewhere, so it doesn't add visual clutter. */
+.preview-verify-note {
+  font-size: 10px;
+  color: #64748B;
 }
 
 #live-preview-iframe {
@@ -1884,6 +1938,13 @@ input[type="number"]:focus::-webkit-inner-spin-button {
 }
 
 .media-upload-guidance {
+  margin: -2px 0 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.field-length-guidance {
   margin: -2px 0 0;
   color: var(--text-muted);
   font-size: 10px;
@@ -2428,6 +2489,10 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   .logo-text .version-tag {
     display: none;
   }
+
+  .project-status {
+    display: none;
+  }
 }
 
 /* Accessibility: reduced motion and forced-colors support for the builder's own
@@ -2443,10 +2508,10 @@ input[type="number"]:focus::-webkit-inner-spin-button {
 }
 
 @media (forced-colors: active) {
-  :where(button, [role="button"], [role="tab"], input, select, textarea, a.nav-item) {
+  :where(button, [role="button"], [role="tab"], input, select, textarea) {
     border: 1px solid ButtonText;
   }
-  :where(button, [role="button"], [role="tab"], input, select, textarea, a.nav-item):focus-visible {
+  :where(button, [role="button"], [role="tab"], input, select, textarea):focus-visible {
     outline: 2px solid Highlight;
     outline-offset: 2px;
   }

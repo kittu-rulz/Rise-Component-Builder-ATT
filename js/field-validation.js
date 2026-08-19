@@ -39,6 +39,20 @@ export function validateSchemaField(field, value, items = []) {
   return errors;
 }
 
+// P11: shared with js/validation.js's preflight "excessive length" rule, so the inline
+// editor hint and the later save/export-time warning agree on the same thresholds. This
+// is guidance only — it never enforces a hard limit (fields that need one already declare
+// field.maxLength, which getLengthGuidance treats as "already handled, nothing to add").
+export const RECOMMENDED_TEXT_LENGTH = 200;
+export const RECOMMENDED_RICH_LENGTH = 4000;
+
+export function getLengthGuidance(field) {
+  if (field.maxLength) return '';
+  if (['text', 'select'].includes(field.type)) return `Keep this under about ${RECOMMENDED_TEXT_LENGTH} characters — it reads best as a short label.`;
+  if (['textarea', 'richtext'].includes(field.type)) return `Recommended: under about ${RECOMMENDED_RICH_LENGTH} characters. Longer content may not fit the block layout well.`;
+  return '';
+}
+
 export function getAccessibilityWarning(field, value, model) {
   if (field.warningWhen && isEmpty(model[field.warningWhen])) return '';
   if (field.warningUnless && !model[field.warningUnless] && isEmpty(value)) return field.warningMessage || `${field.label} is recommended for accessibility.`;

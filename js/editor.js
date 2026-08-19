@@ -2,7 +2,7 @@ import { createDefaultItem } from './editor-schemas.js';
 import { formatItemLabel, sanitizeRichText } from './utilities.js';
 import { isMediaReference } from './media.js';
 import { createMediaUploadControl } from './media-upload.js';
-import { getAccessibilityWarning, isEmpty, validateSchemaField } from './field-validation.js';
+import { getAccessibilityWarning, getLengthGuidance, isEmpty, validateSchemaField } from './field-validation.js';
 
 export { validateSchemaField } from './field-validation.js';
 
@@ -82,10 +82,27 @@ function createBasicControl(field, controlId, value) {
   return control;
 }
 
-export function createSchemaItemEditor({ container, onChange }) {
+export function createSchemaItemEditor({ container, onChange, focusFallback }) {
   const collapsedItems = new WeakSet();
   let draggedIndex = null;
   let fieldRegistry = [];
+  // P11 focus preservation: a handler that structurally changes the item list (reorder,
+  // duplicate, delete, expand/collapse) sets this right before calling render(lastRender),
+  // which fully rebuilds the DOM and would otherwise silently drop focus to <body>. render()
+  // consumes and clears it after rebuilding.
+  let pendingFocus = null;
+
+  function applyPendingFocus() {
+    if (!pendingFocus) return;
+    const { index, part } = pendingFocus;
+    pendingFocus = null;
+    if (part === 'fallback') { focusFallback?.focus?.(); return; }
+    const card = container.querySelector(`.dynamic-item-card[data-index="${index}"]`);
+    if (!card) { focusFallback?.focus?.(); return; }
+    const target = part === 'heading' ? card.querySelector('.item-collapse-btn') : card.querySelector(`.item-action-btn[title="${part}"]`);
+    if (target && !target.disabled) target.focus();
+    else card.querySelector('.item-collapse-btn')?.focus();
+  }
 
   function refreshDependentWarnings(model, changedFieldId) {
     fieldRegistry.forEach(entry => {
@@ -190,6 +207,22 @@ export function createSchemaItemEditor({ container, onChange }) {
 
     const label = createLabel(field, controlId);
     wrapper.append(label, fieldElement);
+
+    // P11: static, non-blocking guidance for fields prone to overflowing the fixed-width
+    // block layout — shown up front rather than only after the fact via the preflight
+    // "excessive length" warning (js/validation.js#checkExcessiveLength, same thresholds).
+    // Fields with an explicit maxLength already have a hard, save-time cap and don't need
+    // this — see getLengthGuidance.
+    const guidanceText = getLengthGuidance(field);
+    if (guidanceText) {
+      const guidance = document.createElement('p');
+      guidance.className = 'field-length-guidance';
+      guidance.id = `${controlId}-guidance`;
+      guidance.textContent = guidanceText;
+      wrapper.appendChild(guidance);
+      control.dataset.guidanceId = guidance.id;
+    }
+
     let rangeValue;
     if (field.type === 'range') {
       rangeValue = document.createElement('output');
@@ -250,6 +283,7 @@ export function createSchemaItemEditor({ container, onChange }) {
       heading.setAttribute('aria-expanded', String(!collapsed));
       heading.addEventListener('click', () => {
         if (collapsed) collapsedItems.delete(item); else collapsedItems.add(item);
+        pendingFocus = { index, part: 'heading' };
         render(lastRender);
       });
 
@@ -267,18 +301,20 @@ export function createSchemaItemEditor({ container, onChange }) {
         actions.appendChild(button);
       };
       addButton('⠿', 'Drag to reorder', event => event.preventDefault(), false, 'drag-handle');
-      addButton('↑', 'Move item up', () => move(index, index - 1), index === 0);
-      addButton('↓', 'Move item down', () => move(index, index + 1), index === items.length - 1);
+      addButton('↑', 'Move item up', () => { pendingFocus = { index: index - 1, part: 'Move item up' }; move(index, index - 1); }, index === 0);
+      addButton('↓', 'Move item down', () => { pendingFocus = { index: index + 1, part: 'Move item down' }; move(index, index + 1); }, index === items.length - 1);
       const atMaxItems = Number.isInteger(schema.maxItems) && items.length >= schema.maxItems;
       addButton('⧉', atMaxItems ? `Only ${schema.maxItems} ${schema.itemLabel.toLowerCase()}${schema.maxItems === 1 ? '' : 's'} allowed` : 'Duplicate item', () => {
         const duplicate = structuredClone(item);
         schema.itemFields.filter(field => field.groupAcrossItems).forEach(field => { duplicate[field.id] = false; });
         items.splice(index + 1, 0, duplicate);
+        pendingFocus = { index: index + 1, part: 'heading' };
         onChange();
         render(lastRender);
       }, atMaxItems);
       addButton('×', 'Delete item', () => {
         items.splice(index, 1);
+        pendingFocus = items.length ? { index: Math.min(index, items.length - 1), part: 'heading' } : { part: 'fallback' };
         onChange();
         render(lastRender);
       });
@@ -331,6 +367,8 @@ export function createSchemaItemEditor({ container, onChange }) {
       card.addEventListener('dragend', () => { draggedIndex = null; card.classList.remove('dragging'); card.draggable = false; });
       container.appendChild(card);
     });
+
+    applyPendingFocus();
   }
 
   function move(from, to) {
@@ -339,6 +377,28 @@ export function createSchemaItemEditor({ container, onChange }) {
     const [item] = items.splice(from, 1);
     items.splice(to, 0, item);
     onChange();
+    render(lastRender);
+  }
+
+  // P11 Requirement 1: a freshly-loaded item list (new component selection, or a saved
+  // project just opened) starts with only the first item expanded — long lists of already-
+  // open editors are exactly the "excess scrolling" problem this prompt targets. Call this
+  // once, right before the first render() of a newly-populated items array; do NOT call it
+  // from render() itself or from any other re-render path (edits, add/duplicate, settings
+  // save), or it would keep stomping on choices the user already made this session.
+  function resetToDefaultCollapse(items) {
+    items.forEach((item, index) => { if (index === 0) collapsedItems.delete(item); else collapsedItems.add(item); });
+  }
+
+  // P11 Requirement 2: keyboard-accessible bulk expand/collapse, near the item list.
+  function expandAll() {
+    if (!lastRender) return;
+    lastRender.items.forEach(item => collapsedItems.delete(item));
+    render(lastRender);
+  }
+  function collapseAll() {
+    if (!lastRender) return;
+    lastRender.items.forEach(item => collapsedItems.add(item));
     render(lastRender);
   }
 
@@ -366,5 +426,5 @@ export function createSchemaItemEditor({ container, onChange }) {
     });
   }
 
-  return { render, refreshIssueBadges };
+  return { render, refreshIssueBadges, resetToDefaultCollapse, expandAll, collapseAll };
 }

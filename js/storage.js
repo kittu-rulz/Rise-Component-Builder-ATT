@@ -10,6 +10,7 @@ export const KEYS = {
   projects: 'rise-builder-projects-v1',
   draft: 'rise-builder-draft-v1',
   favorites: 'rise-builder-favorites-v1',
+  recentlyUsed: 'rise-builder-recently-used-v1',
   settings: 'rise-builder-settings-v1',
   uiTheme: 'rise-builder-theme',
   customThemes: 'rise-builder-custom-themes-v1',
@@ -343,6 +344,23 @@ export function loadFavorites() {
   return Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
 }
 export function saveFavorites(favorites) { writeJson(KEYS.favorites, [...favorites]); }
+
+// P11: "Recently used" is ordered most-recent-first, capped so the list stays a quick
+// glance rather than a second catalog, and de-duplicated by moving an existing entry to
+// the front rather than storing it twice. Recording happens exactly once per selection —
+// wherever a component becomes appState.selectedComponent (picking a fresh component or
+// opening/restoring a saved project) — not on every keystroke or re-render.
+export const RECENTLY_USED_LIMIT = 8;
+
+export function loadRecentlyUsed() {
+  const value = readJson(KEYS.recentlyUsed, []);
+  return Array.isArray(value) ? value.filter(item => typeof item === 'string').slice(0, RECENTLY_USED_LIMIT) : [];
+}
+export function saveRecentlyUsed(recentlyUsed) { writeJson(KEYS.recentlyUsed, [...recentlyUsed].slice(0, RECENTLY_USED_LIMIT)); }
+
+export function withRecentlyUsedEntry(recentlyUsed, componentId) {
+  return [componentId, ...recentlyUsed.filter(id => id !== componentId)].slice(0, RECENTLY_USED_LIMIT);
+}
 
 export function loadPreviewDevice() {
   const value = readJson(KEYS.previewDevice, DEFAULT_DEVICE_MODE);

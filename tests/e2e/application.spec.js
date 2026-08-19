@@ -78,7 +78,7 @@ test('sidebar storage meter reports measured browser storage usage', async ({ pa
   const label = page.locator('#storage-usage-label');
   const bar = page.locator('.storage-bar');
   await expect(label).not.toHaveText('Calculating…');
-  await expect(label).toHaveText(/^(\d+% Used|Usage unavailable)$/);
+  await expect(label).toHaveText(/^(~\d+% used|Usage unavailable)$/);
   const valueNow = Number(await bar.getAttribute('aria-valuenow'));
   expect(valueNow).toBeGreaterThanOrEqual(0);
   expect(valueNow).toBeLessThanOrEqual(100);
