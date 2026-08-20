@@ -23,7 +23,7 @@ export function generateHTML(config) {
               <span class="menu-num">0${idx + 1}</span>
               <span class="menu-title">${escapeHTML(item.title || 'Lesson Segment')}</span>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="menu-arrow"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" class="menu-arrow"><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>
           </div>
           <div class="menu-item-desc">
             <p>${item.content || 'Description content details...'}</p>

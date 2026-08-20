@@ -31,7 +31,7 @@ export function generateHTML(config) {
         return `
         <div class="info-grid-item">
           <div class="info-grid-icon" style="${accentColor ? `color:${accentColor};` : ''}">
-            ${renderCustomItemArtwork(item, '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="13" y2="17"></line></svg>')}
+            ${renderCustomItemArtwork(item, '<svg width="20" height="20" viewBox="0 0 96 96" fill="currentColor" aria-hidden="true"><g><rect x="30" y="43" width="4" height="4" fill="#009FDB"/><rect x="30" y="56" width="4" height="4" fill="#009FDB"/><rect x="30" y="69" width="4" height="4" fill="#009FDB"/></g><g><rect x="37" y="44" width="29" height="2"/><rect x="37" y="57" width="29" height="2"/><rect x="37" y="70" width="29" height="2"/><path d="M56.4 10 24 10C20.7 10 18 12.7 18 16L18 80C18 83.3 20.7 86 24 86L72 86C75.3 86 78 83.3 78 80L78 31.6 56.4 10ZM57 13.4 74.6 31 61 31C58.8 31 57 29.2 57 27L57 13.4ZM72 84 24 84C21.8 84 20 82.2 20 80L20 16C20 13.8 21.8 12 24 12L55 12 55 27C55 30.3 57.7 33 61 33L76 33 76 80C76 82.2 74.2 84 72 84Z"/></g></svg>')}
           </div>
           <h4>${escapeHTML(item.title || 'Feature Key')}</h4>
           <p>${item.content || 'Description layout parameters.'}</p>

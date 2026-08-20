@@ -30,7 +30,7 @@ export function generateHTML(config, instanceId) {
           ${captionsUrl ? `<track kind="captions" src="${escapeAttribute(captionsUrl)}" srclang="en" label="English" default>` : ''}
         </video>
         <button type="button" class="video-overlay-play" aria-label="Play video">
-          <svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill="currentColor"><path d="M22 16 13 22.7 13 9.3Z"/></svg>
         </button>
       </div>
       ${describePoster ? `<span id="${instanceId}-poster-desc" class="sr-only">${escapeHTML(posterAltText)}</span>` : ''}

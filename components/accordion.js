@@ -31,10 +31,10 @@ export const editorSchema = getEditorSchema(id);
 
 export function generateHTML(config, instanceId) {
   const icon = config.iconStyle === 'chevron'
-    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="acc-arrow"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+    ? '<svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor" class="acc-arrow"><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>'
     : config.iconStyle === 'plus-minus'
       ? '<div class="acc-plus-minus"></div>'
-      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="acc-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+      : '<svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor" class="acc-arrow"><path d="M12.27 26.71 10.86 25.29 20.15 16 10.86 6.71 12.27 5.29 22.98 16Z"/></svg>';
   return `<div class="accordion-group">${config.items.map((item, index) => `
     <div class="accordion-item" id="${instanceId}-item-${index}">
       <h3><button class="accordion-trigger" id="${instanceId}-accordion-trigger-${index}" data-idx="${index}" aria-expanded="false" aria-controls="${instanceId}-accordion-panel-${index}"><span>${escapeHTML(item.title || 'Item Title Header')}</span>${icon}</button></h3>
