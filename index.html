@@ -357,6 +357,64 @@
                   </div>
                 </div>
 
+                <div class="form-group-card" id="mc-behavior-group">
+                  <h3 class="group-title">Confidence &amp; Retry (Multiple Choice)</h3>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-mc-confidence-mode">
+                    <label for="input-mc-confidence-mode">Ask learners how confident they are before submitting</label>
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-mc-require-confidence">
+                    <label for="input-mc-require-confidence">Require a confidence level before Submit is accepted (Confidence mode only)</label>
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="input-mc-confidence-low-label">Confidence Label — Low</label>
+                    <input type="text" id="input-mc-confidence-low-label" value="Not sure" maxlength="24">
+                  </div>
+                  <div class="input-wrapper">
+                    <label for="input-mc-confidence-mid-label">Confidence Label — Medium</label>
+                    <input type="text" id="input-mc-confidence-mid-label" value="Somewhat sure" maxlength="24">
+                  </div>
+                  <div class="input-wrapper">
+                    <label for="input-mc-confidence-high-label">Confidence Label — High</label>
+                    <input type="text" id="input-mc-confidence-high-label" value="Very sure" maxlength="24">
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-mc-show-result-summary">
+                    <label for="input-mc-show-result-summary">Show a supportive interpretation of correctness + confidence (Confidence mode only)</label>
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="input-mc-max-attempts">Maximum Attempts</label>
+                    <input type="number" id="input-mc-max-attempts" value="1" min="1" max="5" step="1">
+                    <p class="field-hint">1 keeps the original one-shot behavior. Higher values let learners retry after an incorrect attempt.</p>
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="input-mc-hint-text">Hint (shown after an incorrect attempt, if attempts remain)</label>
+                    <textarea id="input-mc-hint-text" rows="2" placeholder="Optional hint text..."></textarea>
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-mc-show-correct-after-final">
+                    <label for="input-mc-show-correct-after-final">Reveal the correct answer after the final attempt</label>
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="input-mc-final-explanation">Final Explanation (shown once the question concludes)</label>
+                    <textarea id="input-mc-final-explanation" rows="2" placeholder="Optional explanation text..."></textarea>
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-mc-allow-reset">
+                    <label for="input-mc-allow-reset">Show a "Try Again" action once the question concludes</label>
+                  </div>
+                </div>
+
                 <div class="form-group-card">
                   <h3 class="group-title">Completion Tracking</h3>
 

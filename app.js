@@ -126,6 +126,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputFlipCardsFrontLabel = document.getElementById('input-flip-cards-front-label');
   const inputFlipCardsBackLabel = document.getElementById('input-flip-cards-back-label');
 
+  const mcBehaviorGroup = document.getElementById('mc-behavior-group');
+  const inputMcConfidenceMode = document.getElementById('input-mc-confidence-mode');
+  const inputMcRequireConfidence = document.getElementById('input-mc-require-confidence');
+  const inputMcConfidenceLowLabel = document.getElementById('input-mc-confidence-low-label');
+  const inputMcConfidenceMidLabel = document.getElementById('input-mc-confidence-mid-label');
+  const inputMcConfidenceHighLabel = document.getElementById('input-mc-confidence-high-label');
+  const inputMcShowResultSummary = document.getElementById('input-mc-show-result-summary');
+  const inputMcMaxAttempts = document.getElementById('input-mc-max-attempts');
+  const inputMcHintText = document.getElementById('input-mc-hint-text');
+  const inputMcShowCorrectAfterFinal = document.getElementById('input-mc-show-correct-after-final');
+  const inputMcFinalExplanation = document.getElementById('input-mc-final-explanation');
+  const inputMcAllowReset = document.getElementById('input-mc-allow-reset');
+
   const inputTrackCompletion = document.getElementById('input-track-completion');
   const inputCompletionMsg = document.getElementById('input-completion-msg');
   
@@ -447,6 +460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeComponentCategory.innerText = component.category.toUpperCase();
     updateAccordionBehaviorVisibility(component.id);
     updateFlipCardsBehaviorVisibility(component.id);
+    updateMcBehaviorVisibility(component.id);
 
     // Sync block text items with defaults/reset if needed
     inputBlockTitle.value = component.title.toUpperCase();
@@ -668,6 +682,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputFlipCardsReset, 'flipCardsReset');
     syncText(inputFlipCardsFrontLabel, 'flipCardsFrontLabel');
     syncText(inputFlipCardsBackLabel, 'flipCardsBackLabel');
+
+    syncCheckbox(inputMcConfidenceMode, 'mcConfidenceMode');
+    syncCheckbox(inputMcRequireConfidence, 'mcRequireConfidence');
+    syncText(inputMcConfidenceLowLabel, 'mcConfidenceLowLabel');
+    syncText(inputMcConfidenceMidLabel, 'mcConfidenceMidLabel');
+    syncText(inputMcConfidenceHighLabel, 'mcConfidenceHighLabel');
+    syncCheckbox(inputMcShowResultSummary, 'mcShowResultSummary');
+    syncCheckbox(inputMcShowCorrectAfterFinal, 'mcShowCorrectAfterFinal');
+    syncCheckbox(inputMcAllowReset, 'mcAllowReset');
+    syncText(inputMcHintText, 'mcHintText');
+    syncText(inputMcFinalExplanation, 'mcFinalExplanation');
+
+    inputMcMaxAttempts.addEventListener('input', (e) => {
+      const parsed = parseInt(e.target.value, 10);
+      appState.config.mcMaxAttempts = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+      updateLivePreview();
+    });
   }
 
   // ==========================================
@@ -908,6 +939,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     flipCardsBehaviorGroup.hidden = componentId !== 'flip-cards';
   }
 
+  // Same pattern again — mc* config keys only affect Multiple Choice Check
+  // (components/multiple-choice.js). Confidence-mode-only sub-options (require
+  // confidence, labels, result summary) stay visible even with Confidence mode off,
+  // same documented trade-off as Flip Cards' Study-mode-only controls.
+  function updateMcBehaviorVisibility(componentId) {
+    mcBehaviorGroup.hidden = componentId !== 'multiple-choice';
+  }
+
   function syncEditorControls() {
     syncResolvedThemeConfig();
     const config = appState.config;
@@ -931,6 +970,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputFlipCardsFrontLabel.value = config.flipCardsFrontLabel || 'Front';
     inputFlipCardsBackLabel.value = config.flipCardsBackLabel || 'Back';
     updateFlipCardsBehaviorVisibility(appState.selectedComponent.id);
+    inputMcConfidenceMode.checked = config.mcConfidenceMode === true;
+    inputMcRequireConfidence.checked = config.mcRequireConfidence === true;
+    inputMcConfidenceLowLabel.value = config.mcConfidenceLowLabel || 'Not sure';
+    inputMcConfidenceMidLabel.value = config.mcConfidenceMidLabel || 'Somewhat sure';
+    inputMcConfidenceHighLabel.value = config.mcConfidenceHighLabel || 'Very sure';
+    inputMcShowResultSummary.checked = config.mcShowResultSummary === true;
+    inputMcMaxAttempts.value = Number.isInteger(config.mcMaxAttempts) && config.mcMaxAttempts > 0 ? config.mcMaxAttempts : 1;
+    inputMcHintText.value = config.mcHintText || '';
+    inputMcShowCorrectAfterFinal.checked = config.mcShowCorrectAfterFinal === true;
+    inputMcFinalExplanation.value = config.mcFinalExplanation || '';
+    inputMcAllowReset.checked = config.mcAllowReset === true;
+    updateMcBehaviorVisibility(appState.selectedComponent.id);
     inputTrackCompletion.checked = config.trackCompletion;
     inputCompletionMsg.value = config.completionMsg;
     activeComponentTitle.innerText = appState.selectedComponent.title;

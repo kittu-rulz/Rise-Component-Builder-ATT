@@ -85,6 +85,17 @@ Supported fonts are Merriweather, Lato, Roboto, Montserrat, and Open Sans. Shado
 | `flipCardsReset`       | boolean | Study mode only: shows a "Restart study set" action                      |
 | `flipCardsFrontLabel`  |  string | Screen-reader label for the front face (both modes), default `'Front'`   |
 | `flipCardsBackLabel`   |  string | Screen-reader label for the back face (both modes), default `'Back'`     |
+| `mcConfidenceMode`     | boolean | Enables the confidence self-rating step before submit (Multiple Choice Check) |
+| `mcRequireConfidence`  | boolean | Confidence mode only: blocks Submit until a confidence level is chosen   |
+| `mcConfidenceLowLabel` |  string | Label for the low-confidence option, default `'Not sure'`                |
+| `mcConfidenceMidLabel` |  string | Label for the mid-confidence option, default `'Somewhat sure'`           |
+| `mcConfidenceHighLabel`|  string | Label for the high-confidence option, default `'Very sure'`              |
+| `mcMaxAttempts`        |  number | Attempts allowed before the question concludes, default `1` (no retry)   |
+| `mcShowCorrectAfterFinal` | boolean | Reveals the correct option (as text, not color alone) after the final attempt |
+| `mcHintText`           |  string | Hint shown after an incorrect attempt, if attempts remain                |
+| `mcFinalExplanation`   |  string | Explanation shown once the question concludes, correct or not            |
+| `mcAllowReset`         | boolean | Shows a "Try Again" action once the question concludes                   |
+| `mcShowResultSummary`  | boolean | Confidence mode only: shows a supportive correctness + confidence interpretation |
 
 Some interaction behavior is currently fixed in `js/preview.js` rather than represented in configuration.
 
@@ -99,6 +110,20 @@ An optional recall-practice layer over the original Explore mode, added without 
 - **State does not persist** across a page reload and is **not** reported to Rise/an LMS beyond the existing `{ type: 'complete' }` signal (`docs/COMPLETION-INTEGRATION.md`) — Know/Review classification is a session-local study aid only.
 - **Known caveat, inherited from the existing architecture, not new to this feature**: the HTML-fragment export format has no per-instance DOM scoping (`docs/EXPORT-CONTRACT.md` "CSS isolation, by format" — unique element *ids* are guaranteed, generic class-based `document.querySelectorAll(...)` calls are not). If two Flip Cards components are pasted onto the same fragment-format host page, each instance's script attaches its own listeners to every `.flip-card`/`.flip-classify-btn` element on the page, not just its own — true of the original Explore-mode implementation already, unchanged by Study mode. Prefer the Iframe Snippet or Web Package ZIP export format (structurally isolated by the `<iframe>` boundary) when multiple Flip Cards instances share one page.
 - **Verified**: automated (`tests/unit/generators.test.js` hostile-input fixtures, `export-isolation`/`export-determinism`) and manual browser testing of a compiled Study-mode export (classification, counts, category filter, review-only filter, summary, restart, keyboard operability via direct event dispatch). **Not yet verified**: inside Rise's own authoring preview or a published Rise course — see `docs/RISE-TEST-CHECKLIST.md`.
+
+### Multiple Choice Check Confidence mode
+
+An optional layer over the original one-shot submit/feedback flow, added without changing that flow's own behavior when left off — `mcMaxAttempts` defaults to `1` (the original no-retry behavior), and every `mc*` property is additive/optional with an undefined-safe fallback in both the generator and the editor UI, so a project saved before this feature existed behaves identically.
+
+- **Confidence self-rating** (Not sure / Somewhat sure / Very sure, all relabelable) shown before Submit when `mcConfidenceMode` is on; optionally required (`mcRequireConfidence`) before Submit is accepted.
+- **Multiple attempts**, via `mcMaxAttempts` (default 1). An incorrect attempt with attempts remaining clears the selection, shows a "N attempts remaining" message, and reveals the configured hint (`mcHintText`) if one is set — it does not reveal the correct answer mid-attempt.
+- **Reveal correct answer** (`mcShowCorrectAfterFinal`) — text-based ("— Correct answer"), not color-only, shown next to the correct option only after the final attempt.
+- **Final explanation** (`mcFinalExplanation`) — shown once the question concludes, correct or not.
+- **Confidence + correctness interpretation** (`mcShowResultSummary`, confidence mode only) — four short, deliberately supportive (not diagnostic) messages covering correct/incorrect × high/other confidence. Not a score, not reported anywhere, and not framed as a psychological or diagnostic claim.
+- **Scoring is unchanged**: correctness is still the item's existing `correct` boolean; no confidence-weighted score is computed or reported — confidence only drives which interpretation message is shown.
+- **Reset** (`mcAllowReset`) clears all state (selection, confidence, attempts, revealed answer) and returns focus to the first option.
+- **Accessibility**: both the answer and confidence groups use `role="radiogroup"`/`role="radio"` with roving tabindex and arrow-key navigation; concluded (disabled) options are marked `aria-disabled` and removed from tab order rather than deleted, so their content remains readable; feedback receives focus on every submit so a keyboard/screen-reader user reliably lands on the result, not just on whatever triggered `aria-live`.
+- **Verified**: automated (`tests/unit/generators.test.js`, `export-isolation`/`export-determinism`) and manual browser testing of a compiled Confidence-mode export — validation gating (no option/no confidence), retry with hint, correct/incorrect × confidence interpretation text, reveal-correct-after-final, reset, and the concluded/disabled state. **Not yet verified**: inside Rise's own authoring preview or a published Rise course.
 
 ## Completion tracking
 

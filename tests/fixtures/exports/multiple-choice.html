@@ -165,6 +165,11 @@
       background-color: var(--accent-tint);
     }
 
+    .quiz-option[aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
     .option-check-circle {
       width: 18px;
       height: 18px;
@@ -195,6 +200,50 @@
       font-weight: 500;
     }
 
+    .option-correct-flag {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .quiz-confidence-block {
+      margin-top: 4px;
+    }
+
+    .quiz-confidence-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .quiz-confidence-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .quiz-confidence-option {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--button-radius);
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .quiz-confidence-option.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent) inset;
+    }
+
+    .quiz-confidence-option[aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
     .quiz-submit-btn {
       align-self: flex-start;
       margin-top: 10px;
@@ -211,6 +260,32 @@
 
     .quiz-submit-btn:hover {
       background-color: var(--primary-hover);
+    }
+
+    .quiz-submit-btn[aria-disabled="true"] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .quiz-reset-btn {
+      align-self: flex-start;
+      padding: 8px 20px;
+      border-radius: var(--button-radius);
+      border: var(--border-style);
+      background-color: transparent;
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .quiz-hint {
+      padding: 12px 16px;
+      border-radius: var(--border-radius);
+      border: 1px dashed var(--border-color);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-main);
     }
 
     .quiz-feedback {
@@ -232,6 +307,11 @@
       background-color: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.2);
       color: #991B1B;
+    }
+
+    .quiz-feedback-interpretation, .quiz-feedback-explanation {
+      display: block;
+      margin-top: 8px;
     }
 
     [hidden] { display: none !important; }
@@ -315,11 +395,16 @@
     </div>
 
     <div class="block-content">
-      <div class="quiz-block"><div class="quiz-options" role="radiogroup" aria-label="Answer choices">
-    <div class="quiz-option" role="radio" tabindex="0" aria-checked="false" data-idx="0"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option A (Correct)</div></div>
-    <div class="quiz-option" role="radio" tabindex="-1" aria-checked="false" data-idx="1"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option B</div></div>
-    <div class="quiz-option" role="radio" tabindex="-1" aria-checked="false" data-idx="2"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option C</div></div></div>
-    <button class="quiz-submit-btn" type="button">Submit Answer</button><div id="rcb-fixture-multiple-choice-quiz-feedback-box" class="quiz-feedback" role="status" aria-live="polite" aria-atomic="true" style="display:none;"></div>
+      <div class="quiz-block">
+    <div class="quiz-options" role="radiogroup" aria-label="Answer choices">
+    <div class="quiz-option" role="radio" tabindex="0" aria-checked="false" data-idx="0"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option A (Correct)</div><span class="option-correct-flag" hidden> — Correct answer</span></div>
+    <div class="quiz-option" role="radio" tabindex="-1" aria-checked="false" data-idx="1"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option B</div><span class="option-correct-flag" hidden> — Correct answer</span></div>
+    <div class="quiz-option" role="radio" tabindex="-1" aria-checked="false" data-idx="2"><div class="option-check-circle" aria-hidden="true"></div><div class="option-text">Option C</div><span class="option-correct-flag" hidden> — Correct answer</span></div></div>
+    
+    <button class="quiz-submit-btn" type="button">Submit Answer</button>
+    <div class="quiz-hint" id="rcb-fixture-multiple-choice-quiz-hint" role="status" aria-live="polite" hidden><strong>Hint:</strong> </div>
+    <div id="rcb-fixture-multiple-choice-quiz-feedback-box" class="quiz-feedback" role="status" aria-live="polite" aria-atomic="true" tabindex="-1" style="display:none;"></div>
+    
   </div>
     </div>
 
@@ -434,9 +519,19 @@
     })();
 
     var selectedOptionIndex = null;
+    var selectedConfidence = null;
+    var attemptsUsed = 0;
+    var quizConcluded = false;
     var quizOptions = [{"label":"Option A (Correct)","content":"Micro-learning helps memory retention.","correct":true},{"label":"Option B","content":"Courses must be at least 1 hour long.","correct":false},{"label":"Option C","content":"Instructional text should be very dense.","correct":false}];
+    var maxAttempts = 1;
+    var confidenceMode = false;
+    var requireConfidence = false;
+    var showCorrectAfterFinal = false;
+    var showResultSummary = false;
+    var finalExplanationHtml = "";
 
     function selectQuizOption(index, element) {
+      if (quizConcluded) return;
       selectedOptionIndex = index;
       document.querySelectorAll('.quiz-option').forEach(function(el) {
         el.classList.remove('selected');
@@ -448,27 +543,153 @@
       element.setAttribute('tabindex', '0');
     }
 
+    function selectConfidence(value, element) {
+      if (quizConcluded) return;
+      selectedConfidence = value;
+      document.querySelectorAll('.quiz-confidence-option').forEach(function(el) {
+        el.classList.remove('selected');
+        el.setAttribute('aria-checked', 'false');
+        el.setAttribute('tabindex', '-1');
+      });
+      element.classList.add('selected');
+      element.setAttribute('aria-checked', 'true');
+      element.setAttribute('tabindex', '0');
+    }
+
+    // Deliberately not a diagnostic score — a short, supportive nudge only. "Somewhat
+    // sure" buckets with "Not sure" here (only "Very sure" counts as high) so the four
+    // messages the brief asked for map onto the three configured levels without a fifth,
+    // undocumented in-between message.
+    function getConfidenceInterpretation(isCorrect, confidence) {
+      var high = confidence === 'high';
+      if (isCorrect && high) return 'This suggests solid, secure understanding of this concept.';
+      if (isCorrect && !high) return 'Correct — reviewing this again may help reinforce it further.';
+      if (!isCorrect && high) return 'This may point to a misconception worth revisiting.';
+      return 'This looks like a learning gap — worth reviewing further.';
+    }
+
+    function revealCorrectOption() {
+      document.querySelectorAll('.quiz-option').forEach(function(el) {
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        var flag = el.querySelector('.option-correct-flag');
+        if (flag && quizOptions[idx] && quizOptions[idx].correct) flag.hidden = false;
+      });
+    }
+
+    function concludeQuiz() {
+      quizConcluded = true;
+      document.querySelectorAll('.quiz-option, .quiz-confidence-option').forEach(function(el) {
+        el.setAttribute('aria-disabled', 'true');
+        el.setAttribute('tabindex', '-1');
+      });
+      var submitBtn = document.querySelector('.quiz-submit-btn');
+      if (submitBtn) submitBtn.setAttribute('aria-disabled', 'true');
+      var resetBtn = document.querySelector('.quiz-reset-btn');
+      if (resetBtn) resetBtn.hidden = false;
+    }
+
     function submitQuiz() {
+      if (quizConcluded) return;
       var feedback = document.getElementById('rcb-fixture-multiple-choice-quiz-feedback-box');
+      var hint = document.getElementById('rcb-fixture-multiple-choice-quiz-hint');
+
       if (selectedOptionIndex === null) {
         feedback.style.display = 'block';
         feedback.className = 'quiz-feedback wrong';
         feedback.innerHTML = '<strong>Select an option first.</strong>';
+        feedback.focus();
+        return;
+      }
+      if (requireConfidence && !selectedConfidence) {
+        feedback.style.display = 'block';
+        feedback.className = 'quiz-feedback wrong';
+        feedback.innerHTML = '<strong>Select a confidence level first.</strong>';
+        feedback.focus();
         return;
       }
 
       var selection = quizOptions[selectedOptionIndex];
       var isCorrect = selection.correct;
+      attemptsUsed++;
 
       feedback.style.display = 'block';
       feedback.className = 'quiz-feedback ' + (isCorrect ? 'correct' : 'wrong');
 
       if (isCorrect) {
         feedback.innerHTML = '<strong>Correct!</strong> ' + (selection.content || 'Excellent choices.');
+        if (confidenceMode && showResultSummary) {
+          feedback.innerHTML += '<span class="quiz-feedback-interpretation">' + getConfidenceInterpretation(true, selectedConfidence) + '</span>';
+        }
+        if (finalExplanationHtml) {
+          feedback.innerHTML += '<span class="quiz-feedback-explanation">' + finalExplanationHtml + '</span>';
+        }
+        if (hint) hint.hidden = true;
+        concludeQuiz();
         updateTrackerComplete();
+      } else if (attemptsUsed < maxAttempts) {
+        var remaining = maxAttempts - attemptsUsed;
+        feedback.innerHTML = '<strong>Incorrect.</strong> ' + remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' remaining.';
+        if (hint && hint.textContent.trim()) hint.hidden = false;
+        selectedOptionIndex = null;
+        selectedConfidence = null;
+        document.querySelectorAll('.quiz-option').forEach(function(el, idx) {
+          el.classList.remove('selected');
+          el.setAttribute('aria-checked', 'false');
+          el.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+        });
+        document.querySelectorAll('.quiz-confidence-option').forEach(function(el, idx) {
+          el.classList.remove('selected');
+          el.setAttribute('aria-checked', 'false');
+          el.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+        });
       } else {
         feedback.innerHTML = '<strong>Incorrect.</strong> Try reviewing the source documentation again.';
+        if (confidenceMode && showResultSummary) {
+          feedback.innerHTML += '<span class="quiz-feedback-interpretation">' + getConfidenceInterpretation(false, selectedConfidence) + '</span>';
+        }
+        if (finalExplanationHtml) {
+          feedback.innerHTML += '<span class="quiz-feedback-explanation">' + finalExplanationHtml + '</span>';
+        }
+        if (hint) hint.hidden = true;
+        if (showCorrectAfterFinal) revealCorrectOption();
+        concludeQuiz();
       }
+
+      feedback.focus();
+    }
+
+    function resetQuiz() {
+      quizConcluded = false;
+      selectedOptionIndex = null;
+      selectedConfidence = null;
+      attemptsUsed = 0;
+
+      document.querySelectorAll('.quiz-option').forEach(function(el, idx) {
+        el.classList.remove('selected');
+        el.setAttribute('aria-checked', 'false');
+        el.removeAttribute('aria-disabled');
+        el.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+        var flag = el.querySelector('.option-correct-flag');
+        if (flag) flag.hidden = true;
+      });
+      document.querySelectorAll('.quiz-confidence-option').forEach(function(el, idx) {
+        el.classList.remove('selected');
+        el.setAttribute('aria-checked', 'false');
+        el.removeAttribute('aria-disabled');
+        el.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+      });
+      var submitBtn = document.querySelector('.quiz-submit-btn');
+      if (submitBtn) submitBtn.removeAttribute('aria-disabled');
+      var resetBtn = document.querySelector('.quiz-reset-btn');
+      if (resetBtn) resetBtn.hidden = true;
+      var hint = document.getElementById('rcb-fixture-multiple-choice-quiz-hint');
+      if (hint) hint.hidden = true;
+      var feedback = document.getElementById('rcb-fixture-multiple-choice-quiz-feedback-box');
+      if (feedback) { feedback.style.display = 'none'; feedback.innerHTML = ''; }
+
+      var firstOption = document.querySelector('.quiz-option');
+      if (firstOption) firstOption.focus();
+      announce('Question reset.');
     }
 
     function initComponent() {
@@ -477,6 +698,7 @@
           selectQuizOption(parseInt(option.getAttribute('data-idx'), 10), option);
         });
         option.addEventListener('keydown', function(event) {
+          if (quizConcluded) return;
           var options = Array.from(document.querySelectorAll('.quiz-option[role="radio"]'));
           var current = options.indexOf(option);
           var next = current;
@@ -495,8 +717,34 @@
         });
       });
 
+      document.querySelectorAll('.quiz-confidence-option[role="radio"]').forEach(function(option) {
+        option.addEventListener('click', function() {
+          selectConfidence(option.getAttribute('data-confidence'), option);
+        });
+        option.addEventListener('keydown', function(event) {
+          if (quizConcluded) return;
+          var options = Array.from(document.querySelectorAll('.quiz-confidence-option[role="radio"]'));
+          var current = options.indexOf(option);
+          var next = current;
+          if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = (current + 1) % options.length;
+          else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = (current - 1 + options.length) % options.length;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = options.length - 1;
+          else if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            selectConfidence(option.getAttribute('data-confidence'), option);
+            return;
+          } else return;
+          event.preventDefault();
+          selectConfidence(options[next].getAttribute('data-confidence'), options[next]);
+          options[next].focus();
+        });
+      });
+
       var quizSubmitBtn = document.querySelector('.quiz-submit-btn');
       if (quizSubmitBtn) quizSubmitBtn.addEventListener('click', submitQuiz);
+      var quizResetBtn = document.querySelector('.quiz-reset-btn');
+      if (quizResetBtn) quizResetBtn.addEventListener('click', resetQuiz);
     }
 
     if (document.readyState === 'loading') {
