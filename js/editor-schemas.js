@@ -44,7 +44,11 @@ export const editorSchemas = {
     itemFields: [
       field('title', 'Face Title', 'text', { required: true, default: 'Card Face' }),
       field('content', 'Face Content', 'richtext', { required: true, default: 'Add card content.' }),
-      ...visualIconFields
+      ...visualIconFields,
+      // Only read from the front face (components/flip-cards.js) — shown on both
+      // faces here since itemFields apply uniformly to every item in the pair, same
+      // as the icon fields above.
+      field('category', 'Category / Tag (Optional — front face only, used for Study mode filtering)', 'text', { required: false, default: '', maxLength: 40 })
     ]
   },
   hotspots: {

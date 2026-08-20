@@ -313,6 +313,50 @@
                   </div>
                 </div>
 
+                <div class="form-group-card" id="flip-cards-behavior-group">
+                  <h3 class="group-title">Study Mode (Flip Cards)</h3>
+
+                  <div class="input-wrapper">
+                    <label for="select-flip-cards-mode">Interaction Mode</label>
+                    <select id="select-flip-cards-mode">
+                      <option value="explore" selected>Explore — click to flip (original behavior)</option>
+                      <option value="study">Study — flip, then mark Know / Needs Review</option>
+                    </select>
+                    <p class="field-hint">Study mode adds Know/Review self-classification, counts, and the options below. The options below only apply once Study mode is selected.</p>
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-flip-cards-shuffle">
+                    <label for="input-flip-cards-shuffle">Shuffle card order (Study mode only)</label>
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-flip-cards-categories">
+                    <label for="input-flip-cards-categories">Enable category filtering (Study mode only — set each card's Category field in Content)</label>
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-flip-cards-summary">
+                    <label for="input-flip-cards-summary">Show end-of-set summary once every card is classified (Study mode only)</label>
+                  </div>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-flip-cards-reset">
+                    <label for="input-flip-cards-reset">Show a "Restart study set" action (Study mode only)</label>
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="input-flip-cards-front-label">Front Face Label</label>
+                    <input type="text" id="input-flip-cards-front-label" value="Front" maxlength="24">
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="input-flip-cards-back-label">Back Face Label</label>
+                    <input type="text" id="input-flip-cards-back-label" value="Back" maxlength="24">
+                    <p class="field-hint">Used in screen-reader announcements (e.g. "Reveal Back of ...") for both modes.</p>
+                  </div>
+                </div>
+
                 <div class="form-group-card">
                   <h3 class="group-title">Completion Tracking</h3>
 

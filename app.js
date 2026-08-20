@@ -116,6 +116,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputBehaviorAccordionAnimation = document.getElementById('input-behavior-accordion-animation');
   const selectIconStyle = document.getElementById('select-icon-style');
   const accordionBehaviorGroup = document.getElementById('accordion-behavior-group');
+
+  const flipCardsBehaviorGroup = document.getElementById('flip-cards-behavior-group');
+  const selectFlipCardsMode = document.getElementById('select-flip-cards-mode');
+  const inputFlipCardsShuffle = document.getElementById('input-flip-cards-shuffle');
+  const inputFlipCardsCategories = document.getElementById('input-flip-cards-categories');
+  const inputFlipCardsSummary = document.getElementById('input-flip-cards-summary');
+  const inputFlipCardsReset = document.getElementById('input-flip-cards-reset');
+  const inputFlipCardsFrontLabel = document.getElementById('input-flip-cards-front-label');
+  const inputFlipCardsBackLabel = document.getElementById('input-flip-cards-back-label');
+
   const inputTrackCompletion = document.getElementById('input-track-completion');
   const inputCompletionMsg = document.getElementById('input-completion-msg');
   
@@ -436,6 +446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeComponentTitle.innerText = component.title;
     activeComponentCategory.innerText = component.category.toUpperCase();
     updateAccordionBehaviorVisibility(component.id);
+    updateFlipCardsBehaviorVisibility(component.id);
 
     // Sync block text items with defaults/reset if needed
     inputBlockTitle.value = component.title.toUpperCase();
@@ -646,6 +657,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputBehaviorAccordionMulti, 'accordionMulti');
     syncCheckbox(inputBehaviorAccordionAnimation, 'accordionAnimation');
     syncCheckbox(inputTrackCompletion, 'trackCompletion');
+
+    selectFlipCardsMode.addEventListener('change', (e) => {
+      appState.config.flipCardsMode = e.target.value;
+      updateLivePreview();
+    });
+    syncCheckbox(inputFlipCardsShuffle, 'flipCardsShuffle');
+    syncCheckbox(inputFlipCardsCategories, 'flipCardsCategories');
+    syncCheckbox(inputFlipCardsSummary, 'flipCardsSummary');
+    syncCheckbox(inputFlipCardsReset, 'flipCardsReset');
+    syncText(inputFlipCardsFrontLabel, 'flipCardsFrontLabel');
+    syncText(inputFlipCardsBackLabel, 'flipCardsBackLabel');
   }
 
   // ==========================================
@@ -877,6 +899,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     accordionBehaviorGroup.hidden = componentId !== 'accordion';
   }
 
+  // Same pattern as updateAccordionBehaviorVisibility — flipCards* config keys only affect
+  // Flip Cards (components/flip-cards.js). No conditional-field-visibility mechanism exists
+  // in the schema-driven editor yet, so Study-mode-only sub-options (shuffle/categories/
+  // summary/reset) stay visible even in Explore mode rather than being truly hidden — their
+  // hints say so explicitly. See docs/COMPONENT-SCHEMA.md "Recommended schema improvements."
+  function updateFlipCardsBehaviorVisibility(componentId) {
+    flipCardsBehaviorGroup.hidden = componentId !== 'flip-cards';
+  }
+
   function syncEditorControls() {
     syncResolvedThemeConfig();
     const config = appState.config;
@@ -889,6 +920,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputBehaviorAccordionAnimation.checked = config.accordionAnimation;
     selectIconStyle.value = config.iconStyle;
     updateAccordionBehaviorVisibility(appState.selectedComponent.id);
+    // Defensive fallbacks (not just `= config.flipCardsX`): a project saved before this
+    // feature existed has no flipCards* keys at all, and an unmatched <select> value would
+    // otherwise render as blank rather than the actual effective default.
+    selectFlipCardsMode.value = config.flipCardsMode || 'explore';
+    inputFlipCardsShuffle.checked = config.flipCardsShuffle === true;
+    inputFlipCardsCategories.checked = config.flipCardsCategories === true;
+    inputFlipCardsSummary.checked = config.flipCardsSummary === true;
+    inputFlipCardsReset.checked = config.flipCardsReset === true;
+    inputFlipCardsFrontLabel.value = config.flipCardsFrontLabel || 'Front';
+    inputFlipCardsBackLabel.value = config.flipCardsBackLabel || 'Back';
+    updateFlipCardsBehaviorVisibility(appState.selectedComponent.id);
     inputTrackCompletion.checked = config.trackCompletion;
     inputCompletionMsg.value = config.completionMsg;
     activeComponentTitle.innerText = appState.selectedComponent.title;

@@ -73,13 +73,32 @@ Supported fonts are Merriweather, Lato, Roboto, Montserrat, and Open Sans. Shado
 
 ## Behavior properties
 
-| Property             |    Type | Purpose                                           |
-| -------------------- | ------: | ------------------------------------------------- |
-| `accordionMulti`     | boolean | Allows multiple accordion panels to remain open   |
-| `accordionAnimation` | boolean | Records author preference for accordion animation |
-| `iconStyle`          |  string | Selects accordion indicator presentation          |
+| Property               |    Type | Purpose                                                                   |
+| ----------------------- | ------: | -------------------------------------------------------------------------- |
+| `accordionMulti`       | boolean | Allows multiple accordion panels to remain open                          |
+| `accordionAnimation`   | boolean | Records author preference for accordion animation                        |
+| `iconStyle`            |  string | Selects accordion indicator presentation                                 |
+| `flipCardsMode`        |  string | `'explore'` (default, original click-to-reveal behavior) or `'study'`    |
+| `flipCardsShuffle`     | boolean | Study mode only: randomizes card order on load                           |
+| `flipCardsCategories`  | boolean | Study mode only: enables category filter chips, driven by each front face's `category` item field |
+| `flipCardsSummary`     | boolean | Study mode only: shows an end-of-set summary once every card is classified |
+| `flipCardsReset`       | boolean | Study mode only: shows a "Restart study set" action                      |
+| `flipCardsFrontLabel`  |  string | Screen-reader label for the front face (both modes), default `'Front'`   |
+| `flipCardsBackLabel`   |  string | Screen-reader label for the back face (both modes), default `'Back'`     |
 
 Some interaction behavior is currently fixed in `js/preview.js` rather than represented in configuration.
+
+### Flip Cards Study mode
+
+An optional recall-practice layer over the original Explore mode, added without changing Explore mode's own behavior — every `flipCards*` property is additive/optional, and a project saved before this feature existed loads with `flipCardsMode` effectively `'explore'`, since `components/flip-cards.js`'s generators and `validate()` treat a missing value the same as the documented default (`docs/ARCHITECTURE.md` §2; `app.js#applyMissingSchemaDefaults`/`syncEditorControls` apply the same undefined-safe fallback to the editor UI).
+
+- **Know / Needs review** classification per card, tracked in a component-local in-memory object (not persisted, not centralized in `js/export-shell.js` — kept local for this first pass; see "Recommended schema improvements" below).
+- **Category filter chips**, derived from each card's front-face `category` field, shown only when `flipCardsCategories` is on and at least one card has a non-empty category.
+- **"Show Review cards only"** toggle, independent of the category filter — both can combine.
+- **Live counts** ("Not viewed / Know / Review"), a summary panel once every card is classified, and an optional "Restart study set" action, all layered on top of — not replacing — the existing shared completion tracker (`viewedItems`/`updateProgress()`), which still completes exactly as before (every card flipped at least once) regardless of Know/Review state.
+- **State does not persist** across a page reload and is **not** reported to Rise/an LMS beyond the existing `{ type: 'complete' }` signal (`docs/COMPLETION-INTEGRATION.md`) — Know/Review classification is a session-local study aid only.
+- **Known caveat, inherited from the existing architecture, not new to this feature**: the HTML-fragment export format has no per-instance DOM scoping (`docs/EXPORT-CONTRACT.md` "CSS isolation, by format" — unique element *ids* are guaranteed, generic class-based `document.querySelectorAll(...)` calls are not). If two Flip Cards components are pasted onto the same fragment-format host page, each instance's script attaches its own listeners to every `.flip-card`/`.flip-classify-btn` element on the page, not just its own — true of the original Explore-mode implementation already, unchanged by Study mode. Prefer the Iframe Snippet or Web Package ZIP export format (structurally isolated by the `<iframe>` boundary) when multiple Flip Cards instances share one page.
+- **Verified**: automated (`tests/unit/generators.test.js` hostile-input fixtures, `export-isolation`/`export-determinism`) and manual browser testing of a compiled Study-mode export (classification, counts, category filter, review-only filter, summary, restart, keyboard operability via direct event dispatch). **Not yet verified**: inside Rise's own authoring preview or a published Rise course — see `docs/RISE-TEST-CHECKLIST.md`.
 
 ## Completion tracking
 
@@ -96,7 +115,7 @@ The preview runtime calculates trackable counts per component. Content-reveal co
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `accordion`           | `title`, `content`                                                                                                                     |
 | `tab-blocks`          | `title`, `content`                                                                                                                     |
-| `flip-cards`          | `title`, `content`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`; consecutive entries form front/back pairs        |
+| `flip-cards`          | `title`, `content`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`, `category`; consecutive entries form front/back pairs        |
 | `hotspots`            | `title`, `content`, `x`, `y`                                                                                                           |
 | `button-list`         | `title`, `content` (destination URL)                                                                                                   |
 | `menu-list`           | `title`, `content`                                                                                                                     |
