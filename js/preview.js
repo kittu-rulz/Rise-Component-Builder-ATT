@@ -11,6 +11,14 @@ export const COMPONENT_MAX_WIDTH = 740;
 
 export function writePreview(iframe, html) {
   if (!iframe) return;
+  // Reported: after the first component selection, switching to a *different* component
+  // leaves the sandboxed preview iframe showing the old content until a full page reload.
+  // A bare `iframe.srcdoc = html` reassignment isn't reliably treated as a fresh navigation
+  // by every Chrome build for a sandboxed (no allow-same-origin) iframe reusing the same
+  // element — clearing it first, synchronously, forces a genuine reload every time. Both
+  // writes land in the same tick (before the next paint), so this doesn't introduce a
+  // visible blank flash despite running on every edit, not just component switches.
+  iframe.srcdoc = '';
   iframe.srcdoc = html;
 }
 
