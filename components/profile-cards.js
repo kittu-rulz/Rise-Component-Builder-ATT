@@ -18,7 +18,7 @@ export function generateHTML(config) {
       ${config.items.map((item) => `
         <div class="profile-card-item">
           <div class="profile-avatar-circle ${item.imageCrop === 'square' ? 'square' : ''}">
-            ${item.image ? `<img src="${escapeAttribute(item.image)}" alt="${item.decorative ? '' : escapeAttribute(item.altText || '')}" ${item.decorative ? 'aria-hidden="true"' : ''}>` : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`}
+            ${item.image ? `<img src="${escapeAttribute(item.image)}" alt="${item.decorative ? '' : escapeAttribute(item.altText || '')}" ${item.decorative ? 'aria-hidden="true"' : ''}>` : `<svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M20 15.8C21.8 14.5 23 12.4 23 10 23 6.1 19.9 3 16 3 12.1 3 9 6.1 9 10 9 12.4 10.2 14.5 12 15.8 7.9 17.4 5 21.3 5 26L5 29 7 29 7 26C7 21 11 17 16 17 21 17 25 21 25 26L25 29 27 29 27 26C27 21.3 24.1 17.4 20 15.8ZM11 10C11 7.2 13.2 5 16 5 18.8 5 21 7.2 21 10 21 12.8 18.8 15 16 15 13.2 15 11 12.8 11 10Z"/></svg>`}
           </div>
           <div class="profile-card-content">
             <h4>${escapeHTML(item.title || 'Expert Name')}</h4>
@@ -59,7 +59,8 @@ export function generateCSS() {
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background-color: var(--accent-light);
+      /* Not --accent-light: a shade of AT&T Blue, not the approved palette. */
+      background-color: var(--border-color);
       color: var(--accent);
       display: flex;
       align-items: center;

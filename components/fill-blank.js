@@ -67,8 +67,11 @@ export function generateCSS() {
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      background-color: var(--accent-light);
-      color: var(--accent);
+      /* Not --accent-light (a shade of AT&T Blue, not the approved palette) with
+         AT&T Blue text on top — at 11px, non-bold, that also fails the brand's own
+         19px threshold for AT&T-Blue-colored text. Neutral background, dark text. */
+      background-color: var(--border-color);
+      color: var(--text-main);
       display: flex;
       align-items: center;
       justify-content: center;

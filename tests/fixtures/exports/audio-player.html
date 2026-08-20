@@ -150,7 +150,10 @@
       width: 36px;
       height: 36px;
       border-radius: 6px;
-      background-color: var(--accent-light);
+      /* Not --accent-light: a lighter shade of AT&T Blue isn't part of the approved
+         palette. A neutral brand-grey backdrop also gives the icon better contrast
+         than blue-on-light-blue did. */
+      background-color: var(--border-color);
       color: var(--accent);
       display: flex;
       align-items: center;

@@ -60,7 +60,8 @@ export function generateCSS() {
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      background-color: var(--accent-light);
+      /* Not --accent-light: a shade of AT&T Blue, not the approved palette. */
+      background-color: var(--border-color);
       border: 2px solid var(--accent);
       display: flex;
       align-items: center;
@@ -71,7 +72,9 @@ export function generateCSS() {
     .step-num {
       font-size: 11px;
       font-weight: 700;
-      color: var(--accent);
+      /* Not --accent (AT&T Blue): at 11px, non-bold-equivalent contrast, this fails
+         the brand's own 19px threshold for AT&T-Blue-colored text. */
+      color: var(--text-main);
     }
 
     .step-card {

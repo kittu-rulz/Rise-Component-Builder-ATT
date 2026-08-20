@@ -19,7 +19,7 @@ export function generateHTML(config, instanceId) {
       <div class="process-progress-header">
         <span class="step-badge" aria-live="polite" aria-atomic="true">Step <span id="${instanceId}-current-process-num">1</span> of ${config.items.length}</span>
         <div class="process-dots">
-          ${config.items.map((_, idx) => `<span class="p-dot ${idx === 0 ? 'active' : ''}" aria-hidden="true"></span>`).join('')}
+          ${config.items.map((_, idx) => `<span class="p-dot ${idx === 0 ? 'active' : ''}" aria-hidden="true">${idx + 1}</span>`).join('')}
         </div>
       </div>
       <div class="process-slides-wrapper">
@@ -68,25 +68,41 @@ export function generateCSS() {
     .step-badge {
       font-size: 11px;
       font-weight: 700;
-      color: var(--accent);
+      /* Not --accent-light + AT&T Blue text: a derived shade, and below-19px blue
+         text fails the brand's own contrast threshold. Neutral background, dark
+         text. Not a capsule either — a static "Step X of Y" readout, not a
+         clickable control. */
+      color: var(--text-main);
       text-transform: uppercase;
-      background-color: var(--accent-light);
+      background-color: var(--border-color);
       padding: 3px 10px;
-      border-radius: 20px;
+      border-radius: 6px;
     }
     .process-dots {
       display: flex;
       gap: 6px;
     }
     .p-dot {
-      width: 8px;
-      height: 8px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       background-color: var(--border-color);
+      /* Stakeholder request: a visible step number, not just a bare dot. Still
+         aria-hidden — the accessible name for "which step" comes from .step-badge's
+         own aria-live announcement, so this stays decorative for sighted users. */
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
       transition: all 0.2s;
     }
     .p-dot.active {
       background-color: var(--accent);
+      /* Not --on-accent (white): at 10px this is well under the brand's 19px
+         threshold for white text on an AT&T Blue background. */
+      color: var(--text-main);
       transform: scale(1.1);
     }
     .process-slides-wrapper {
