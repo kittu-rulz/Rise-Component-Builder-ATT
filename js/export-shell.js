@@ -5,7 +5,14 @@
 
 import { escapeAttribute, normalizeHeadingLevel } from './utilities.js';
 
-export const CSP_META = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob:; media-src 'self' http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
+// 'self' is deliberately absent from img-src/media-src: this document is loaded into a
+// sandboxed iframe without allow-same-origin (index.html), which gives it a unique opaque
+// origin rather than a real, stable one — 'self' has nothing consistent to resolve against
+// there, and different Chrome builds/versions have been observed to disagree on how to
+// handle that, silently dropping the whole style/image layer in some of them. http:/https:
+// already cover every legitimate same-origin case this policy needs, so 'self' added no
+// real permission — only this compatibility risk.
+export const CSP_META = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src http: https: data: blob:; media-src http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
 
 // Reset + shared block chrome (title/headline/description). No component-specific rules.
 export const BASE_RESET_CSS = `
