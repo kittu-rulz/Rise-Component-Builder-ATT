@@ -218,8 +218,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function init() {
     // P09: sourced from js/version.js — the one place this value is maintained — rather
     // than a hand-typed string in index.html, which had drifted out of sync with
-    // package.json's own version before this. No date is shown alongside it (Requirement
-    // 5): this project has no real release-date tracking to source one from truthfully.
+    // package.json's own version before this. A build-metadata date/time suffix on the
+    // version string itself (js/version.js) was reinstated at explicit user request; this
+    // still just echoes whatever APP_VERSION says, no separate date logic lives here.
     const versionTag = document.getElementById('app-version-tag');
     if (versionTag) {
       versionTag.textContent = `v${APP_VERSION}`;
@@ -370,8 +371,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const emptyState = document.getElementById('preview-empty-state');
     if (!emptyState || !livePreviewIframe) return;
     const hasSelection = Boolean(appState.selectedComponent);
+    const wasHidden = livePreviewIframe.hidden;
     livePreviewIframe.hidden = !hasSelection;
     emptyState.hidden = hasSelection;
+    // Reported: the very first component selected in a session (iframe going from
+    // hidden -> visible) can render completely blank, unlike every subsequent switch
+    // between already-visible components (which writePreview()'s own srcdoc='' + srcdoc=
+    // html double-write already handles reliably). Root cause: removing `hidden` and
+    // writing the iframe's srcdoc land in the same synchronous tick immediately after
+    // (updateLivePreview() calls this, then writePreview(), back to back) — for a
+    // sandboxed (no allow-same-origin) iframe, some Chrome builds haven't run a layout
+    // pass for the newly-unhidden subtree yet when the srcdoc navigation starts, so its
+    // very first paint is silently dropped until an unrelated later reflow (resizing,
+    // switching components, anything that forces layout) happens to repaint it — which,
+    // for a small/fast component, resolves almost instantly and goes unnoticed, but for a
+    // larger payload with its own external media (e.g. Interactive Video) can leave the
+    // preview blank indefinitely, since nothing else naturally triggers a reflow while the
+    // author is just looking at it. Forcing a synchronous reflow here, before
+    // writePreview() runs immediately after, makes sure the browser has processed the
+    // visibility change first — a standard, minimal fix for this exact class of issue.
+    if (wasHidden && hasSelection) void livePreviewIframe.offsetHeight;
   }
 
   // P08: header identity/save-status ("Untitled project · Unsaved changes" /

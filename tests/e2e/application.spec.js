@@ -18,7 +18,7 @@ test('application loads without console errors and renders the catalog', async (
 });
 
 test('every registered component opens in the builder editor and renders its live preview with no console/page errors', async ({ page }) => {
-  // Opens and closes all 20 registered components in sequence — comfortably under the
+  // Opens and closes all 21 registered components in sequence — comfortably under the
   // default 30s timeout when run alone, but slower under heavy parallel worker
   // contention (especially on WebKit), so this gets its own longer budget rather than
   // being treated as flaky.
@@ -35,7 +35,11 @@ test('every registered component opens in the builder editor and renders its liv
   page.on('pageerror', error => errors.push(`${error.message} (pageerror)`));
   await page.goto('/');
 
-  const dataCategories = ['interactive', 'navigation', 'knowledge', 'timelines', 'process', 'cards', 'media'];
+  // 'advanced' (Interactive Video's own "Advanced Interactions" category) was missing
+  // here until this line — a real gap: that component was never exercised by this
+  // comprehensive smoke test at all, silently, since its category key was never added
+  // when the category itself shipped.
+  const dataCategories = ['interactive', 'navigation', 'knowledge', 'timelines', 'process', 'cards', 'media', 'advanced'];
   for (const dataCategory of dataCategories) {
     await page.locator(`.nav-item[data-category="${dataCategory}"]`).click();
     const cardCount = await page.locator('.component-select-card').count();
@@ -59,6 +63,30 @@ test('every registered component opens in the builder editor and renders its liv
       await page.locator(`.nav-item[data-category="${dataCategory}"]`).click();
     }
   }
+});
+
+// Real bug, reported from production use: the live preview iframe rendered completely
+// blank the very first time a component was selected in a fresh session/reload — but
+// worked fine every time after, including switching directly between two already-selected
+// components. Root cause (app.js#updatePreviewEmptyState): the iframe's `hidden` attribute
+// is removed and its srcdoc is written in the same synchronous tick, back to back. For a
+// sandboxed (no allow-same-origin) iframe, some Chrome builds haven't finished a layout
+// pass for the newly-unhidden subtree by the time the srcdoc navigation starts, so its very
+// first paint is silently dropped until an unrelated later reflow happens to repaint it —
+// which self-resolves almost instantly for a small/fast component (never noticed), but can
+// leave a larger payload with its own external media (Interactive Video) blank
+// indefinitely, since nothing else naturally triggers a reflow while the author is just
+// looking at it. The test above exercises this component only as a *switch* target (every
+// other card in its category loop is clicked first) — deliberately never reproduces the
+// true first-selection case, so it's covered separately, here, on a clean page with no
+// prior selection at all.
+test('the very first component selected in a fresh session renders its live preview immediately, not just after a reload', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('.nav-item[data-category="advanced"]').click();
+  await page.locator('.component-select-card').filter({ hasText: 'Interactive Video' }).click();
+  await expect(page.locator('#editor-state')).toBeVisible();
+  await expect(page.frameLocator('#live-preview-iframe').locator('.iv-block')).toBeVisible();
+  await expect(page.frameLocator('#live-preview-iframe').locator('.iv-title')).toHaveText('Interactive Video');
 });
 
 test('an unanticipated runtime error surfaces a generic toast and logs full detail to the console, not to the user', async ({ page }) => {

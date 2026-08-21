@@ -5,8 +5,9 @@
 // so this can't be injected automatically at build time the way a bundled app would —
 // it must be kept in sync with package.json's own "version" field by hand.
 //
-// No release date is shown alongside it: this project has no actual release-date
-// tracking (no git tags, no changelog, no CI-stamped build timestamp) to source one from
-// truthfully, and a hand-typed "today's date" next to the version would incorrectly imply
-// one exists (Requirement 5).
-export const APP_VERSION = '2.0.0';
+// The suffix after "+" is semver build metadata (valid per the spec, ignored for version
+// precedence/ordering) stamped with the push date/time — reinstated at explicit user
+// request after P09 removed a separate hand-typed date tag; unlike that removed tag, this
+// stays attached to the version string itself and is expected to be updated by hand on
+// each meaningful release, same as the base version number.
+export const APP_VERSION = '2.0.0+20260821.1514';

@@ -594,13 +594,13 @@ export function generateJS(config, instanceId) {
     }
 
     // Markers crossed without pauseVideo (or already completed) are recorded as "visited"
-    // in ivMarkerStatus only — deliberately NOT via the shared viewedItems/updateProgress()
-    // path. That shared path treats viewedItems.size reaching totalItems as 100% and
-    // auto-fires the completion message (see js/export-shell.js#updateProgress); merely
-    // passing a marker's timestamp is not the same as completing it, so feeding it into
-    // that shared counter would fire completion early. viewedItems/updateProgress() here
-    // are reserved for genuine completions (ivCompleteInformationMarker), matching the
-    // MVP's own distinct "markers visited" vs. "required markers completed" state model.
+    // in ivMarkerStatus only — deliberately NOT via viewedItems/ivDisplayProgress(). Merely
+    // passing a marker's timestamp is not the same as completing it; viewedItems is
+    // reserved for genuine completions (ivMarkMarkerCompleted), matching the MVP's own
+    // distinct "markers visited" vs. "required markers completed" state model. (It's also
+    // no longer the completion-firing signal at all — see ivDisplayProgress()'s own
+    // comment for why the shared updateProgress()'s auto-complete-at-100% behavior isn't
+    // used here regardless of what feeds viewedItems.)
     function ivMarkPassedMarkersVisited(prevTime, currentTime) {
       ivMarkers.forEach(function(marker, idx) {
         var t = Number(marker.timestamp) || 0;
@@ -672,13 +672,38 @@ export function generateJS(config, instanceId) {
       if (prevIdx !== null) ivUpdateMarkerListItemState(prevIdx);
     }
 
+    // Updates the shared progress bar/text/ARIA the same way updateProgress() (shared
+    // shell) does, WITHOUT that function's own coupled auto-complete behavior. Real bug,
+    // found in production use: updateProgress() calls evaluateComponentCompletion(percent)
+    // unconditionally whenever viewedItems.size reaches totalItems (marker count) — correct
+    // for the simple "view everything = complete" model every other component uses, but
+    // wrong here, since Interactive Video has its own configurable completionRule
+    // (videoEnded / allRequiredInteractionsCompleted / videoEndedAndRequiredInteractionsCompleted).
+    // Completing every authored marker was silently satisfying that shared, rule-unaware
+    // 100% check even when completionRule was 'videoEnded' and the video hadn't ended.
+    // ivEvaluateCompletion() below is now the ONLY path that ever calls
+    // updateTrackerComplete() (which itself still calls evaluateComponentCompletion(100)
+    // correctly, once the actual configured rule is satisfied) — this function only ever
+    // updates what the learner sees, never decides completion on its own.
+    function ivDisplayProgress() {
+      if (!${Boolean(config.trackCompletion)}) return;
+      var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
+      var txt = document.getElementById('${instanceId}-completion-text');
+      var bar = document.getElementById('${instanceId}-progress-fill');
+      if (txt && bar) {
+        txt.textContent = percent + '%';
+        bar.style.width = percent + '%';
+      }
+      setProgressAccessibility(percent);
+    }
+
     // Shared by both marker types' terminal (Continue-clicked) step — only a genuine
-    // completion feeds viewedItems/updateProgress(), per ivMarkPassedMarkersVisited's own
-    // comment above.
+    // completion feeds viewedItems/ivDisplayProgress(), per ivMarkPassedMarkersVisited's
+    // own comment above.
     function ivMarkMarkerCompleted(idx) {
       ivMarkerStatus[idx] = 'completed';
       viewedItems.add(idx);
-      updateProgress();
+      ivDisplayProgress();
       ivUpdateMarkerListItemState(idx);
       ivUpdateProgressSummary();
       ivEvaluateCompletion();
@@ -902,7 +927,7 @@ export function generateJS(config, instanceId) {
       // dragged the scrubber well beyond a still-incomplete required marker).
       if (Math.abs(video.currentTime - target.t) > 0.3) video.currentTime = target.t;
       ivActiveMarkerIndex = target.idx;
-      // Deliberately not viewedItems/updateProgress() here — see ivMarkPassedMarkersVisited's
+      // Deliberately not viewedItems/ivDisplayProgress() here — see ivMarkPassedMarkersVisited's
       // comment; merely triggering (opening) a marker is not a completion.
       if (ivMarkerStatus[target.idx] !== 'completed') ivMarkerStatus[target.idx] = 'visited';
       ivUpdateMarkerListItemState(target.idx);
@@ -995,7 +1020,7 @@ export function generateJS(config, instanceId) {
         video.addEventListener('seeked', ivCheckMarkerCrossing);
         video.addEventListener('ended', function() {
           ivVideoEnded = true;
-          updateProgress();
+          ivDisplayProgress();
           ivEvaluateCompletion();
         });
       }

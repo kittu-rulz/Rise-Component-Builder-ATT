@@ -183,6 +183,54 @@ test.describe('Interactive Video: completion', () => {
     await page.click('.iv-continue-btn');
     await expect(page.locator('[id$="-completion-message"]')).toBeVisible();
   });
+
+  // Real bug, reported from production use: the shared, generic progress mechanism every
+  // simple component relies on (js/export-shell.js#updateProgress) auto-fires completion
+  // whenever viewedItems.size reaches totalItems (here, the marker count) — completely
+  // unaware of Interactive Video's own configurable completionRule. Completing every
+  // authored marker was satisfying that shared, rule-blind 100% check even when
+  // completionRule was 'videoEnded' and the video hadn't actually ended yet.
+  test('completionRule "videoEnded" does NOT fire just because every marker has been completed — only once the video actually ends', async ({ page }) => {
+    const html = compileIv({
+      completionRule: 'videoEnded',
+      completionMsg: 'All done!',
+      items: [
+        { type: 'information', timestamp: 1, title: 'Stop One', required: false, pauseVideo: true, continueButtonLabel: 'Continue', body: 'Body one.' },
+        { type: 'information', timestamp: 2, title: 'Stop Two', required: false, pauseVideo: true, continueButtonLabel: 'Continue', body: 'Body two.' }
+      ]
+    });
+    await page.setContent(html);
+    await page.evaluate(() => document.querySelector('video').play());
+    await expect(page.locator('.iv-panel-title')).toHaveText('Stop One');
+    await page.click('.iv-continue-btn');
+    await page.evaluate(() => document.querySelector('video').play());
+    await expect(page.locator('.iv-panel-title')).toHaveText('Stop Two');
+    await page.click('.iv-continue-btn');
+    // Both (of the only two) markers are now completed — the shared viewedItems/totalItems
+    // ratio just hit 100%. Completion must still NOT have fired, since the video is nowhere
+    // near its end.
+    await expect(page.locator('[id$="-completion-message"]')).toBeHidden();
+    // Now let the video actually reach its end — completion should fire only now.
+    await page.evaluate(() => { const v = document.querySelector('video'); v.currentTime = 3.9; v.play(); });
+    await expect(page.locator('[id$="-completion-message"]')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('completionRule "videoEndedAndRequiredInteractionsCompleted" does not fire from completed markers alone, nor from the video ending alone', async ({ page }) => {
+    const html = compileIv({
+      completionRule: 'videoEndedAndRequiredInteractionsCompleted',
+      completionMsg: 'Both done!',
+      items: [{ type: 'information', timestamp: 1, title: 'Required Stop', required: true, pauseVideo: true, continueButtonLabel: 'Continue', body: 'Body.' }]
+    });
+    await page.setContent(html);
+    await page.evaluate(() => document.querySelector('video').play());
+    await expect(page.locator('.iv-panel-title')).toBeVisible();
+    await page.click('.iv-continue-btn');
+    // The one and only marker is completed (viewedItems/totalItems is already 100%), but
+    // the video hasn't ended — must still not fire.
+    await expect(page.locator('[id$="-completion-message"]')).toBeHidden();
+    await page.evaluate(() => { const v = document.querySelector('video'); v.currentTime = 3.9; v.play(); });
+    await expect(page.locator('[id$="-completion-message"]')).toBeVisible({ timeout: 5000 });
+  });
 });
 
 test.describe('Interactive Video: multiple-choice markers pause safely', () => {
