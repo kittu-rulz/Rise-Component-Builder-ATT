@@ -29,8 +29,14 @@ import {
 } from './js/validation.js';
 import { resolveMediaLimits, validateMediaAccessibility } from './js/media.js';
 import { downloadProjectPackage, exportProjectPackage, importProjectPackage, isProjectPackageFile } from './js/project-package.js';
-import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, restoreMediaReferences } from './js/media-storage.js';
+import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, resolveMediaReference, restoreMediaReferences } from './js/media-storage.js';
 import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, getBuiltInTheme, normalizeComponentOverrides } from './js/themes.js';
+// app.js is the composition root and is explicitly allowed to depend on any module,
+// including one specific component's own file (docs/ARCHITECTURE.md "Important
+// dependencies") — reused here only for its MM:SS/H:MM:SS formatter, so the builder's own
+// authoring-timeline widget (Interactive Video Phase 2, below) can't silently drift from
+// what the exported component itself displays to learners.
+import { formatTimestamp as formatIvTimestamp } from './components/interactive-video.js';
 // Every catalog component is a real, isolated module (js/component-registry.js). The
 // preview/export compiler needs its renderer (generateHTML/CSS/JS) and version (embedded
 // in the completion adapter's message envelope, js/completion.js); the editor's save-time
@@ -148,6 +154,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputTimelineChronological = document.getElementById('input-timeline-chronological');
   const inputTimelineShowProgress = document.getElementById('input-timeline-show-progress');
   const inputTimelineAllowReset = document.getElementById('input-timeline-allow-reset');
+
+  const ivTimelineAuthoringGroup = document.getElementById('iv-timeline-authoring-group');
+  const ivAuthoringVideo = document.getElementById('iv-authoring-video');
+  const btnIvAddMarkerAtTime = document.getElementById('btn-iv-add-marker-at-time');
+  const ivAuthoringTimeReadout = document.getElementById('iv-authoring-time-readout');
+  const ivAuthoringTimelineTrack = document.getElementById('iv-authoring-timeline-track');
+  const ivAuthoringTimelineEmptyHint = document.getElementById('iv-authoring-timeline-empty-hint');
+
+  const ivBehaviorGroup = document.getElementById('iv-behavior-group');
+  const selectIvResumeBehaviour = document.getElementById('select-iv-resume-behaviour');
+  const selectIvCompletionRule = document.getElementById('select-iv-completion-rule');
+  const inputIvShowMarkerNav = document.getElementById('input-iv-show-marker-nav');
+  const inputIvShowProgress = document.getElementById('input-iv-show-progress');
+  const inputIvAllowRestart = document.getElementById('input-iv-allow-restart');
 
   const mcBehaviorGroup = document.getElementById('mc-behavior-group');
   const inputMcConfidenceMode = document.getElementById('input-mc-confidence-mode');
@@ -486,6 +506,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMcBehaviorVisibility(component.id);
     updateTabsBehaviorVisibility(component.id);
     updateTimelineBehaviorVisibility(component.id);
+    updateIvBehaviorVisibility(component.id);
+    updateIvTimelineAuthoringVisibility(component.id);
+    syncIvAuthoringVideoSource();
+    renderIvMarkerTimeline();
 
     // Sync block text items with defaults/reset if needed
     inputBlockTitle.value = component.title.toUpperCase();
@@ -748,6 +772,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputTimelineChronological, 'timelineChronologicalReveal');
     syncCheckbox(inputTimelineShowProgress, 'timelineShowProgress');
     syncCheckbox(inputTimelineAllowReset, 'timelineAllowReset');
+
+    selectIvResumeBehaviour.addEventListener('change', (e) => {
+      appState.config.resumeBehaviour = e.target.value;
+      updateLivePreview();
+    });
+    selectIvCompletionRule.addEventListener('change', (e) => {
+      appState.config.completionRule = e.target.value;
+      updateLivePreview();
+    });
+    syncCheckbox(inputIvShowMarkerNav, 'showMarkerNavigation');
+    syncCheckbox(inputIvShowProgress, 'showVideoProgress');
+    syncCheckbox(inputIvAllowRestart, 'allowRestart');
   }
 
   // ==========================================
@@ -805,6 +841,96 @@ document.addEventListener('DOMContentLoaded', async () => {
   // P11 Requirement 2: keyboard-accessible bulk expand/collapse near the item list.
   btnExpandAllItems.addEventListener('click', () => schemaItemEditor.expandAll());
   btnCollapseAllItems.addEventListener('click', () => schemaItemEditor.collapseAll());
+
+  // ==========================================
+  // INTERACTIVE VIDEO: AUTHORING TIMELINE (Phase 2)
+  // ==========================================
+  // Only relevant while Interactive Video is selected; a plain builder-chrome widget
+  // (styles.css), never part of any exported component output. Reuses the video element
+  // directly (not the sandboxed Live Preview iframe) because reading currentTime/duration
+  // and seeking on click both need real, unrestricted DOM access to the element itself.
+  let ivAuthoringLastSrc = '';
+
+  function syncIvAuthoringVideoSource() {
+    if (!ivAuthoringVideo || appState.selectedComponent?.id !== 'interactive-video') return;
+    const config = appState.config;
+    const raw = config.videoSourceType === 'url' ? config.videoUrl : config.videoMediaId;
+    const resolved = resolveMediaReference(raw);
+    // Guards against reloading (and interrupting playback of) the exact same source on
+    // every keystroke elsewhere in the form — updateLivePreview() runs on every config
+    // change, including ones unrelated to the video source itself. An empty/unresolved
+    // value (e.g. mid-typing an external URL, or no source configured) intentionally
+    // leaves whatever is already loaded alone rather than flashing to a blank player.
+    if (!resolved || resolved === ivAuthoringLastSrc) return;
+    ivAuthoringLastSrc = resolved;
+    ivAuthoringVideo.src = resolved;
+    appState.config.videoDurationSeconds = undefined;
+  }
+
+  function updateIvTimeReadout() {
+    if (!ivAuthoringTimeReadout) return;
+    const current = formatIvTimestamp(ivAuthoringVideo.currentTime || 0);
+    const total = Number.isFinite(ivAuthoringVideo.duration) ? formatIvTimestamp(ivAuthoringVideo.duration) : '--:--';
+    ivAuthoringTimeReadout.textContent = `${current} / ${total}`;
+  }
+
+  function renderIvMarkerTimeline() {
+    if (!ivAuthoringTimelineTrack || appState.selectedComponent?.id !== 'interactive-video') return;
+    const items = Array.isArray(appState.config.items) ? appState.config.items : [];
+    const duration = Number(appState.config.videoDurationSeconds);
+    const hasDuration = Number.isFinite(duration) && duration > 0;
+    ivAuthoringTimelineTrack.innerHTML = '';
+    ivAuthoringTimelineEmptyHint.hidden = hasDuration && items.length > 0;
+    if (!hasDuration) return;
+
+    items.forEach((item, index) => {
+      const isMc = item.type === 'multipleChoice';
+      const pct = Math.max(0, Math.min(100, ((Number(item.timestamp) || 0) / duration) * 100));
+      const tick = document.createElement('button');
+      tick.type = 'button';
+      tick.className = `iv-timeline-tick ${isMc ? 'iv-timeline-tick-mc' : 'iv-timeline-tick-info'}`;
+      tick.style.left = `${pct}%`;
+      tick.dataset.idx = String(index);
+      // Text content, not just color, tells the two marker types apart (WCAG 1.4.1) —
+      // the marker list below uses the same convention (icon + visible type label).
+      tick.textContent = isMc ? '?' : 'i';
+      const timeLabel = formatIvTimestamp(item.timestamp);
+      tick.title = `${timeLabel} — ${item.title || 'Untitled marker'}`;
+      tick.setAttribute('aria-label', `${isMc ? 'Multiple Choice' : 'Information'} marker at ${timeLabel}: ${item.title || 'Untitled marker'}. Activate to jump the preview video here.`);
+      tick.addEventListener('click', () => {
+        if (Number.isFinite(ivAuthoringVideo.duration)) ivAuthoringVideo.currentTime = Number(item.timestamp) || 0;
+        const card = dynamicItemsContainer.querySelector(`.dynamic-item-card[data-index="${index}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          (card.querySelector('.item-collapse-btn') || card).focus();
+        }
+      });
+      ivAuthoringTimelineTrack.appendChild(tick);
+    });
+  }
+
+  if (ivAuthoringVideo) {
+    ivAuthoringVideo.addEventListener('loadedmetadata', () => {
+      appState.config.videoDurationSeconds = Number.isFinite(ivAuthoringVideo.duration) ? ivAuthoringVideo.duration : undefined;
+      updateIvTimeReadout();
+      renderIvMarkerTimeline();
+      refreshPreflightBadge();
+    });
+    ivAuthoringVideo.addEventListener('timeupdate', updateIvTimeReadout);
+  }
+
+  if (btnIvAddMarkerAtTime) {
+    btnIvAddMarkerAtTime.addEventListener('click', () => {
+      if (!appState.selectedComponent || appState.selectedComponent.id !== 'interactive-video') return;
+      const schema = appState.selectedComponent.editorSchema;
+      addEditorItem(appState, schema);
+      const newItem = appState.config.items[appState.config.items.length - 1];
+      newItem.timestamp = Math.max(0, Math.round(ivAuthoringVideo.currentTime || 0));
+      renderDynamicItems();
+      renderIvMarkerTimeline();
+      updateLivePreview();
+    });
+  }
 
   // ==========================================
   // DEVICE VIEWPORT CONTROLS
@@ -1009,6 +1135,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     timelineBehaviorGroup.hidden = componentId !== 'vertical-timeline';
   }
 
+  // Same pattern again — ivX config keys only affect Interactive Video
+  // (components/interactive-video.js, registry id "interactive-video").
+  function updateIvBehaviorVisibility(componentId) {
+    ivBehaviorGroup.hidden = componentId !== 'interactive-video';
+  }
+
+  function updateIvTimelineAuthoringVisibility(componentId) {
+    ivTimelineAuthoringGroup.hidden = componentId !== 'interactive-video';
+  }
+
   function syncEditorControls() {
     syncResolvedThemeConfig();
     const config = appState.config;
@@ -1065,6 +1201,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputTimelineShowProgress.checked = config.timelineShowProgress === true;
     inputTimelineAllowReset.checked = config.timelineAllowReset === true;
     updateTimelineBehaviorVisibility(appState.selectedComponent.id);
+    selectIvResumeBehaviour.value = config.resumeBehaviour || 'manual';
+    selectIvCompletionRule.value = config.completionRule || 'videoEnded';
+    inputIvShowMarkerNav.checked = config.showMarkerNavigation !== false;
+    inputIvShowProgress.checked = config.showVideoProgress !== false;
+    inputIvAllowRestart.checked = config.allowRestart === true;
+    updateIvBehaviorVisibility(appState.selectedComponent.id);
+    updateIvTimelineAuthoringVisibility(appState.selectedComponent.id);
+    syncIvAuthoringVideoSource();
+    renderIvMarkerTimeline();
     inputTrackCompletion.checked = config.trackCompletion;
     inputCompletionMsg.value = config.completionMsg;
     activeComponentTitle.innerText = appState.selectedComponent.title;
@@ -1835,6 +1980,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     scheduleDraftSave();
     refreshPreflightBadge();
     refreshItemIssueBadges();
+    syncIvAuthoringVideoSource();
+    renderIvMarkerTimeline();
     // P08: every call here follows a meaningful project-data change (config/theme/
     // overrides) — never a transient UI-only change like preview device mode or panel
     // state, which don't call updateLivePreview() at all. Load flows (applyProject,

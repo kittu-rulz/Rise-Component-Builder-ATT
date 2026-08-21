@@ -22,7 +22,7 @@ function buildAppState(componentId, currentProjectId) {
 }
 
 describe('export determinism', () => {
-  test.each(['accordion', 'multiple-choice', 'image-gallery'])('compiling %s twice from the same state yields byte-identical output', componentId => {
+  test.each(['accordion', 'multiple-choice', 'image-gallery', 'interactive-video'])('compiling %s twice from the same state yields byte-identical output', componentId => {
     const appState = buildAppState(componentId, 'fixture-project');
     const first = generateIframeContent(appState, componentRegistry, toRgba);
     const second = generateIframeContent(buildAppState(componentId, 'fixture-project'), componentRegistry, toRgba);
@@ -43,7 +43,7 @@ describe('export determinism', () => {
 });
 
 describe('multiple instances do not collide', () => {
-  test.each(['accordion', 'multiple-choice', 'multiple-select', 'audio-player', 'image-gallery'])(
+  test.each(['accordion', 'multiple-choice', 'multiple-select', 'audio-player', 'image-gallery', 'interactive-video'])(
     'two %s exports pasted onto the same page share no duplicate ids and no leaked globals',
     componentId => {
       const htmlA = generateIframeContent(buildAppState(componentId, 'project-a'), componentRegistry, toRgba);

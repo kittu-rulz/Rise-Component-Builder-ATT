@@ -32,7 +32,7 @@ function ruleIds(issues) { return issues.map(item => item.ruleId); }
 function bySeverity(issues, severity) { return issues.filter(item => item.severity === severity); }
 
 describe('sanity: default configs produce no false-positive blocking issues', () => {
-  test.each(['accordion', 'multiple-choice', 'multiple-select', 'hotspots', 'audio-player', 'sorting-activity', 'fill-blank'])(
+  test.each(['accordion', 'multiple-choice', 'multiple-select', 'hotspots', 'audio-player', 'sorting-activity', 'fill-blank', 'interactive-video'])(
     '%s default config has zero blocking issues', componentId => {
       const config = buildConfig(componentId);
       const issues = issuesFor(componentId, config);

@@ -19,6 +19,7 @@ import * as pricingComparison from '../components/pricing-comparison.js';
 import * as audioPlayer from '../components/audio-player.js';
 import * as videoFrame from '../components/video-frame.js';
 import * as imageGallery from '../components/image-gallery.js';
+import * as interactiveVideo from '../components/interactive-video.js';
 
 export const CATEGORIES = [
   { id: 'interactive', name: 'Interactive' },
@@ -27,7 +28,8 @@ export const CATEGORIES = [
   { id: 'timelines', name: 'Timelines' },
   { id: 'process', name: 'Process Flows' },
   { id: 'cards', name: 'Cards & Layouts' },
-  { id: 'media', name: 'Media Blocks' }
+  { id: 'media', name: 'Media Blocks' },
+  { id: 'advanced', name: 'Advanced Interactions' }
 ];
 
 const MEDIA_FIELD_TYPES = ['image', 'audio', 'video'];
@@ -183,6 +185,12 @@ export const COMPONENT_REGISTRY = [
     description: 'Responsive photo gallery with beautiful modal popups and image detail descriptions.',
     keywords: ['gallery', 'photos', 'modal', 'grid'],
     icon: '<svg width="24" height="24" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><g><path d="M73 28 12 28C8.7 28 6 30.7 6 34L6 74C6 77.3 8.7 80 12 80L73 80C76.3 80 79 77.3 79 74L79 34C79 30.7 76.3 28 73 28ZM41.9 78 16.8 78 29.3 63.5 41.9 78ZM39.7 72.5 53 57.1 71.2 78 44.5 78 39.7 72.5ZM77 74C77 76 75.6 77.6 73.7 77.9L73.8 77.8 53 54 38.4 71 29.3 60.4 14.1 78 12 78C9.8 78 8 76.2 8 74L8 34C8 31.8 9.8 30 12 30L73 30C75.2 30 77 31.8 77 34L77 74Z"/><path d="M84 17 16 17 16 19 84 19C86.2 19 88 20.8 88 23L88 71 90 71 90 23C90 19.7 87.3 17 84 17Z"/><path d="M28 36.7C24.3 36.7 21.3 39.7 21.3 43.4 21.3 47.1 24.3 50.1 28 50.1 31.7 50.1 34.7 47.1 34.7 43.4 34.7 39.7 31.7 36.7 28 36.7ZM28 48C25.4 48 23.3 45.9 23.3 43.3 23.3 40.7 25.4 38.6 28 38.6 30.6 38.6 32.7 40.7 32.7 43.3 32.7 45.9 30.6 48 28 48Z" fill="#009FDB"/></g></svg>'
+  }),
+  fromModule(interactiveVideo, {
+    description: 'Video with timestamp-based information and multiple-choice markers. Pauses at each marker, records learner progress, and resumes on your terms.',
+    keywords: ['video', 'interactive video', 'markers', 'timeline', 'knowledge check', 'pause'],
+    status: 'beta',
+    icon: '<svg width="24" height="24" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><g><path d="M84 20 12 20C8.7 20 6 22.7 6 26L6 62C6 65.3 8.7 68 12 68L84 68C87.3 68 90 65.3 90 62L90 26C90 22.7 87.3 20 84 20ZM88 62C88 64.2 86.2 66 84 66L12 66C9.8 66 8 64.2 8 62L8 26C8 23.8 9.8 22 12 22L84 22C86.2 22 88 23.8 88 26L88 62Z"/><path d="M40 32 40 56 62 44Z" fill="#009FDB"/><rect x="10" y="76" width="76" height="2"/><circle cx="30" cy="77" r="3" fill="#009FDB"/><circle cx="58" cy="77" r="3"/></g></svg>'
   })
 ];
 

@@ -53,7 +53,8 @@ const CATEGORY = Object.freeze({
   GENERAL: 'general',
   KNOWLEDGE: 'knowledge',
   MEDIA: 'media',
-  HOTSPOTS: 'hotspots'
+  HOTSPOTS: 'hotspots',
+  INTERACTIVE_VIDEO: 'interactive-video'
 });
 
 // Short, static, human-readable label for each rule — the "title" half of the result
@@ -96,7 +97,13 @@ const RULE_TITLES = Object.freeze({
   'hotspot-missing-image': 'No background image set',
   'hotspot-out-of-range-position': 'Hotspot position out of range',
   'hotspot-overlapping': 'Hotspots may overlap',
-  'hotspot-keyboard-accessibility': 'Hotspots share the same label'
+  'hotspot-keyboard-accessibility': 'Hotspots share the same label',
+  'interactive-video-near-duplicate-timestamps': 'Markers are very close together',
+  'interactive-video-marker-near-edge': 'Marker is close to the start or end of the video',
+  'interactive-video-marker-outside-duration': 'Marker timestamp is past the video duration',
+  'interactive-video-required-never-pauses': 'Required marker never pauses the video',
+  'interactive-video-non-direct-video-url': 'External video URL is a hosting page, not a direct file',
+  'interactive-video-uploaded-media-export-format': 'Uploaded video/captions need the Web Package ZIP export format'
 });
 
 function issue(ruleId, severity, category, explanation, extra = {}) {
@@ -756,6 +763,148 @@ registerValidationRule({
   appliesTo: ({ componentId }) => componentId === 'hotspots',
   check: ({ componentId, config }) => checkHotspotRules(componentId, config)
 });
+registerValidationRule({
+  id: 'interactive-video-timestamp-rules',
+  appliesTo: ({ componentId }) => componentId === 'interactive-video',
+  check: ({ componentId, config }) => checkInteractiveVideoTimestampRules(componentId, config)
+});
+registerValidationRule({
+  id: 'interactive-video-external-url-rules',
+  appliesTo: ({ componentId }) => componentId === 'interactive-video',
+  check: ({ componentId, config }) => checkInteractiveVideoExternalUrlRules(componentId, config)
+});
+registerValidationRule({
+  id: 'interactive-video-uploaded-media-export-format-rule',
+  appliesTo: ({ componentId }) => componentId === 'interactive-video',
+  check: ({ componentId, config }) => checkInteractiveVideoUploadedMediaExportFormat(componentId, config)
+});
+
+// Timestamps within this many seconds of each other are flagged as "hard to trigger
+// independently" — during real playback (Phase 3/4) two markers this close together risk
+// the first marker's pause/resume immediately re-crossing into the second. Matches
+// HOTSPOT_OVERLAP_THRESHOLD's role: a pragmatic authoring heuristic, not a hard technical
+// limit — see docs/COMPONENT-SCHEMA.md "Interactive Video timeline validation".
+const IV_NEAR_DUPLICATE_SECONDS = 1;
+const IV_EDGE_PROXIMITY_SECONDS = 2;
+
+// config.videoDurationSeconds is set by the builder's own authoring-timeline widget
+// (app.js) once the author's preview video successfully loads metadata — a runtime fact
+// with nowhere else to live in the config, the same reasoning js/dom-measurement.js's
+// clipping-risk rules already establish for "can't derive this from config alone." Unlike
+// clipping-risk, this doesn't need a whole async measurement channel: the value is cheap
+// to capture once and persists with the project, so importing a project that was never
+// reopened in a browser (or was authored before Phase 2) simply means these two rules
+// have nothing to check yet — not an error, see the Number.isFinite guards below.
+function checkInteractiveVideoTimestampRules(componentId, config) {
+  if (componentId !== 'interactive-video') return [];
+  const items = Array.isArray(config.items) ? config.items : [];
+  const issues = [];
+  const duration = Number(config.videoDurationSeconds);
+  const hasDuration = Number.isFinite(duration) && duration > 0;
+
+  const timestamps = [];
+  items.forEach((item, itemIndex) => {
+    const t = Number(item.timestamp);
+    if (!Number.isFinite(t)) return; // covered by general-required-field / the component's own validate()
+    timestamps.push({ itemIndex, t });
+
+    if (t < IV_EDGE_PROXIMITY_SECONDS) {
+      issues.push(issue('interactive-video-marker-near-edge', SEVERITY.WARNING, CATEGORY.INTERACTIVE_VIDEO,
+        `Marker ${itemIndex + 1} is at ${t}s — very close to the start of the video, which can be easy to miss or feel abrupt.`, { fieldId: 'timestamp', itemIndex }));
+    } else if (hasDuration && duration - t < IV_EDGE_PROXIMITY_SECONDS && t <= duration) {
+      issues.push(issue('interactive-video-marker-near-edge', SEVERITY.WARNING, CATEGORY.INTERACTIVE_VIDEO,
+        `Marker ${itemIndex + 1} is at ${t}s — very close to the end of the ${Math.round(duration)}s video.`, { fieldId: 'timestamp', itemIndex }));
+    }
+
+    if (hasDuration && t > duration) {
+      issues.push(issue('interactive-video-marker-outside-duration',
+        item.required ? SEVERITY.BLOCKING : SEVERITY.WARNING, CATEGORY.INTERACTIVE_VIDEO,
+        `Marker ${itemIndex + 1} is set at ${Math.round(t)}s, past the video's ${Math.round(duration)}s duration, so it can never trigger.${item.required ? ' This marker is Required, so the video could never be completed.' : ''}`,
+        { fieldId: 'timestamp', itemIndex }));
+    }
+  });
+
+  for (let i = 0; i < timestamps.length; i += 1) {
+    for (let j = i + 1; j < timestamps.length; j += 1) {
+      if (Math.abs(timestamps[i].t - timestamps[j].t) < IV_NEAR_DUPLICATE_SECONDS) {
+        issues.push(issue('interactive-video-near-duplicate-timestamps', SEVERITY.WARNING, CATEGORY.INTERACTIVE_VIDEO,
+          `Marker ${timestamps[i].itemIndex + 1} and Marker ${timestamps[j].itemIndex + 1} are within ${IV_NEAR_DUPLICATE_SECONDS}s of each other (${timestamps[i].t}s and ${timestamps[j].t}s) — they may be hard to trigger independently during playback.`,
+          { fieldId: 'timestamp', itemIndex: timestamps[j].itemIndex }));
+      }
+    }
+  }
+
+  // A Required marker only ever shows its interaction (and so can only ever be completed)
+  // by pausing the video first via automatic crossing-based triggering —
+  // components/interactive-video.js's own trigger logic never opens a marker's panel
+  // unless pauseVideo is on during normal playback. Required + Pause Video off is still
+  // Warning, not Blocking: the marker-nav list (shipped Phase 5, ivJumpToMarker) lets a
+  // learner deliberately click any not-yet-completed marker to open its panel regardless
+  // of pauseVideo, so this combination is only truly unreachable when showMarkerNavigation
+  // is also off — a narrower condition this heuristic doesn't currently distinguish.
+  items.forEach((item, itemIndex) => {
+    if (item.required && item.pauseVideo === false) {
+      issues.push(issue('interactive-video-required-never-pauses', SEVERITY.WARNING, CATEGORY.INTERACTIVE_VIDEO,
+        `Marker ${itemIndex + 1} is Required but "Pause Video At This Marker" is off — it will never show its interaction during automatic playback. It can still be reached by clicking it in the marker list, if that's shown to learners.`,
+        { fieldId: 'pauseVideo', itemIndex }));
+    }
+  });
+
+  return issues;
+}
+
+// A native <video> element cannot play a video-hosting *page* URL (YouTube/Vimeo watch
+// pages serve an HTML player, not a direct media file) — pointing videoUrl at one produces
+// a completely non-functional export (no playback at all), not a degraded one, which is
+// exactly the "output would be broken, empty, or fundamentally unusable" bar this file's
+// own header comment sets for Blocking. Scoped to the small set of hosts an author is
+// most likely to accidentally paste (the exact ones docs/INTERACTIVE-VIDEO.md and the
+// field's own label already warn about) rather than attempting to enumerate every video
+// hosting service that exists — a narrower, well-justified list beats a guessed-at broad
+// one (see docs/VALIDATION-RULES.md "Rules requiring manual judgment").
+const IV_NON_DIRECT_VIDEO_HOSTS = [
+  'youtube.com', 'youtube-nocookie.com', 'youtu.be', 'vimeo.com'
+];
+
+function isNonDirectVideoHost(hostname) {
+  const lower = hostname.toLowerCase();
+  return IV_NON_DIRECT_VIDEO_HOSTS.some(host => lower === host || lower.endsWith(`.${host}`));
+}
+
+function checkInteractiveVideoExternalUrlRules(componentId, config) {
+  if (componentId !== 'interactive-video') return [];
+  if (config.videoSourceType !== 'url' || !config.videoUrl) return [];
+  let hostname;
+  try {
+    hostname = new URL(config.videoUrl).hostname;
+  } catch {
+    return []; // malformed/unparseable URL — general-invalid-url already covers this field
+  }
+  if (!isNonDirectVideoHost(hostname)) return [];
+  return [issue('interactive-video-non-direct-video-url', SEVERITY.BLOCKING, CATEGORY.INTERACTIVE_VIDEO,
+    `The video URL points to ${hostname}, a video hosting page, not a direct video file — a native <video> element cannot play it, so the video would never appear at all. Use a direct .mp4/.webm file URL, or upload the video instead.`,
+    { fieldId: 'videoUrl' })];
+}
+
+// Pre-existing, app-wide limitation (docs/INTERACTIVE-VIDEO.md "Media-storage and export
+// behavior"): prepareMediaExport() (js/export.js) never inlines video/audio/captions, so
+// an uploaded reference becomes a bare assets/<filename> relative path in the Iframe
+// Snippet and HTML Block Fragment export formats — a path Rise has nowhere to resolve
+// once pasted, so it 404s. This doesn't block export (an author may still be mid-draft,
+// or may already know to use Web Package ZIP), but it's a real, demonstrable defect the
+// author should know about before publishing with the wrong format — the same bar
+// media-oversized-file/media-insecure-http-url already use for Warning, not Blocking.
+function checkInteractiveVideoUploadedMediaExportFormat(componentId, config) {
+  if (componentId !== 'interactive-video') return [];
+  const hasUploadedVideo = config.videoSourceType === 'upload' && isMediaReference(config.videoMediaId);
+  const hasUploadedCaptions = isMediaReference(config.captionsUrl);
+  if (!hasUploadedVideo && !hasUploadedCaptions) return [];
+  const what = hasUploadedVideo && hasUploadedCaptions ? 'uploaded video and captions file'
+    : hasUploadedVideo ? 'uploaded video' : 'uploaded captions file';
+  return [issue('interactive-video-uploaded-media-export-format', SEVERITY.WARNING, CATEGORY.INTERACTIVE_VIDEO,
+    `This component uses an ${what}. The Iframe Snippet and HTML Block Fragment export formats cannot deliver that file alongside the pasted snippet — it will 404 once pasted into Rise. Export as a Web Package ZIP instead, extract it, host it externally, and iframe-embed that hosted URL in Rise.`,
+    { fieldId: hasUploadedVideo ? 'videoMediaId' : 'captionsUrl' })];
+}
 
 // ---------------------------------------------------------------------------
 // Orchestration

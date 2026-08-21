@@ -326,6 +326,13 @@ export function sanitizePreviewConfig(config, componentId) {
     if (item.y !== undefined) safeItem.y = String(sanitizeCSSNumber(item.y, { minimum: 0, maximum: 100, fallback: 50 }));
     if (item.accentColor !== undefined) safeItem.accentColor = sanitizeCSSColor(item.accentColor, '#2563EB');
     if (item.durationMinutes !== undefined) safeItem.durationMinutes = sanitizeCSSNumber(item.durationMinutes, { minimum: 0, maximum: 999, fallback: 0 });
+    // interactive-video's body/question are richtext fields rendered client-side via
+    // innerHTML (components/interactive-video.js's generateJS, not generateHTML), so —
+    // unlike that component's plain-text marker fields, escaped once at their own point of
+    // client-side insertion instead — these two must be sanitized here: sanitizeRichText is
+    // a compile-time-only function, unavailable inside the exported script itself.
+    if (item.body !== undefined) safeItem.body = sanitizeRichText(item.body);
+    if (item.question !== undefined) safeItem.question = sanitizeRichText(item.question);
     return safeItem;
   });
   result.backgroundImage = sanitizeURL(result.backgroundImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
@@ -337,5 +344,17 @@ export function sanitizePreviewConfig(config, componentId) {
   // Shared across every component (js/editor-schemas.js's sharedComponentFields) — a
   // purely decorative block background, unrelated to any component-specific image field.
   result.blockBackgroundImage = sanitizeURL(result.blockBackgroundImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
+  if (componentId === 'interactive-video') {
+    result.title = String(config.title ?? '');
+    result.introduction = sanitizeRichText(config.introduction);
+    result.videoMediaId = sanitizeURL(config.videoMediaId, { allowBlob: true, allowRelative: true });
+    result.videoUrl = sanitizeURL(config.videoUrl, { allowRelative: true });
+    result.posterImage = sanitizeURL(config.posterImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
+    result.posterAltText = String(config.posterAltText || '');
+    result.posterDecorative = Boolean(config.posterDecorative);
+    result.captionsUrl = sanitizeURL(config.captionsUrl, { allowBlob: true, allowRelative: true });
+    result.captionsLabel = String(config.captionsLabel || '');
+    result.transcript = sanitizeRichText(config.transcript);
+  }
   return result;
 }

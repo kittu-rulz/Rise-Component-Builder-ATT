@@ -30,8 +30,8 @@ Every uploaded file passes through these checks, in order, before it is ever sto
 Every stored record carries: `name`, `sanitizedName`, `mimeType`, `size`, `duration` (audio/video), `dimensions` (`{ width, height }`, images only — the final, post-downscale dimensions if resized), `kind`, `createdAt`, `resized`, `contentHash`, and four author-editable fields: `altText`, `decorative`, `caption`, `transcript`. Whether each is *required* is enforced by `js/validation.js`'s preflight engine (`docs/VALIDATION-RULES.md`), not by the media pipeline itself:
 
 - **Alternative text**: required unless the image is explicitly marked decorative (`general-missing-alt-text`, Warning severity).
-- **Caption field**: video's `captionsUrl` — wires a real `<track kind="captions">` element into the exported `<video>` when present (`components/video-frame.js`).
-- **Transcript field**: present on both Audio Player and Video Player items, rendered as a `<details>` disclosure in the exported markup; recommended (not required) via preflight when absent.
+- **Caption field**: video's `captionsUrl` — wires a real `<track kind="captions">` element into the exported `<video>` when present (`components/video-frame.js`, and `components/interactive-video.js`, which reuses the identical field name/convention rather than inventing new terminology).
+- **Transcript field**: present on Audio Player, Video Player, and Interactive Video, rendered as a `<details>` disclosure in the exported markup; recommended (not required) via preflight when absent.
 
 ## Clear local-vs-external indication
 

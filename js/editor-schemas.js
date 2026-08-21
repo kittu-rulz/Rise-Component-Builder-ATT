@@ -187,6 +187,66 @@ export const editorSchemas = {
       field('decorative', 'Image Is Decorative', 'checkbox', { default: false }),
       field('imageFit', 'Image Fit', 'select', { default: 'cover', options: [{ value: 'cover', label: 'Cover' }, { value: 'contain', label: 'Contain' }] })
     ]
+  },
+  'interactive-video': {
+    // The video itself (source/poster/captions/transcript) is component-level content,
+    // matching video-frame's field naming exactly (posterImage/captionsUrl/transcript,
+    // not the "-MediaId" suffix the initial proposal used) — componentFields is the
+    // established place for "content the author configures once," same as hotspots'
+    // background image. Interaction markers are the dynamic items list; a video with
+    // zero markers is a valid, complete configuration (minItems: 0) — the video itself,
+    // not the marker count, is what validate() actually requires.
+    itemLabel: 'Interaction Marker', minItems: 0, componentLabel: 'Video Details',
+    componentFields: [
+      field('title', 'Video Block Title', 'text', { required: true, default: 'Interactive Video', maxLength: 120 }),
+      field('introduction', 'Introduction (Optional)', 'richtext', { required: false, default: '' }),
+      field('videoSourceType', 'Video Source', 'select', {
+        // Defaults mirror components/interactive-video.js#defaultConfig exactly, not just
+        // "a" valid default — app.js#loadComponentToEditor applies componentFields'
+        // schema defaults on top of defaultConfig immediately after setting it (the same
+        // ordering every componentFields-using component goes through), so a mismatch
+        // here would silently clobber a real starting value back to empty the moment the
+        // component is freshly selected from the catalog.
+        default: 'url', options: [{ value: 'upload', label: 'Uploaded video' }, { value: 'url', label: 'External direct video URL' }]
+      }),
+      field('videoMediaId', 'Upload Video', 'video', { required: false, default: '' }),
+      field('videoUrl', 'External Video URL (direct .mp4/.webm file, not a YouTube/Vimeo page)', 'url', { required: false, default: 'https://www.w3schools.com/html/mov_bbb.mp4' }),
+      field('posterImage', 'Poster Image (Optional)', 'image', { required: false, default: '', preferredDimensions: '1280 × 720 px (16:9)' }),
+      field('posterAltText', 'Poster Alternative Text', 'textarea', {
+        required: false, default: '', warningWhen: 'posterImage', warningUnless: 'posterDecorative',
+        warningMessage: 'Add poster alternative text or mark it decorative.'
+      }),
+      field('posterDecorative', 'Poster Is Decorative', 'checkbox', { default: false }),
+      field('captionsUrl', 'Captions (WebVTT)', 'url', { required: false, default: '', uploadKind: 'captions' }),
+      field('captionsLabel', 'Captions Label', 'text', { required: false, default: 'English', maxLength: 40 }),
+      field('transcript', 'Transcript (Optional)', 'richtext', { required: false, default: '' })
+    ],
+    itemFields: [
+      field('type', 'Interaction Type', 'select', {
+        required: true, default: 'information', options: [{ value: 'information', label: 'Information' }, { value: 'multipleChoice', label: 'Multiple Choice' }]
+      }),
+      field('timestamp', 'Timestamp (seconds)', 'number', { required: true, default: 0, min: 0, step: 1 }),
+      field('title', 'Marker Title', 'text', { required: true, default: 'New Marker', maxLength: 80 }),
+      field('required', 'Required (learner must complete this to finish the video)', 'checkbox', { default: false }),
+      field('pauseVideo', 'Pause Video At This Marker', 'checkbox', { default: true }),
+      field('continueButtonLabel', 'Continue Button Label', 'text', { required: false, default: 'Continue', maxLength: 30 }),
+      field('body', 'Information Body (Information type only)', 'richtext', { required: false, default: '' }),
+      field('question', 'Question (Multiple Choice type only)', 'richtext', { required: false, default: '' }),
+      field('answer1Label', 'Answer 1 (Multiple Choice type only)', 'text', { required: false, default: '', maxLength: 200 }),
+      field('answer2Label', 'Answer 2 (Multiple Choice type only)', 'text', { required: false, default: '', maxLength: 200 }),
+      field('answer3Label', 'Answer 3 (Multiple Choice type only, optional)', 'text', { required: false, default: '', maxLength: 200 }),
+      field('answer4Label', 'Answer 4 (Multiple Choice type only, optional)', 'text', { required: false, default: '', maxLength: 200 }),
+      field('correctAnswerIndex', 'Correct Answer (Multiple Choice type only)', 'select', { default: '1', options: ['1', '2', '3', '4'] }),
+      field('answer1Feedback', 'Feedback for Answer 1 (Optional)', 'textarea', { required: false, default: '' }),
+      field('answer2Feedback', 'Feedback for Answer 2 (Optional)', 'textarea', { required: false, default: '' }),
+      field('answer3Feedback', 'Feedback for Answer 3 (Optional)', 'textarea', { required: false, default: '' }),
+      field('answer4Feedback', 'Feedback for Answer 4 (Optional)', 'textarea', { required: false, default: '' }),
+      field('generalCorrectFeedback', 'General Correct Feedback (Multiple Choice type only)', 'textarea', { required: false, default: '' }),
+      field('generalIncorrectFeedback', 'General Incorrect Feedback (Multiple Choice type only)', 'textarea', { required: false, default: '' }),
+      field('hint', 'Hint (Multiple Choice type only, optional)', 'textarea', { required: false, default: '' }),
+      field('maxAttempts', 'Maximum Attempts (Multiple Choice type only)', 'number', { required: false, default: 1, min: 1, max: 5, step: 1 }),
+      field('showCorrectAfterFinal', 'Reveal Correct Answer After Final Attempt (Multiple Choice type only)', 'checkbox', { default: false })
+    ]
   }
 };
 

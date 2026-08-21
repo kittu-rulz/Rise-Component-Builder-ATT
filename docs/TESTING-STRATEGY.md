@@ -70,7 +70,7 @@ Firefox and WebKit don't support Playwright's `clipboard-read`/`clipboard-write`
 
 V8 coverage gates (`vitest.config.js`) apply to:
 
-- **Baseline leaf modules:** `js/state.js`, `js/storage.js`, `js/themes.js`, `js/utilities.js`, `components/*.js` (20 registered component generators).
+- **Baseline leaf modules:** `js/state.js`, `js/storage.js`, `js/themes.js`, `js/utilities.js`, `components/*.js` (21 registered component generators).
 - **Schemas/registry:** `js/component-registry.js`, `js/editor-schemas.js`, `js/catalog.js` — per-file thresholds raised to 85/75/85/85 for the registry (validation-heavy, throws on malformed entries) and editor schemas.
 - **Validators/sanitizers:** `js/validation.js`, `js/validation-utils.js`, `js/field-validation.js` — per-file thresholds raised to 85/75/85/85.
 - **Exporters:** `js/export.js`, `js/export-shell.js`, `js/zip.js`, `js/project-package.js` — per-file thresholds raised to 80–85% (export.js/export-shell.js at 80/70/80/80, zip.js at 85/75/85/85, since zip.js is a hand-written, dependency-free format implementation with no room for silent corruption).

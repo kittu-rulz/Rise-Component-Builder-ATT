@@ -43,7 +43,12 @@ const GROUPS = {
   'pricing-comparison': { components: ['pricing-comparison'], markers: ['pricing-table-container', 'pricing-card-item'] },
   'audio-player': { components: ['audio-player'], markers: ['audio-player-block', 'audio-scrub-bar', 'toggleAudioPlayback'] },
   'video-frame': { components: ['video-frame'], markers: ['video-player-block', 'video-overlay-play', 'toggleVideoPlayback'] },
-  'image-gallery': { components: ['image-gallery'], markers: ['gallery-grid', 'lightbox-overlay', 'openGalleryLightbox'] }
+  'image-gallery': { components: ['image-gallery'], markers: ['gallery-grid', 'lightbox-overlay', 'openGalleryLightbox'] },
+  // iv-marker-nav is intentionally excluded here — it's conditional on having at least
+  // one authored marker, and this test compiles each component's bare defaultConfig
+  // (zero markers for a fresh Interactive Video), so only always-present markers belong
+  // in this cross-check list.
+  'interactive-video': { components: ['interactive-video'], markers: ['iv-block', 'iv-video-wrapper', 'iv-title'] }
 };
 
 const groupFor = componentId => Object.values(GROUPS).find(group => group.components.includes(componentId));

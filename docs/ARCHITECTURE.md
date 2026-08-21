@@ -34,13 +34,13 @@ v2/
 │   ├── media-upload.js         Reusable browse/drop/preview upload control             → §3/§9 boundary
 │   ├── utilities.js            Escaping, sanitization, URL/Blob helpers                → §7/§10 boundary
 │   └── toast.js                Reusable toast notifications
-├── components/                 All 20 components: id/name/category/defaultConfig/
+├── components/                 All 21 components: id/name/category/defaultConfig/
 │   │                            editorSchema/generateHTML/generateCSS/generateJS/validate → §1 boundary
 │   ├── accordion.js, tabs.js, flip-cards.js, hotspots.js, button-list.js, menu-list.js,
 │   │   multiple-choice.js, multiple-select.js, sorting-activity.js, fill-blank.js,
 │   │   vertical-timeline.js, horizontal-timeline.js, process-flow.js, scenario.js,
 │   │   profile-cards.js, info-grid.js, pricing-comparison.js, audio-player.js,
-│   │   video-frame.js, image-gallery.js
+│   │   video-frame.js, image-gallery.js, interactive-video.js
 ├── docs/                        Canonical documentation (this file and its siblings)
 └── tests/
     ├── fixtures/                Reusable project/theme/content fixtures
@@ -117,7 +117,7 @@ Each boundary below names the file(s) that own it, what may cross the boundary, 
 
 **Owns:** `js/component-registry.js` (catalog metadata: description, keywords, version, icon, status, media/accessibility/completion flags) + `components/*.js` (behavior: `id`, `name`, `category`, `defaultConfig`, `editorSchema`, `generateHTML`, `generateCSS`, `generateJS`, `validate`). `js/catalog.js` is a thin UI-facing adapter over the registry (search/filter/card rendering); it owns no data of its own.
 
-**All 20 catalog components are real modules implementing the full five-function contract** — there is no legacy dispatch branch anywhere. `js/component-registry.js` builds `COMPONENT_REGISTRY` by importing every `components/*.js` module (`fromModule(...)`); `app.js` derives the id → renderer map the compiler needs, plus each entry's `validate`, from that single registry:
+**All 21 catalog components are real modules implementing the full five-function contract** — there is no legacy dispatch branch anywhere. `js/component-registry.js` builds `COMPONENT_REGISTRY` by importing every `components/*.js` module (`fromModule(...)`); `app.js` derives the id → renderer map the compiler needs, plus each entry's `validate`, from that single registry:
 
 ```js
 const componentRegistry = Object.fromEntries(
@@ -131,7 +131,7 @@ const componentRegistry = Object.fromEntries(
 
 ### 2. Component data / schema
 
-**Owns:** `js/editor-schemas.js` (per-component `itemFields`/`componentFields`, `minItems`, `itemLabel`) and each of the 20 component modules' own `editorSchema`/`defaultConfig` export.
+**Owns:** `js/editor-schemas.js` (per-component `itemFields`/`componentFields`, `minItems`, `itemLabel`) and each of the 21 component modules' own `editorSchema`/`defaultConfig` export.
 
 A schema is data, not behavior: a list of field descriptors (`id`, `label`, `type`, `default`, `required`, `min`/`max`, `pattern`, `options`, …). `js/catalog.js` attaches the resolved schema to each catalog entry via `getEditorSchema(componentId)`. `createDefaultItem(schema)` derives a blank item purely from that schema. Full schema field semantics live in `docs/COMPONENT-SCHEMA.md`.
 
@@ -190,7 +190,7 @@ This is the single source of truth for the theme schema (`schemaVersion`, identi
 **Owns:** cross-cutting, split by concern:
 
 - **Shared completion/progress accessibility** (the `announce`/`updateProgress`/`updateTrackerComplete`/`setProgressAccessibility` functions, the `.sr-only`/focus-visible/`prefers-reduced-motion`/`forced-colors` CSS) live in `js/export-shell.js#renderSharedA11yScript`/`SHARED_A11Y_CSS` — one implementation every component calls into, not duplicated per component.
-- **Structural/semantic accessibility specific to one component** (ARIA roles/states, keyboard handling, focus management for that component's own interaction pattern — e.g. roving tabindex in tabs/timeline, `aria-expanded` on the accordion) is generated inside that component module's own `generateHTML`/`generateJS` (`components/*.js`). Each of the 20 components owns its own ARIA wiring; there is no legacy branch left outside this pattern.
+- **Structural/semantic accessibility specific to one component** (ARIA roles/states, keyboard handling, focus management for that component's own interaction pattern — e.g. roving tabindex in tabs/timeline, `aria-expanded` on the accordion) is generated inside that component module's own `generateHTML`/`generateJS` (`components/*.js`). Each of the 21 components owns its own ARIA wiring; there is no legacy branch left outside this pattern.
 - **Authoring-time accessibility guidance** (alt-text/decorative warnings, transcript/caption warnings) lives in `js/media.js` (`validateMediaAccessibility`) — always advisory `warnings`, never a blocking error, surfaced by `app.js`/`js/editor.js` next to the relevant field.
 - **Contrast evaluation** lives in `js/themes.js` (§6).
 - **Escaping that keeps assistive-technology-relevant text safe to render** (rich text, attributes) lives in `js/utilities.js` (§10).
@@ -248,7 +248,7 @@ There is no other outbound message type and no other channel (no `fetch`, no `XM
 
 ## Automated test architecture
 
-Vitest runs module-level and generated-output integration tests; jsdom is used only where DOM parsing is required. V8 coverage gates the directly unit-tested state/storage/theme/utility/modular-generator layers at 70% statements / 60% branches / 70% functions / 70% lines. `tests/unit/generators.test.js` exercises all 20 components against hostile-input fixtures; `tests/unit/export-isolation.test.js` and `tests/unit/export-determinism.test.js` structurally prove per-component isolation and deterministic/collision-free output (`docs/EXPORT-CONTRACT.md`). Playwright drives Chromium, Firefox, and desktop WebKit against a dependency-free local static server, covering the shell, schema editor, iframe preview, component interactions, persistence, downloads, responsive sizes, and accessibility. Full strategy, browser-specific caveats, and the current commands are in `docs/TESTING-STRATEGY.md`.
+Vitest runs module-level and generated-output integration tests; jsdom is used only where DOM parsing is required. V8 coverage gates the directly unit-tested state/storage/theme/utility/modular-generator layers at 70% statements / 60% branches / 70% functions / 70% lines. `tests/unit/generators.test.js` exercises 20 of the 21 components against hostile-input fixtures (`interactive-video` has its own dedicated test file instead — its items are type-discriminated interaction markers, not the uniform `{title, content}` shape this shared loop assumes); `tests/unit/export-isolation.test.js` and `tests/unit/export-determinism.test.js` structurally prove per-component isolation and deterministic/collision-free output (`docs/EXPORT-CONTRACT.md`). Playwright drives Chromium, Firefox, and desktop WebKit against a dependency-free local static server, covering the shell, schema editor, iframe preview, component interactions, persistence, downloads, responsive sizes, and accessibility. Full strategy, browser-specific caveats, and the current commands are in `docs/TESTING-STRATEGY.md`.
 
 ## Important dependencies (who may import whom)
 

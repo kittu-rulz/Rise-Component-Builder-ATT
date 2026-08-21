@@ -258,8 +258,9 @@ The automated generator-contract test suite (`tests/unit`) exercises all six mod
 **Planned, not yet implemented:**
 
 - Add stable item IDs so media ownership and reordering do not depend on array position.
-- Add component-level schema sections in addition to `itemFields` more broadly (today only `hotspots` uses `componentFields`).
-- Add conditional schema visibility so decorative images can hide or disable alternative-text inputs.
+- Add component-level schema sections in addition to `itemFields` more broadly (today `hotspots` and `interactive-video` use `componentFields`; every other component's fields are all `itemFields`).
+- Add conditional schema visibility so decorative images can hide or disable alternative-text inputs. `interactive-video` hits this same gap from a different angle: both marker types' full field sets (Information's `body` vs. Multiple Choice's `question`/answers/feedback) are always visible in every marker's editor card regardless of its selected `type`, since there is no per-value conditional field visibility to hide the irrelevant set (`docs/INTERACTIVE-VIDEO.md` "Authoring workflow").
+- Add a schema field type for a nested, repeatable sub-list within an item — every field today is scalar. `interactive-video`'s Multiple Choice markers hit this directly: answers are a fixed 4 flat slots (`answer1Label`…`answer4Label`) rather than an unbounded list, chosen as the lower-risk option over a delimited-text encoding precisely because this capability doesn't exist yet (`docs/INTERACTIVE-VIDEO.md` "Marker data model" "Known limitation, deliberate").
 - Separate warnings from blocking validation errors more formally in the schema shape (today this is convention — `warningWhen`/`warningUnless`/`warningUnlessAny` vs. `required` — not an enforced separation).
 - Add schema migrations per component when new fields are introduced (today only the project-level `schemaVersion` migrates; component item shapes do not version independently).
 - Complete registry modularization (§ above) so every generator owns its defaults, schema, validation, and output.

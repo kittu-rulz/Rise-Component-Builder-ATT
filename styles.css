@@ -2519,6 +2519,78 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   }
 }
 
+/* Interactive Video: builder-only authoring timeline widget (Phase 2). Distinct from
+   components/interactive-video.js's own generateCSS() — that stylesheet only ever ships
+   inside an export; this one styles the author's own scrub-and-mark-up tool inside the
+   Builder chrome itself and is never part of any exported output. */
+.iv-authoring-video-wrapper {
+  width: 100%;
+  background-color: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.iv-authoring-video-wrapper video {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+}
+
+.iv-authoring-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.iv-authoring-time-readout {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.iv-authoring-timeline-track {
+  position: relative;
+  margin-top: 14px;
+  height: 28px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.iv-timeline-tick {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.iv-timeline-tick-info {
+  background-color: #2563EB;
+}
+
+.iv-timeline-tick-mc {
+  background-color: #059669;
+}
+
+.iv-timeline-tick:focus-visible {
+  outline: 2px solid var(--focus-ring, #2563EB);
+  outline-offset: 2px;
+}
+
 /* Accessibility: reduced motion and forced-colors support for the builder's own
    chrome (the exported components carry an equivalent block via js/export-shell.js
    #SHARED_A11Y_CSS — this one is scoped to the authoring UI itself). */
