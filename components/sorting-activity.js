@@ -141,14 +141,13 @@ export function generateCSS() {
       padding: 16px;
     }
     .column-header {
-      font-size: 12px;
+      /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
+         text (3.01:1 on white — accepted at large-text size, not below it). */
+      font-size: 19px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      /* Not AT&T Blue: this is a passive section heading, not a clickable
-         control, and --accent text is restricted to >=19px by the brand's own
-         contrast rules (3.01:1 on white) — this renders at 12px. */
-      color: var(--text-main);
+      letter-spacing: 0.4px;
+      color: var(--accent);
       border-bottom: 1px dashed var(--border-color);
       padding-bottom: 8px;
       margin-bottom: 12px;

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { JSDOM } from 'jsdom';
 import * as accordion from '../../components/accordion.js';
@@ -34,10 +36,14 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
     expect(css).not.toMatch(/\.hotspot-pin\s*{[^}]*background-color:\s*var\(--accent\)/);
   });
 
-  test('active tab label and underline are Cobalt, not AT&T Blue', () => {
+  test('tabs are complete Cobalt capsules — outlined at rest, filled when active — not underline tabs', () => {
     const css = tabs.generateCSS();
-    expect(css).toMatch(/\.tab-btn\.active\s*{[^}]*color:\s*var\(--primary\)/);
+    expect(css).toMatch(/\.tab-btn\s*{[^}]*border-radius:\s*var\(--button-radius\)/);
+    expect(css).toMatch(/\.tab-btn\s*{[^}]*border:\s*1px solid var\(--primary\)/);
+    expect(css).toMatch(/\.tab-btn\.active\s*{[^}]*background:\s*var\(--primary\)/);
+    expect(css).toMatch(/\.tab-btn\.active\s*{[^}]*color:\s*var\(--on-primary\)/);
     expect(css).not.toMatch(/\.tab-btn\.active\s*{[^}]*color:\s*var\(--accent\)/);
+    expect(css).not.toContain('border-bottom: 2px solid transparent');
   });
 
   test('selected quiz option (multiple choice) uses a Cobalt border, not an AT&T-Blue tint fill', () => {
@@ -76,15 +82,18 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
     expect(css).not.toContain('border-radius: calc(var(--border-radius) - 4px)');
   });
 
-  test('clickable menu-drawer index number and expanded arrow are Cobalt, not AT&T Blue', () => {
+  test('clickable menu-drawer index number and arrow are Cobalt at rest, not just once expanded', () => {
     const css = menuList.generateCSS();
     expect(css).toMatch(/\.menu-num\s*{[^}]*color:\s*var\(--primary\)/);
-    expect(css).toMatch(/\.menu-drawer-item\.active \.menu-arrow\s*{[^}]*color:\s*var\(--primary\)/);
+    expect(css).toMatch(/\.menu-arrow\s*{[^}]*color:\s*var\(--primary\)/);
+    expect(css).not.toMatch(/\.menu-arrow\s*{[^}]*color:\s*var\(--text-muted\)/);
   });
 
-  test('active accordion indicator icons are Cobalt, not AT&T Blue', () => {
+  test('accordion indicator icons (chevron and plus-minus) are Cobalt at rest, not just once expanded', () => {
     const css = accordion.generateCSS();
-    expect(css).toMatch(/\.accordion-item\.active \.acc-arrow\s*{[^}]*color:\s*var\(--primary\)/);
+    expect(css).toMatch(/\.acc-arrow\s*{[^}]*color:\s*var\(--primary\)/);
+    expect(css).toMatch(/\.acc-plus-minus::before, \.acc-plus-minus::after\s*{[^}]*background-color:\s*var\(--primary\)/);
+    expect(css).not.toMatch(/\.acc-arrow\s*{[^}]*color:\s*var\(--text-muted\)/);
   });
 
   test('active flip-card study filter/classify controls are Cobalt, not AT&T Blue', () => {
@@ -104,20 +113,25 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
   });
 });
 
-describe('AT&T brand: no AT&T-Blue text below the 19px accessibility threshold', () => {
-  // Every clickable-text case above already moved off --accent entirely (onto --primary,
-  // which carries no size restriction). What's left to guard is *passive* small text that
-  // must stay off --accent too, per G4/G5 ("use an approved neutral instead").
-  test('sorting-activity column header (passive label, 12px) is not AT&T-Blue text', () => {
-    const css = sortingActivity.generateCSS();
-    expect(css).toMatch(/\.column-header\s*{[^}]*color:\s*var\(--text-main\)/);
-    expect(css).not.toMatch(/\.column-header\s*{[^}]*color:\s*var\(--accent\)/);
+describe('AT&T brand: every AT&T-Blue text node is kept blue by growing to >=19px, not desaturated', () => {
+  function assertBlueAtCompliantSize(rule) {
+    expect(rule).toMatch(/color:\s*var\(--accent\)/);
+    const sizeMatch = rule.match(/font-size:\s*(\d+(?:\.\d+)?)px/);
+    expect(sizeMatch, 'expected an explicit px font-size on this rule').not.toBeNull();
+    expect(Number(sizeMatch[1])).toBeGreaterThanOrEqual(19);
+  }
+
+  test('shared block-label eyebrow (every component\'s header) is AT&T Blue at >=19px', () => {
+    const exportShellSource = readFileSync(fileURLToPath(new URL('../../js/export-shell.js', import.meta.url)), 'utf8');
+    assertBlueAtCompliantSize(exportShellSource.match(/\.block-label\s*{[^}]*}/)[0]);
   });
 
-  test('process-flow step duration line (passive text, 11px) is not AT&T-Blue text', () => {
-    const css = processFlow.generateCSS();
-    expect(css).toMatch(/\.process-step-duration\s*{[^}]*color:\s*var\(--text-muted\)/);
-    expect(css).not.toMatch(/\.process-step-duration\s*{[^}]*color:\s*var\(--accent\)/);
+  test('sorting-activity column header is AT&T Blue at >=19px', () => {
+    assertBlueAtCompliantSize(sortingActivity.generateCSS().match(/\.column-header\s*{[^}]*}/)[0]);
+  });
+
+  test('process-flow step duration line is AT&T Blue at >=19px', () => {
+    assertBlueAtCompliantSize(processFlow.generateCSS().match(/\.process-step-duration\s*{[^}]*}/)[0]);
   });
 
   test('video mini play/pause label (clickable, 11px) uses Cobalt, which carries no size restriction', () => {

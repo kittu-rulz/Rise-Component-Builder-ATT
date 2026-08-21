@@ -127,12 +127,11 @@ export function generateCSS() {
       color: var(--text-muted);
     }
     .process-step-duration {
-      font-size: 11px;
+      /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
+         text (3.01:1 on white — accepted at large-text size, not below it). */
+      font-size: 19px;
       font-weight: 600;
-      /* Not AT&T Blue: this is passive info text (not a clickable control), and
-         --accent text is restricted to >=19px by the brand's own contrast rules
-         (3.01:1 on white) — this renders at 11px. */
-      color: var(--text-muted);
+      color: var(--accent);
       margin-bottom: 8px;
     }
     .process-controls-row {

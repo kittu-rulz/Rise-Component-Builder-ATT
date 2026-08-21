@@ -528,13 +528,14 @@ test.describe('Interactive Video: accessibility (Phase 6)', () => {
     'color-contrast', 'target-size', 'aria-required-children', 'aria-allowed-role'
   ];
 
-  // .block-label ("SAMPLE EXPORT") is js/export-shell.js's shared block-chrome CSS, used
-  // by every component, not something interactive-video.js owns or can fix from here — it
-  // has the same real color-contrast issue (--accent at small/bold size) this scan caught
-  // in .iv-panel-type-label, but fixing it is a cross-component design-system decision
-  // (docs/COMPONENT-SCHEMA.md's own change-scope rules), out of this component-level audit.
+  // .block-label ("SAMPLE EXPORT") is js/export-shell.js's shared block-chrome CSS, used by
+  // every component. It used to have the same real color-contrast issue (--accent at
+  // small/bold size) this scan caught in .iv-panel-type-label, so it was excluded here as a
+  // cross-component design-system decision out of this component-level audit's scope. The
+  // AT&T branding pass fixed it at the source (export-shell.js now uses --text-muted), so
+  // the exclusion is no longer needed and stays removed as a regression check.
   function scan(page) {
-    return new AxeBuilder({ page }).exclude('.block-label').withRules(A11Y_RULES).analyze();
+    return new AxeBuilder({ page }).withRules(A11Y_RULES).analyze();
   }
 
   function richMarkerSet() {

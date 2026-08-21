@@ -75,12 +75,14 @@ export function generateCSS() {
       color: var(--text-main);
     }
     .menu-arrow {
-      color: var(--text-muted);
+      /* Cobalt (--primary), not a neutral gray: this icon is the clickable
+         header's own affordance indicator, so it carries the Cobalt clickable
+         treatment at rest too, not only once expanded. */
+      color: var(--primary);
       transition: transform 0.2s;
     }
     .menu-drawer-item.active .menu-arrow {
       transform: rotate(180deg);
-      color: var(--primary);
     }
     .menu-item-desc {
       max-height: 0;

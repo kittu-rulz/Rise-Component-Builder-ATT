@@ -177,13 +177,14 @@ export function generateCSS() {
 
     .acc-arrow {
       transition: transform 0.25s ease;
-      color: var(--text-muted);
+      /* Cobalt (--primary), not a neutral gray: this icon is the clickable
+         header's own affordance indicator, so it carries the Cobalt clickable
+         treatment at rest too, not only once expanded. */
+      color: var(--primary);
     }
 
     .accordion-item.active .acc-arrow {
       transform: rotate(180deg);
-      /* Cobalt (--primary), not AT&T Blue: active state of a clickable header. */
-      color: var(--primary);
     }
 
     .accordion-item.active {
@@ -199,8 +200,10 @@ export function generateCSS() {
     .acc-plus-minus::before, .acc-plus-minus::after {
       content: '';
       position: absolute;
-      background-color: var(--text-muted);
-      transition: transform 0.25s ease;
+      /* Cobalt (--primary), not a neutral gray: this is the clickable header's
+         own affordance indicator at rest, same reasoning as .acc-arrow above. */
+      background-color: var(--primary);
+      transition: transform 0.25s ease, background-color 0.25s ease;
     }
 
     .acc-plus-minus::before {
@@ -220,10 +223,6 @@ export function generateCSS() {
     .accordion-item.active .acc-plus-minus::after {
       transform: rotate(90deg);
       opacity: 0;
-    }
-    .accordion-item.active .acc-plus-minus::before,
-    .accordion-item.active .acc-plus-minus::after {
-      background-color: var(--primary);
     }
 
     .accordion-content {

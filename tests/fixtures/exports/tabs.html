@@ -108,9 +108,13 @@
     }
 
     .block-label {
-      font-size: 11px;
+      /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
+         text (3.01:1 on white — accepted at large-text size, not below it).
+         Shared across every component's block header, so this one fix covers
+         all of them. */
+      font-size: 19px;
       font-weight: 700;
-      letter-spacing: 1px;
+      letter-spacing: 0.6px;
       color: var(--accent);
       text-transform: uppercase;
       margin-bottom: 4px;
@@ -171,35 +175,39 @@
     }
     .tabs-header {
       display: flex;
-      border-bottom: var(--border-style);
-      background-color: rgba(0,0,0,0.02);
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 16px 20px 0;
       overflow-x: auto;
     }
     .tab-btn {
+      /* Complete capsule (full var(--button-radius)), not an underline tab —
+         capsule shapes are reserved for clickable elements and must be a whole
+         pill, never a partial rounding. Cobalt outline at rest, filled Cobalt
+         when active/selected: every tab is clickable at all times, not only
+         once selected, so it carries the Cobalt treatment throughout. */
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: transparent;
-      border: none;
-      padding: 14px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--primary);
+      border-radius: var(--button-radius);
+      padding: 10px 20px;
       font-size: 13px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--primary);
       cursor: pointer;
-      border-bottom: 2px solid transparent;
       white-space: nowrap;
       transition: all 0.2s;
     }
-    .tab-btn:hover {
-      color: var(--text-main);
+    .tab-btn:hover:not(.active) {
+      border-color: var(--primary-hover);
+      color: var(--primary-hover);
     }
     .tab-btn.active {
-      /* Cobalt (--primary), not AT&T Blue (--accent): the active tab is a
-         clickable control's selected state, so it needs the Cobalt clickable
-         treatment. --accent is also restricted to >=19px text by the brand's
-         own contrast rules (3.01:1 on white), and this label renders at 13px. */
-      color: var(--primary);
-      border-bottom-color: var(--primary);
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--on-primary);
     }
     .tab-btn[aria-disabled="true"] {
       cursor: not-allowed;
@@ -228,6 +236,8 @@
     }
     .tabs-content-wrapper {
       padding: 20px;
+      margin-top: 4px;
+      border-top: var(--border-style);
     }
     .tab-panel {
       display: none;
@@ -245,24 +255,21 @@
     }
     .tabs-container.tabs-vertical .tabs-header {
       flex-direction: column;
-      border-bottom: none;
-      border-right: var(--border-style);
+      padding: 20px 16px;
       overflow-x: visible;
       flex-shrink: 0;
       width: 200px;
+      border-right: var(--border-style);
     }
     .tabs-container.tabs-vertical .tab-btn {
-      border-bottom: none;
-      border-right: 2px solid transparent;
       justify-content: flex-start;
-    }
-    .tabs-container.tabs-vertical .tab-btn.active {
-      border-right-color: var(--primary);
-      border-bottom-color: transparent;
+      width: 100%;
     }
     .tabs-container.tabs-vertical .tabs-content-wrapper {
       flex: 1;
       min-width: 0;
+      margin-top: 0;
+      border-top: none;
     }
     @media (max-width: 480px) {
       .tabs-container.tabs-vertical {
@@ -270,18 +277,16 @@
       }
       .tabs-container.tabs-vertical .tabs-header {
         flex-direction: row;
-        border-right: none;
-        border-bottom: var(--border-style);
         width: auto;
         overflow-x: auto;
+        border-right: none;
+        border-bottom: var(--border-style);
       }
       .tabs-container.tabs-vertical .tab-btn {
-        border-right: none;
-        border-bottom: 2px solid transparent;
+        width: auto;
       }
-      .tabs-container.tabs-vertical .tab-btn.active {
-        border-right-color: transparent;
-        border-bottom-color: var(--primary);
+      .tabs-container.tabs-vertical .tabs-content-wrapper {
+        border-top: var(--border-style);
       }
     }
 
