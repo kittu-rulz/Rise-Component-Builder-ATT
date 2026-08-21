@@ -50,8 +50,24 @@ test('flip cards support click, Enter, Space, announcements, and reduced motion'
   await expect.poll(() => cards.nth(0).locator('.flip-card-inner').evaluate(element => Number.parseFloat(getComputedStyle(element).transitionDuration))).toBeLessThanOrEqual(0.00001);
 });
 
-test('multiple choice validates missing selection and announces correct and incorrect feedback', async ({ page }) => {
+test('multiple choice validates missing selection and concludes after one attempt by default', async ({ page }) => {
   const frame = await openComponent(page, 'Multiple Choice Check', 'Knowledge Checks');
+  const submit = frame.locator('.quiz-submit-btn');
+  const feedback = frame.locator('[id$="-quiz-feedback-box"]');
+  await submit.click();
+  await expect(feedback).toContainText(/select|answer/i);
+  await frame.locator('.quiz-option').nth(1).click();
+  await submit.click();
+  await expect(feedback).toContainText(/incorrect|try/i);
+  // mcMaxAttempts defaults to 1: the quiz concludes on the first submission, so
+  // options are locked and a retry click cannot change the outcome.
+  await expect(frame.locator('.quiz-option').first()).toHaveAttribute('aria-disabled', 'true');
+});
+
+test('multiple choice allows retries and announces correct feedback when mcMaxAttempts > 1', async ({ page }) => {
+  const frame = await openComponent(page, 'Multiple Choice Check', 'Knowledge Checks');
+  await page.getByRole('button', { name: 'Behavior' }).click();
+  await page.locator('#input-mc-max-attempts').fill('2');
   const submit = frame.locator('.quiz-submit-btn');
   const feedback = frame.locator('[id$="-quiz-feedback-box"]');
   await submit.click();
