@@ -96,6 +96,12 @@ Supported fonts are Merriweather, Lato, Roboto, Montserrat, and Open Sans. Shado
 | `mcFinalExplanation`   |  string | Explanation shown once the question concludes, correct or not            |
 | `mcAllowReset`         | boolean | Shows a "Try Again" action once the question concludes                   |
 | `mcShowResultSummary`  | boolean | Confidence mode only: shows a supportive correctness + confidence interpretation |
+| `accordionSequential`  | boolean | Guided mode: locks each panel until the previous one has been opened     |
+| `accordionShowProgress` | boolean | Shows an "N of M explored" indicator, independent of `trackCompletion`  |
+| `accordionShowVisitedBadge` | boolean | Shows a "Visited" badge on each panel once opened                  |
+| `accordionAllowReset`  | boolean | Shows a "Reset" action clearing visited/opened/lock state                |
+| `accordionSearch`      | boolean | Shows a search box filtering panels by title and body text               |
+| `accordionExpandCollapseAll` | boolean | Shows learner-facing Expand All/Collapse All (requires `accordionMulti` on and `accordionSequential` off) |
 
 Some interaction behavior is currently fixed in `js/preview.js` rather than represented in configuration.
 
@@ -124,6 +130,18 @@ An optional layer over the original one-shot submit/feedback flow, added without
 - **Reset** (`mcAllowReset`) clears all state (selection, confidence, attempts, revealed answer) and returns focus to the first option.
 - **Accessibility**: both the answer and confidence groups use `role="radiogroup"`/`role="radio"` with roving tabindex and arrow-key navigation; concluded (disabled) options are marked `aria-disabled` and removed from tab order rather than deleted, so their content remains readable; feedback receives focus on every submit so a keyboard/screen-reader user reliably lands on the result, not just on whatever triggered `aria-live`.
 - **Verified**: automated (`tests/unit/generators.test.js`, `export-isolation`/`export-determinism`) and manual browser testing of a compiled Confidence-mode export — validation gating (no option/no confidence), retry with hint, correct/incorrect × confidence interpretation text, reveal-correct-after-final, reset, and the concluded/disabled state. **Not yet verified**: inside Rise's own authoring preview or a published Rise course.
+
+### Accordion Guided mode
+
+An optional layer over the original free-exploration accordion, added without changing that mode's own behavior when left off — every `accordion*` guided-mode property is additive/optional, so a project saved before this feature existed behaves identically.
+
+- **Sequential/guided unlocking** (`accordionSequential`) — panel *N+1* stays locked (visually marked with a lock icon and an explanatory note, `aria-disabled` on its trigger, removed from tab order) until panel *N* has been opened at least once. Built directly on the existing `viewedItems` set every component already shares (`js/export-shell.js`) — opening a panel that was already going to mark it "viewed" is what unlocks the next one, no separate tracking state.
+- **Progress indicator** (`accordionShowProgress`, "N of M explored") and **per-panel Visited badge** (`accordionShowVisitedBadge`) — both independent of `trackCompletion`; they reflect the same `viewedItems` set the (optional) shared completion tracker uses, but render even when completion tracking itself is off.
+- **Search** (`accordionSearch`) — filters panels by title *and* body text (plain substring match against each panel's rendered text), announces the match count, and a "Clear" button restores every panel without altering which ones were already opened/visited.
+- **Learner-facing Expand All / Collapse All** (`accordionExpandCollapseAll`) — only rendered when `accordionMulti` is on and `accordionSequential` is off, since both a single-open accordion and a locked sequence make "expand everything" incoherent. Reuses the existing per-panel open/close function directly rather than a parallel code path, so it can never drift out of sync with a manual click.
+- **Reset** (`accordionAllowReset`) — clears `viewedItems`, closes every panel, re-locks sequential panels back to only-the-first-unlocked, clears any active search, and returns focus to the first panel's trigger.
+- **Accessibility**: locked triggers carry `aria-disabled="true"` and `aria-describedby` pointing at a visible "Locked — open the previous section first" note (not just a color/opacity change); unlocking a panel never moves focus (the note simply becomes able to be reached, focus stays wherever the learner already was); all new controls are real `<button>`/`<input type="search">` elements.
+- **Verified**: automated (`tests/unit/generators.test.js`, `export-isolation`/`export-determinism`) and manual browser testing of two compiled exports — sequential mode (lock/unlock progression, locked-click rejection, progress text, visited badges, reset) and free-exploration mode with search + Expand All/Collapse All (filtering, match count, clear, bulk expand/collapse). **Not yet verified**: inside Rise's own authoring preview or a published Rise course.
 
 ## Completion tracking
 

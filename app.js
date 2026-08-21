@@ -116,6 +116,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputBehaviorAccordionAnimation = document.getElementById('input-behavior-accordion-animation');
   const selectIconStyle = document.getElementById('select-icon-style');
   const accordionBehaviorGroup = document.getElementById('accordion-behavior-group');
+  const inputAccordionSequential = document.getElementById('input-accordion-sequential');
+  const inputAccordionShowProgress = document.getElementById('input-accordion-show-progress');
+  const inputAccordionShowVisitedBadge = document.getElementById('input-accordion-show-visited-badge');
+  const inputAccordionExpandCollapseAll = document.getElementById('input-accordion-expand-collapse-all');
+  const inputAccordionSearch = document.getElementById('input-accordion-search');
+  const inputAccordionAllowReset = document.getElementById('input-accordion-allow-reset');
 
   const flipCardsBehaviorGroup = document.getElementById('flip-cards-behavior-group');
   const selectFlipCardsMode = document.getElementById('select-flip-cards-mode');
@@ -670,6 +676,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     syncCheckbox(inputBehaviorAccordionMulti, 'accordionMulti');
     syncCheckbox(inputBehaviorAccordionAnimation, 'accordionAnimation');
+    syncCheckbox(inputAccordionSequential, 'accordionSequential');
+    syncCheckbox(inputAccordionShowProgress, 'accordionShowProgress');
+    syncCheckbox(inputAccordionShowVisitedBadge, 'accordionShowVisitedBadge');
+    syncCheckbox(inputAccordionExpandCollapseAll, 'accordionExpandCollapseAll');
+    syncCheckbox(inputAccordionSearch, 'accordionSearch');
+    syncCheckbox(inputAccordionAllowReset, 'accordionAllowReset');
     syncCheckbox(inputTrackCompletion, 'trackCompletion');
 
     selectFlipCardsMode.addEventListener('change', (e) => {
@@ -958,6 +970,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputBehaviorAccordionMulti.checked = config.accordionMulti;
     inputBehaviorAccordionAnimation.checked = config.accordionAnimation;
     selectIconStyle.value = config.iconStyle;
+    inputAccordionSequential.checked = config.accordionSequential === true;
+    inputAccordionShowProgress.checked = config.accordionShowProgress === true;
+    inputAccordionShowVisitedBadge.checked = config.accordionShowVisitedBadge === true;
+    inputAccordionExpandCollapseAll.checked = config.accordionExpandCollapseAll === true;
+    inputAccordionSearch.checked = config.accordionSearch === true;
+    inputAccordionAllowReset.checked = config.accordionAllowReset === true;
     updateAccordionBehaviorVisibility(appState.selectedComponent.id);
     // Defensive fallbacks (not just `= config.flipCardsX`): a project saved before this
     // feature existed has no flipCards* keys at all, and an unmatched <select> value would
