@@ -122,8 +122,10 @@ export function generateCSS() {
       cursor: pointer;
     }
     .tabs-toolbar-btn[aria-pressed="true"] {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent) inset;
+      /* Cobalt (--primary), not AT&T Blue: this is the pressed/active state of a
+         clickable toggle button, which must use the Cobalt clickable treatment. */
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary) inset;
     }
     .tabs-progress-text {
       margin-left: auto;
@@ -156,8 +158,12 @@ export function generateCSS() {
       color: var(--text-main);
     }
     .tab-btn.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue (--accent): the active tab is a
+         clickable control's selected state, so it needs the Cobalt clickable
+         treatment. --accent is also restricted to >=19px text by the brand's
+         own contrast rules (3.01:1 on white), and this label renders at 13px. */
+      color: var(--primary);
+      border-bottom-color: var(--primary);
     }
     .tab-btn[aria-disabled="true"] {
       cursor: not-allowed;
@@ -215,7 +221,7 @@ export function generateCSS() {
       justify-content: flex-start;
     }
     .tabs-container.tabs-vertical .tab-btn.active {
-      border-right-color: var(--accent);
+      border-right-color: var(--primary);
       border-bottom-color: transparent;
     }
     .tabs-container.tabs-vertical .tabs-content-wrapper {
@@ -239,7 +245,7 @@ export function generateCSS() {
       }
       .tabs-container.tabs-vertical .tab-btn.active {
         border-right-color: transparent;
-        border-bottom-color: var(--accent);
+        border-bottom-color: var(--primary);
       }
     }
 

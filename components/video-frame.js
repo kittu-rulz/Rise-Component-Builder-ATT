@@ -75,8 +75,10 @@ export function generateCSS() {
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      background-color: rgba(15, 23, 42, 0.7);
-      color: white;
+      /* White icon on Cobalt Blue (--primary): the brand's clickable treatment,
+         not a neutral dark wash or AT&T Blue. */
+      background-color: var(--primary);
+      color: var(--on-primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -87,7 +89,7 @@ export function generateCSS() {
       border: 0;
     }
     .video-wrapper:hover .video-overlay-play {
-      background-color: var(--accent);
+      background-color: var(--primary-hover);
     }
     .video-control-strip {
       display: flex;
@@ -101,7 +103,9 @@ export function generateCSS() {
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue: this is a clickable text button, and
+         --accent text is restricted to >=19px (this renders at 11px). */
+      color: var(--primary);
     }
     .video-timeline-scrub {
       flex: 1;

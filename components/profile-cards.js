@@ -49,10 +49,11 @@ export function generateCSS() {
       transition: border-color 0.2s;
     }
     .profile-card-item:hover {
-      border-color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue: this card is clickable. */
+      border-color: var(--primary);
     }
     .profile-card-item.active {
-      border-color: var(--accent);
+      border-color: var(--primary);
       transform: translateY(-2px);
     }
     .profile-avatar-circle {

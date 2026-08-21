@@ -107,14 +107,19 @@ export function generateCSS() {
     }
     .pricing-action-btn {
       width: 100%;
-      background-color: var(--bg-body);
-      border: 1px solid var(--border-color);
-      border-radius: calc(var(--border-radius) - 4px);
+      background-color: var(--bg-card);
+      border: 1px solid var(--primary);
+      /* Full capsule, not a partial rounding: the brand's own button spec is a
+         complete pill, and this is the card's clickable CTA. */
+      border-radius: var(--button-radius);
       padding: 8px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all var(--animation-speed);
+      /* Cobalt text on white, the brand's clickable treatment for this
+         non-highlighted button (highlighted cards invert it below). */
+      color: var(--primary);
     }
     .pricing-card-item.premium-highlight .pricing-action-btn {
       background-color: var(--primary);
@@ -123,6 +128,10 @@ export function generateCSS() {
     }
     .pricing-action-btn:hover {
       border-color: var(--primary-hover);
+      color: var(--primary-hover);
+    }
+    .pricing-card-item.premium-highlight .pricing-action-btn:hover {
+      color: var(--on-primary);
     }`;
 }
 

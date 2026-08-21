@@ -64,7 +64,10 @@ export function generateCSS() {
     .menu-num {
       font-size: 14px;
       font-weight: 700;
-      color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue: this index number is part of a
+         clickable drawer header's own content, so it needs the Cobalt clickable
+         treatment. */
+      color: var(--primary);
     }
     .menu-title {
       font-size: 13px;
@@ -77,7 +80,7 @@ export function generateCSS() {
     }
     .menu-drawer-item.active .menu-arrow {
       transform: rotate(180deg);
-      color: var(--accent);
+      color: var(--primary);
     }
     .menu-item-desc {
       max-height: 0;

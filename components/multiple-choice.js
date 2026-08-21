@@ -17,6 +17,7 @@ import { validateQuizAnswers, combineValidationResults } from '../js/validation-
  * @property {string} [mcFinalExplanation] - Explanation shown once the question concludes
  * @property {boolean} [mcAllowReset] - Shows a "Try Again" action once concluded
  * @property {boolean} [mcShowResultSummary] - Shows a confidence + correctness interpretation once concluded
+ * @property {string} [mcSubmitButtonText] - Custom label for the submit button (default "Submit Answer")
  */
 
 export const id = 'multiple-choice';
@@ -39,6 +40,7 @@ export const defaultConfig = {
   mcFinalExplanation: '',
   mcAllowReset: false,
   mcShowResultSummary: false,
+  mcSubmitButtonText: 'Submit Answer',
   items: [
     { label: 'Option A (Correct)', content: 'Micro-learning helps memory retention.', correct: true },
     { label: 'Option B', content: 'Courses must be at least 1 hour long.', correct: false },
@@ -65,7 +67,7 @@ export function generateHTML(config, instanceId) {
         ${confidenceLevels.map((level, index) => `<div class="quiz-confidence-option" role="radio" tabindex="${index === 0 ? '0' : '-1'}" aria-checked="false" data-confidence="${level.value}">${escapeHTML(level.label)}</div>`).join('')}
       </div>
     </div>` : ''}
-    <button class="quiz-submit-btn" type="button">Submit Answer</button>
+    <button class="quiz-submit-btn" type="button">${escapeHTML(config.mcSubmitButtonText || 'Submit Answer')}</button>
     <div class="quiz-hint" id="${instanceId}-quiz-hint" role="status" aria-live="polite" hidden><strong>Hint:</strong> ${hintText}</div>
     <div id="${instanceId}-quiz-feedback-box" class="quiz-feedback" role="status" aria-live="polite" aria-atomic="true" tabindex="-1" style="display:none;"></div>
     ${config.mcAllowReset ? '<button type="button" class="quiz-reset-btn" hidden>Try Again</button>' : ''}
@@ -104,8 +106,11 @@ export function generateCSS() {
     }
 
     .quiz-option.selected {
-      border-color: var(--accent);
-      background-color: var(--accent-tint);
+      /* Cobalt (--primary) border, not an AT&T Blue tint background: this is the
+         selected state of a clickable option, so it needs the Cobalt clickable
+         treatment, not an invented translucent brand-color shade. */
+      border-color: var(--primary);
+      border-width: 2px;
     }
 
     .quiz-option[aria-disabled="true"] {
@@ -123,8 +128,8 @@ export function generateCSS() {
     }
 
     .quiz-option.selected .option-check-circle {
-      border-color: var(--accent);
-      background-color: var(--accent);
+      border-color: var(--primary);
+      background-color: var(--primary);
     }
 
     .quiz-option.selected .option-check-circle::after {
@@ -135,7 +140,7 @@ export function generateCSS() {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background-color: #FFFFFF;
+      background-color: var(--on-primary);
     }
 
     .option-text {
@@ -178,8 +183,8 @@ export function generateCSS() {
     }
 
     .quiz-confidence-option.selected {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent) inset;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary) inset;
     }
 
     .quiz-confidence-option[aria-disabled="true"] {
@@ -241,15 +246,15 @@ export function generateCSS() {
     }
 
     .quiz-feedback.correct {
-      background-color: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      color: #065F46;
+      background-color: var(--success-tint);
+      border: 1px solid var(--success);
+      color: var(--success);
     }
 
     .quiz-feedback.wrong {
-      background-color: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      color: #991B1B;
+      background-color: var(--danger-tint);
+      border: 1px solid var(--danger);
+      color: var(--danger);
     }
 
     .quiz-feedback-interpretation, .quiz-feedback-explanation {

@@ -106,20 +106,27 @@ export function generateCSS() {
       padding: 4px 10px;
       font-size: 11px;
       font-weight: 600;
-      border-radius: 4px;
+      /* Full capsule, not a partial rounding: this is a clickable control, and
+         capsule shapes are only allowed on clickable elements when they're a
+         complete pill. */
+      border-radius: var(--button-radius);
       cursor: pointer;
       transition: all 0.2s;
     }
     .target-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue: hover state of a clickable control. */
+      border-color: var(--primary);
+      color: var(--primary);
     }
     .target-btn.active {
-      border-color: var(--accent);
-      background-color: var(--accent);
-      /* Not --on-accent (white): at 11px this is well under the brand's 19px
-         threshold for white text on an AT&T Blue background. */
-      color: var(--text-main);
+      /* Cobalt (--primary) background + white text: the brand's clickable
+         treatment. --accent was previously used here with black text purely to
+         satisfy contrast at small size — Cobalt's 10.7:1 contrast clears white
+         text at any size, so this is now the correct pairing rather than a
+         workaround. */
+      border-color: var(--primary);
+      background-color: var(--primary);
+      color: var(--on-primary);
     }
     .sorting-categories-columns {
       display: grid;
@@ -138,7 +145,10 @@ export function generateCSS() {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--accent);
+      /* Not AT&T Blue: this is a passive section heading, not a clickable
+         control, and --accent text is restricted to >=19px by the brand's own
+         contrast rules (3.01:1 on white) — this renders at 12px. */
+      color: var(--text-main);
       border-bottom: 1px dashed var(--border-color);
       padding-bottom: 8px;
       margin-bottom: 12px;
@@ -189,14 +199,14 @@ export function generateCSS() {
       animation: fadeIn 0.3s ease;
     }
     .quiz-feedback.correct {
-      background-color: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      color: #065F46;
+      background-color: var(--success-tint);
+      border: 1px solid var(--success);
+      color: var(--success);
     }
     .quiz-feedback.wrong {
-      background-color: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      color: #991B1B;
+      background-color: var(--danger-tint);
+      border: 1px solid var(--danger);
+      color: var(--danger);
     }`;
 }
 

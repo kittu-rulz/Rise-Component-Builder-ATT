@@ -157,8 +157,8 @@ export function generateCSS() {
       cursor: pointer;
     }
     .timeline-filter-chip.active {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent) inset;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary) inset;
     }
     .timeline-progress-text {
       margin-left: auto;
@@ -181,8 +181,10 @@ export function generateCSS() {
       top: 8px;
       bottom: 8px;
       width: 2px;
-      background-color: var(--accent);
-      opacity: 0.2;
+      /* Not an opacity-faked tint of --accent: the brand rules bar inventing
+         shades of the brand colors, so this connecting rail uses the theme's own
+         approved neutral border color at full opacity instead. */
+      background-color: var(--border-color);
     }
 
     .timeline-step {
@@ -207,9 +209,11 @@ export function generateCSS() {
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      /* Not --accent-light: a shade of AT&T Blue, not the approved palette. */
+      /* Not --accent-light: a shade of AT&T Blue, not the approved palette. Border
+         is Cobalt (--primary), not AT&T Blue: this marker sits inside the
+         clickable timeline step and should carry the clickable treatment. */
       background-color: var(--border-color);
-      border: 2px solid var(--accent);
+      border: 2px solid var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -247,15 +251,13 @@ export function generateCSS() {
       line-height: 1.5;
     }
     .timeline-step.active .step-marker {
-      background-color: var(--accent);
+      background-color: var(--primary);
     }
     .timeline-step.active .step-num {
-      /* Not --on-accent (white): at 11px this is well under the brand's 19px
-         threshold for white text on an AT&T Blue background. */
-      color: var(--text-main);
+      color: var(--on-primary);
     }
     .timeline-step.active .step-card {
-      border-color: var(--accent);
+      border-color: var(--primary);
     }
 
     .step-category-badge {

@@ -5,7 +5,7 @@ import { combineValidationResults } from '../js/validation-utils.js';
 /**
  * Horizontal Timeline Component Configuration
  * @typedef {Object} HorizontalTimelineConfig
- * @property {Array<{title: string, content: string, date?: string, year?: string}>} items - Array of timeline events
+ * @property {Array<{title: string, content: string, date?: string, year?: string, markerLabel?: string}>} items - Array of timeline events
  */
 
 export const id = 'horizontal-timeline';
@@ -28,7 +28,7 @@ export function generateHTML(config, instanceId) {
       <div class="timeline-nodes-row" role="tablist" aria-label="Timeline steps">
         ${config.items.map((item, idx) => `
           <div class="timeline-node ${idx === 0 ? 'active' : ''}" id="${instanceId}-timeline-tab-${idx}" data-idx="${idx}" role="tab" tabindex="${idx === 0 ? '0' : '-1'}" aria-selected="${idx === 0}" aria-controls="${instanceId}-timeline-slide-${idx}">
-            <div class="node-marker"></div>
+            <div class="node-marker">${(item.markerLabel || '').trim() ? `<span class="node-marker-label" aria-hidden="true">${escapeHTML(String(item.markerLabel).trim())}</span>` : ''}</div>
             <span class="node-label">${escapeHTML(item.title || 'Step')}</span>
           </div>
         `).join('')}
@@ -89,11 +89,28 @@ export function generateCSS() {
       border: 3px solid var(--border-color);
       transition: all 0.2s;
       box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .node-marker-label {
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      /* Cobalt (--primary), not AT&T Blue: this marker is part of a clickable
+         timeline node (role="tab"), so it needs the Cobalt clickable treatment
+         rather than --accent, which is also restricted to >=19px text. */
+      color: var(--primary);
     }
     .timeline-node.active .node-marker {
-      border-color: var(--accent);
-      background-color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue: the selected state of a clickable
+         control. Cobalt's 10.7:1 contrast also clears white text at any size. */
+      border-color: var(--primary);
+      background-color: var(--primary);
       transform: scale(1.1);
+    }
+    .timeline-node.active .node-marker-label {
+      color: var(--on-primary);
     }
     .node-label {
       font-size: 11px;
@@ -104,7 +121,9 @@ export function generateCSS() {
       transition: color 0.2s;
     }
     .timeline-node.active .node-label {
-      color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue: active label of a clickable control,
+         and --accent text is restricted to >=19px (this renders at 11px). */
+      color: var(--primary);
     }
     .timeline-slider-box {
       background-color: var(--bg-body);

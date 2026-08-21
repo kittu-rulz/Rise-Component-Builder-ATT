@@ -34,11 +34,11 @@ export function generateHTML(config, instanceId) {
     <div class="hotspots-container">
       <div class="hotspot-img-wrapper">
         ${hotspotImage ? `<img class="hotspot-background-image" src="${escapeAttribute(hotspotImage)}" alt="${config.backgroundDecorative ? '' : escapeAttribute(config.backgroundAltText || '')}" ${config.backgroundDecorative ? 'aria-hidden="true"' : ''} style="object-fit:${config.backgroundFit};object-position:${config.backgroundFocalX}% ${config.backgroundFocalY}%;">` : `<svg viewBox="0 0 800 450" class="hotspot-schematic-svg" role="img" aria-label="Schematic pathway map">
-          <rect width="100%" height="100%" fill="#F1F5F9" rx="12"></rect>
-          <circle cx="400" cy="225" r="100" fill="none" stroke="#CBD5E1" stroke-width="4" stroke-dasharray="10 10"></circle>
-          <line x1="100" y1="225" x2="700" y2="225" stroke="#E2E8F0" stroke-width="2"></line>
-          <line x1="400" y1="50" x2="400" y2="400" stroke="#E2E8F0" stroke-width="2"></line>
-          <text x="400" y="230" text-anchor="middle" fill="#94A3B8" font-size="16" font-weight="600">SCHEMATIC PATHWAY MAP</text>
+          <rect width="100%" height="100%" class="hotspot-schematic-bg" rx="12"></rect>
+          <circle cx="400" cy="225" r="100" fill="none" class="hotspot-schematic-ring" stroke-width="4" stroke-dasharray="10 10"></circle>
+          <line x1="100" y1="225" x2="700" y2="225" class="hotspot-schematic-line" stroke-width="2"></line>
+          <line x1="400" y1="50" x2="400" y2="400" class="hotspot-schematic-line" stroke-width="2"></line>
+          <text x="400" y="230" text-anchor="middle" class="hotspot-schematic-label" font-size="16" font-weight="600">SCHEMATIC PATHWAY MAP</text>
         </svg>`}
         ${config.items.map((item, idx) => `
           <span class="hotspot-point" style="left: ${item.x || '50'}%; top: ${item.y || '50'}%;">
@@ -77,6 +77,9 @@ export function generateCSS() {
       height: auto;
       display: block;
     }
+    .hotspot-schematic-bg { fill: var(--bg-body); }
+    .hotspot-schematic-ring, .hotspot-schematic-line { stroke: var(--border-color); }
+    .hotspot-schematic-label { fill: var(--text-muted); }
     .hotspot-background-image {
       width: 100%;
       height: auto;
@@ -95,11 +98,14 @@ export function generateCSS() {
       position: relative;
       width: 28px;
       height: 28px;
-      background-color: var(--accent);
-      border: 2px solid #FFFFFF;
-      /* Not --on-accent (white): at 12px this is well under the brand's 19px
-         threshold for white text on an AT&T Blue background. */
-      color: var(--text-main);
+      /* Cobalt (--primary), not AT&T Blue (--accent): this pin is a clickable
+         control, and clickable elements must use the Cobalt-on-white or
+         white-on-Cobalt treatment, not the accent color. Cobalt's 10.7:1
+         contrast against white also clears the white-text pairing at any size,
+         unlike --accent (3.01:1, restricted to >=19px text). */
+      background-color: var(--primary);
+      border: 2px solid var(--bg-card);
+      color: var(--on-primary);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -115,7 +121,7 @@ export function generateCSS() {
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background-color: var(--accent);
+      background-color: var(--primary);
       animation: pinPulse 2s infinite;
       z-index: -1;
     }
@@ -125,8 +131,11 @@ export function generateCSS() {
       left: 50%;
       transform: translateX(-50%) translateY(8px);
       width: 220px;
-      background-color: #0F172A;
-      color: #F1F5F9;
+      /* This popup is passive content (no interactive control inside it), so it
+         must not use Cobalt as its surface color. Built from the theme's own
+         text/surface tokens (inverted) rather than an invented dark-gray hex. */
+      background-color: var(--text-main);
+      color: var(--bg-card);
       padding: 12px;
       border-radius: 8px;
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
@@ -146,25 +155,27 @@ export function generateCSS() {
       font-size: 12px;
       font-weight: 600;
       margin-bottom: 4px;
-      color: #FFFFFF;
+      color: var(--bg-card);
     }
     .hotspot-tooltip-title {
       display: block;
       font-size: 12px;
       font-weight: 600;
       margin-bottom: 4px;
-      color: #FFFFFF;
+      color: var(--bg-card);
     }
     .hotspot-tooltip p {
       font-size: 11px;
       line-height: 1.4;
-      color: #94A3B8;
+      font-weight: 400;
+      color: var(--bg-card);
     }
     .hotspot-tooltip-content {
       display: block;
       font-size: 11px;
       line-height: 1.4;
-      color: #CBD5E1;
+      font-weight: 400;
+      color: var(--bg-card);
     }
     @keyframes pinPulse {
       0% { transform: scale(1); opacity: 0.8; }

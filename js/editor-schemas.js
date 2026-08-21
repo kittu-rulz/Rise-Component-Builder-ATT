@@ -81,6 +81,9 @@ export const editorSchemas = {
   },
   'multiple-choice': {
     itemLabel: 'Answer Option', minItems: 2,
+    componentFields: [
+      field('mcSubmitButtonText', 'Submit Button Text', 'text', { required: false, default: 'Submit Answer', maxLength: 40 })
+    ],
     itemFields: [
       field('label', 'Answer Option', 'richtext', { required: true, default: 'New option' }),
       field('content', 'Answer Feedback', 'textarea', { required: false, default: 'Add feedback for this option.' }),
@@ -115,7 +118,15 @@ export const editorSchemas = {
     ]
   },
   'horizontal-timeline': {
-    itemLabel: 'Timeline Milestone', minItems: 2, itemFields: contentFields
+    itemLabel: 'Timeline Milestone', minItems: 2,
+    itemFields: [
+      ...contentFields,
+      // Optional: renders inside the circular marker (aria-hidden — the tab's
+      // accessible name always comes from the title text, never from this).
+      // Empty by default so projects saved before this field existed render
+      // identically (js/storage.js needs no migration for it).
+      field('markerLabel', 'Marker Number or Label (Optional)', 'text', { required: false, default: '', maxLength: 4 })
+    ]
   },
   'process-flow': {
     itemLabel: 'Process Step', minItems: 2,
@@ -143,7 +154,10 @@ export const editorSchemas = {
   },
   'info-grid': {
     itemLabel: 'Information Card', minItems: 1,
-    itemFields: [...contentFields, ...visualIconFields, field('accentColor', 'Card Accent Color', 'color', { required: false, default: '#2563EB' })]
+    // Default is the theme's own AT&T Blue accent, not an off-brand blue — this
+    // colors a passive decorative icon, never clickable text, so it stays within
+    // the approved brand palette without the AT&T-Blue 19px text restriction.
+    itemFields: [...contentFields, ...visualIconFields, field('accentColor', 'Card Accent Color', 'color', { required: false, default: '#009FDB' })]
   },
   'pricing-comparison': {
     itemLabel: 'Comparison Option', minItems: 2,

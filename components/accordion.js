@@ -182,11 +182,12 @@ export function generateCSS() {
 
     .accordion-item.active .acc-arrow {
       transform: rotate(180deg);
-      color: var(--accent);
+      /* Cobalt (--primary), not AT&T Blue: active state of a clickable header. */
+      color: var(--primary);
     }
 
     .accordion-item.active {
-      border-color: var(--accent);
+      border-color: var(--primary);
     }
 
     .acc-plus-minus {
@@ -222,7 +223,7 @@ export function generateCSS() {
     }
     .accordion-item.active .acc-plus-minus::before,
     .accordion-item.active .acc-plus-minus::after {
-      background-color: var(--accent);
+      background-color: var(--primary);
     }
 
     .accordion-content {

@@ -248,13 +248,13 @@ export function generateCSS() {
     }
 
     .flip-classify-btn:hover {
-      border-color: var(--accent);
+      border-color: var(--primary);
     }
 
     .flip-classify-btn.active {
       background-color: var(--bg-card);
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--accent) inset;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary) inset;
     }
 
     .flip-study-toolbar {
@@ -282,8 +282,8 @@ export function generateCSS() {
     }
 
     .flip-filter-chip.active, .flip-review-filter-btn[aria-pressed="true"] {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent) inset;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary) inset;
     }
 
     .flip-study-counts {

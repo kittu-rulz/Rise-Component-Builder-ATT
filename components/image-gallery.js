@@ -66,9 +66,16 @@ export function generateCSS() {
       bottom: 0;
       left: 0;
       right: 0;
-      background: linear-gradient(0deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0) 100%);
+      /* Solid, fully opaque neutral (not a gradient, and not an AT&T-Blue
+         background): a caption this small (11px) sitting on --accent would only
+         reach 3.01:1 with white text, short of the 4.5:1 normal-text minimum.
+         A solid --text-main bar is image-independent (verified contrast holds
+         against any photo, light or dark) and clears 21:1 with white text at
+         any size, without needing to enlarge the caption to the AT&T-Blue-text
+         19px threshold. */
+      background-color: var(--text-main);
       padding: 10px;
-      color: white;
+      color: var(--bg-card);
       font-size: 11px;
       font-weight: 500;
     }
@@ -93,7 +100,7 @@ export function generateCSS() {
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
     }
     .lightbox-caption {
-      color: #94A3B8;
+      color: var(--bg-card);
       font-size: 13px;
       margin-top: 16px;
       text-align: center;
@@ -102,7 +109,7 @@ export function generateCSS() {
       position: absolute;
       top: 20px;
       right: 30px;
-      color: white;
+      color: var(--bg-card);
       font-size: 32px;
       cursor: pointer;
     }`;

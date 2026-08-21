@@ -129,7 +129,10 @@ export function generateCSS() {
     .process-step-duration {
       font-size: 11px;
       font-weight: 600;
-      color: var(--accent);
+      /* Not AT&T Blue: this is passive info text (not a clickable control), and
+         --accent text is restricted to >=19px by the brand's own contrast rules
+         (3.01:1 on white) — this renders at 11px. */
+      color: var(--text-muted);
       margin-bottom: 8px;
     }
     .process-controls-row {

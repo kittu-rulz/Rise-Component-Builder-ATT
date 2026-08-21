@@ -97,6 +97,12 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
   const focusRing = toRgba(c.colorPrimary, 0.16, 'rgba(37, 99, 235, 0.16)');
   const accentLight = toRgba(c.colorAccent, 0.14, 'rgba(245, 158, 11, 0.14)');
   const accentTint = toRgba(c.colorAccent, 0.07, 'rgba(245, 158, 11, 0.07)');
+  // Feedback-panel tints: not AT&T brand colors (success/danger are neutral-palette
+  // status tokens, not derived from --primary/--accent), so opacity-based tinting here
+  // isn't the "improvised brand shade" the AT&T theme rules prohibit — it only bars
+  // inventing tints of the blue brand colors themselves.
+  const successTint = toRgba(themeTokens.success, 0.1, 'rgba(16, 185, 129, 0.1)');
+  const dangerTint = toRgba(themeTokens.danger, 0.1, 'rgba(239, 68, 68, 0.1)');
   const onPrimary = themeTokens.surface;
   const onAccent = themeTokens.surface;
 
@@ -125,6 +131,8 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
       --success: ${themeTokens.success};
       --warning: ${themeTokens.warning};
       --danger: ${themeTokens.danger};
+      --success-tint: ${successTint};
+      --danger-tint: ${dangerTint};
       --on-primary: ${onPrimary};
       --on-accent: ${onAccent};
       --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
