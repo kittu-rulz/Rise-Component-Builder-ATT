@@ -109,6 +109,12 @@ Supported fonts are Merriweather, Lato, Roboto, Montserrat, and Open Sans. Shado
 | `tabsNumbered`         | boolean | Prefixes each tab label with its step number                             |
 | `tabsOrientation`      |  string | `'horizontal'` (default) or `'vertical'` — vertical falls back to horizontal below 480px |
 | `tabsCompareMode`      | boolean | Shows an optional side-by-side comparison of two chosen tabs             |
+| `timelineCategoriesEnabled` | boolean | Vertical Timeline: shows a category badge per step and filter chips  |
+| `timelineCompareMode`  | boolean | Vertical Timeline: splits steps into two labeled streams by category (requires 2+ distinct categories) |
+| `timelineCollapsibleDetails` | boolean | Vertical Timeline: steps start collapsed, click/Enter expands       |
+| `timelineShowProgress` | boolean | Vertical Timeline: shows an "N of M explored" indicator, independent of `trackCompletion` |
+| `timelineChronologicalReveal` | boolean | Vertical Timeline: locks each step until the previous one has been viewed |
+| `timelineAllowReset`   | boolean | Vertical Timeline: shows a "Reset" action clearing visited/expanded/lock/filter state |
 
 Some interaction behavior is currently fixed in `js/preview.js` rather than represented in configuration.
 
@@ -161,6 +167,18 @@ An optional layer over the original free-navigation tabs, added without changing
 - **Comparison mode** (`tabsCompareMode`) — a "Compare Sections" toggle reveals an independent checkbox group (up to 2 selections, further checkboxes disable once 2 are picked) rendering the two chosen tabs' content side by side (2 columns ≥600px, stacked below). Deliberately built as a *separate* widget alongside the normal tablist rather than mutating tab/tabpanel roles or allowing two simultaneously "selected" tabs — a tablist has exactly one active tab per the WAI-ARIA pattern, and comparison mode doesn't change that; it's a second, independent view of the same content. Selecting comparison checkboxes does not affect `viewedItems`/progress — comparison is treated as a separate lens on already-authored content, not a new interaction to track.
 - **Verified**: automated (`tests/unit/generators.test.js`, `export-isolation`/`export-determinism`) and manual browser testing of two compiled exports — sequential mode with numbered steps (lock/unlock progression, locked-click rejection, progress, visited badges, reset) and vertical orientation with comparison mode (checkbox selection/limit/uncheck, column rendering, orientation attribute and layout). **Not yet verified**: inside Rise's own authoring preview or a published Rise course, and the narrow-screen orientation fallback specifically was verified by reading the compiled CSS rather than an actual narrow-viewport render (the test tooling's viewport resize wasn't taking effect against this compiled fixture in this session) — the media query itself is standard, unambiguous CSS, but a real narrow-viewport visual check is still worth doing before treating it as fully confirmed.
 
+### Vertical Timeline: categories, comparison, guided reveal
+
+Scoped to `vertical-timeline` only (Horizontal Journey Map is untouched — its slide-one-panel-at-a-time interaction doesn't fit a side-by-side comparison the way a vertical list does; adding this to it later would need its own design pass, not a copy of this one). An optional layer over the original free-browsing timeline, added without changing that mode's own behavior when left off — every `timeline*` field is additive/optional, so a project saved before this feature existed behaves identically.
+
+- **New optional `category` item field** — the only schema addition, since neither timeline component had a date/category field before this (`docs/COMPONENT-SCHEMA.md`'s own prior audit note). Used for both the filter chips and comparison mode.
+- **Category filter chips** (`timelineCategoriesEnabled`) — "All" plus one chip per distinct category found; each step also carries a visible text badge with its own category (never color- or position-only), satisfying the requirement that a step's stream stay identifiable however it's laid out.
+- **Two-stream comparison** (`timelineCompareMode`, requires `timelineCategoriesEnabled` and ≥2 distinct categories authored) — a fixed, author-configured split (not a learner picker, unlike Tabs' comparison mode): every step whose category matches the first category found goes in stream A, everything else goes in stream B, labeled with the real category text (never "Stream A"/"B"). No step is ever silently dropped. 2-column CSS grid ≥600px, single column below that — collapsing to "a clear stacked sequence" is pure CSS (no DOM duplication), each step still carrying its own category badge in the stacked view since column position alone no longer indicates stream once stacked. Falls back to the normal single-track list if fewer than 2 categories are set, rather than rendering a broken comparison.
+- **Chronological reveal** (`timelineChronologicalReveal`) — same lock/unlock design as Accordion/Tabs Guided mode, applied to timeline steps.
+- **Collapsible step details** (`timelineCollapsibleDetails`) — steps start collapsed; expanding one is also what marks it "viewed." Uses a real `<button aria-expanded>` in this mode instead of the original's `role="listitem"`/`aria-pressed` toggle pattern, since a genuine expand/collapse interaction is a better semantic fit than a highlight-only toggle — the original pattern is preserved byte-for-byte when this option is off.
+- **Progress indicator** (`timelineShowProgress`) and **Reset** (`timelineAllowReset`) — same shared-`viewedItems` design as the other three Guided-mode enhancements.
+- **Verified**: automated (`tests/unit/generators.test.js`, `export-isolation`/`export-determinism`) and manual browser testing of three compiled exports — chronological reveal + collapsible + progress + reset (lock/unlock progression, expand-marks-viewed, progress text, reset), category filtering (badge display, filter, match announcement), and two-stream comparison (correct split by category, no dropped steps, real 2-column CSS grid, narrow-screen media query present in compiled CSS). **Not yet verified**: inside Rise's own authoring preview or a published Rise course, and — as with Tabs' orientation fallback — the narrow-screen comparison-layout collapse was confirmed by reading the compiled CSS rather than an actual narrow-viewport render, for the same tooling-limitation reason.
+
 ## Completion tracking
 
 | Property          |    Type | Purpose                               |
@@ -184,7 +202,7 @@ The preview runtime calculates trackable counts per component. Content-reveal co
 | `multiple-select`     | `label`, `content` (feedback), `correct` (multiple allowed)                                                                            |
 | `sorting-activity`    | `title`, `content`, `category`                                                                                                         |
 | `fill-blank`          | `title` containing `[blank]`, `content` (accepted answer)                                                                              |
-| `vertical-timeline`   | `title`, `content`                                                                                                                     |
+| `vertical-timeline`   | `title`, `content`, optional `category`                                                                                                |
 | `horizontal-timeline` | `title`, `content`                                                                                                                     |
 | `process-flow`        | `title`, `content`, `durationMinutes`                                                                                                  |
 | `scenario`            | `title`, `content`; first item acts as prompt and later items as choices                                                               |

@@ -131,6 +131,43 @@
       line-height: 1.5;
     }
 
+    .timeline-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .timeline-filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .timeline-toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .timeline-filter-chip, .timeline-toolbar-btn {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--button-radius);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+    .timeline-filter-chip.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent) inset;
+    }
+    .timeline-progress-text {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
     .vertical-timeline-container {
       display: flex;
       flex-direction: column;
@@ -153,6 +190,15 @@
       position: relative;
       margin-bottom: 24px;
       cursor: pointer;
+    }
+
+    .timeline-step[hidden] {
+      display: none;
+    }
+
+    .timeline-step[aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.65;
     }
 
     .step-marker {
@@ -191,6 +237,9 @@
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .step-card p {
@@ -208,6 +257,82 @@
     }
     .timeline-step.active .step-card {
       border-color: var(--accent);
+    }
+
+    .step-category-badge {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background-color: var(--border-color);
+      color: var(--text-main);
+    }
+
+    .step-lock-icon-slot {
+      display: inline-flex;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .step-lock-note {
+      margin-top: 6px;
+      font-size: 11px;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    .step-toggle-btn {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+    }
+
+    .step-toggle-btn[aria-disabled="true"] {
+      cursor: not-allowed;
+    }
+
+    .step-toggle-btn h4 {
+      margin: 0;
+      flex: 1;
+    }
+
+    .step-body {
+      margin-top: 8px;
+    }
+
+    .step-body p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .timeline-compare-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .timeline-compare-column-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--border-color);
+    }
+    @media (max-width: 600px) {
+      .timeline-compare-layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     [hidden] { display: none !important; }
@@ -291,10 +416,28 @@
     </div>
 
     <div class="block-content">
-      <div class="vertical-timeline-container" role="list" aria-label="Timeline">
-    <div class="timeline-step" role="listitem" tabindex="0" aria-label="Step 1: Phase 1: Research" aria-pressed="false"><div class="step-marker" aria-hidden="true"><span class="step-num">1</span></div><div class="step-card"><h4>Phase 1: Research</h4><p>Collect data assets, requirements, and verify targets.</p></div></div>
-    <div class="timeline-step" role="listitem" tabindex="0" aria-label="Step 2: Phase 2: Build Layout" aria-pressed="false"><div class="step-marker" aria-hidden="true"><span class="step-num">2</span></div><div class="step-card"><h4>Phase 2: Build Layout</h4><p>Configure colors, fonts, margins, and borders in the tool.</p></div></div>
-    <div class="timeline-step" role="listitem" tabindex="0" aria-label="Step 3: Phase 3: Export HTML" aria-pressed="false"><div class="step-marker" aria-hidden="true"><span class="step-num">3</span></div><div class="step-card"><h4>Phase 3: Export HTML</h4><p>Copy custom block and import inside Articulate Rise blocks.</p></div></div></div>
+      <div class="vertical-timeline-container" role="list" aria-label="Timeline"><div class="timeline-step" role="listitem" tabindex="0" data-idx="0" aria-label="Step 1: Phase 1: Research" aria-pressed="false" >
+    <div class="step-marker" aria-hidden="true"><span class="step-num">1</span></div>
+    <div class="step-card">
+      <h4>Phase 1: Research</h4>
+      <p>Collect data assets, requirements, and verify targets.</p>
+      
+    </div>
+  </div><div class="timeline-step" role="listitem" tabindex="0" data-idx="1" aria-label="Step 2: Phase 2: Build Layout" aria-pressed="false" >
+    <div class="step-marker" aria-hidden="true"><span class="step-num">2</span></div>
+    <div class="step-card">
+      <h4>Phase 2: Build Layout</h4>
+      <p>Configure colors, fonts, margins, and borders in the tool.</p>
+      
+    </div>
+  </div><div class="timeline-step" role="listitem" tabindex="0" data-idx="2" aria-label="Step 3: Phase 3: Export HTML" aria-pressed="false" >
+    <div class="step-marker" aria-hidden="true"><span class="step-num">3</span></div>
+    <div class="step-card">
+      <h4>Phase 3: Export HTML</h4>
+      <p>Copy custom block and import inside Articulate Rise blocks.</p>
+      
+    </div>
+  </div></div>
     </div>
 
     
@@ -407,25 +550,133 @@
       return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
     })();
 
-    function initComponent() {
-      document.querySelectorAll('.timeline-step').forEach(function(step, idx) {
-        step.setAttribute('tabindex', '0');
-        step.addEventListener('click', function() {
-          document.querySelectorAll('.timeline-step').forEach(function(item) {
-            item.classList.remove('active');
-          });
-          step.classList.add('active');
-          document.querySelectorAll('.timeline-step').forEach(function(item) { item.setAttribute('aria-pressed', String(item === step)); });
-          viewedItems.add(idx);
-          updateProgress();
-        });
-        step.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            step.click();
-          }
-        });
+    var collapsibleSteps = false;
+    var chronologicalReveal = false;
+    var categoriesEnabled = false;
+    var showProgress = false;
+    var timelineTotal = 3;
+
+    function isStepLocked(index) {
+      return chronologicalReveal && index > 0 && !viewedItems.has(index - 1);
+    }
+
+    function refreshStepLockState() {
+      if (!chronologicalReveal) return;
+      document.querySelectorAll('.timeline-step').forEach(function(stepEl) {
+        var idx = parseInt(stepEl.getAttribute('data-idx'), 10);
+        var locked = isStepLocked(idx);
+        var lockSlot = stepEl.querySelector('.step-lock-icon-slot');
+        var note = document.getElementById('rcb-fixture-vertical-timeline-step-lock-note-' + idx);
+        var control = stepEl.querySelector('.step-toggle-btn') || stepEl;
+        stepEl.classList.toggle('locked', locked);
+        if (locked) control.setAttribute('aria-disabled', 'true');
+        else control.removeAttribute('aria-disabled');
+        if (lockSlot) lockSlot.hidden = !locked;
+        if (note) note.hidden = !locked;
       });
+    }
+
+    function updateTimelineProgressText() {
+      if (!showProgress) return;
+      var progress = document.getElementById('rcb-fixture-vertical-timeline-timeline-progress');
+      if (progress) progress.textContent = viewedItems.size + ' of ' + timelineTotal + ' explored';
+    }
+
+    function markStepViewed(index) {
+      viewedItems.add(index);
+      updateProgress();
+      updateTimelineProgressText();
+      refreshStepLockState();
+    }
+
+    function applyTimelineFilter(categoryValue) {
+      var visibleCount = 0;
+      document.querySelectorAll('.timeline-step').forEach(function(stepEl) {
+        var matches = !categoryValue || stepEl.getAttribute('data-category') === categoryValue;
+        stepEl.hidden = !matches;
+        if (matches) visibleCount++;
+      });
+      announce(visibleCount + ' step' + (visibleCount === 1 ? '' : 's') + ' shown.');
+    }
+
+    function resetTimeline() {
+      viewedItems.clear();
+      document.querySelectorAll('.timeline-step').forEach(function(stepEl) {
+        stepEl.classList.remove('active');
+        stepEl.hidden = false;
+        if (stepEl.hasAttribute('aria-pressed')) stepEl.setAttribute('aria-pressed', 'false');
+        var toggleBtn = stepEl.querySelector('.step-toggle-btn');
+        var body = stepEl.querySelector('.step-body');
+        if (toggleBtn && body) {
+          toggleBtn.setAttribute('aria-expanded', 'false');
+          body.hidden = true;
+        }
+      });
+      refreshStepLockState();
+      updateTimelineProgressText();
+      updateProgress();
+      document.querySelectorAll('.timeline-filter-chip').forEach(function(chip) {
+        chip.classList.toggle('active', chip.getAttribute('data-filter-category') === '');
+      });
+      var firstStep = document.querySelector('.timeline-step');
+      if (firstStep) (firstStep.querySelector('.step-toggle-btn') || firstStep).focus();
+      announce('Timeline reset.');
+    }
+
+    function initComponent() {
+      document.querySelectorAll('.timeline-step').forEach(function(stepEl) {
+        var idx = parseInt(stepEl.getAttribute('data-idx'), 10);
+
+        if (collapsibleSteps) {
+          var toggleBtn = stepEl.querySelector('.step-toggle-btn');
+          var body = stepEl.querySelector('.step-body');
+          if (toggleBtn && body) {
+            toggleBtn.addEventListener('click', function() {
+              if (isStepLocked(idx)) {
+                announce('This step is locked. Reveal the previous step first.');
+                return;
+              }
+              var expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+              toggleBtn.setAttribute('aria-expanded', String(!expanded));
+              body.hidden = expanded;
+              if (!expanded) markStepViewed(idx);
+            });
+          }
+        } else {
+          stepEl.addEventListener('click', function() {
+            if (isStepLocked(idx)) {
+              announce('This step is locked. Reveal the previous step first.');
+              return;
+            }
+            document.querySelectorAll('.timeline-step').forEach(function(item) { item.classList.remove('active'); item.setAttribute('aria-pressed', 'false'); });
+            stepEl.classList.add('active');
+            stepEl.setAttribute('aria-pressed', 'true');
+            markStepViewed(idx);
+          });
+          stepEl.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              stepEl.click();
+            }
+          });
+        }
+      });
+
+      refreshStepLockState();
+      updateTimelineProgressText();
+
+      if (categoriesEnabled) {
+        document.querySelectorAll('.timeline-filter-chip').forEach(function(chip) {
+          chip.addEventListener('click', function() {
+            document.querySelectorAll('.timeline-filter-chip').forEach(function(c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            applyTimelineFilter(chip.getAttribute('data-filter-category'));
+          });
+        });
+      }
+
+      var resetBtn = document.querySelector('.timeline-reset-btn');
+      if (resetBtn) resetBtn.addEventListener('click', resetTimeline);
     }
 
     if (document.readyState === 'loading') {

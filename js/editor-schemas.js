@@ -108,7 +108,11 @@ export const editorSchemas = {
     itemFields: [field('title', 'Sentence with [blank]', 'richtext', { required: true, default: 'Enter a sentence containing [blank].', pattern: '\\[blank\\]', patternMessage: 'Include one [blank] token.' }), field('content', 'Accepted Answer', 'text', { required: true, default: 'answer' })]
   },
   'vertical-timeline': {
-    itemLabel: 'Timeline Event', minItems: 2, itemFields: contentFields
+    itemLabel: 'Timeline Event', minItems: 2,
+    itemFields: [
+      ...contentFields,
+      field('category', 'Category / Stream (Optional)', 'text', { required: false, default: '', maxLength: 40 })
+    ]
   },
   'horizontal-timeline': {
     itemLabel: 'Timeline Milestone', minItems: 2, itemFields: contentFields

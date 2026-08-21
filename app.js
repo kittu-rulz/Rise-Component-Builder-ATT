@@ -141,6 +141,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputTabsCompareMode = document.getElementById('input-tabs-compare-mode');
   const inputTabsAllowReset = document.getElementById('input-tabs-allow-reset');
 
+  const timelineBehaviorGroup = document.getElementById('timeline-behavior-group');
+  const inputTimelineCategories = document.getElementById('input-timeline-categories');
+  const inputTimelineCompareMode = document.getElementById('input-timeline-compare-mode');
+  const inputTimelineCollapsible = document.getElementById('input-timeline-collapsible');
+  const inputTimelineChronological = document.getElementById('input-timeline-chronological');
+  const inputTimelineShowProgress = document.getElementById('input-timeline-show-progress');
+  const inputTimelineAllowReset = document.getElementById('input-timeline-allow-reset');
+
   const mcBehaviorGroup = document.getElementById('mc-behavior-group');
   const inputMcConfidenceMode = document.getElementById('input-mc-confidence-mode');
   const inputMcRequireConfidence = document.getElementById('input-mc-require-confidence');
@@ -477,6 +485,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateFlipCardsBehaviorVisibility(component.id);
     updateMcBehaviorVisibility(component.id);
     updateTabsBehaviorVisibility(component.id);
+    updateTimelineBehaviorVisibility(component.id);
 
     // Sync block text items with defaults/reset if needed
     inputBlockTitle.value = component.title.toUpperCase();
@@ -732,6 +741,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputTabsShowVisitedBadge, 'tabsShowVisitedBadge');
     syncCheckbox(inputTabsCompareMode, 'tabsCompareMode');
     syncCheckbox(inputTabsAllowReset, 'tabsAllowReset');
+
+    syncCheckbox(inputTimelineCategories, 'timelineCategoriesEnabled');
+    syncCheckbox(inputTimelineCompareMode, 'timelineCompareMode');
+    syncCheckbox(inputTimelineCollapsible, 'timelineCollapsibleDetails');
+    syncCheckbox(inputTimelineChronological, 'timelineChronologicalReveal');
+    syncCheckbox(inputTimelineShowProgress, 'timelineShowProgress');
+    syncCheckbox(inputTimelineAllowReset, 'timelineAllowReset');
   }
 
   // ==========================================
@@ -986,6 +1002,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabsBehaviorGroup.hidden = componentId !== 'tab-blocks';
   }
 
+  // Same pattern again — timelineX config keys only affect the Vertical Step Timeline
+  // (components/vertical-timeline.js, registry id "vertical-timeline"). The horizontal
+  // timeline component is untouched by this feature.
+  function updateTimelineBehaviorVisibility(componentId) {
+    timelineBehaviorGroup.hidden = componentId !== 'vertical-timeline';
+  }
+
   function syncEditorControls() {
     syncResolvedThemeConfig();
     const config = appState.config;
@@ -1035,6 +1058,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputTabsCompareMode.checked = config.tabsCompareMode === true;
     inputTabsAllowReset.checked = config.tabsAllowReset === true;
     updateTabsBehaviorVisibility(appState.selectedComponent.id);
+    inputTimelineCategories.checked = config.timelineCategoriesEnabled === true;
+    inputTimelineCompareMode.checked = config.timelineCompareMode === true;
+    inputTimelineCollapsible.checked = config.timelineCollapsibleDetails === true;
+    inputTimelineChronological.checked = config.timelineChronologicalReveal === true;
+    inputTimelineShowProgress.checked = config.timelineShowProgress === true;
+    inputTimelineAllowReset.checked = config.timelineAllowReset === true;
+    updateTimelineBehaviorVisibility(appState.selectedComponent.id);
     inputTrackCompletion.checked = config.trackCompletion;
     inputCompletionMsg.value = config.completionMsg;
     activeComponentTitle.innerText = appState.selectedComponent.title;
