@@ -132,6 +132,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputFlipCardsFrontLabel = document.getElementById('input-flip-cards-front-label');
   const inputFlipCardsBackLabel = document.getElementById('input-flip-cards-back-label');
 
+  const tabsBehaviorGroup = document.getElementById('tabs-behavior-group');
+  const selectTabsOrientation = document.getElementById('select-tabs-orientation');
+  const inputTabsNumbered = document.getElementById('input-tabs-numbered');
+  const inputTabsSequential = document.getElementById('input-tabs-sequential');
+  const inputTabsShowProgress = document.getElementById('input-tabs-show-progress');
+  const inputTabsShowVisitedBadge = document.getElementById('input-tabs-show-visited-badge');
+  const inputTabsCompareMode = document.getElementById('input-tabs-compare-mode');
+  const inputTabsAllowReset = document.getElementById('input-tabs-allow-reset');
+
   const mcBehaviorGroup = document.getElementById('mc-behavior-group');
   const inputMcConfidenceMode = document.getElementById('input-mc-confidence-mode');
   const inputMcRequireConfidence = document.getElementById('input-mc-require-confidence');
@@ -467,6 +476,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateAccordionBehaviorVisibility(component.id);
     updateFlipCardsBehaviorVisibility(component.id);
     updateMcBehaviorVisibility(component.id);
+    updateTabsBehaviorVisibility(component.id);
 
     // Sync block text items with defaults/reset if needed
     inputBlockTitle.value = component.title.toUpperCase();
@@ -711,6 +721,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       appState.config.mcMaxAttempts = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
       updateLivePreview();
     });
+
+    selectTabsOrientation.addEventListener('change', (e) => {
+      appState.config.tabsOrientation = e.target.value;
+      updateLivePreview();
+    });
+    syncCheckbox(inputTabsNumbered, 'tabsNumbered');
+    syncCheckbox(inputTabsSequential, 'tabsSequential');
+    syncCheckbox(inputTabsShowProgress, 'tabsShowProgress');
+    syncCheckbox(inputTabsShowVisitedBadge, 'tabsShowVisitedBadge');
+    syncCheckbox(inputTabsCompareMode, 'tabsCompareMode');
+    syncCheckbox(inputTabsAllowReset, 'tabsAllowReset');
   }
 
   // ==========================================
@@ -959,6 +980,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     mcBehaviorGroup.hidden = componentId !== 'multiple-choice';
   }
 
+  // Same pattern again — tabsX config keys only affect Horizontal Tabs
+  // (components/tabs.js, registry id "tab-blocks").
+  function updateTabsBehaviorVisibility(componentId) {
+    tabsBehaviorGroup.hidden = componentId !== 'tab-blocks';
+  }
+
   function syncEditorControls() {
     syncResolvedThemeConfig();
     const config = appState.config;
@@ -1000,6 +1027,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputMcFinalExplanation.value = config.mcFinalExplanation || '';
     inputMcAllowReset.checked = config.mcAllowReset === true;
     updateMcBehaviorVisibility(appState.selectedComponent.id);
+    selectTabsOrientation.value = config.tabsOrientation || 'horizontal';
+    inputTabsNumbered.checked = config.tabsNumbered === true;
+    inputTabsSequential.checked = config.tabsSequential === true;
+    inputTabsShowProgress.checked = config.tabsShowProgress === true;
+    inputTabsShowVisitedBadge.checked = config.tabsShowVisitedBadge === true;
+    inputTabsCompareMode.checked = config.tabsCompareMode === true;
+    inputTabsAllowReset.checked = config.tabsAllowReset === true;
+    updateTabsBehaviorVisibility(appState.selectedComponent.id);
     inputTrackCompletion.checked = config.trackCompletion;
     inputCompletionMsg.value = config.completionMsg;
     activeComponentTitle.innerText = appState.selectedComponent.title;

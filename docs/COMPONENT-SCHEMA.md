@@ -102,6 +102,13 @@ Supported fonts are Merriweather, Lato, Roboto, Montserrat, and Open Sans. Shado
 | `accordionAllowReset`  | boolean | Shows a "Reset" action clearing visited/opened/lock state                |
 | `accordionSearch`      | boolean | Shows a search box filtering panels by title and body text               |
 | `accordionExpandCollapseAll` | boolean | Shows learner-facing Expand All/Collapse All (requires `accordionMulti` on and `accordionSequential` off) |
+| `tabsSequential`       | boolean | Guided mode: locks each tab until the previous one has been selected     |
+| `tabsShowProgress`     | boolean | Shows an "N of M explored" indicator, independent of `trackCompletion`   |
+| `tabsShowVisitedBadge` | boolean | Shows a "Visited" badge on each visited tab                              |
+| `tabsAllowReset`       | boolean | Shows a "Reset" action clearing visited/selected/lock state              |
+| `tabsNumbered`         | boolean | Prefixes each tab label with its step number                             |
+| `tabsOrientation`      |  string | `'horizontal'` (default) or `'vertical'` — vertical falls back to horizontal below 480px |
+| `tabsCompareMode`      | boolean | Shows an optional side-by-side comparison of two chosen tabs             |
 
 Some interaction behavior is currently fixed in `js/preview.js` rather than represented in configuration.
 
@@ -143,6 +150,17 @@ An optional layer over the original free-exploration accordion, added without ch
 - **Accessibility**: locked triggers carry `aria-disabled="true"` and `aria-describedby` pointing at a visible "Locked — open the previous section first" note (not just a color/opacity change); unlocking a panel never moves focus (the note simply becomes able to be reached, focus stays wherever the learner already was); all new controls are real `<button>`/`<input type="search">` elements.
 - **Verified**: automated (`tests/unit/generators.test.js`, `export-isolation`/`export-determinism`) and manual browser testing of two compiled exports — sequential mode (lock/unlock progression, locked-click rejection, progress text, visited badges, reset) and free-exploration mode with search + Expand All/Collapse All (filtering, match count, clear, bulk expand/collapse). **Not yet verified**: inside Rise's own authoring preview or a published Rise course.
 
+### Horizontal Tabs Guided mode, orientation, and comparison
+
+An optional layer over the original free-navigation tabs, added without changing that mode's own behavior when left off — every `tabs*` property is additive/optional, so a project saved before this feature existed behaves identically. Uses the exact same sequential-lock/progress/visited-badge/reset design as Accordion's Guided mode above, built on the same shared `viewedItems` set.
+
+- **Sequential unlocking** (`tabsSequential`), **progress indicator** (`tabsShowProgress`), **Visited badge** (`tabsShowVisitedBadge`), and **Reset** (`tabsAllowReset`) — same semantics and same shared-state approach as Accordion's Guided mode.
+- **Numbered steps** (`tabsNumbered`) — prefixes each tab label with its 1-based position, decorative (`aria-hidden`) since the accessible tab order already conveys sequence.
+- **Optional per-tab icon** — new `iconImage`/`iconAltText`/`iconDecorative`/`iconFit` item fields (the same shared `visualIconFields` used by Flip Cards and Info Grid). No built-in fallback icon is shown when unset — unlike Flip Cards' decorative default, a tab's icon is a pure enhancement with no icon by default.
+- **Vertical orientation** (`tabsOrientation: 'vertical'`) — sets `aria-orientation="vertical"` on the tablist and lays the tab list beside (not above) the panel via CSS only; automatically falls back to the original horizontal strip layout below 480px viewport width via a plain media query, so no DOM is duplicated for the responsive case.
+- **Comparison mode** (`tabsCompareMode`) — a "Compare Sections" toggle reveals an independent checkbox group (up to 2 selections, further checkboxes disable once 2 are picked) rendering the two chosen tabs' content side by side (2 columns ≥600px, stacked below). Deliberately built as a *separate* widget alongside the normal tablist rather than mutating tab/tabpanel roles or allowing two simultaneously "selected" tabs — a tablist has exactly one active tab per the WAI-ARIA pattern, and comparison mode doesn't change that; it's a second, independent view of the same content. Selecting comparison checkboxes does not affect `viewedItems`/progress — comparison is treated as a separate lens on already-authored content, not a new interaction to track.
+- **Verified**: automated (`tests/unit/generators.test.js`, `export-isolation`/`export-determinism`) and manual browser testing of two compiled exports — sequential mode with numbered steps (lock/unlock progression, locked-click rejection, progress, visited badges, reset) and vertical orientation with comparison mode (checkbox selection/limit/uncheck, column rendering, orientation attribute and layout). **Not yet verified**: inside Rise's own authoring preview or a published Rise course, and the narrow-screen orientation fallback specifically was verified by reading the compiled CSS rather than an actual narrow-viewport render (the test tooling's viewport resize wasn't taking effect against this compiled fixture in this session) — the media query itself is standard, unambiguous CSS, but a real narrow-viewport visual check is still worth doing before treating it as fully confirmed.
+
 ## Completion tracking
 
 | Property          |    Type | Purpose                               |
@@ -157,7 +175,7 @@ The preview runtime calculates trackable counts per component. Content-reveal co
 | Component ID          | Item fields currently authored                                                                                                         |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `accordion`           | `title`, `content`                                                                                                                     |
-| `tab-blocks`          | `title`, `content`                                                                                                                     |
+| `tab-blocks`          | `title`, `content`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`                                                   |
 | `flip-cards`          | `title`, `content`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`, `category`; consecutive entries form front/back pairs        |
 | `hotspots`            | `title`, `content`, `x`, `y`                                                                                                           |
 | `button-list`         | `title`, `content` (destination URL)                                                                                                   |

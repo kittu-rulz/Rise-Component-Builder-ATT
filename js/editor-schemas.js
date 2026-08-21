@@ -33,7 +33,11 @@ export const editorSchemas = {
   },
   'tab-blocks': {
     itemLabel: 'Tab', minItems: 2,
-    itemFields: [field('title', 'Tab Label', 'text', { required: true, default: 'New Tab', maxLength: 40 }), field('content', 'Tab Content', 'richtext', { required: true, default: 'Add tab content.' })]
+    itemFields: [
+      field('title', 'Tab Label', 'text', { required: true, default: 'New Tab', maxLength: 40 }),
+      field('content', 'Tab Content', 'richtext', { required: true, default: 'Add tab content.' }),
+      ...visualIconFields
+    ]
   },
   'flip-cards': {
     // Items pair up two-at-a-time into one flip card each (index 0+1 = card 1's

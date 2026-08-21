@@ -138,6 +138,33 @@
       box-shadow: var(--shadow-style);
       overflow: hidden;
     }
+    .tabs-toolbar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 16px 0;
+    }
+    .tabs-toolbar-btn {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--button-radius);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+    .tabs-toolbar-btn[aria-pressed="true"] {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent) inset;
+    }
+    .tabs-progress-text {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
     .tabs-header {
       display: flex;
       border-bottom: var(--border-style);
@@ -145,6 +172,9 @@
       overflow-x: auto;
     }
     .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       background: transparent;
       border: none;
       padding: 14px 20px;
@@ -163,6 +193,31 @@
       color: var(--accent);
       border-bottom-color: var(--accent);
     }
+    .tab-btn[aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .tab-icon-img {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      border-radius: 4px;
+    }
+    .tab-lock-icon-slot {
+      display: inline-flex;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .tab-visited-badge {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background-color: var(--border-color);
+      color: var(--text-main);
+    }
     .tabs-content-wrapper {
       padding: 20px;
     }
@@ -175,6 +230,101 @@
     }
     .tab-panel.active {
       display: block;
+    }
+
+    .tabs-container.tabs-vertical {
+      display: flex;
+    }
+    .tabs-container.tabs-vertical .tabs-header {
+      flex-direction: column;
+      border-bottom: none;
+      border-right: var(--border-style);
+      overflow-x: visible;
+      flex-shrink: 0;
+      width: 200px;
+    }
+    .tabs-container.tabs-vertical .tab-btn {
+      border-bottom: none;
+      border-right: 2px solid transparent;
+      justify-content: flex-start;
+    }
+    .tabs-container.tabs-vertical .tab-btn.active {
+      border-right-color: var(--accent);
+      border-bottom-color: transparent;
+    }
+    .tabs-container.tabs-vertical .tabs-content-wrapper {
+      flex: 1;
+      min-width: 0;
+    }
+    @media (max-width: 480px) {
+      .tabs-container.tabs-vertical {
+        flex-direction: column;
+      }
+      .tabs-container.tabs-vertical .tabs-header {
+        flex-direction: row;
+        border-right: none;
+        border-bottom: var(--border-style);
+        width: auto;
+        overflow-x: auto;
+      }
+      .tabs-container.tabs-vertical .tab-btn {
+        border-right: none;
+        border-bottom: 2px solid transparent;
+      }
+      .tabs-container.tabs-vertical .tab-btn.active {
+        border-right-color: transparent;
+        border-bottom-color: var(--accent);
+      }
+    }
+
+    .tabs-compare-panel {
+      border-top: var(--border-style);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tabs-compare-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .tabs-compare-checklist {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .tabs-compare-check-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tabs-compare-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .tabs-compare-column {
+      background-color: var(--bg-body);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+    .tabs-compare-column h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+    @media (max-width: 600px) {
+      .tabs-compare-columns {
+        grid-template-columns: 1fr;
+      }
     }
 
     [hidden] { display: none !important; }
@@ -258,9 +408,11 @@
     </div>
 
     <div class="block-content">
-      <div class="tabs-container">
-    <div class="tabs-header" role="tablist" aria-label="Content sections"><button class="tab-btn active" id="rcb-fixture-tab-blocks-tab-0" role="tab" aria-selected="true" aria-controls="rcb-fixture-tab-blocks-tab-panel-0" tabindex="0">Tab 1: Overview</button><button class="tab-btn " id="rcb-fixture-tab-blocks-tab-1" role="tab" aria-selected="false" aria-controls="rcb-fixture-tab-blocks-tab-panel-1" tabindex="-1">Tab 2: Details</button><button class="tab-btn " id="rcb-fixture-tab-blocks-tab-2" role="tab" aria-selected="false" aria-controls="rcb-fixture-tab-blocks-tab-panel-2" tabindex="-1">Tab 3: Summary</button></div>
+      <div class="tabs-container ">
+    
+    <div class="tabs-header" role="tablist" aria-label="Content sections" aria-orientation="horizontal"><button class="tab-btn active" id="rcb-fixture-tab-blocks-tab-0" role="tab" aria-selected="true" aria-controls="rcb-fixture-tab-blocks-tab-panel-0" tabindex="0" data-idx="0"  ><span class="tab-label-text">Tab 1: Overview</span></button><button class="tab-btn " id="rcb-fixture-tab-blocks-tab-1" role="tab" aria-selected="false" aria-controls="rcb-fixture-tab-blocks-tab-panel-1" tabindex="-1" data-idx="1"  ><span class="tab-label-text">Tab 2: Details</span></button><button class="tab-btn " id="rcb-fixture-tab-blocks-tab-2" role="tab" aria-selected="false" aria-controls="rcb-fixture-tab-blocks-tab-panel-2" tabindex="-1" data-idx="2"  ><span class="tab-label-text">Tab 3: Summary</span></button></div>
     <div class="tabs-content-wrapper"><div class="tab-panel active" id="rcb-fixture-tab-blocks-tab-panel-0" role="tabpanel" aria-labelledby="rcb-fixture-tab-blocks-tab-0" tabindex="0" ><p>A high-level explanation of the subject matter, laying a strong conceptual foundation.</p></div><div class="tab-panel " id="rcb-fixture-tab-blocks-tab-panel-1" role="tabpanel" aria-labelledby="rcb-fixture-tab-blocks-tab-1" tabindex="0" hidden><p>In-depth description of procedures, parameters, and design metrics.</p></div><div class="tab-panel " id="rcb-fixture-tab-blocks-tab-panel-2" role="tabpanel" aria-labelledby="rcb-fixture-tab-blocks-tab-2" tabindex="0" hidden><p>Key takeaways and visual summaries to reinforce memory retention.</p></div></div>
+    
   </div>
     </div>
 
@@ -374,7 +526,48 @@
       return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
     })();
 
+    var sequentialMode = false;
+    var showVisitedBadge = false;
+    var showProgress = false;
+    var tabsTotal = 3;
+    
+
+    function isTabLocked(index) {
+      return sequentialMode && index > 0 && !viewedItems.has(index - 1);
+    }
+
+    function refreshTabLockState() {
+      if (!sequentialMode) return;
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        var locked = isTabLocked(idx);
+        var lockSlot = btn.querySelector('.tab-lock-icon-slot');
+        var note = document.getElementById('rcb-fixture-tab-blocks-tab-lock-note-' + idx);
+        if (locked) btn.setAttribute('aria-disabled', 'true');
+        else btn.removeAttribute('aria-disabled');
+        if (lockSlot) lockSlot.hidden = !locked;
+        if (note) note.hidden = !locked;
+      });
+    }
+
+    function updateTabVisitedBadge(index) {
+      if (!showVisitedBadge) return;
+      var btn = document.getElementById('rcb-fixture-tab-blocks-tab-' + index);
+      var badge = btn && btn.querySelector('.tab-visited-badge');
+      if (badge) badge.hidden = !viewedItems.has(index);
+    }
+
+    function updateTabsProgressText() {
+      if (!showProgress) return;
+      var progress = document.getElementById('rcb-fixture-tab-blocks-tabs-progress');
+      if (progress) progress.textContent = viewedItems.size + ' of ' + tabsTotal + ' explored';
+    }
+
     function selectTab(index, button) {
+      if (isTabLocked(index)) {
+        announce('This tab is locked. Select the previous tab first.');
+        return;
+      }
       var container = button.closest('.tabs-container');
       container.querySelectorAll('.tab-btn').forEach(function(b) {
         b.classList.remove('active');
@@ -393,18 +586,45 @@
       panel.classList.add('active');
       viewedItems.add(index);
       updateProgress();
+      updateTabVisitedBadge(index);
+      updateTabsProgressText();
+      refreshTabLockState();
+    }
+
+    
+
+    function resetTabs() {
+      viewedItems.clear();
+      var firstBtn = null;
+      document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
+        var isFirst = idx === 0;
+        if (isFirst) firstBtn = btn;
+        btn.classList.toggle('active', isFirst);
+        btn.setAttribute('aria-selected', String(isFirst));
+        btn.setAttribute('tabindex', isFirst ? '0' : '-1');
+        updateTabVisitedBadge(idx);
+      });
+      document.querySelectorAll('.tab-panel').forEach(function(panel, idx) {
+        panel.classList.toggle('active', idx === 0);
+        panel.hidden = idx !== 0;
+      });
+      refreshTabLockState();
+      updateTabsProgressText();
+      updateProgress();
+      if (firstBtn) firstBtn.focus();
+      announce('Tabs reset.');
     }
 
     function initComponent() {
-      document.querySelectorAll('.tab-btn').forEach(function(button, idx) {
+      var tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      tabs.forEach(function(button, idx) {
         button.addEventListener('click', function() {
           selectTab(idx, button);
         });
         button.addEventListener('keydown', function(event) {
-          var tabs = Array.from(button.closest('[role="tablist"]').querySelectorAll('[role="tab"]'));
           var next = idx;
-          if (event.key === 'ArrowRight') next = (idx + 1) % tabs.length;
-          else if (event.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
+          if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (idx + 1) % tabs.length;
+          else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (idx - 1 + tabs.length) % tabs.length;
           else if (event.key === 'Home') next = 0;
           else if (event.key === 'End') next = tabs.length - 1;
           else return;
@@ -413,6 +633,14 @@
           tabs[next].focus();
         });
       });
+
+      refreshTabLockState();
+      updateTabsProgressText();
+
+      var resetBtn = document.querySelector('.tabs-reset-btn');
+      if (resetBtn) resetBtn.addEventListener('click', resetTabs);
+
+      
     }
 
     if (document.readyState === 'loading') {
