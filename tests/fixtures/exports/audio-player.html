@@ -886,11 +886,22 @@
       // network, or a tab closed the instant it opened) would write the JS-initialized
       // zeros and silently erase real progress from an earlier session.
       var progressHydrated = !PROGRESS_PERSISTENCE;
+      // A second, distinct guard: even *after* hydration, audio.currentTime genuinely is
+      // 0 until the learner actually plays or seeks — a visibilitychange/beforeunload save
+      // firing in that window (e.g. the tab loses focus while the resume prompt is still
+      // showing, before it's been acted on) would silently overwrite a real prior
+      // "position: 20" with "position: 0", even though the resume prompt itself already
+      // read and displayed the correct value — the *next* Resume click would then read
+      // the just-clobbered 0 back out. Set true by the native 'seeking' event (covers
+      // scrub/skip/chapter-click/segment-click/Resume/Start Over — every way currentTime
+      // can change) and by 'play', so a save is never written before the learner has
+      // actually done something this load.
+      var hasEngaged = false;
 
       function announce(text) { if (statusEl) statusEl.textContent = text; }
 
       function saveProgress(force) {
-        if (!PROGRESS_PERSISTENCE || !progressHydrated) return;
+        if (!PROGRESS_PERSISTENCE || !progressHydrated || !hasEngaged) return;
         var now = Date.now();
         if (!force && now - lastSaveTime < 5000) return;
         lastSaveTime = now;
@@ -944,7 +955,10 @@
       }
       playBtn.addEventListener('click', togglePlayback);
 
+      audio.addEventListener('seeking', function() { hasEngaged = true; });
+
       audio.addEventListener('play', function() {
+        hasEngaged = true;
         // Pause any other audio/video element on the page — multiple instances of this
         // (or any other) component must operate independently, but only one should audibly
         // play at once. Plain DOM traversal, no shared global state.

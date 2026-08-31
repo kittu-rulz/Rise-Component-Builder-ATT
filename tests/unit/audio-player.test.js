@@ -256,8 +256,14 @@ describe('generateJS: skip/completion constants and multi-instance safety', () =
 
   test('saveProgress is guarded against writing before localStorage has actually been read once (regression: a beforeunload/visibilitychange save firing before loadedmetadata\'s own read would otherwise clobber real prior progress with the freshly-initialized zeros)', () => {
     const js = audioPlayer.generateJS(baseConfig(), 'rcb-test');
-    expect(js).toMatch(/if \(!PROGRESS_PERSISTENCE \|\| !progressHydrated\) return;/);
+    expect(js).toMatch(/if \(!PROGRESS_PERSISTENCE \|\| !progressHydrated \|\| !hasEngaged\) return;/);
     expect(js).toMatch(/progressHydrated = true;/);
+  });
+
+  test('saveProgress is also guarded against writing before the learner has done anything this load (regression: a visibilitychange/beforeunload save could otherwise overwrite a real "position: 20" with "position: 0" while the resume prompt was still showing, unacted on — the next Resume click would then read that clobbered 0 back out)', () => {
+    const js = audioPlayer.generateJS(baseConfig(), 'rcb-test');
+    expect(js).toMatch(/addEventListener\('seeking', function\(\) \{ hasEngaged = true; \}\)/);
+    expect(js).toMatch(/hasEngaged = true;[\s\S]{0,120}Pause any other audio\/video/);
   });
 });
 

@@ -312,6 +312,27 @@ test.describe('Audio Player: resume and progress', () => {
     expect(timeAfterRestart).toBeCloseTo(0, 0);
   });
 
+  test('regression: a visibilitychange-hidden firing while the resume prompt is showing (before it\'s acted on) must not clobber the stored position back to 0', async ({ page }) => {
+    const projectId = 'fixture-audio-player-resume-visibility-race';
+    await seedProgressBeforeLoad(page, projectId, { position: 20, furthest: 20, completed: false, updatedAt: Date.now() });
+    await gotoCompiled(page, compileAudio({}, {}, projectId));
+    await waitForMetadata(page);
+    await expect(page.locator('.aud-resume-prompt')).toBeVisible();
+
+    // Simulate the tab losing focus before the learner has acted on the prompt — the exact
+    // window components/audio-player.js's hasEngaged guard exists for (currentTime is still
+    // genuinely 0 here; the learner hasn't played or seeked yet).
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    await page.locator('.aud-resume-btn').click();
+    await page.waitForTimeout(150);
+    const time = await page.evaluate(() => document.querySelector('audio').currentTime);
+    expect(time).toBeGreaterThan(15);
+  });
+
   test('a stored position under 10s does not trigger a resume prompt', async ({ page }) => {
     const projectId = 'fixture-audio-player-resume-early';
     await seedProgressBeforeLoad(page, projectId, { position: 3, furthest: 3, completed: false, updatedAt: Date.now() });
