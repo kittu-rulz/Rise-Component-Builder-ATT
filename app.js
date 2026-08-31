@@ -3,7 +3,7 @@
 // Opt back in incrementally as sections of this file are typed or migrated into the component registry (docs/ARCHITECTURE.md §1).
 
 import { appState, resetConfig } from './js/state.js';
-import { APP_VERSION } from './js/version.js';
+import { APP_VERSION, parseVersionBuildDate } from './js/version.js';
 import {
   buildProject, clearDraft, deleteProject, duplicateProject, getProject, importProjectJson,
   loadCustomThemes, loadDefaultThemeId, loadDraft, loadFavorites, loadPreviewDevice,
@@ -219,11 +219,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // P09: sourced from js/version.js — the one place this value is maintained — rather
     // than a hand-typed string in index.html, which had drifted out of sync with
     // package.json's own version before this. A build-metadata date/time suffix on the
-    // version string itself (js/version.js) was reinstated at explicit user request; this
-    // still just echoes whatever APP_VERSION says, no separate date logic lives here.
+    // version string itself (js/version.js) was reinstated at explicit user request; the
+    // badge shows that suffix as a readable date (parseVersionBuildDate + formatReadableDate)
+    // rather than the raw "YYYYMMDD.HHmm" digits, while APP_VERSION itself is untouched —
+    // the full semver string is still available via the badge's title attribute.
     const versionTag = document.getElementById('app-version-tag');
     if (versionTag) {
-      versionTag.textContent = `v${APP_VERSION}`;
+      const baseVersion = APP_VERSION.split('+')[0];
+      const buildDate = parseVersionBuildDate(APP_VERSION);
+      versionTag.textContent = buildDate ? `v${baseVersion} · ${formatReadableDate(buildDate)}` : `v${APP_VERSION}`;
+      versionTag.title = `Full version: ${APP_VERSION}`;
       versionTag.hidden = false;
     }
 

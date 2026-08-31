@@ -11,3 +11,18 @@
 // stays attached to the version string itself and is expected to be updated by hand on
 // each meaningful release, same as the base version number.
 export const APP_VERSION = '2.0.0+20260821.1514';
+
+// The build-metadata suffix above is stamped as YYYYMMDD.HHmm — compact and sortable,
+// but raw semver build metadata can't contain spaces or colons (semver.org #spec-item-10),
+// so it can't just be "31st Aug 2026" directly. The header badge should still read
+// naturally, so this parses that suffix back into a real Date for display via
+// utilities.js's formatReadableDate() (app.js#init), leaving APP_VERSION itself untouched.
+// Returns null if the suffix is missing or malformed, so the caller can fall back to
+// showing the raw version string rather than "Invalid Date".
+export function parseVersionBuildDate(version) {
+  const match = /\+(\d{4})(\d{2})(\d{2})\.(\d{2})(\d{2})$/.exec(version);
+  if (!match) return null;
+  const [, year, month, day, hour, minute] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
