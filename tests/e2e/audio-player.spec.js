@@ -377,6 +377,53 @@ test.describe('Audio Player: presentation modes', () => {
     await expect(page.locator('.aud-player')).toHaveAttribute('data-mode', 'podcast');
     await expect(page.locator('.aud-chapter-nav')).toBeVisible();
   });
+
+  test('podcast mode: chapters are fully interactive — markers, list click-to-seek, active-chapter tracking, and the collapsible toggle', async ({ page }) => {
+    await page.setContent(compileAudio({ presentationMode: 'podcast' }));
+    await expect(page.locator('.aud-player')).toHaveAttribute('data-mode', 'podcast');
+    await waitForMetadata(page);
+    await expect(page.locator('.aud-chapter-marker')).toHaveCount(2);
+
+    const secondChapter = page.locator('.aud-chapter-item').nth(1);
+    await secondChapter.click();
+    await page.waitForTimeout(150);
+    const time = await page.evaluate(() => document.querySelector('audio').currentTime);
+    expect(time).toBeCloseTo(3, 0);
+    await expect(secondChapter).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('.aud-current-chapter')).toHaveText('Middle');
+
+    // The collapsible toggle (same fix verified for learning mode) also works in podcast mode.
+    const toggle = page.locator('.aud-chapter-toggle');
+    const list = page.locator('.aud-chapter-list');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(list).toBeHidden();
+    await toggle.click();
+    await expect(list).toBeVisible();
+  });
+
+  test('podcast mode: synchronized transcript toggle, search, and click-to-seek all work', async ({ page }) => {
+    await page.setContent(compileAudio({ presentationMode: 'podcast' }));
+    await expect(page.locator('.aud-player')).toHaveAttribute('data-mode', 'podcast');
+
+    const toggle = page.locator('.aud-transcript-toggle');
+    const panel = page.locator('.aud-transcript-panel');
+    await expect(panel).toBeHidden();
+    await toggle.click();
+    await expect(panel).toBeVisible();
+
+    await page.locator('.aud-transcript-search').fill('second half');
+    await expect(page.locator('.aud-transcript-segment:visible')).toHaveCount(1);
+    await expect(page.locator('.aud-search-highlight')).toHaveText('second half');
+    await page.locator('.aud-transcript-search').fill('');
+
+    await waitForMetadata(page);
+    await page.locator('.aud-transcript-segment').nth(1).click();
+    await page.waitForTimeout(150);
+    const time = await page.evaluate(() => document.querySelector('audio').currentTime);
+    expect(time).toBeCloseTo(3, 0);
+  });
 });
 
 test.describe('Audio Player: accessibility', () => {
