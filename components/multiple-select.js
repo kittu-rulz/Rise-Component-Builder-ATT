@@ -62,8 +62,11 @@ export function generateCSS() {
     }
 
     .quiz-option.selected {
-      border-color: var(--accent);
-      background-color: var(--accent-tint);
+      /* Cobalt (--primary) border, not an AT&T-Blue tint background: the
+         selected state of a clickable option needs the Cobalt clickable
+         treatment, not an invented translucent brand-color shade. */
+      border-color: var(--primary);
+      border-width: 2px;
     }
 
     .option-check-square {
@@ -76,8 +79,8 @@ export function generateCSS() {
     }
 
     .quiz-option.selected .option-check-square {
-      border-color: var(--accent);
-      background-color: var(--accent);
+      border-color: var(--primary);
+      background-color: var(--primary);
     }
 
     .quiz-option.selected .option-check-square::after {
@@ -87,7 +90,7 @@ export function generateCSS() {
       left: 5px;
       width: 4px;
       height: 8px;
-      border: solid #FFFFFF;
+      border: solid var(--on-primary);
       border-width: 0 2px 2px 0;
       transform: rotate(45deg);
     }
@@ -125,15 +128,15 @@ export function generateCSS() {
     }
 
     .quiz-feedback.correct {
-      background-color: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      color: #065F46;
+      background-color: var(--success-tint);
+      border: 1px solid var(--success);
+      color: var(--success);
     }
 
     .quiz-feedback.wrong {
-      background-color: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      color: #991B1B;
+      background-color: var(--danger-tint);
+      border: 1px solid var(--danger);
+      color: var(--danger);
     }`;
 }
 

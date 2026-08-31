@@ -200,8 +200,10 @@ export function generateCSS() {
       height: 100%;
       padding: 20px;
       text-align: center;
-      color: #F1F5F9;
-      background-color: #1E293B;
+      /* Built from the theme's own inverted text/surface tokens, not an
+         invented dark-gray hex, matching the hotspot tooltip's same pattern. */
+      color: var(--bg-card);
+      background-color: var(--text-main);
       font-size: 13px;
       line-height: 1.5;
     }
@@ -283,8 +285,11 @@ export function generateCSS() {
       border-color: var(--primary);
     }
     .iv-mc-option.iv-mc-selected {
-      border-color: var(--accent);
-      background-color: var(--accent-tint);
+      /* Cobalt (--primary) border, not an AT&T-Blue tint background: the
+         selected state of a clickable option needs the Cobalt clickable
+         treatment, not an invented translucent brand-color shade. */
+      border-color: var(--primary);
+      border-width: 2px;
     }
     .iv-mc-option[aria-disabled="true"] {
       cursor: not-allowed;
@@ -300,8 +305,8 @@ export function generateCSS() {
       transition: all 0.2s ease;
     }
     .iv-mc-option.iv-mc-selected .iv-mc-option-check {
-      border-color: var(--accent);
-      background-color: var(--accent);
+      border-color: var(--primary);
+      background-color: var(--primary);
     }
     .iv-mc-option.iv-mc-selected .iv-mc-option-check::after {
       content: '';
@@ -311,7 +316,7 @@ export function generateCSS() {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background-color: #FFFFFF;
+      background-color: var(--on-primary);
     }
     .iv-mc-option-text {
       flex: 1;
@@ -357,14 +362,14 @@ export function generateCSS() {
       line-height: 1.5;
     }
     .iv-mc-feedback.iv-correct {
-      background-color: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      color: #065F46;
+      background-color: var(--success-tint);
+      border: 1px solid var(--success);
+      color: var(--success);
     }
     .iv-mc-feedback.iv-incorrect {
-      background-color: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      color: #991B1B;
+      background-color: var(--danger-tint);
+      border: 1px solid var(--danger);
+      color: var(--danger);
     }
     .iv-marker-nav {
       background-color: var(--bg-card);
@@ -394,7 +399,9 @@ export function generateCSS() {
       transition: box-shadow 0.2s ease;
     }
     .iv-marker-item.iv-marker-item-active {
-      box-shadow: 0 0 0 2px var(--accent) inset;
+      /* Cobalt (--primary), not AT&T Blue: the active-state highlight of a
+         clickable marker-list row. */
+      box-shadow: 0 0 0 2px var(--primary) inset;
     }
     .iv-marker-item-btn {
       display: flex;
@@ -411,7 +418,9 @@ export function generateCSS() {
       border-radius: 8px;
     }
     .iv-marker-item-btn:hover {
-      background-color: var(--accent-tint);
+      /* Not an invented AT&T-Blue tint: matches .iv-restart-btn's own neutral
+         hover fill elsewhere in this file. */
+      background-color: var(--bg-body);
     }
     .iv-marker-state-badge {
       font-size: 9px;
@@ -427,16 +436,18 @@ export function generateCSS() {
       color: var(--text-main);
     }
     .iv-marker-state-badge.iv-state-completed {
-      background-color: var(--accent-tint);
-      color: var(--accent);
+      /* Matches .iv-state-visited's neutral treatment — not an invented
+         AT&T-Blue tint. */
+      background-color: var(--border-color);
+      color: var(--text-main);
     }
     .iv-marker-state-badge.iv-state-correct {
-      background-color: rgba(16, 185, 129, 0.15);
-      color: #065F46;
+      background-color: var(--success-tint);
+      color: var(--success);
     }
     .iv-marker-state-badge.iv-state-incorrect {
-      background-color: rgba(239, 68, 68, 0.15);
-      color: #991B1B;
+      background-color: var(--danger-tint);
+      color: var(--danger);
     }
     .iv-progress-summary {
       font-size: 11px;

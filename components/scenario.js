@@ -106,7 +106,9 @@ export function generateCSS() {
       border-color: transparent var(--bg-body) transparent transparent;
     }
     .speaker-name {
-      font-size: 10px;
+      /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
+         text (3.01:1 on white — accepted at large-text size, not below it). */
+      font-size: 19px;
       font-weight: 700;
       color: var(--accent);
       letter-spacing: 0.6px;
@@ -126,7 +128,11 @@ export function generateCSS() {
     .scenario-choice-btn {
       width: 100%;
       background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
+      /* Cobalt (--primary) at rest, not a neutral gray: this button is
+         clickable at all times, so it carries the Cobalt clickable treatment
+         from the start, not only on hover. */
+      border: 1px solid var(--primary);
+      color: var(--primary);
       padding: 12px 16px;
       border-radius: 8px;
       text-align: left;
@@ -136,8 +142,8 @@ export function generateCSS() {
       transition: all 0.2s;
     }
     .scenario-choice-btn:hover {
-      border-color: var(--accent);
-      background-color: var(--accent-tint);
+      border-color: var(--primary-hover);
+      color: var(--primary-hover);
     }
     .scenario-feedback-balloon {
       background-color: rgba(0,0,0,0.02);

@@ -12,6 +12,12 @@ export const defaultConfig = {
 };
 export const editorSchema = getEditorSchema(id);
 
+// Default avatar glyph is a byte-for-byte match with the local AT&T Brand
+// Center icon library export (ATT Design System/Icon_Library_Mar_2026_032726.pptx
+// — People category, "person") — already the approved icon, just undocumented
+// until now. The circular crop comes from .profile-avatar-circle's own CSS, so
+// this stays the plain (non-circled) glyph rather than "person-circle" to avoid
+// a doubled ring.
 export function generateHTML(config) {
   return `
     <div class="profiles-grid">

@@ -86,7 +86,11 @@ export function generateCSS() {
       height: 22px;
       border-radius: 50%;
       background-color: var(--bg-card);
-      border: 3px solid var(--border-color);
+      /* Cobalt (--primary) at rest, not a neutral gray: this marker sits inside
+         a clickable timeline node (role="tab") and should carry the clickable
+         treatment throughout, not only once selected — matching how the
+         Vertical Step Timeline's own marker circle already behaves. */
+      border: 3px solid var(--primary);
       transition: all 0.2s;
       box-shadow: var(--shadow-sm);
       display: flex;
@@ -103,9 +107,8 @@ export function generateCSS() {
       color: var(--primary);
     }
     .timeline-node.active .node-marker {
-      /* Cobalt (--primary), not AT&T Blue: the selected state of a clickable
-         control. Cobalt's 10.7:1 contrast also clears white text at any size. */
-      border-color: var(--primary);
+      /* border-color already var(--primary) at rest above; filling it solid
+         Cobalt with white text is the selected state's own treatment. */
       background-color: var(--primary);
       transform: scale(1.1);
     }

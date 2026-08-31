@@ -26,7 +26,7 @@ export function generateHTML(config, instanceId) {
     <div class="audio-player-block">
       <div class="audio-info">
         <div class="audio-art">
-          ${renderCustomItemArtwork(config.items[0], '<svg width="20" height="20" viewBox="0 0 96 96" fill="currentColor" aria-hidden="true"><path d="M31 16.4C32.5 17.7 34.1 18.8 35.8 19.6 38.6 21 41.7 21.9 44.8 22.1L44.9 20.1C42 19.9 39.2 19.2 36.6 17.9 34.3 16.8 32.3 15.3 30.6 13.4L29 11.5 29 43.5C27.3 41.4 24.5 40 21.5 40 16.3 40 12 44 12 49 12 54 16.3 58 21.5 58 26.7 58 31 54 31 49L31 16.4ZM21.5 56C17.4 56 14 52.9 14 49 14 45.1 17.4 42 21.5 42 25.6 42 29 45.1 29 49 29 52.9 25.6 56 21.5 56Z" fill="#009FDB"/><path d="M70.3 21.8C66.3 19.8 62.8 17.1 59.7 13.9L58 12 58 66C55.4 61.8 50.7 59 45.2 59 37 59 30.4 65.3 30.4 73 30.4 80.7 37 87 45.2 87 53.4 87 60 80.7 60 73L60 17C62.8 19.7 66 21.9 69.4 23.6 74.2 26 79.3 27.4 84.7 27.8L84.8 25.8C79.8 25.5 74.9 24.1 70.3 21.8ZM45.2 85C38.1 85 32.4 79.6 32.4 73 32.4 66.4 38.1 61 45.2 61 52.3 61 58 66.4 58 73 58 79.6 52.3 85 45.2 85Z"/></svg>')}
+          ${renderCustomItemArtwork(config.items[0], '<svg width="20" height="20" viewBox="0 0 96 96" fill="currentColor" aria-hidden="true"><path class="audio-art-accent" d="M31 16.4C32.5 17.7 34.1 18.8 35.8 19.6 38.6 21 41.7 21.9 44.8 22.1L44.9 20.1C42 19.9 39.2 19.2 36.6 17.9 34.3 16.8 32.3 15.3 30.6 13.4L29 11.5 29 43.5C27.3 41.4 24.5 40 21.5 40 16.3 40 12 44 12 49 12 54 16.3 58 21.5 58 26.7 58 31 54 31 49L31 16.4ZM21.5 56C17.4 56 14 52.9 14 49 14 45.1 17.4 42 21.5 42 25.6 42 29 45.1 29 49 29 52.9 25.6 56 21.5 56Z"/><path d="M70.3 21.8C66.3 19.8 62.8 17.1 59.7 13.9L58 12 58 66C55.4 61.8 50.7 59 45.2 59 37 59 30.4 65.3 30.4 73 30.4 80.7 37 87 45.2 87 53.4 87 60 80.7 60 73L60 17C62.8 19.7 66 21.9 69.4 23.6 74.2 26 79.3 27.4 84.7 27.8L84.8 25.8C79.8 25.5 74.9 24.1 70.3 21.8ZM45.2 85C38.1 85 32.4 79.6 32.4 73 32.4 66.4 38.1 61 45.2 61 52.3 61 58 66.4 58 73 58 79.6 52.3 85 45.2 85Z"/></svg>')}
         </div>
         <div class="audio-text-labels">
           <h5>${escapeHTML(config.items[0]?.title || 'Instructional Audio Segment')}</h5>
@@ -81,6 +81,7 @@ export function generateCSS() {
       overflow: hidden;
     }
     .audio-art .custom-item-icon { width: 100%; height: 100%; }
+    .audio-art-accent { fill: var(--accent); }
     .audio-text-labels h5 {
       font-size: 12px;
       font-weight: 600;
@@ -145,7 +146,10 @@ export function generateJS(config, instanceId) {
         audio.play().catch(function(e) { console.log('Audio autoplay blocked or invalid source URL'); });
         playSvg.style.display = 'none';
         pauseSvg.style.display = 'block';
-        btn.style.backgroundColor = 'var(--accent)';
+        // Cobalt (--primary-hover), not AT&T Blue: this button is clickable at
+        // all times and must keep the Cobalt treatment while playing too — the
+        // hover shade signals "active" without breaking the brand's color rule.
+        btn.style.backgroundColor = 'var(--primary-hover)';
         btn.setAttribute('aria-label', 'Pause audio');
         btn.setAttribute('aria-pressed', 'true');
       } else {

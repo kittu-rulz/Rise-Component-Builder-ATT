@@ -18,6 +18,10 @@ import * as infoGrid from '../../components/info-grid.js';
 import * as pricingComparison from '../../components/pricing-comparison.js';
 import * as videoFrame from '../../components/video-frame.js';
 import * as imageGallery from '../../components/image-gallery.js';
+import * as multipleSelect from '../../components/multiple-select.js';
+import * as audioPlayer from '../../components/audio-player.js';
+import * as scenario from '../../components/scenario.js';
+import * as interactiveVideo from '../../components/interactive-video.js';
 import { getBuiltInTheme, resolveThemeTokens, contrastRatio } from '../../js/themes.js';
 
 // Regression coverage for the "ATT branding points.pptx" audit (16 components, G1-G8
@@ -94,6 +98,19 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
     expect(css).toMatch(/\.acc-arrow\s*{[^}]*color:\s*var\(--primary\)/);
     expect(css).toMatch(/\.acc-plus-minus::before, \.acc-plus-minus::after\s*{[^}]*background-color:\s*var\(--primary\)/);
     expect(css).not.toMatch(/\.acc-arrow\s*{[^}]*color:\s*var\(--text-muted\)/);
+  });
+
+  test('sorting target buttons are Cobalt at rest, not just on hover/active', () => {
+    const css = sortingActivity.generateCSS();
+    expect(css).toMatch(/\.target-btn\s*{[^}]*border:\s*1px solid var\(--primary\)/);
+    expect(css).toMatch(/\.target-btn\s*{[^}]*color:\s*var\(--primary\)/);
+    expect(css).not.toMatch(/\.target-btn\s*{[^}]*border:\s*1px solid var\(--border-color\)/);
+  });
+
+  test('horizontal-timeline node markers are Cobalt-outlined at rest, matching the vertical timeline', () => {
+    const css = horizontalTimeline.generateCSS();
+    expect(css).toMatch(/\.node-marker\s*{[^}]*border:\s*3px solid var\(--primary\)/);
+    expect(css).not.toMatch(/\.node-marker\s*{[^}]*border:\s*3px solid var\(--border-color\)/);
   });
 
   test('active flip-card study filter/classify controls are Cobalt, not AT&T Blue', () => {
@@ -196,6 +213,23 @@ describe('AT&T brand: no improvised tints/shades of the brand blues', () => {
     expect(infoGrid.generateCSS()).toContain('.info-grid-icon-accent-dots');
   });
 
+  test('flip-cards default front icon is a real AT&T Brand Center icon (question-circle), not hand-drawn', () => {
+    const html = flipCards.generateHTML({
+      items: [{ title: 'Front', content: 'Front body' }, { title: 'Back', content: 'Back body' }]
+    }, INSTANCE_ID);
+    // Path data lifted verbatim from the local icon library export
+    // (People/Communications categories, "question-circle") — verified by
+    // rendering the candidate icons and visually confirming the match, not
+    // guessed. The old hand-drawn stroke-icon viewBox is gone.
+    expect(html).toContain('M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31');
+    expect(html).not.toContain('viewBox="0 0 24 24"');
+  });
+
+  test('profile-cards default avatar icon matches the AT&T Brand Center "person" icon verbatim', () => {
+    const html = profileCards.generateHTML({ items: [{ title: 'Name', content: 'Bio' }] });
+    expect(html).toContain('M20 15.8C21.8 14.5 23 12.4 23 10 23 6.1 19.9 3 16 3');
+  });
+
   test('image-gallery caption overlay and lightbox text carry no hardcoded slate hex literal', () => {
     const css = imageGallery.generateCSS();
     expect(css).not.toMatch(/#94A3B8/i);
@@ -222,6 +256,53 @@ describe('AT&T brand: WCAG contrast holds for every retargeted color pairing (co
     const ratio = contrastRatio(tokens.accent, tokens.background);
     expect(ratio).toBeGreaterThanOrEqual(3);
     expect(ratio).toBeLessThan(4.5);
+  });
+});
+
+describe('AT&T brand: components outside the original 16-slide audit, swept for the same rules', () => {
+  test('multiple-select selected option is Cobalt-bordered, not an AT&T-Blue tint fill (matches multiple-choice)', () => {
+    const css = multipleSelect.generateCSS();
+    expect(css).toMatch(/\.quiz-option\.selected\s*{[^}]*border-color:\s*var\(--primary\)/);
+    expect(css).not.toContain('background-color: var(--accent-tint)');
+    expect(css).toMatch(/\.quiz-option\.selected \.option-check-square\s*{[^}]*background-color:\s*var\(--primary\)/);
+  });
+
+  test('multiple-select feedback panels use real success/danger tokens, not hardcoded hex', () => {
+    const css = multipleSelect.generateCSS();
+    expect(css).not.toMatch(/#(10B981|EF4444|065F46|991B1B)/i);
+    expect(css).toContain('var(--success-tint)');
+    expect(css).toContain('var(--danger-tint)');
+  });
+
+  test('audio-player default icon has no hardcoded #009FDB literal, and the play button stays Cobalt while playing', () => {
+    const html = audioPlayer.generateHTML({ items: [{ title: 'Clip', content: 'https://example.com/a.mp3' }] }, 'rcb-test');
+    expect(html).not.toContain('#009FDB');
+    const js = audioPlayer.generateJS({ items: [{ title: 'Clip', content: 'https://example.com/a.mp3' }] }, 'rcb-test');
+    // The play/pause toggle used to swap in var(--accent) while playing; it must
+    // now stay within the Cobalt family (--primary / --primary-hover) always.
+    expect(js).not.toContain("'var(--accent)'");
+    expect(js).toContain("'var(--primary-hover)'");
+  });
+
+  test('scenario speaker name is AT&T Blue at >=19px, and choice buttons are Cobalt at rest not just on hover', () => {
+    const css = scenario.generateCSS();
+    const speakerRule = css.match(/\.speaker-name\s*{[^}]*}/)[0];
+    expect(speakerRule).toMatch(/color:\s*var\(--accent\)/);
+    const sizeMatch = speakerRule.match(/font-size:\s*(\d+(?:\.\d+)?)px/);
+    expect(Number(sizeMatch[1])).toBeGreaterThanOrEqual(19);
+
+    expect(css).toMatch(/\.scenario-choice-btn\s*{[^}]*border:\s*1px solid var\(--primary\)/);
+    expect(css).not.toMatch(/\.scenario-choice-btn:hover\s*{[^}]*background-color:\s*var\(--accent-tint\)/);
+  });
+
+  test('interactive-video multiple-choice selection and marker states are Cobalt/success/danger tokens, no invented tints or hardcoded hex', () => {
+    const css = interactiveVideo.generateCSS();
+    expect(css).toMatch(/\.iv-mc-option\.iv-mc-selected\s*{[^}]*border-color:\s*var\(--primary\)/);
+    expect(css).not.toContain('background-color: var(--accent-tint)');
+    expect(css).toMatch(/\.iv-marker-item\.iv-marker-item-active\s*{[^}]*var\(--primary\)/);
+    expect(css).not.toMatch(/#(065F46|991B1B|F1F5F9|1E293B)/i);
+    expect(css).toContain('var(--success-tint)');
+    expect(css).toContain('var(--danger-tint)');
   });
 });
 

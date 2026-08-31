@@ -102,7 +102,11 @@ export function generateCSS() {
     }
     .target-btn {
       background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
+      /* Cobalt (--primary) at rest, not a neutral gray: this button is
+         clickable at all times (not only once assigned), so it carries the
+         Cobalt clickable treatment from the start. */
+      border: 1px solid var(--primary);
+      color: var(--primary);
       padding: 4px 10px;
       font-size: 11px;
       font-weight: 600;
@@ -114,9 +118,8 @@ export function generateCSS() {
       transition: all 0.2s;
     }
     .target-btn:hover {
-      /* Cobalt (--primary), not AT&T Blue: hover state of a clickable control. */
-      border-color: var(--primary);
-      color: var(--primary);
+      border-color: var(--primary-hover);
+      color: var(--primary-hover);
     }
     .target-btn.active {
       /* Cobalt (--primary) background + white text: the brand's clickable
