@@ -518,7 +518,13 @@ export function generateCSS() {
        to point sideways once collapsed, the same convention accordion.js's own chevron
        already establishes for expanded/collapsed state. */
     .aud-chapter-toggle[aria-expanded="false"] .aud-chapter-chevron { transform: rotate(-90deg); }
-    .aud-chapter-list { display: flex; flex-direction: column; gap: 2px; }
+    /* list-style/margin/padding reset: a bare <ul>'s browser-default bullet + indent was
+       leaking through (display: flex on the *list*, below, doesn't change each <li>'s own
+       default display: list-item — that needs resetting directly, not inherited). Only the
+       active row's own "▸" marker (.aud-chapter-item.aud-chapter-active below) should ever
+       appear, never a generic bullet. */
+    .aud-chapter-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .aud-chapter-list li { list-style: none; margin: 0; padding: 0; }
     .aud-chapter-item {
       display: flex;
       align-items: baseline;

@@ -147,6 +147,16 @@ function baseConfig(overrides = {}) {
   };
 }
 
+describe('generateCSS: chapter list has no stray browser-default bullets', () => {
+  test('the <ul>/<li> chapter list resets list-style/margin/padding — the active row\'s own "▸" marker is the only marker that should ever show', () => {
+    const css = audioPlayer.generateCSS();
+    const listRule = css.match(/\.aud-chapter-list\s*{[^}]*}/)[0];
+    expect(listRule).toContain('list-style: none');
+    const liRule = css.match(/\.aud-chapter-list li\s*{[^}]*}/)[0];
+    expect(liRule).toContain('list-style: none');
+  });
+});
+
 describe('generateHTML: presentation modes', () => {
   test('an unrecognized/missing presentationMode falls back to "learning", not a crash', () => {
     const html = audioPlayer.generateHTML(baseConfig({ presentationMode: 'nonsense' }), 'rcb-test');
