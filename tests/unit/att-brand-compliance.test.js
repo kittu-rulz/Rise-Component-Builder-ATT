@@ -284,14 +284,16 @@ describe('AT&T brand: components outside the original 16-slide audit, swept for 
     expect(js).toContain("'var(--primary-hover)'");
   });
 
-  test('audio-player speed/mute/transcript controls are Cobalt-outlined capsules at rest, not invented tints', () => {
+  test('audio-player speed/skip/mute controls are Cobalt-outlined capsules at rest, not invented tints', () => {
     const css = audioPlayer.generateCSS();
-    const speedRule = css.match(/\.audio-speed-btn\s*{[^}]*}/)[0];
+    const speedRule = css.match(/\.aud-speed-btn\s*{[^}]*}/)[0];
     expect(speedRule).toContain('border: 1px solid var(--primary)');
     expect(speedRule).toContain('color: var(--primary)');
     expect(speedRule).toContain('border-radius: var(--button-radius)');
-    const iconButtonRule = css.match(/\.audio-mute-btn,\s*\n\s*\.audio-transcript-btn\s*{[^}]*}/)[0];
-    expect(iconButtonRule).toContain('border: 1px solid var(--primary)');
+    const skipRule = css.match(/\.aud-skip-btn\s*{[^}]*}/)[0];
+    expect(skipRule).toContain('border: 1px solid var(--primary)');
+    const muteRule = css.match(/\.aud-mute-btn\s*{[^}]*}/)[0];
+    expect(muteRule).toContain('border: 1px solid var(--primary)');
     expect(css).not.toMatch(/--accent-tint/);
   });
 

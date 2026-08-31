@@ -10,7 +10,9 @@ const mimeTypes = {
   // Added for tests/e2e/interactive-video.spec.js's local test video (tests/fixtures/media)
   // — without a real video/mp4 Content-Type, some browsers (Firefox in particular) refuse
   // to play a <video><source> served as the previous application/octet-stream fallback.
-  '.mp4': 'video/mp4', '.webm': 'video/webm'
+  '.mp4': 'video/mp4', '.webm': 'video/webm',
+  // Same reasoning, for tests/e2e/audio-player.spec.js's local test audio (tests/fixtures/media).
+  '.mp3': 'audio/mpeg'
 };
 
 createServer((request, response) => {

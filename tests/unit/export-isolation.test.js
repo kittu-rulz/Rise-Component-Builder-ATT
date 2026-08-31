@@ -41,7 +41,7 @@ const GROUPS = {
   'profile-cards': { components: ['profile-cards'], markers: ['profiles-grid', 'profile-card-item'] },
   'info-grid': { components: ['info-grid'], markers: ['info-grid-container', 'info-grid-item'] },
   'pricing-comparison': { components: ['pricing-comparison'], markers: ['pricing-table-container', 'pricing-card-item'] },
-  'audio-player': { components: ['audio-player'], markers: ['audio-player-block', 'audio-scrub-bar', 'toggleAudioPlayback'] },
+  'audio-player': { components: ['audio-player'], markers: ['aud-player', 'aud-scrub-bar', 'togglePlayback'] },
   'video-frame': { components: ['video-frame'], markers: ['video-player-block', 'video-overlay-play', 'toggleVideoPlayback'] },
   'image-gallery': { components: ['image-gallery'], markers: ['gallery-grid', 'lightbox-overlay', 'openGalleryLightbox'] },
   // iv-marker-nav is intentionally excluded here — it's conditional on having at least
@@ -72,7 +72,7 @@ describe('export isolation: each component ships only its own markup, CSS, and J
 
   test('accordion export specifically excludes quiz, gallery, audio, video, and AI code', () => {
     const html = compile('accordion');
-    ['quiz-option', 'gallery-item-card', 'audio-player-block', 'video-wrapper', 'ai-generator-preview', 'triggerAiGeneration']
+    ['quiz-option', 'gallery-item-card', 'aud-player', 'video-wrapper', 'ai-generator-preview', 'triggerAiGeneration']
       .forEach(marker => expect(html).not.toContain(marker));
   });
 });

@@ -94,7 +94,7 @@ test.describe('exported fixtures are keyboard-operable standalone', () => {
 
   test('audio player: Enter/Space toggle play state on the native play button', async ({ page }) => {
     await page.goto('/tests/fixtures/exports/audio-player.html');
-    const playBtn = page.locator('.audio-play-btn');
+    const playBtn = page.locator('.aud-play-btn');
     await playBtn.focus();
     await page.keyboard.press('Enter');
     await expect(playBtn).toHaveAttribute('aria-pressed', 'true');
@@ -141,34 +141,9 @@ test.describe('exported fixtures are keyboard-operable standalone', () => {
     await expect(cards.first()).toBeFocused();
   });
 
-  test('audio player: speed cycles, mute toggles, and the transcript opens/closes as a dialog', async ({ page }) => {
-    await page.setContent(compileExportFixture('audio-player', {
-      configOverrides: { items: [{ title: 'Clip', content: 'https://example.com/a.mp3', transcript: '<p>Transcript text</p>' }] }
-    }));
-
-    const speedBtn = page.locator('.audio-speed-btn');
-    await expect(speedBtn).toHaveText('1x');
-    await speedBtn.click();
-    await expect(speedBtn).toHaveText('1.25x');
-    await expect(speedBtn).toHaveAttribute('aria-label', 'Playback speed: 1.25x');
-
-    const muteBtn = page.locator('.audio-mute-btn');
-    await expect(muteBtn).toHaveAttribute('aria-pressed', 'false');
-    await muteBtn.click();
-    await expect(muteBtn).toHaveAttribute('aria-pressed', 'true');
-    await expect(muteBtn).toHaveAttribute('aria-label', 'Unmute audio');
-
-    const transcriptBtn = page.locator('.audio-transcript-btn');
-    const panel = page.locator('.audio-transcript-panel');
-    await expect(panel).toBeHidden();
-    await transcriptBtn.focus();
-    await page.keyboard.press('Enter');
-    await expect(panel).toBeVisible();
-    await expect(page.locator('.audio-transcript-body')).toHaveText('Transcript text');
-    await page.keyboard.press('Escape');
-    await expect(panel).toBeHidden();
-    await expect(transcriptBtn).toBeFocused();
-  });
+  // Audio player's speed/mute/skip/chapters/transcript/resume/takeaways coverage lives in
+  // its own dedicated file (tests/e2e/audio-player.spec.js), matching Interactive Video's
+  // own dedicated spec — too much real-playback-dependent behavior to fit this shared file.
 });
 
 test.describe('exported fixtures degrade gracefully when Google Fonts is blocked', () => {

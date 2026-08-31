@@ -35,17 +35,23 @@ export const EXPORT_FIXTURES = [
 
 // `configOverrides` merges over the fixture's baseFields/defaults (e.g. { trackCompletion: false }
 // for a required-vs-optional completion test); `settings` becomes appState.settings (e.g.
-// { completionParentOrigin: 'https://example.com' } to test origin validation). Neither
-// parameter is used by the 7 committed fixtures above (which call this with no arguments),
-// so their output is unaffected — this is purely an extension point for tests/unit/completion.test.js
-// and tests/e2e/completion.spec.js to compile one-off variants without committing a file per variant.
-export function compileExportFixture(componentId, { configOverrides = {}, settings } = {}) {
+// { completionParentOrigin: 'https://example.com' } to test origin validation); `projectId`
+// overrides the deterministic `fixture-${componentId}` currentProjectId (js/preview.js's
+// getInstanceId prefixes it into every element id) — needed only when a test puts two
+// instances of the *same* component on one page and must give them genuinely distinct
+// instanceIds (tests/e2e/audio-player.spec.js's multi-instance test), since two calls with
+// the same componentId otherwise produce identical, colliding ids by design. None of these
+// three parameters are used by the 7 committed fixtures above (which call this with no
+// arguments), so their output is unaffected — this is purely an extension point for
+// tests/unit/completion.test.js, tests/e2e/completion.spec.js, and similar one-off variants,
+// without committing a file per variant.
+export function compileExportFixture(componentId, { configOverrides = {}, settings, projectId } = {}) {
   const entry = getComponentById(COMPONENT_REGISTRY, componentId);
   if (!entry) throw new Error(`No registry entry for "${componentId}"`);
   const config = applyThemeToConfig({ ...baseFields, ...getDefaultConfig(entry), ...configOverrides }, theme);
   const appState = {
     selectedComponent: { id: componentId }, activeTheme: theme, componentOverrides: {},
-    config, currentProjectId: `fixture-${componentId}`, ...(settings ? { settings } : {})
+    config, currentProjectId: projectId || `fixture-${componentId}`, ...(settings ? { settings } : {})
   };
   return generateIframeContent(appState, componentRegistry, toRgba);
 }

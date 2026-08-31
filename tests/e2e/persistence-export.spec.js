@@ -53,7 +53,7 @@ test('export contains selected content and theme, excludes unsafe executable mar
 
   // Modular export pipeline: an Accordion export must not ship quiz, gallery, audio,
   // video, or AI code (docs/EXPORT-CONTRACT.md).
-  ['quiz-option', 'gallery-item-card', 'audio-player-block', 'video-wrapper', 'ai-generator-preview']
+  ['quiz-option', 'gallery-item-card', 'aud-player', 'video-wrapper', 'ai-generator-preview']
     .forEach(marker => expect(exported).not.toContain(marker));
 
   // The single-file download lives under Advanced export options.

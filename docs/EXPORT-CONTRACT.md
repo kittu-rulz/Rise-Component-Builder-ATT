@@ -42,7 +42,7 @@ Every one of the 21 catalog components is a real module in `components/*.js` imp
 8. **Export validation** — each component's `validate(config)` (where implemented) plus the schema-driven `minItems`/required-field checks in `js/editor.js` gate saving; `js/component-registry.js#validateRegistry` gates the registry itself at module load (duplicate ids, missing metadata, incomplete renderers all throw immediately with a specific message).
 9. **Deterministic output** — see below.
 
-**Requirement 1 in practice:** because stages 4–6 only ever call the *active* component's own module, an Accordion export structurally cannot contain `.quiz-option`, `.gallery-item-card`, `.audio-player-block`, or any other component's markers — this is proven by `tests/unit/export-isolation.test.js`, which compiles every one of the 21 components and asserts the output contains only its own group's markers and none of the other 20.
+**Requirement 1 in practice:** because stages 4–6 only ever call the *active* component's own module, an Accordion export structurally cannot contain `.quiz-option`, `.gallery-item-card`, `.aud-player`, or any other component's markers — this is proven by `tests/unit/export-isolation.test.js`, which compiles every one of the 21 components and asserts the output contains only its own group's markers and none of the other 20.
 
 ### Instance scoping and isolation strategy (Requirements 5 & 6)
 

@@ -33,7 +33,7 @@ The builder itself is desktop/large-screen internal tooling and is not expected 
 - Toast notifications
 - Defensive HTML, attribute, URL, rich-text, CSS, and inline-script sanitization
 - Reusable browse/drag-and-drop media uploads with previews, replacement, removal, metadata, and external-URL fallback
-- Optional per-item custom icon/image uploads for Flip Card faces, Information Grid cards, and Audio Player artwork, with built-in fallbacks
+- Optional per-item custom icon/image uploads for Flip Card faces, Information Grid cards, and Interactive Learning Audio artwork, with built-in fallbacks
 - Visible image-upload guidance listing supported formats, limits, and schema-specific preferred dimensions
 - IndexedDB storage for uploaded images, audio, video, posters, and WebVTT captions
 - Media-aware standalone export validation and ZIP asset-manifest preparation
@@ -62,9 +62,10 @@ The builder itself is desktop/large-screen internal tooling and is not expected 
 - Profile Cards
 - Information Grid
 - Comparison Cards
-- Audio Player
+- Interactive Learning Audio
 - Video Player
 - Image Gallery
+- Interactive Video
 - AI Scenario Generator placeholder
 - AI Quiz Generator placeholder
 

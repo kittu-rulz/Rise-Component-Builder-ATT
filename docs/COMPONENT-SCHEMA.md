@@ -209,13 +209,15 @@ The preview runtime calculates trackable counts per component. Content-reveal co
 | `profile-cards`       | `title`, `content`, `image`, `altText`, `decorative`, `imageCrop`                                                                      |
 | `info-grid`           | `title`, `content`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`, `accentColor`                                    |
 | `pricing-comparison`  | `title`, `content`, `highlighted`, `actionUrl`                                                                                         |
-| `audio-player`        | `title`, `content` (audio source), `contentDuration`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`, `transcript`   |
+| `audio-player`        | `title`, `content` (audio source), `contentDuration`, optional `iconImage`, `iconAltText`, `iconDecorative`, `iconFit`, `seriesLabel`, `description`, `transcript` (plain-text fallback) |
 | `video-frame`         | `title`, `content` (video source), `posterImage`, `posterAltText`, `posterDecorative`, `captionsUrl`, `transcript`, `audioDescription` |
 | `image-gallery`       | `content` (image source), `title`, `caption`, `altText`, `decorative`, `imageFit`                                                      |
 
 Rich text is supported for selected content fields and sanitized to an allowlist before rendering (`docs/SECURITY.md`).
 
 Hotspots additionally use component-level fields: `backgroundImage`, `backgroundAltText`, `backgroundDecorative`, `backgroundFit`, `backgroundFocalX`, and `backgroundFocalY`.
+
+`audio-player` additionally uses component-level fields: `presentationMode` (`compact`/`learning`/`podcast`), `chapters` and `transcriptSegments` (delimited text — see `docs/AUDIO-PLAYER.md` "Data model" for the exact syntax and why a delimited field rather than a nested repeatable list), `progressPersistence`, `takeaways`, and `takeawaysVisibility`.
 
 ## Media reference model
 
@@ -249,16 +251,16 @@ generateJS(config)           → string
 validate(config)             → { valid: boolean, errors: string[] }
 ```
 
-Only the six modular components (`accordion`, `tabs`, `flip-cards`, `vertical-timeline`, `multiple-choice`, `multiple-select`) currently export this contract. The remaining fifteen catalog entries are implemented as conditional branches inside `js/preview.js` and default-data selection inside `app.js`; they do not yet expose an independent `validate()`. This is the primary migration target described in `docs/KNOWN-ISSUES.md` — **no new component-specific special-casing should be added to `preview.js`/`app.js`; new components should be added directly to the registry contract above.**
+**Stale note, corrected**: this paragraph previously said only six components were modular, with the rest implemented as conditional branches in `js/preview.js`/`app.js`. That migration is complete — all 21 catalog components are real modules exporting this exact contract (`docs/ARCHITECTURE.md` §1, `docs/KNOWN-ISSUES.md` "Coupling and duplication... resolved"), and there is no legacy dispatch branch left anywhere. **No new component-specific special-casing should be added to `preview.js`/`app.js`; a new component is added directly to the registry contract above,** the same way `interactive-video` (`docs/INTERACTIVE-VIDEO.md`) and this feature's own `audio-player` additions (`docs/AUDIO-PLAYER.md`) were.
 
-The automated generator-contract test suite (`tests/unit`) exercises all six modular components with empty, one-item, many-item, long-text, emoji, multilingual, right-to-left, quote, closing-script, and unsafe-URL fixtures. It parses generated HTML, checks id uniqueness within an instance, parses CSS, compiles JavaScript, and rejects accidental `undefined` or object-string output. Any component migrated into the registry should gain the same fixture coverage as part of that migration (`docs/TESTING-STRATEGY.md`).
+The automated generator-contract test suite (`tests/unit/generators.test.js`) exercises 20 of the 21 modular components — every one whose items share the uniform `{title, content}`-shaped assumption this test's shared loop makes — with empty, one-item, many-item, long-text, emoji, multilingual, right-to-left, quote, closing-script, and unsafe-URL fixtures. It parses generated HTML, checks id uniqueness within an instance, parses CSS, compiles JavaScript, and rejects accidental `undefined` or object-string output. `interactive-video` has its own dedicated equivalent (`tests/unit/interactive-video.test.js`) instead, since its type-discriminated, optionally-empty marker list doesn't fit that shared loop's assumptions. Any newly added component should gain the same fixture coverage (`docs/TESTING-STRATEGY.md`).
 
 ## Recommended schema improvements
 
 **Planned, not yet implemented:**
 
 - Add stable item IDs so media ownership and reordering do not depend on array position.
-- Add component-level schema sections in addition to `itemFields` more broadly (today `hotspots` and `interactive-video` use `componentFields`; every other component's fields are all `itemFields`).
+- Add component-level schema sections in addition to `itemFields` more broadly (today `hotspots`, `interactive-video`, and `audio-player` use `componentFields`; every other component's fields are all `itemFields`).
 - Add conditional schema visibility so decorative images can hide or disable alternative-text inputs. `interactive-video` hits this same gap from a different angle: both marker types' full field sets (Information's `body` vs. Multiple Choice's `question`/answers/feedback) are always visible in every marker's editor card regardless of its selected `type`, since there is no per-value conditional field visibility to hide the irrelevant set (`docs/INTERACTIVE-VIDEO.md` "Authoring workflow").
 - Add a schema field type for a nested, repeatable sub-list within an item — every field today is scalar. `interactive-video`'s Multiple Choice markers hit this directly: answers are a fixed 4 flat slots (`answer1Label`…`answer4Label`) rather than an unbounded list, chosen as the lower-risk option over a delimited-text encoding precisely because this capability doesn't exist yet (`docs/INTERACTIVE-VIDEO.md` "Marker data model" "Known limitation, deliberate").
 - Separate warnings from blocking validation errors more formally in the schema shape (today this is convention — `warningWhen`/`warningUnless`/`warningUnlessAny` vs. `required` — not an enforced separation).

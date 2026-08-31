@@ -54,7 +54,8 @@ const CATEGORY = Object.freeze({
   KNOWLEDGE: 'knowledge',
   MEDIA: 'media',
   HOTSPOTS: 'hotspots',
-  INTERACTIVE_VIDEO: 'interactive-video'
+  INTERACTIVE_VIDEO: 'interactive-video',
+  AUDIO_PLAYER: 'audio-player'
 });
 
 // Short, static, human-readable label for each rule — the "title" half of the result
@@ -103,7 +104,10 @@ const RULE_TITLES = Object.freeze({
   'interactive-video-marker-outside-duration': 'Marker timestamp is past the video duration',
   'interactive-video-required-never-pauses': 'Required marker never pauses the video',
   'interactive-video-non-direct-video-url': 'External video URL is a hosting page, not a direct file',
-  'interactive-video-uploaded-media-export-format': 'Uploaded video/captions need the Web Package ZIP export format'
+  'interactive-video-uploaded-media-export-format': 'Uploaded video/captions need the Web Package ZIP export format',
+  'audio-player-invalid-chapter-line': 'Chapter row has an invalid timestamp or missing title',
+  'audio-player-duplicate-chapter-timestamps': 'Two chapters share the same timestamp',
+  'audio-player-invalid-transcript-segment': 'Synchronized transcript row has an invalid timestamp'
 });
 
 function issue(ruleId, severity, category, explanation, extra = {}) {
@@ -778,6 +782,11 @@ registerValidationRule({
   appliesTo: ({ componentId }) => componentId === 'interactive-video',
   check: ({ componentId, config }) => checkInteractiveVideoUploadedMediaExportFormat(componentId, config)
 });
+registerValidationRule({
+  id: 'audio-player-chapter-transcript-rules',
+  appliesTo: ({ componentId }) => componentId === 'audio-player',
+  check: ({ config }) => checkAudioPlayerChapterAndTranscriptRules(config)
+});
 
 // Timestamps within this many seconds of each other are flagged as "hard to trigger
 // independently" — during real playback (Phase 3/4) two markers this close together risk
@@ -904,6 +913,67 @@ function checkInteractiveVideoUploadedMediaExportFormat(componentId, config) {
   return [issue('interactive-video-uploaded-media-export-format', SEVERITY.WARNING, CATEGORY.INTERACTIVE_VIDEO,
     `This component uses an ${what}. The Iframe Snippet and HTML Block Fragment export formats cannot deliver that file alongside the pasted snippet — it will 404 once pasted into Rise. Export as a Web Package ZIP instead, extract it, host it externally, and iframe-embed that hosted URL in Rise.`,
     { fieldId: hasUploadedVideo ? 'videoMediaId' : 'captionsUrl' })];
+}
+
+// "MM:SS"/"HH:MM:SS" -> seconds, or null. Deliberately duplicated from
+// components/audio-player.js#parseTimestampToSeconds rather than imported — no other
+// Preflight rule in this file imports a specific components/*.js module (every other
+// rule operates on config fields generically), and this is a small, pure, ~10-line check
+// with nothing else to share, matching the Node-side/runtime-string duplication this repo
+// already establishes for formatDurationLabel/formatMediaTime.
+function auParseTimestamp(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return null;
+  const parts = text.split(':').map(part => part.trim());
+  if (parts.length < 2 || parts.length > 3 || parts.some(part => !/^\d+$/.test(part))) return null;
+  const numbers = parts.map(Number);
+  const seconds = numbers.length === 3 ? numbers[0] * 3600 + numbers[1] * 60 + numbers[2] : numbers[0] * 60 + numbers[1];
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
+}
+
+// Chapters/Synchronized Transcript are delimited textarea fields (js/editor-schemas.js's
+// audio-player comment explains why — no nested repeatable sub-list field type exists).
+// Malformed rows never break preview/export (components/audio-player.js's own parsers
+// silently skip them), but the author should still be told about a row that will be
+// silently dropped, and about two chapters sharing a timestamp — both real, demonstrable
+// authoring mistakes worth a Warning, not worth blocking export over.
+function checkAudioPlayerChapterAndTranscriptRules(config) {
+  const issues = [];
+  const chapterLines = String(config.chapters ?? '').split('\n');
+  const seenChapterTimestamps = new Map();
+  chapterLines.forEach((line, lineIndex) => {
+    if (!line.trim()) return;
+    const parts = line.split('|');
+    const timestamp = auParseTimestamp(parts[0]);
+    const title = (parts[1] || '').trim();
+    if (timestamp === null || !title) {
+      issues.push(issue('audio-player-invalid-chapter-line', SEVERITY.WARNING, CATEGORY.AUDIO_PLAYER,
+        `Chapter row ${lineIndex + 1} ("${line.trim().slice(0, 60)}") has ${timestamp === null ? 'an invalid or missing timestamp' : 'no title'} and will be skipped rather than shown to learners.`,
+        { fieldId: 'chapters' }));
+      return;
+    }
+    if (seenChapterTimestamps.has(timestamp)) {
+      issues.push(issue('audio-player-duplicate-chapter-timestamps', SEVERITY.WARNING, CATEGORY.AUDIO_PLAYER,
+        `Chapter row ${lineIndex + 1} ("${title}") shares its timestamp with an earlier chapter ("${seenChapterTimestamps.get(timestamp)}") — both will still be shown, but a duplicate timestamp is usually an authoring mistake.`,
+        { fieldId: 'chapters' }));
+    } else {
+      seenChapterTimestamps.set(timestamp, title);
+    }
+  });
+
+  const segmentLines = String(config.transcriptSegments ?? '').split('\n');
+  segmentLines.forEach((line, lineIndex) => {
+    if (!line.trim()) return;
+    const parts = line.split('|');
+    const timestamp = auParseTimestamp(parts[0]);
+    if (timestamp === null) {
+      issues.push(issue('audio-player-invalid-transcript-segment', SEVERITY.WARNING, CATEGORY.AUDIO_PLAYER,
+        `Synchronized transcript row ${lineIndex + 1} ("${line.trim().slice(0, 60)}") has an invalid or missing timestamp and will be skipped.`,
+        { fieldId: 'transcriptSegments' }));
+    }
+  });
+
+  return issues;
 }
 
 // ---------------------------------------------------------------------------

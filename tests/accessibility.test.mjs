@@ -116,9 +116,13 @@ test('media and gallery output includes alternatives, accessible controls, and d
   assert.match(audio, /aria-label="Play audio" aria-pressed="false"/);
   assert.match(audio, /class="custom-item-icon"[^>]+alt="Podcast cover"/);
   assert.match(audio, /role="slider" tabindex="0" aria-label="Audio position"/);
-  assert.match(audio, /aria-haspopup="dialog" aria-controls="[^"]+-transcript-panel"/);
-  assert.match(audio, /class="audio-transcript-panel" role="dialog" aria-modal="true"/);
-  assert.match(audio, /<p>Transcript text<\/p>/);
+  // Transcript is an inline expandable panel below the player, not a viewport-level
+  // fixed dialog — the component may run inside a constrained Rise iframe.
+  assert.match(audio, /class="aud-transcript-toggle"[^>]+aria-expanded="false" aria-controls="[^"]+-transcript-panel"/);
+  assert.match(audio, /class="aud-transcript-panel"[^>]+hidden>/);
+  assert.match(audio, /<div class="aud-transcript-plain"><p>Transcript text<\/p><\/div>/);
+  assert.match(audio, /aria-label="Replay 10 seconds"/);
+  assert.match(audio, /aria-label="Forward 10 seconds"/);
   assert.match(audio, /addEventListener\('ended'/);
 
   const video = generate('video-frame', [{ title: 'Video lesson', content: 'https://example.com/video.mp4', captionsUrl: 'https://example.com/captions.vtt', audioDescription: '<p>Visual description</p>' }]);

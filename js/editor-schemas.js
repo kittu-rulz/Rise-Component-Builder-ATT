@@ -168,12 +168,46 @@ export const editorSchemas = {
     // — it plays one track, not a playlist. maxItems stops the editor from letting an
     // author add a 2nd/3rd track that would be silently accepted but never shown
     // anywhere (not in preview, not in the export).
+    //
+    // Chapters/transcriptSegments/takeaways are delimited plain-text fields, not a
+    // repeatable nested sub-list — this schema-driven item editor has no field type for
+    // a nested, repeatable sub-list within an item (docs/COMPONENT-SCHEMA.md "Recommended
+    // schema improvements"), the same constraint interactive-video's fixed 4 answer slots
+    // already document. A delimited textarea (one row per line) matches the established,
+    // lower-risk pattern already shipped in pricing-comparison.js's `•`-split feature list,
+    // rather than inventing new schema/editor machinery for this one component. Parsing
+    // lives in components/audio-player.js (parseChapters/parseTranscriptSegments/
+    // parseTakeaways) and tolerates malformed lines by skipping them, never throwing.
     itemLabel: 'Audio Track', minItems: 1, maxItems: 1,
+    componentLabel: 'Presentation, Chapters, Transcript & Progress',
+    componentFields: [
+      field('presentationMode', 'Presentation Mode', 'select', {
+        default: 'learning',
+        options: [
+          { value: 'compact', label: 'Compact — short clips or pronunciations' },
+          { value: 'learning', label: 'Learning (default) — chapters, transcript, progress' },
+          { value: 'podcast', label: 'Podcast — longer audio, full episode layout' }
+        ]
+      }),
+      field('chapters', 'Chapters (Optional) — one per line: MM:SS or HH:MM:SS | Title | Description (optional)', 'textarea', { required: false, default: '' }),
+      field('transcriptSegments', 'Synchronized Transcript (Optional) — one per line: MM:SS | Speaker (optional, may be blank) | Segment text. Takes priority over the plain Transcript below when both are set.', 'textarea', { required: false, default: '' }),
+      field('progressPersistence', 'Remember Playback Position on This Device (local progress only — does not set Rise/LMS completion)', 'checkbox', { default: true }),
+      field('takeaways', 'Key Takeaways (Optional) — one per line', 'textarea', { required: false, default: '' }),
+      field('takeawaysVisibility', 'Key Takeaways Visibility', 'select', {
+        default: 'always',
+        options: [
+          { value: 'always', label: 'Always visible' },
+          { value: 'afterCompletion', label: 'Reveal after audio completion' }
+        ]
+      })
+    ],
     itemFields: [
       field('title', 'Audio Title', 'text', { required: true, default: 'New Audio Track' }),
+      field('seriesLabel', 'Series / Eyebrow Label (Optional — shown above the title in Podcast mode)', 'text', { required: false, default: '', maxLength: 60 }),
+      field('description', 'Description (Optional — shown in Learning and Podcast modes)', 'textarea', { required: false, default: '' }),
       field('content', 'Audio Source', 'audio', { required: true, default: '' }),
       ...visualIconFields,
-      field('transcript', 'Transcript', 'richtext', { required: false, default: '', warningWhen: 'content', warningUnlessAny: ['transcript'], warningMessage: 'Instructional audio should include a transcript.' })
+      field('transcript', 'Plain Transcript (Optional — shown as a fallback when no Synchronized Transcript is set above)', 'richtext', { required: false, default: '', warningWhen: 'content', warningUnlessAny: ['transcript'], warningMessage: 'Instructional audio should include a transcript.' })
     ]
   },
   'video-frame': {
