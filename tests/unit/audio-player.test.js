@@ -193,6 +193,28 @@ describe('generateHTML: presentation modes', () => {
     expect(html).toContain('Synced text');
     expect(html).not.toContain('Plain fallback');
   });
+
+  test('a visually-empty richtext transcript ("<p></p>", "<br>", whitespace) is treated as no transcript, not a genuine one', () => {
+    ['<p></p>', '<br>', '  ', ''].forEach(emptyish => {
+      const html = audioPlayer.generateHTML(baseConfig({
+        items: [{ title: 'Clip', content: 'https://example.com/a.mp3', transcript: emptyish }]
+      }), 'rcb-test');
+      expect(html).not.toContain('aud-transcript-toggle');
+      expect(html).toContain('No transcript has been supplied for this audio.');
+    });
+  });
+
+  test('a transcript with real text content (even if wrapped in markup) still renders the toggle', () => {
+    const html = audioPlayer.generateHTML(baseConfig({
+      items: [{ title: 'Clip', content: 'https://example.com/a.mp3', transcript: '<p>Real content</p>' }]
+    }), 'rcb-test');
+    expect(html).toContain('aud-transcript-toggle');
+  });
+
+  test('the chapters section is a collapsible toggle, expanded by default, with an aria-controls link to the list', () => {
+    const html = audioPlayer.generateHTML(baseConfig({ chapters: '0:00 | Intro' }), 'rcb-test');
+    expect(html).toMatch(/id="rcb-test-chapter-toggle"[^>]*aria-expanded="true"[^>]*aria-controls="rcb-test-chapter-list"/);
+  });
 });
 
 describe('generateJS: skip/completion constants and multi-instance safety', () => {
@@ -200,6 +222,13 @@ describe('generateJS: skip/completion constants and multi-instance safety', () =
     const js = audioPlayer.generateJS(baseConfig(), 'rcb-test');
     expect(js).toContain('AUD_SKIP_SECONDS = 10');
     expect(js).toContain('AUD_COMPLETION_THRESHOLD = 0.9');
+  });
+
+  test('the chapters toggle wires up aria-expanded and hidden, mirroring the transcript toggle\'s own pattern', () => {
+    const js = audioPlayer.generateJS(baseConfig(), 'rcb-test');
+    expect(js).toContain("document.getElementById('rcb-test-chapter-toggle')");
+    expect(js).toMatch(/chapterToggle\.setAttribute\('aria-expanded', String\(!expanded\)\)/);
+    expect(js).toMatch(/chapterListEl\.hidden = expanded/);
   });
 
   test('singleton controls are looked up by instanceId-scoped getElementById, not a bare document.querySelector', () => {

@@ -1,4 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
+import { isEmpty } from '../js/field-validation.js';
 import { escapeAttribute, escapeHTML } from '../js/utilities.js';
 
 export const id = 'audio-player';
@@ -134,7 +135,12 @@ export function generateHTML(config, instanceId) {
   const takeaways = parseTakeaways(config.takeaways);
   const progressPersistence = config.progressPersistence !== false;
   const takeawaysVisibility = config.takeawaysVisibility === 'afterCompletion' ? 'afterCompletion' : 'always';
-  const hasTranscript = Boolean(segments.length || plainTranscript);
+  // isEmpty(), not a bare truthy check: a richtext field's "empty" value from the
+  // contentEditable editor is often not the literal string '' but a visually-empty
+  // fragment like '<p></p>' or '<br>' — strips tags/&nbsp; before deciding, matching how
+  // this same field type's own required/warning checks already treat "empty" elsewhere
+  // (js/field-validation.js).
+  const hasTranscript = Boolean(segments.length) || !isEmpty(plainTranscript);
   const isCompact = mode === 'compact';
 
   const identityBlock = `
@@ -185,7 +191,10 @@ export function generateHTML(config, instanceId) {
 
   const chapterNavBlock = !isCompact && chapters.length
     ? `<nav class="aud-chapter-nav" aria-label="Chapters">
-        <h4 class="aud-section-heading">Chapters</h4>
+        <button type="button" class="aud-chapter-toggle" id="${instanceId}-chapter-toggle" aria-expanded="true" aria-controls="${instanceId}-chapter-list">
+          <span class="aud-section-heading">Chapters</span>
+          <svg class="aud-chapter-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>
+        </button>
         <ul class="aud-chapter-list" id="${instanceId}-chapter-list">
           ${chapters.map((chapter, i) => `
             <li>
@@ -488,6 +497,27 @@ export function generateCSS() {
       margin-bottom: 6px;
     }
     .aud-chapter-nav { border-top: var(--border-style); padding-top: 10px; }
+    .aud-chapter-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .aud-chapter-toggle .aud-section-heading { margin-bottom: 0; }
+    .aud-chapter-chevron {
+      color: var(--primary);
+      flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+    /* Points down (content visible below) at rest — chapters start expanded — and rotates
+       to point sideways once collapsed, the same convention accordion.js's own chevron
+       already establishes for expanded/collapsed state. */
+    .aud-chapter-toggle[aria-expanded="false"] .aud-chapter-chevron { transform: rotate(-90deg); }
     .aud-chapter-list { display: flex; flex-direction: column; gap: 2px; }
     .aud-chapter-item {
       display: flex;
@@ -681,6 +711,7 @@ export function generateJS(config, instanceId) {
       var statusEl = document.getElementById('${instanceId}-status');
       var currentChapterEl = document.getElementById('${instanceId}-current-chapter');
       var chapterListEl = document.getElementById('${instanceId}-chapter-list');
+      var chapterToggle = document.getElementById('${instanceId}-chapter-toggle');
       var progressTextEl = document.getElementById('${instanceId}-progress-text');
       var resumePrompt = document.getElementById('${instanceId}-resume-prompt');
       var resumeText = document.getElementById('${instanceId}-resume-text');
@@ -897,6 +928,14 @@ export function generateJS(config, instanceId) {
             var time = Number(btn.getAttribute('data-time'));
             if (Number.isFinite(time)) seekTo(time);
           });
+        });
+      }
+
+      if (chapterToggle && chapterListEl) {
+        chapterToggle.addEventListener('click', function() {
+          var expanded = chapterToggle.getAttribute('aria-expanded') === 'true';
+          chapterToggle.setAttribute('aria-expanded', String(!expanded));
+          chapterListEl.hidden = expanded;
         });
       }
 

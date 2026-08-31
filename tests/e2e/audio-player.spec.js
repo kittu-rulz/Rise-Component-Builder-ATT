@@ -159,6 +159,22 @@ test.describe('Audio Player: chapters', () => {
     await marker.focus();
     await expect(marker).toBeFocused();
   });
+
+  test('the Chapters panel is collapsible: starts expanded, and the toggle hides/shows the list and updates aria-expanded', async ({ page }) => {
+    await page.setContent(compileAudio());
+    const toggle = page.locator('.aud-chapter-toggle');
+    const list = page.locator('.aud-chapter-list');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(list).toBeVisible();
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(list).toBeHidden();
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(list).toBeVisible();
+  });
 });
 
 test.describe('Audio Player: synchronized transcript', () => {
@@ -225,6 +241,18 @@ test.describe('Audio Player: synchronized transcript', () => {
     await expect(page.locator('.aud-transcript-search')).toHaveCount(0);
     await page.locator('.aud-transcript-toggle').click();
     await expect(page.locator('.aud-transcript-plain')).toContainText('Plain transcript text.');
+  });
+
+  test('a visually-empty transcript (no text typed, just empty richtext markup) shows no "Show Transcript" toggle at all', async ({ page }) => {
+    const html = compileExportFixture('audio-player', {
+      configOverrides: {
+        chapters: '', transcriptSegments: '',
+        items: [{ title: 'Clip', content: TEST_AUDIO_URL, transcript: '<p></p>' }]
+      }
+    });
+    await page.setContent(html);
+    await expect(page.locator('.aud-transcript-toggle')).toHaveCount(0);
+    await expect(page.locator('.aud-transcript-section')).toHaveCount(0);
   });
 });
 

@@ -359,6 +359,27 @@
       margin-bottom: 6px;
     }
     .aud-chapter-nav { border-top: var(--border-style); padding-top: 10px; }
+    .aud-chapter-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .aud-chapter-toggle .aud-section-heading { margin-bottom: 0; }
+    .aud-chapter-chevron {
+      color: var(--primary);
+      flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+    /* Points down (content visible below) at rest — chapters start expanded — and rotates
+       to point sideways once collapsed, the same convention accordion.js's own chevron
+       already establishes for expanded/collapsed state. */
+    .aud-chapter-toggle[aria-expanded="false"] .aud-chapter-chevron { transform: rotate(-90deg); }
     .aud-chapter-list { display: flex; flex-direction: column; gap: 2px; }
     .aud-chapter-item {
       display: flex;
@@ -607,7 +628,10 @@
     </div>
       <audio id="rcb-fixture-audio-player-audio-el" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="metadata" style="display:none;"></audio>
       <nav class="aud-chapter-nav" aria-label="Chapters">
-        <h4 class="aud-section-heading">Chapters</h4>
+        <button type="button" class="aud-chapter-toggle" id="rcb-fixture-audio-player-chapter-toggle" aria-expanded="true" aria-controls="rcb-fixture-audio-player-chapter-list">
+          <span class="aud-section-heading">Chapters</span>
+          <svg class="aud-chapter-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>
+        </button>
         <ul class="aud-chapter-list" id="rcb-fixture-audio-player-chapter-list">
           
             <li>
@@ -816,6 +840,7 @@
       var statusEl = document.getElementById('rcb-fixture-audio-player-status');
       var currentChapterEl = document.getElementById('rcb-fixture-audio-player-current-chapter');
       var chapterListEl = document.getElementById('rcb-fixture-audio-player-chapter-list');
+      var chapterToggle = document.getElementById('rcb-fixture-audio-player-chapter-toggle');
       var progressTextEl = document.getElementById('rcb-fixture-audio-player-progress-text');
       var resumePrompt = document.getElementById('rcb-fixture-audio-player-resume-prompt');
       var resumeText = document.getElementById('rcb-fixture-audio-player-resume-text');
@@ -1032,6 +1057,14 @@
             var time = Number(btn.getAttribute('data-time'));
             if (Number.isFinite(time)) seekTo(time);
           });
+        });
+      }
+
+      if (chapterToggle && chapterListEl) {
+        chapterToggle.addEventListener('click', function() {
+          var expanded = chapterToggle.getAttribute('aria-expanded') === 'true';
+          chapterToggle.setAttribute('aria-expanded', String(!expanded));
+          chapterListEl.hidden = expanded;
         });
       }
 
