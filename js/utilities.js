@@ -241,6 +241,27 @@ export function sanitizeCSSNumber(value, { minimum = 0, maximum = 100, fallback 
 // browser's storage quota estimate (which can legitimately run into the
 // hundreds of GB on a large disk) never falls through to a raw, unrounded byte
 // count (P10 requirement 5, "very large values").
+// "31st Aug 2026, 10:51 AM" instead of toLocaleString()'s locale-dependent
+// "8/31/2026, 10:51:27 AM" — an ordinal day reads unambiguously regardless of
+// the viewer's locale (no day/month-order guessing), and dropping seconds
+// keeps it scannable in a compact project-list row.
+function ordinalSuffix(day) {
+  if (day % 10 === 1 && day !== 11) return 'st';
+  if (day % 10 === 2 && day !== 12) return 'nd';
+  if (day % 10 === 3 && day !== 13) return 'rd';
+  return 'th';
+}
+
+export function formatReadableDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown date';
+  const day = date.getDate();
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${day}${ordinalSuffix(day)} ${month} ${year}, ${time}`;
+}
+
 export function formatStorageBytes(bytes) {
   if (!Number.isFinite(bytes)) return 'Unknown';
   if (bytes < 1024) return `${bytes} B`;

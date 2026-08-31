@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
-  copyTextToClipboard, describeStorageUsage, escapeAttribute, escapeHTML, escapeJavaScriptString, formatItemLabel, formatStorageBytes, sanitizeRichText, sanitizeURL, slugify, toRgba
+  copyTextToClipboard, describeStorageUsage, escapeAttribute, escapeHTML, escapeJavaScriptString, formatItemLabel, formatReadableDate, formatStorageBytes, sanitizeRichText, sanitizeURL, slugify, toRgba
 } from '../../js/utilities.js';
 import { sanitizeAssetFilename } from '../../js/media.js';
 import { createProjectId, validateProject } from '../../js/storage.js';
@@ -133,6 +133,29 @@ describe('formatStorageBytes', () => {
     expect(formatStorageBytes(NaN)).toBe('Unknown');
     expect(formatStorageBytes(undefined)).toBe('Unknown');
     expect(formatStorageBytes(Infinity)).toBe('Unknown');
+  });
+});
+
+describe('formatReadableDate', () => {
+  test.each([
+    ['2026-08-01T00:00:00.000Z', /^1st Aug 2026,/],
+    ['2026-08-02T00:00:00.000Z', /^2nd Aug 2026,/],
+    ['2026-08-03T00:00:00.000Z', /^3rd Aug 2026,/],
+    ['2026-08-11T00:00:00.000Z', /^11th Aug 2026,/],
+    ['2026-08-12T00:00:00.000Z', /^12th Aug 2026,/],
+    ['2026-08-13T00:00:00.000Z', /^13th Aug 2026,/],
+    ['2026-08-31T00:00:00.000Z', /^31st Aug 2026,/]
+  ])('formats %s with the correct ordinal suffix', (input, expected) => {
+    expect(formatReadableDate(input)).toMatch(expected);
+  });
+
+  test('accepts a Date instance as well as a string/number', () => {
+    expect(formatReadableDate(new Date('2026-08-31T00:00:00.000Z'))).toMatch(/^31st Aug 2026,/);
+  });
+
+  test('invalid input is reported as Unknown date rather than "Invalid Date"', () => {
+    expect(formatReadableDate('not-a-date')).toBe('Unknown date');
+    expect(formatReadableDate(undefined)).toBe('Unknown date');
   });
 });
 

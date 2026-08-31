@@ -180,6 +180,8 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
+      row-gap: 8px;
     }
     .audio-play-btn {
       width: 32px;
@@ -193,12 +195,14 @@
       justify-content: center;
       cursor: pointer;
       transition: transform 0.2s;
+      flex-shrink: 0;
     }
     .audio-play-btn:hover {
       transform: scale(1.05);
     }
     .audio-scrub-bar {
-      flex: 1;
+      flex: 1 1 60px;
+      min-width: 60px;
       height: 6px;
       border-radius: 4px;
       background-color: var(--bg-body);
@@ -213,8 +217,107 @@
     .audio-timer {
       font-size: 11px;
       color: var(--text-muted);
-      width: 30px;
-      text-align: right;
+      white-space: nowrap;
+    }
+    /* Speed toggle: a complete pill, Cobalt-outlined at rest like sorting-activity's
+       .target-btn, not just on hover/press — this button is clickable at all times. */
+    .audio-speed-btn {
+      background-color: var(--bg-card);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: var(--button-radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .audio-speed-btn:hover {
+      border-color: var(--primary-hover);
+      color: var(--primary-hover);
+    }
+    .audio-mute-btn,
+    .audio-transcript-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background-color: var(--bg-card);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      padding: 0;
+    }
+    .audio-mute-btn:hover,
+    .audio-transcript-btn:hover {
+      border-color: var(--primary-hover);
+      color: var(--primary-hover);
+    }
+    .audio-transcript-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(15, 23, 42, 0.6);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .audio-transcript-panel-inner {
+      background-color: var(--bg-card);
+      color: var(--text-main);
+      border-radius: var(--border-radius);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+      max-width: 480px;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .audio-transcript-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: var(--border-style);
+    }
+    .audio-transcript-panel-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .audio-transcript-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      line-height: 1;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .audio-transcript-close:hover {
+      color: var(--text-main);
+    }
+    .audio-transcript-body {
+      padding: 20px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.6;
     }
     @media (forced-colors: active) {
       .scrub-fill { background: Highlight; }
@@ -317,10 +420,16 @@
           <svg class="play-svg" aria-hidden="true" width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M22 16 13 22.7 13 9.3Z"/></svg>
           <svg class="pause-svg" aria-hidden="true" width="16" height="16" viewBox="0 0 32 32" fill="currentColor" style="display:none;"><rect x="11" y="10" width="3" height="12"/><rect x="18" y="10" width="3" height="12"/></svg>
         </button>
-        <div class="audio-scrub-bar" role="slider" tabindex="0" aria-label="Audio position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="25" aria-valuetext="25 percent">
-          <div class="scrub-fill" style="width: 25%;"></div>
+        <div class="audio-scrub-bar" role="slider" tabindex="0" aria-label="Audio position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent">
+          <div class="scrub-fill" style="width: 0%;"></div>
         </div>
-        <span class="audio-timer" aria-live="off">0:56</span>
+        <span class="audio-timer" aria-live="off">0:00 / 0:00</span>
+        <button type="button" class="audio-speed-btn" aria-label="Playback speed: 1x">1x</button>
+        <button type="button" class="audio-mute-btn" aria-label="Mute audio" aria-pressed="false">
+          <svg class="volume-on-svg" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M3.9 11C2.3 11 1 12.3 1 13.9L1 18.2C1 19.7 2.3 21 3.9 21L8.2 21 16.1 27.7 16.1 4.3 8.1 11 3.9 11ZM14 8.6 14 23.3 8.9 19 3.9 19C3.4 19 3 18.6 3 18.1L3 13.8C3 13.4 3.4 13 3.9 13L8.9 13 14 8.6Z"/><path d="M18.8 13.2C20.3 14.7 20.3 17.3 18.8 18.8L20.2 20.2C22.5 17.9 22.5 14.1 20.2 11.8L18.8 13.2Z"/><path d="M23.4 8.6 22 10C25.3 13.3 25.3 18.7 22 22L23.4 23.4C27.5 19.3 27.5 12.7 23.4 8.6Z"/></svg>
+          <svg class="volume-off-svg" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" style="display:none;"><path d="M28.9 12.5 27.5 11.1 24 14.6 20.5 11.1 19.1 12.5 22.6 16 19.1 19.5 20.5 20.9 24 17.4 27.5 20.9 28.9 19.5 25.4 16Z"/><path d="M3.9 11C2.3 11 1 12.3 1 13.9L1 18.2C1 19.7 2.3 21 3.9 21L8.2 21 16.1 27.7 16.1 4.3 8.1 11 3.9 11ZM14 8.6 14 23.3 8.9 19 3.9 19C3.4 19 3 18.6 3 18.1L3 13.8C3 13.4 3.4 13 3.9 13L8.9 13 14 8.6Z"/></svg>
+        </button>
+        
       </div>
       <audio id="rcb-fixture-audio-player-html5-audio-element" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="metadata" style="display:none;"></audio>
       <p class="media-alternative-note sr-only">No transcript has been supplied for this audio.</p>
@@ -438,6 +547,9 @@
       return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
     })();
 
+    var AUDIO_PLAYBACK_SPEEDS = [1, 1.25, 1.5, 2];
+    var audioTranscriptReturnFocus = null;
+
     function toggleAudioPlayback(btn) {
       var audio = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
       var playSvg = btn.querySelector('.play-svg');
@@ -461,6 +573,51 @@
         btn.setAttribute('aria-label', 'Play audio');
         btn.setAttribute('aria-pressed', 'false');
       }
+    }
+
+    function cycleAudioSpeed(btn) {
+      var audio = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
+      var current = audio.playbackRate || 1;
+      var idx = AUDIO_PLAYBACK_SPEEDS.indexOf(current);
+      if (idx === -1) idx = 0;
+      var next = AUDIO_PLAYBACK_SPEEDS[(idx + 1) % AUDIO_PLAYBACK_SPEEDS.length];
+      audio.playbackRate = next;
+      var label = next + 'x';
+      btn.textContent = label;
+      btn.setAttribute('aria-label', 'Playback speed: ' + label);
+    }
+
+    function toggleAudioMute(btn) {
+      var audio = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
+      audio.muted = !audio.muted;
+      var onSvg = btn.querySelector('.volume-on-svg');
+      var offSvg = btn.querySelector('.volume-off-svg');
+      if (audio.muted) {
+        if (onSvg) onSvg.style.display = 'none';
+        if (offSvg) offSvg.style.display = 'block';
+        btn.setAttribute('aria-label', 'Unmute audio');
+        btn.setAttribute('aria-pressed', 'true');
+      } else {
+        if (onSvg) onSvg.style.display = 'block';
+        if (offSvg) offSvg.style.display = 'none';
+        btn.setAttribute('aria-label', 'Mute audio');
+        btn.setAttribute('aria-pressed', 'false');
+      }
+    }
+
+    function openAudioTranscript(trigger) {
+      var panel = document.getElementById('rcb-fixture-audio-player-transcript-panel');
+      if (!panel) return;
+      panel.style.display = 'flex';
+      audioTranscriptReturnFocus = trigger || document.activeElement;
+      panel.focus();
+    }
+
+    function closeAudioTranscript() {
+      var panel = document.getElementById('rcb-fixture-audio-player-transcript-panel');
+      if (!panel || panel.style.display === 'none') return;
+      panel.style.display = 'none';
+      if (audioTranscriptReturnFocus) audioTranscriptReturnFocus.focus();
     }
 
     function scrubAudio(event) {
@@ -506,18 +663,33 @@
       slider.setAttribute('aria-valuenow', String(Math.round(value)));
       slider.setAttribute('aria-valuetext', formatMediaTime(media.currentTime) + ' of ' + formatMediaTime(media.duration));
       if (fill) fill.style.width = value + '%';
-      if (timer) timer.textContent = formatMediaTime(media.currentTime);
+      if (timer) timer.textContent = formatMediaTime(media.currentTime) + ' / ' + formatMediaTime(media.duration);
     }
 
     function initComponent() {
       var audioPlayBtn = document.querySelector('.audio-play-btn');
       var audioElement = document.getElementById('rcb-fixture-audio-player-html5-audio-element');
       var audioScrubBar = document.querySelector('.audio-scrub-bar');
+      var audioSpeedBtn = document.querySelector('.audio-speed-btn');
+      var audioMuteBtn = document.querySelector('.audio-mute-btn');
+      var audioTranscriptBtn = document.querySelector('.audio-transcript-btn');
+      var audioTranscriptPanel = document.getElementById('rcb-fixture-audio-player-transcript-panel');
+      var audioTranscriptClose = document.querySelector('.audio-transcript-close');
+      var audioTimer = document.querySelector('.audio-timer');
+
       if (audioPlayBtn) audioPlayBtn.addEventListener('click', function() { toggleAudioPlayback(audioPlayBtn); });
       if (audioScrubBar) audioScrubBar.addEventListener('click', scrubAudio);
       if (audioScrubBar) audioScrubBar.addEventListener('keydown', changeAudioSliderByKeyboard);
+      if (audioSpeedBtn) audioSpeedBtn.addEventListener('click', function() { cycleAudioSpeed(audioSpeedBtn); });
+      if (audioMuteBtn) audioMuteBtn.addEventListener('click', function() { toggleAudioMute(audioMuteBtn); });
+
+      if (audioElement) audioElement.addEventListener('loadedmetadata', function() {
+        if (audioTimer && audioElement.duration) {
+          audioTimer.textContent = formatMediaTime(audioElement.currentTime) + ' / ' + formatMediaTime(audioElement.duration);
+        }
+      });
       if (audioElement) audioElement.addEventListener('timeupdate', function() {
-        syncAudioProgress(audioElement, audioScrubBar, audioScrubBar && audioScrubBar.querySelector('.scrub-fill'), document.querySelector('.audio-timer'));
+        syncAudioProgress(audioElement, audioScrubBar, audioScrubBar && audioScrubBar.querySelector('.scrub-fill'), audioTimer);
       });
       if (audioElement) audioElement.addEventListener('ended', function() {
         viewedItems.add(0);
@@ -527,6 +699,25 @@
           audioPlayBtn.setAttribute('aria-pressed', 'false');
         }
       });
+
+      if (audioTranscriptBtn) audioTranscriptBtn.addEventListener('click', function() { openAudioTranscript(audioTranscriptBtn); });
+      if (audioTranscriptClose) audioTranscriptClose.addEventListener('click', closeAudioTranscript);
+      if (audioTranscriptPanel) {
+        audioTranscriptPanel.addEventListener('click', function(event) {
+          if (event.target === audioTranscriptPanel) closeAudioTranscript();
+        });
+        audioTranscriptPanel.addEventListener('keydown', function(event) {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closeAudioTranscript();
+          }
+          if (event.key === 'Tab') {
+            event.preventDefault();
+            var close = audioTranscriptPanel.querySelector('.audio-transcript-close');
+            if (close) close.focus();
+          }
+        });
+      }
     }
 
     if (document.readyState === 'loading') {

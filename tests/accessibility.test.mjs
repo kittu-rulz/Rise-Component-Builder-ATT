@@ -116,7 +116,9 @@ test('media and gallery output includes alternatives, accessible controls, and d
   assert.match(audio, /aria-label="Play audio" aria-pressed="false"/);
   assert.match(audio, /class="custom-item-icon"[^>]+alt="Podcast cover"/);
   assert.match(audio, /role="slider" tabindex="0" aria-label="Audio position"/);
-  assert.match(audio, /<summary>Transcript<\/summary>/);
+  assert.match(audio, /aria-haspopup="dialog" aria-controls="[^"]+-transcript-panel"/);
+  assert.match(audio, /class="audio-transcript-panel" role="dialog" aria-modal="true"/);
+  assert.match(audio, /<p>Transcript text<\/p>/);
   assert.match(audio, /addEventListener\('ended'/);
 
   const video = generate('video-frame', [{ title: 'Video lesson', content: 'https://example.com/video.mp4', captionsUrl: 'https://example.com/captions.vtt', audioDescription: '<p>Visual description</p>' }]);

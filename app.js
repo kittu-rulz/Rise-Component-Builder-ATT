@@ -21,7 +21,7 @@ import {
   buildExportPayload, buildLargePasteWarning, buildRiseProjectZip, downloadHtml, downloadProjectJson,
   downloadZipFile, formatExportedFileSize, getExportedFileSize, prepareMediaExport
 } from './js/export.js';
-import { copyTextToClipboard, describeStorageUsage, escapeHTML, formatItemLabel, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
+import { copyTextToClipboard, describeStorageUsage, escapeHTML, formatItemLabel, formatReadableDate, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
 import { showToast } from './js/toast.js';
 import { COMPATIBILITY_TIERS, getExportFormatCompatibility } from './js/compatibility.js';
 import {
@@ -1396,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const meta = document.createElement('div');
       meta.className = 'sc-meta';
       const component = componentCatalog.find(item => item.id === project.componentId);
-      meta.textContent = `Modified: ${new Date(project.updatedAt).toLocaleString()} • ${component?.title || project.componentId}`;
+      meta.textContent = `Modified: ${formatReadableDate(project.updatedAt)} • ${component?.title || project.componentId}`;
       details.append(name, meta);
 
       const actions = document.createElement('div');
