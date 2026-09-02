@@ -297,6 +297,19 @@ describe('AT&T brand: components outside the original 16-slide audit, swept for 
     expect(css).not.toMatch(/--accent-tint/);
   });
 
+  test('video-frame speed/skip/mute controls are Cobalt-outlined at rest, not invented tints', () => {
+    const css = videoFrame.generateCSS();
+    const speedRule = css.match(/\.video-speed-btn\s*{[^}]*}/)[0];
+    expect(speedRule).toContain('border: 1px solid var(--primary)');
+    expect(speedRule).toContain('color: var(--primary)');
+    expect(speedRule).toContain('border-radius: var(--button-radius)');
+    const skipRule = css.match(/\.video-skip-btn\s*{[^}]*}/)[0];
+    expect(skipRule).toContain('border: 1px solid var(--primary)');
+    const muteRule = css.match(/\.video-mute-btn\s*{[^}]*}/)[0];
+    expect(muteRule).toContain('border: 1px solid var(--primary)');
+    expect(css).not.toMatch(/--accent-tint/);
+  });
+
   test('scenario speaker name is AT&T Blue at >=19px, and choice buttons are Cobalt at rest not just on hover', () => {
     const css = scenario.generateCSS();
     const speakerRule = css.match(/\.speaker-name\s*{[^}]*}/)[0];

@@ -55,7 +55,8 @@ const CATEGORY = Object.freeze({
   MEDIA: 'media',
   HOTSPOTS: 'hotspots',
   INTERACTIVE_VIDEO: 'interactive-video',
-  AUDIO_PLAYER: 'audio-player'
+  AUDIO_PLAYER: 'audio-player',
+  VIDEO_FRAME: 'video-frame'
 });
 
 // Short, static, human-readable label for each rule — the "title" half of the result
@@ -107,7 +108,10 @@ const RULE_TITLES = Object.freeze({
   'interactive-video-uploaded-media-export-format': 'Uploaded video/captions need the Web Package ZIP export format',
   'audio-player-invalid-chapter-line': 'Chapter row has an invalid timestamp or missing title',
   'audio-player-duplicate-chapter-timestamps': 'Two chapters share the same timestamp',
-  'audio-player-invalid-transcript-segment': 'Synchronized transcript row has an invalid timestamp'
+  'audio-player-invalid-transcript-segment': 'Synchronized transcript row has an invalid timestamp',
+  'video-frame-invalid-chapter-line': 'Chapter row has an invalid timestamp or missing title',
+  'video-frame-duplicate-chapter-timestamps': 'Two chapters share the same timestamp',
+  'video-frame-invalid-transcript-segment': 'Synchronized transcript row has an invalid timestamp'
 });
 
 function issue(ruleId, severity, category, explanation, extra = {}) {
@@ -785,7 +789,12 @@ registerValidationRule({
 registerValidationRule({
   id: 'audio-player-chapter-transcript-rules',
   appliesTo: ({ componentId }) => componentId === 'audio-player',
-  check: ({ config }) => checkAudioPlayerChapterAndTranscriptRules(config)
+  check: ({ componentId, config }) => checkMediaChapterAndTranscriptRules(componentId, config)
+});
+registerValidationRule({
+  id: 'video-frame-chapter-transcript-rules',
+  appliesTo: ({ componentId }) => componentId === 'video-frame',
+  check: ({ componentId, config }) => checkMediaChapterAndTranscriptRules(componentId, config)
 });
 
 // Timestamps within this many seconds of each other are flagged as "hard to trigger
@@ -916,11 +925,12 @@ function checkInteractiveVideoUploadedMediaExportFormat(componentId, config) {
 }
 
 // "MM:SS"/"HH:MM:SS" -> seconds, or null. Deliberately duplicated from
-// components/audio-player.js#parseTimestampToSeconds rather than imported — no other
-// Preflight rule in this file imports a specific components/*.js module (every other
-// rule operates on config fields generically), and this is a small, pure, ~10-line check
-// with nothing else to share, matching the Node-side/runtime-string duplication this repo
-// already establishes for formatDurationLabel/formatMediaTime.
+// components/audio-player.js#parseTimestampToSeconds (and components/video-frame.js's own
+// identical copy) rather than imported — no other Preflight rule in this file imports a
+// specific components/*.js module (every other rule operates on config fields
+// generically), and this is a small, pure, ~10-line check with nothing else to share,
+// matching the Node-side/runtime-string duplication this repo already establishes for
+// formatDurationLabel/formatMediaTime.
 function auParseTimestamp(raw) {
   const text = String(raw ?? '').trim();
   if (!text) return null;
@@ -932,12 +942,16 @@ function auParseTimestamp(raw) {
 }
 
 // Chapters/Synchronized Transcript are delimited textarea fields (js/editor-schemas.js's
-// audio-player comment explains why — no nested repeatable sub-list field type exists).
-// Malformed rows never break preview/export (components/audio-player.js's own parsers
+// audio-player and video-frame comments explain why — no nested repeatable sub-list field
+// type exists). Malformed rows never break preview/export (both components' own parsers
 // silently skip them), but the author should still be told about a row that will be
 // silently dropped, and about two chapters sharing a timestamp — both real, demonstrable
-// authoring mistakes worth a Warning, not worth blocking export over.
-function checkAudioPlayerChapterAndTranscriptRules(config) {
+// authoring mistakes worth a Warning, not worth blocking export over. Shared between the
+// two components (audio-player, video-frame) since the field shape and rules are
+// identical; only the ruleId/category prefix varies by componentId, so Preflight results
+// still read as "this audio component" vs. "this video component."
+function checkMediaChapterAndTranscriptRules(componentId, config) {
+  const category = componentId === 'video-frame' ? CATEGORY.VIDEO_FRAME : CATEGORY.AUDIO_PLAYER;
   const issues = [];
   const chapterLines = String(config.chapters ?? '').split('\n');
   const seenChapterTimestamps = new Map();
@@ -947,13 +961,13 @@ function checkAudioPlayerChapterAndTranscriptRules(config) {
     const timestamp = auParseTimestamp(parts[0]);
     const title = (parts[1] || '').trim();
     if (timestamp === null || !title) {
-      issues.push(issue('audio-player-invalid-chapter-line', SEVERITY.WARNING, CATEGORY.AUDIO_PLAYER,
+      issues.push(issue(`${componentId}-invalid-chapter-line`, SEVERITY.WARNING, category,
         `Chapter row ${lineIndex + 1} ("${line.trim().slice(0, 60)}") has ${timestamp === null ? 'an invalid or missing timestamp' : 'no title'} and will be skipped rather than shown to learners.`,
         { fieldId: 'chapters' }));
       return;
     }
     if (seenChapterTimestamps.has(timestamp)) {
-      issues.push(issue('audio-player-duplicate-chapter-timestamps', SEVERITY.WARNING, CATEGORY.AUDIO_PLAYER,
+      issues.push(issue(`${componentId}-duplicate-chapter-timestamps`, SEVERITY.WARNING, category,
         `Chapter row ${lineIndex + 1} ("${title}") shares its timestamp with an earlier chapter ("${seenChapterTimestamps.get(timestamp)}") — both will still be shown, but a duplicate timestamp is usually an authoring mistake.`,
         { fieldId: 'chapters' }));
     } else {
@@ -967,7 +981,7 @@ function checkAudioPlayerChapterAndTranscriptRules(config) {
     const parts = line.split('|');
     const timestamp = auParseTimestamp(parts[0]);
     if (timestamp === null) {
-      issues.push(issue('audio-player-invalid-transcript-segment', SEVERITY.WARNING, CATEGORY.AUDIO_PLAYER,
+      issues.push(issue(`${componentId}-invalid-transcript-segment`, SEVERITY.WARNING, category,
         `Synchronized transcript row ${lineIndex + 1} ("${line.trim().slice(0, 60)}") has an invalid or missing timestamp and will be skipped.`,
         { fieldId: 'transcriptSegments' }));
     }

@@ -219,6 +219,8 @@ Hotspots additionally use component-level fields: `backgroundImage`, `background
 
 `audio-player` additionally uses component-level fields: `presentationMode` (`compact`/`learning`/`podcast`), `chapters` and `transcriptSegments` (delimited text — see `docs/AUDIO-PLAYER.md` "Data model" for the exact syntax and why a delimited field rather than a nested repeatable list), `progressPersistence`, `takeaways`, and `takeawaysVisibility`.
 
+`video-frame` additionally uses component-level fields: `chapters` and `transcriptSegments` (same delimited-text syntax as `audio-player` — `MM:SS | Title | Description` and `MM:SS | Speaker | Text`, one entry per line), `progressPersistence`, `takeaways`, and `takeawaysVisibility`. Chapters here are navigation/scrub-bar markers only — there is no branching, quiz-gating, or hotspot layer; that richer authoring path remains `interactive-video`'s alone (`docs/INTERACTIVE-VIDEO.md`). The per-item `transcript` field is the plain-text fallback shown when no `transcriptSegments` are authored, and is otherwise independent of the pre-existing `audioDescription` disclosure, which video-frame keeps unchanged.
+
 ## Media reference model
 
 External media remains a validated HTTP(S) URL string. A local upload is represented in configuration as JSON-safe metadata:

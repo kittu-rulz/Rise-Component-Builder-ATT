@@ -32,7 +32,7 @@ function ruleIds(issues) { return issues.map(item => item.ruleId); }
 function bySeverity(issues, severity) { return issues.filter(item => item.severity === severity); }
 
 describe('sanity: default configs produce no false-positive blocking issues', () => {
-  test.each(['accordion', 'multiple-choice', 'multiple-select', 'hotspots', 'audio-player', 'sorting-activity', 'fill-blank', 'interactive-video'])(
+  test.each(['accordion', 'multiple-choice', 'multiple-select', 'hotspots', 'audio-player', 'video-frame', 'sorting-activity', 'fill-blank', 'interactive-video'])(
     '%s default config has zero blocking issues', componentId => {
       const config = buildConfig(componentId);
       const issues = issuesFor(componentId, config);
@@ -917,5 +917,62 @@ describe('P07: general-clipping-risk / general-mobile-overflow — DOM-measureme
     const issues = await runPreflight({ ...baseCtx(), domMeasurement: { desktopContentHeight: 300, mobileOverflowPx: null } });
     expect(issues.some(item => item.ruleId === 'general-clipping-risk')).toBe(false);
     expect(issues.some(item => item.ruleId === 'general-mobile-overflow-unmeasured')).toBe(true);
+  });
+});
+
+// Shared between audio-player and video-frame (js/validation.js#checkMediaChapterAndTranscriptRules)
+// — same delimited-text chapters/transcriptSegments shape on both components, only the
+// ruleId/category prefix differs by componentId.
+describe.each(['audio-player', 'video-frame'])('%s: chapters/transcript Preflight rules', componentId => {
+  test('a chapter row with an invalid timestamp is a Warning naming the row, not a Blocking issue', () => {
+    const config = buildConfig(componentId, { chapters: 'not-a-time | Intro' });
+    const issues = issuesFor(componentId, config);
+    const found = issues.find(item => item.ruleId === `${componentId}-invalid-chapter-line`);
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.WARNING);
+    expect(found.explanation).toContain('row 1');
+    expect(bySeverity(issues, SEVERITY.BLOCKING)).toEqual([]);
+  });
+
+  test('a chapter row with a timestamp but no title is the same Warning', () => {
+    const config = buildConfig(componentId, { chapters: '0:30 | ' });
+    const issues = issuesFor(componentId, config);
+    expect(ruleIds(issues)).toContain(`${componentId}-invalid-chapter-line`);
+  });
+
+  test('two chapters sharing a timestamp produce a duplicate-timestamp Warning naming both titles', () => {
+    const config = buildConfig(componentId, { chapters: '0:00 | First\n0:00 | Second' });
+    const issues = issuesFor(componentId, config);
+    const found = issues.find(item => item.ruleId === `${componentId}-duplicate-chapter-timestamps`);
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.WARNING);
+    expect(found.explanation).toContain('First');
+    expect(found.explanation).toContain('Second');
+  });
+
+  test('well-formed, non-duplicate chapters produce no chapter-related issues at all', () => {
+    const config = buildConfig(componentId, { chapters: '0:00 | Intro | Welcome\n0:30 | Middle | Halfway' });
+    const issues = issuesFor(componentId, config);
+    expect(issues.some(item => item.ruleId.includes('chapter'))).toBe(false);
+  });
+
+  test('a synchronized transcript row with an invalid timestamp is a Warning', () => {
+    const config = buildConfig(componentId, { transcriptSegments: 'not-a-time | Hello' });
+    const issues = issuesFor(componentId, config);
+    const found = issues.find(item => item.ruleId === `${componentId}-invalid-transcript-segment`);
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.WARNING);
+  });
+
+  test('a well-formed synchronized transcript produces no transcript-segment issues', () => {
+    const config = buildConfig(componentId, { transcriptSegments: '0:00 | Alex | Welcome to the show.' });
+    const issues = issuesFor(componentId, config);
+    expect(issues.some(item => item.ruleId === `${componentId}-invalid-transcript-segment`)).toBe(false);
+  });
+
+  test('no chapters or transcript segments authored at all produces zero issues from this rule', () => {
+    const config = buildConfig(componentId);
+    const issues = issuesFor(componentId, config);
+    expect(issues.some(item => item.ruleId.startsWith(`${componentId}-invalid-chapter`) || item.ruleId.startsWith(`${componentId}-duplicate-chapter`) || item.ruleId.startsWith(`${componentId}-invalid-transcript`))).toBe(false);
   });
 });

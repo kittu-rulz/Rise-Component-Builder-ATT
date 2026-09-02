@@ -213,7 +213,30 @@ export const editorSchemas = {
   'video-frame': {
     // Same reasoning as audio-player above: only items[0] is ever rendered
     // (components/video-frame.js#generateHTML) — one embedded video, not a playlist.
+    // Chapters/transcriptSegments/takeaways are delimited text, not a nested repeatable
+    // list, for the exact same reason documented on audio-player's own entry below —
+    // this editor has no field type for that yet (docs/COMPONENT-SCHEMA.md "Recommended
+    // schema improvements"). Chapters here are navigation-only (click-to-seek), never a
+    // pause-and-quiz gate — that richer, required-checkpoint interaction model already
+    // belongs to Interactive Video (docs/INTERACTIVE-VIDEO.md); this stays the simple,
+    // passive-consumption video block, matched in capability to Interactive Learning
+    // Audio's own passive-consumption feature set (docs/AUDIO-PLAYER.md), not to
+    // Interactive Video's.
     itemLabel: 'Video', minItems: 1, maxItems: 1,
+    componentLabel: 'Chapters, Transcript & Progress',
+    componentFields: [
+      field('chapters', 'Chapters (Optional) — one per line: MM:SS or HH:MM:SS | Title | Description (optional)', 'textarea', { required: false, default: '' }),
+      field('transcriptSegments', 'Synchronized Transcript (Optional) — one per line: MM:SS | Speaker (optional, may be blank) | Segment text. Takes priority over the plain Video Transcript below when both are set.', 'textarea', { required: false, default: '' }),
+      field('progressPersistence', 'Remember Playback Position on This Device (local progress only — does not set Rise/LMS completion)', 'checkbox', { default: true }),
+      field('takeaways', 'Key Takeaways (Optional) — one per line', 'textarea', { required: false, default: '' }),
+      field('takeawaysVisibility', 'Key Takeaways Visibility', 'select', {
+        default: 'always',
+        options: [
+          { value: 'always', label: 'Always visible' },
+          { value: 'afterCompletion', label: 'Reveal after video completion' }
+        ]
+      })
+    ],
     itemFields: [
       field('title', 'Accessible Video Title', 'text', { required: true, default: 'New Video' }),
       field('content', 'Video Source', 'video', { required: true, default: '' }),
@@ -221,7 +244,7 @@ export const editorSchemas = {
       field('posterAltText', 'Poster Alternative Text', 'textarea', { default: '', warningWhen: 'posterImage', warningUnless: 'posterDecorative', warningMessage: 'Add poster alternative text or mark it decorative.' }),
       field('posterDecorative', 'Poster Is Decorative', 'checkbox', { default: false }),
       field('captionsUrl', 'Captions (WebVTT)', 'url', { required: false, default: '', uploadKind: 'captions', warningWhen: 'content', warningUnlessAny: ['captionsUrl', 'transcript'], warningMessage: 'Provide captions or a transcript for this video.' }),
-      field('transcript', 'Video Transcript', 'richtext', { required: false, default: '', warningWhen: 'content', warningUnlessAny: ['captionsUrl', 'transcript'], warningMessage: 'Provide captions or a transcript for this video.' }),
+      field('transcript', 'Plain Video Transcript (Optional — fallback shown when no Synchronized Transcript is set above)', 'richtext', { required: false, default: '', warningWhen: 'content', warningUnlessAny: ['captionsUrl', 'transcript'], warningMessage: 'Provide captions or a transcript for this video.' }),
       field('audioDescription', 'Audio Description or Visual Transcript', 'richtext', { required: false, default: '' })
     ]
   },
