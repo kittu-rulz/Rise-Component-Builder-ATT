@@ -67,3 +67,7 @@ test-results/
 
 # Client design-source files (large binaries, not versioned — see README/PROJECT.md)
 ATT Design System/
+ATT Design System.zip
+
+# design/ holds the *processed* brand spec that IS versioned (standards MD, token +
+# font CSS, the migration prompts, BRAND-AUDIT.md); the raw icon dump is not copied here.

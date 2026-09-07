@@ -1,0 +1,15 @@
+/* ATT Aleck @font-face — point src at wherever the builder serves fonts from.
+   Weights: Th 100, Lt 300, Rg 400, Md 500, Bd 700, Blk 900.
+   Ship only the cuts a component actually uses; the family has 46 and the brand
+   guidance is explicit that they must not all be used together. */
+
+@font-face { font-family: "ATT Aleck Sans"; src: url("../fonts/ATTAleckSans_Rg.ttf") format("truetype");  font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Sans"; src: url("../fonts/ATTAleckSans_It.ttf") format("truetype");  font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "ATT Aleck Sans"; src: url("../fonts/ATTAleckSans_Lt.ttf") format("truetype");  font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Sans"; src: url("../fonts/ATTAleckSans_Md.ttf") format("truetype");  font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Sans"; src: url("../fonts/ATTAleckSans_Bd.ttf") format("truetype");  font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Sans"; src: url("../fonts/ATTAleckSans_Blk.ttf") format("truetype"); font-weight: 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Cd";   src: url("../fonts/ATTAleckCd_Md.ttf") format("truetype");    font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Cd";   src: url("../fonts/ATTAleckCd_Bd.ttf") format("truetype");    font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Slab"; src: url("../fonts/ATTAleckSlab_Rg.ttf") format("truetype");  font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "ATT Aleck Slab"; src: url("../fonts/ATTAleckSlab_Bd.ttf") format("truetype");  font-weight: 700; font-style: normal; font-display: swap; }
