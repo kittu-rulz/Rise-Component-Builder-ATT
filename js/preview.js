@@ -4,6 +4,7 @@ import { applyThemeToConfig, getBuiltInTheme, resolveThemeTokens } from './theme
 import { renderCompletionTrackerHTML, renderSharedA11yScript, renderShell } from './export-shell.js';
 import { renderCompletionAdapterScript } from './completion.js';
 import { CUSTOM_FONT_FACES_BY_FAMILY } from './custom-fonts.js';
+import { ATT_TOKENS_CSS } from './att-tokens.js';
 
 // The single source of truth for how wide an authored Rise block ever actually renders
 // (also referenced by the builder's own Desktop preview mode, js/device-preview.js).
@@ -137,7 +138,12 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
       --on-accent: ${onAccent};
       --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
       --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
-      --component-max-width: ${COMPONENT_MAX_WIDTH}px;`;
+      --component-max-width: ${COMPONENT_MAX_WIDTH}px;
+
+      /* AT&T brand token layer (js/att-tokens.js ← design/att-tokens.css). Present in
+         every artifact; not yet consumed by component CSS — the color/type/curvature
+         passes wire it in. Theme tokens above stay the active layer for now. */
+${ATT_TOKENS_CSS}`;
 
   const trackableCount = getTrackableCount(compId, c.items.length);
   const a11yScript = renderSharedA11yScript({

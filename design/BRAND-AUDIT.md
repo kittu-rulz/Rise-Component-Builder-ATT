@@ -303,7 +303,7 @@ colour alone regardless.
 | 13 | Catalog-card icons (`js/component-registry.js`, 28 × `#009FDB`) → library functional icons, `currentColor` | `js/component-registry.js` (1) |
 | 14 | Builder-chrome amber/green/red status colours (`styles.css`) → Cobalt/Lime + icon | `styles.css` (1) |
 | 15 | Builder-chrome empty-state emoji (`app.js` `🔍 ★ 🕐`) → library icons (§5 "no emoji anywhere") | `app.js` (1) |
-| 16 | Wire `att-tokens.css` / `att-fonts.css` in and reconcile `--primary`/`--accent` ↔ `--att-*` names | Prompt 2 |
+| 16 | ~~Wire `att-tokens.css` / `att-fonts.css` in~~ — **done (Prompt 2)**: `design/att-tokens.css` is the app's first stylesheet; `js/att-tokens.js` injects the same `--att-*` block into every compiled export's `:root` (`js/preview.js`), synced by `tests/unit/att-tokens.test.js`; fonts were already inlined per-artifact via `js/custom-fonts.js` (`att-fonts.css`'s placeholder TTF paths are superseded). Still to do: reconcile `--primary`/`--accent` ↔ `--att-*` names, and scope the token layer to `.rise-block-wrapper` for pasted fragments (needs to move the existing theme layer too) | Prompt 2 → 3 |
 
 ### Notes
 

@@ -25,6 +25,10 @@ const distDir = join(root, 'dist');
 const ROOT_FILES = ['index.html', 'styles.css', 'app.js', 'fonts.css'];
 const ROOT_DIRS = ['js', 'components'];
 
+// Individual files outside the repo root that index.html references and that must
+// ship in dist/ at the same relative path.
+const NESTED_FILES = ['design/att-tokens.css'];
+
 async function exists(path) {
   try {
     await stat(path);
@@ -47,6 +51,12 @@ async function copySources() {
     const source = join(root, dir);
     if (!(await exists(source))) throw new Error(`Build source directory is missing: ${dir}`);
     await cp(source, join(distDir, dir), { recursive: true });
+  }
+  for (const file of NESTED_FILES) {
+    const source = join(root, file);
+    if (!(await exists(source))) throw new Error(`Build source file is missing: ${file}`);
+    await mkdir(dirname(join(distDir, file)), { recursive: true });
+    await cp(source, join(distDir, file));
   }
 
   // Deploy the cache-busted index.html: ?v=<token> on every local asset URL and

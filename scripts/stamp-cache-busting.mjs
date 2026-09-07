@@ -46,10 +46,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const indexPath = join(root, 'index.html');
 const versionPath = join(root, 'js', 'version.js');
 
-// index.html assets that live in the repo root and are referenced by a plain
-// href/src (fonts.css is also inlined-by-data elsewhere, but the <link> here is a
-// real network request that caches like any other).
-const ROOT_ASSETS = ['fonts.css', 'styles.css', 'app.js'];
+// Local stylesheet/script assets index.html references by a plain href/src and that
+// must be cache-busted on each release. Paths are relative to the repo root.
+const ROOT_ASSETS = ['design/att-tokens.css', 'fonts.css', 'styles.css', 'app.js'];
 
 // Module directories whose every *.js file is reachable from app.js and must be
 // covered by the import map. Flat — this project has no nested module folders.

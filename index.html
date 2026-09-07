@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AT&amp;T Component Builder — Interactive eLearning Blocks</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2300388F'/%3E%3Cpath d='M7 17V7L12 12L17 7V17' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <!-- AT&T brand design-token layer — first stylesheet so every rule below can build on
+       it. Canonical source; the export pipeline carries the same values via
+       js/att-tokens.js (kept in sync by tests/unit/att-tokens.test.js). See
+       design/ATT-Rise-Design-Standards.md. -->
+  <link rel="stylesheet" href="design/att-tokens.css?v=20260907.1630">
   <!-- AT&T Aleck Sans — self-hosted brand font (js/custom-fonts.js has the same data,
        used for exported component output; duplicated here as plain CSS for the
        builder's own chrome so it loads synchronously with no FOUC). -->
@@ -36,6 +41,7 @@
       "./components/tabs.js": "./components/tabs.js?v=20260907.1630",
       "./components/vertical-timeline.js": "./components/vertical-timeline.js?v=20260907.1630",
       "./components/video-frame.js": "./components/video-frame.js?v=20260907.1630",
+      "./js/att-tokens.js": "./js/att-tokens.js?v=20260907.1630",
       "./js/catalog.js": "./js/catalog.js?v=20260907.1630",
       "./js/compatibility.js": "./js/compatibility.js?v=20260907.1630",
       "./js/completion.js": "./js/completion.js?v=20260907.1630",
