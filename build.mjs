@@ -13,9 +13,11 @@
  * No bundling, minification, or transpilation is performed.
  */
 
-import { cp, mkdir, readFile, rm, stat } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { computeStampedIndex } from './scripts/stamp-cache-busting.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const distDir = join(root, 'dist');
@@ -46,6 +48,15 @@ async function copySources() {
     if (!(await exists(source))) throw new Error(`Build source directory is missing: ${dir}`);
     await cp(source, join(distDir, dir), { recursive: true });
   }
+
+  // Deploy the cache-busted index.html: ?v=<token> on every local asset URL and
+  // a generated import map covering the ES module graph (scripts/
+  // stamp-cache-busting.mjs). This is derived from the root index.html, so the
+  // build stays correct whether or not `npm run stamp` was run against the tree
+  // first.
+  const { token, stamped } = await computeStampedIndex();
+  await writeFile(join(distDir, 'index.html'), stamped);
+  return { token };
 }
 
 async function verifyHtmlReferences() {
@@ -53,7 +64,11 @@ async function verifyHtmlReferences() {
   const localRefs = [...html.matchAll(/(?:src|href)="(?!https?:|\/\/|data:|mailto:|#)([^"]+)"/g)].map(match => match[1]);
   const missing = [];
   for (const ref of localRefs) {
-    if (!(await exists(join(distDir, ref)))) missing.push(ref);
+    // Strip the cache-busting ?v=<token> (and any hash) before resolving to a
+    // real file on disk — stamp-cache-busting.mjs adds it to fonts.css /
+    // styles.css / app.js.
+    const path = ref.replace(/[?#].*$/, '');
+    if (!(await exists(join(distDir, path)))) missing.push(ref);
   }
   return { checked: localRefs.length, missing };
 }
@@ -90,7 +105,7 @@ async function verifyModuleImports() {
 }
 
 async function main() {
-  await copySources();
+  const { token } = await copySources();
   const htmlCheck = await verifyHtmlReferences();
   const importCheck = await verifyModuleImports();
 
@@ -104,6 +119,7 @@ async function main() {
 
   console.log(`Build assembled at ${distDir}`);
   console.log(`  ${ROOT_FILES.length} root files + ${ROOT_DIRS.length} directories copied`);
+  console.log(`  cache-busting token: ?v=${token}`);
   console.log(`  ${htmlCheck.checked} index.html reference(s) verified`);
   console.log(`  ${importCheck.checked} local ES module import(s) verified`);
 }

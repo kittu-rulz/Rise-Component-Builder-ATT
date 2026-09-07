@@ -33,6 +33,9 @@ jobs:
       - name: Enforce coverage thresholds
         run: npm run test:coverage
 
+      - name: Verify production asset cache-busting is stamped
+        run: npm run stamp:check
+
       - name: Production build
         run: npm run build
 

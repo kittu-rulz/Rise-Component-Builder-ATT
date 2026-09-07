@@ -1,6 +1,6 @@
 {
   "name": "rise-component-builder",
-  "version": "2.0.0+20260907.1229",
+  "version": "2.0.0+20260907.1245",
   "private": true,
   "type": "module",
   "description": "Vanilla JavaScript component authoring tool with automated unit and browser testing.",
@@ -16,7 +16,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "build": "node build.mjs",
+    "stamp": "node scripts/stamp-cache-busting.mjs",
+    "stamp:check": "node scripts/stamp-cache-busting.mjs --check",
+    "build": "node scripts/stamp-cache-busting.mjs && node build.mjs",
     "fixtures:exports": "node scripts/generate-export-fixtures.mjs",
     "validate": "npm run lint && npm run typecheck && npm run test:coverage && npm run build"
   },
