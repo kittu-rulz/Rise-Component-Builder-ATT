@@ -484,7 +484,10 @@ test.describe('Interactive Video: marker list, progress summary, and restart (Ph
       items: [{ ...twoMarkers()[0], required: true }]
     });
     await page.setContent(html);
-    await page.evaluate(() => document.querySelector('video').play());
+    // Restart pauses the video, so the second play() below races that pause and its
+    // promise rejects with AbortError on WebKit — which page.evaluate would surface as a
+    // test failure. The play only needs to kick marker evaluation; swallow the rejection.
+    await page.evaluate(() => { void document.querySelector('video').play().catch(() => {}); });
     await expect(page.locator('.iv-panel-title')).toBeVisible();
     await page.click('.iv-continue-btn');
     await expect(page.locator('[id$="-completion-message"]')).toBeVisible();
@@ -492,7 +495,7 @@ test.describe('Interactive Video: marker list, progress summary, and restart (Ph
     await page.click('.iv-restart-btn');
     await expect(page.locator('[id$="-completion-message"]')).toBeHidden();
 
-    await page.evaluate(() => document.querySelector('video').play());
+    await page.evaluate(() => { void document.querySelector('video').play().catch(() => {}); });
     await expect(page.locator('.iv-panel-title')).toBeVisible();
     await page.click('.iv-continue-btn');
     await expect(page.locator('.iv-progress-summary')).toHaveText('1 of 1 completed');
