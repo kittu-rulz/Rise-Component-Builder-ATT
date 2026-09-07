@@ -109,7 +109,7 @@ export function normalizeSettings(value) {
   };
 }
 
-function migrateProject(value) {
+export function migrateProject(value) {
   if (!isObject(value)) throw new Error('Project data must be a JSON object.');
   const version = value.schemaVersion ?? 0;
   if (!Number.isInteger(version) || version < 0) throw new Error('Invalid project schemaVersion.');
@@ -135,12 +135,33 @@ function migrateProject(value) {
       shadow: config.shadowDepth,
       fontFamily: project.settings?.defaultFont
     });
+    const normalizedConfig = {
+      headerStyle: 'minimal',
+      headerCyanRule: false,
+      spacingDensity: 'standard',
+      contextBandEnabled: false,
+      contextBandText: '',
+      contextBandAlignment: 'left',
+      ...config
+    };
     return {
       ...project,
       schemaVersion: 2,
+      config: normalizedConfig,
       uiTheme: project.theme === 'dark' ? 'dark' : 'light',
       theme: getBuiltInTheme(DEFAULT_THEME_ID),
       componentOverrides: overrides
+    };
+  }
+  if (isObject(project.config)) {
+    project.config = {
+      headerStyle: 'minimal',
+      headerCyanRule: false,
+      spacingDensity: 'standard',
+      contextBandEnabled: false,
+      contextBandText: '',
+      contextBandAlignment: 'left',
+      ...project.config
     };
   }
   return project;
@@ -166,6 +187,15 @@ export function validateProject(value) {
     if (!/^\d{1,3}$/.test(project.config.borderRadius)) throw new Error('Project border radius is invalid.');
     if (!['none', 'soft', 'medium', 'premium'].includes(project.config.shadowDepth)) throw new Error('Project shadow setting is invalid.');
     if (!['chevron', 'plus-minus', 'arrow'].includes(project.config.iconStyle)) throw new Error('Project icon setting is invalid.');
+    if (project.config.headerStyle && !['minimal', 'editorial'].includes(project.config.headerStyle)) {
+      throw new Error('Project header style setting is invalid.');
+    }
+    if (project.config.spacingDensity && !['compact', 'standard', 'comfortable', 'spacious'].includes(project.config.spacingDensity)) {
+      throw new Error('Project spacing density setting is invalid.');
+    }
+    if (project.config.contextBandAlignment && !['left', 'center'].includes(project.config.contextBandAlignment)) {
+      throw new Error('Project context band alignment setting is invalid.');
+    }
     if (!isSafeProjectValue(project.config)) {
       throw new Error('Project item data is invalid.');
     }

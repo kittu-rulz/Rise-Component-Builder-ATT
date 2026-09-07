@@ -92,7 +92,8 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
     .map(font => `family=${font.replaceAll(' ', '+')}:wght@300;400;500;600;700`).join('&');
   const customFontFaceCSS = uniqueFamilies
     .map(font => CUSTOM_FONT_FACES_BY_FAMILY[font]).filter(Boolean).join('\n\n');
-  const spacingScale = { compact: 0.82, comfortable: 1, spacious: 1.18 }[themeTokens.spacingDensity] || 1;
+  const density = c.spacingDensity || themeTokens.spacingDensity || 'standard';
+  const spacingScale = { compact: 0.82, standard: 1, comfortable: 1, spacious: 1.18 }[density] || 1;
   const primaryLight = toRgba(c.colorPrimary, 0.12, 'rgba(37, 99, 235, 0.12)');
   const primaryTint = toRgba(c.colorPrimary, 0.05, 'rgba(37, 99, 235, 0.05)');
   const focusRing = toRgba(c.colorPrimary, 0.16, 'rgba(37, 99, 235, 0.16)');
@@ -177,6 +178,12 @@ ${ATT_TOKENS_CSS}`;
     completionTrackerHTML: renderCompletionTrackerHTML(instanceId, c.trackCompletion),
     sharedA11yScript,
     componentJS: entry.generateJS(c, instanceId),
-    blockBackgroundImage: c.blockBackgroundImage
+    blockBackgroundImage: c.blockBackgroundImage,
+    headerStyle: c.headerStyle || 'minimal',
+    headerCyanRule: Boolean(c.headerCyanRule),
+    spacingDensity: density,
+    contextBandEnabled: Boolean(c.contextBandEnabled),
+    contextBandText: c.contextBandText || '',
+    contextBandAlignment: c.contextBandAlignment || 'left'
   });
 }

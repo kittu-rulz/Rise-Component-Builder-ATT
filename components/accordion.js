@@ -113,7 +113,7 @@ export function generateCSS() {
       border-radius: var(--border-radius);
       box-shadow: var(--shadow-style);
       overflow: hidden;
-      transition: border-color 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, border-left 0.2s ease;
     }
 
     .accordion-item[hidden] {
@@ -122,13 +122,15 @@ export function generateCSS() {
 
     .accordion-trigger {
       width: 100%;
+      min-height: 44px;
       background: transparent;
       border: none;
       padding: 16px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 14px;
+      font-family: var(--font-family);
+      font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       text-align: left;
       cursor: pointer;
@@ -137,7 +139,9 @@ export function generateCSS() {
     }
 
     .accordion-trigger:focus-visible {
-      box-shadow: 0 0 0 3px var(--focus-ring);
+      outline: 3px solid var(--att-cobalt, var(--primary)) !important;
+      outline-offset: 2px !important;
+      box-shadow: none;
     }
 
     .accordion-trigger[aria-disabled="true"] {
@@ -159,49 +163,48 @@ export function generateCSS() {
 
     .accordion-lock-note {
       margin: -8px 20px 12px;
-      font-size: 11px;
+      font-size: 12px;
       font-style: italic;
       color: var(--text-muted);
     }
 
     .accordion-visited-badge {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
       padding: 2px 8px;
-      border-radius: 6px;
-      background-color: var(--border-color);
+      border-radius: var(--att-radius-sm, 6px);
+      background-color: var(--att-grey-2, var(--border-color));
       color: var(--text-main);
     }
 
     .acc-arrow {
       transition: transform 0.25s ease;
-      /* Cobalt (--primary), not a neutral gray: this icon is the clickable
-         header's own affordance indicator, so it carries the Cobalt clickable
-         treatment at rest too, not only once expanded. */
       color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .accordion-item.active {
+      border-color: var(--att-blue, var(--primary));
+      border-left: 4px solid var(--att-blue, var(--primary));
     }
 
     .accordion-item.active .acc-arrow {
       transform: rotate(180deg);
-    }
-
-    .accordion-item.active {
-      border-color: var(--primary);
+      color: var(--att-blue, var(--primary));
     }
 
     .acc-plus-minus {
       position: relative;
       width: 14px;
       height: 14px;
+      flex-shrink: 0;
     }
 
     .acc-plus-minus::before, .acc-plus-minus::after {
       content: '';
       position: absolute;
-      /* Cobalt (--primary), not a neutral gray: this is the clickable header's
-         own affordance indicator at rest, same reasoning as .acc-arrow above. */
       background-color: var(--primary);
       transition: transform 0.25s ease, background-color 0.25s ease;
     }
@@ -220,6 +223,11 @@ export function generateCSS() {
       width: 2px;
     }
 
+    .accordion-item.active .acc-plus-minus::before,
+    .accordion-item.active .acc-plus-minus::after {
+      background-color: var(--att-blue, var(--primary));
+    }
+
     .accordion-item.active .acc-plus-minus::after {
       transform: rotate(90deg);
       opacity: 0;
@@ -233,9 +241,9 @@ export function generateCSS() {
 
     .accordion-body {
       padding: 0 20px 20px 20px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--text-muted);
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
+      color: var(--text-main);
     }
 
     .accordion-toolbar {
@@ -257,8 +265,14 @@ export function generateCSS() {
       border: var(--border-style);
       border-radius: var(--button-radius);
       padding: 8px 14px;
-      font-size: 12px;
+      font-size: 14px;
       color: var(--text-main);
+      min-height: 44px;
+    }
+
+    .accordion-search-input:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary)) !important;
+      outline-offset: 2px !important;
     }
 
     .accordion-toolbar-row {
@@ -272,18 +286,73 @@ export function generateCSS() {
       background-color: var(--bg-card);
       border: var(--border-style);
       border-radius: var(--button-radius);
-      padding: 6px 14px;
-      font-size: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text-main);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .accordion-toolbar-btn:focus-visible, .accordion-search-clear:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary)) !important;
+      outline-offset: 2px !important;
     }
 
     .accordion-progress-text {
       margin-left: auto;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
+    }
+
+    /* Density variants */
+    .rise-block-wrapper.density-compact .accordion-group {
+      gap: 8px;
+    }
+    .rise-block-wrapper.density-compact .accordion-trigger {
+      padding: 10px 16px;
+      min-height: 44px;
+    }
+    .rise-block-wrapper.density-compact .accordion-body {
+      padding: 0 16px 14px 16px;
+    }
+
+    .rise-block-wrapper.density-standard .accordion-group {
+      gap: 12px;
+    }
+    .rise-block-wrapper.density-standard .accordion-trigger {
+      padding: 16px 20px;
+      min-height: 48px;
+    }
+    .rise-block-wrapper.density-standard .accordion-body {
+      padding: 0 20px 20px 20px;
+    }
+
+    .rise-block-wrapper.density-spacious .accordion-group {
+      gap: 18px;
+    }
+    .rise-block-wrapper.density-spacious .accordion-trigger {
+      padding: 22px 24px;
+      min-height: 56px;
+    }
+    .rise-block-wrapper.density-spacious .accordion-body {
+      padding: 0 24px 26px 24px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .accordion-item,
+      .acc-arrow,
+      .acc-plus-minus,
+      .acc-plus-minus::before,
+      .acc-plus-minus::after,
+      .accordion-content {
+        transition: none !important;
+        animation: none !important;
+      }
     }`;
 }
 

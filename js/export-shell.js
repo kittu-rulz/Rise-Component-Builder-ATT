@@ -14,7 +14,7 @@ import { escapeAttribute, normalizeHeadingLevel } from './utilities.js';
 // real permission — only this compatibility risk.
 export const CSP_META = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src http: https: data: blob:; media-src http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
 
-// Reset + shared block chrome (title/headline/description). No component-specific rules.
+// Reset + shared block chrome (title/headline/description) + shared surfaces and density. No component-specific rules.
 export const BASE_RESET_CSS = `
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -39,16 +39,24 @@ export const BASE_RESET_CSS = `
       margin: 0 auto;
     }
 
+    /* Density presets */
+    .rise-block-wrapper.density-compact {
+      --spacing-scale: 0.82;
+    }
+    .rise-block-wrapper.density-standard {
+      --spacing-scale: 1;
+    }
+    .rise-block-wrapper.density-spacious {
+      --spacing-scale: 1.18;
+    }
+
+    /* Shared Block Header */
     .block-header {
-      margin-bottom: 24px;
+      margin-bottom: calc(24px * var(--spacing-scale));
       text-align: left;
     }
 
     .block-label {
-      /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
-         text (3.01:1 on white — accepted at large-text size, not below it).
-         Shared across every component's block header, so this one fix covers
-         all of them. */
       font-size: 19px;
       font-weight: 700;
       letter-spacing: 0.6px;
@@ -65,6 +73,7 @@ export const BASE_RESET_CSS = `
       font-weight: 600;
       color: var(--text-main);
       line-height: 1.3;
+      text-wrap: pretty;
     }
 
     .block-desc {
@@ -72,6 +81,105 @@ export const BASE_RESET_CSS = `
       color: var(--text-muted);
       margin-top: 6px;
       line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    /* AT&T Editorial Header Presentation */
+    .block-header.header-editorial {
+      margin-bottom: calc(32px * var(--spacing-scale));
+    }
+
+    .block-header.header-editorial .block-label {
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-w-bold, 700);
+      letter-spacing: var(--att-ls-eyebrow, 0.08em);
+      color: var(--att-cobalt, #00388F);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .block-header.header-editorial .block-headline {
+      font-size: clamp(1.625rem, 4vw, 2rem);
+      font-weight: var(--att-w-bold, 700);
+      color: var(--att-heading-contrast, #000000);
+      line-height: var(--att-lh-heading, 1.25);
+    }
+
+    .block-header.header-editorial .header-cyan-rule {
+      width: 36px;
+      height: 3px;
+      background-color: var(--att-blue, #009FDB);
+      margin-top: 10px;
+      margin-bottom: 12px;
+      border-radius: 2px;
+    }
+
+    .block-header.header-editorial .block-desc {
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      color: var(--att-text, #000000);
+      margin-top: 10px;
+      max-width: 70ch;
+    }
+
+    /* Optional Context Band */
+    .block-context-band {
+      background-color: var(--att-grey-1, #F3F4F5);
+      border-top: 2px solid var(--att-blue, #009FDB);
+      border-radius: 0 0 var(--att-radius-md, 12px) var(--att-radius-md, 12px);
+      padding: calc(14px * var(--spacing-scale)) calc(18px * var(--spacing-scale));
+      margin-bottom: calc(24px * var(--spacing-scale));
+      color: var(--att-text, #000000);
+      box-shadow: var(--att-shadow-1, 0 1px 2px rgba(0,0,0,0.06));
+    }
+
+    .block-context-band.align-center {
+      text-align: center;
+    }
+
+    .block-context-band.align-left {
+      text-align: left;
+    }
+
+    .context-band-text {
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      margin: 0;
+      max-width: 70ch;
+      display: inline-block;
+      text-align: inherit;
+    }
+
+    /* Shared Surface & Media Treatments */
+    .att-surface, .att-card {
+      background-color: var(--att-surface, #FFFFFF);
+      border: 1px solid var(--att-border, #DCDFE3);
+      border-radius: var(--att-radius-lg, 20px);
+      box-shadow: var(--att-shadow-1, 0 1px 2px rgba(0,0,0,0.06));
+    }
+
+    .att-surface-sunken {
+      background-color: var(--att-grey-1, #F3F4F5);
+      border: 1px solid var(--att-border, #DCDFE3);
+      border-radius: var(--att-radius-lg, 20px);
+    }
+
+    .att-media-frame {
+      border-radius: var(--att-radius-lg, 20px);
+      overflow: hidden;
+      max-width: 100%;
+    }
+
+    .att-img-cover {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .att-img-contain {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }`;
 
 // Shared accessibility primitives + the completion-tracker widget's CSS (used by every
@@ -91,9 +199,9 @@ export const SHARED_A11Y_CSS = `
       border: 0 !important;
     }
 
-    :where(button, [href], input, [tabindex]:not([tabindex="-1"])):focus-visible {
-      outline: 3px solid var(--primary);
-      outline-offset: 3px;
+    :where(button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
       box-shadow: 0 0 0 2px var(--bg-card);
     }
 
@@ -241,7 +349,9 @@ const BOOTSTRAP_JS = `
  */
 export function renderShell({
   instanceId, tokensCSS, fontQuery, customFontFaceCSS = '', componentCSS, blockLabel, blockHeadline, blockDesc,
-  blockHeadingLevel, componentHTML, completionTrackerHTML, sharedA11yScript, componentJS, blockBackgroundImage = ''
+  blockHeadingLevel, componentHTML, completionTrackerHTML, sharedA11yScript, componentJS, blockBackgroundImage = '',
+  headerStyle = 'minimal', headerCyanRule = false, spacingDensity = 'standard',
+  contextBandEnabled = false, contextBandText = '', contextBandAlignment = 'left'
 }) {
   // Rise embeds this markup inside a lesson page that has its own h1, so the wrapping
   // headline's tag is author-configurable (defaults to h2) rather than a hardcoded h1 —
@@ -262,6 +372,25 @@ export function renderShell({
   // page's own <style>, so they work identically in preview and every export mode with no
   // external request and no separate asset-packaging step.
   const googleFontsLink = fontQuery ? `<link href="https://fonts.googleapis.com/css2?${fontQuery}&display=swap" rel="stylesheet">` : '';
+
+  const isEditorial = headerStyle === 'editorial';
+  const cyanRuleHtml = (isEditorial && headerCyanRule) ? '\n      <div class="header-cyan-rule" aria-hidden="true"></div>' : '';
+  const blockLabelHtml = blockLabel ? `\n      <div class="block-label">${blockLabel}</div>` : '';
+  const blockDescHtml = blockDesc ? `\n      <div class="block-desc">${blockDesc}</div>` : '';
+  const headerClass = isEditorial ? 'block-header header-editorial' : 'block-header header-minimal';
+
+  const headerHtml = (blockLabel || blockHeadline || blockDesc) ? `
+    <div class="${headerClass}">${blockLabelHtml}
+      <${headingTag} class="block-headline" id="${instanceId}-block-headline">${blockHeadline}</${headingTag}>${cyanRuleHtml}${blockDescHtml}
+    </div>` : '';
+
+  const contextBandHtml = (contextBandEnabled && contextBandText && contextBandText.trim()) ? `
+    <aside class="block-context-band align-${contextBandAlignment}" role="note" aria-label="Context">
+      <p class="context-band-text">${contextBandText}</p>
+    </aside>` : '';
+
+  const densityClass = (spacingDensity && spacingDensity !== 'standard') ? ` density-${spacingDensity}` : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -270,7 +399,7 @@ export function renderShell({
   ${googleFontsLink}
   <style>
 ${customFontFaceCSS}
-    :root {
+    :root, .rise-block-wrapper {
 ${tokensCSS}
     }
 ${BASE_RESET_CSS}
@@ -280,12 +409,7 @@ ${SHARED_A11Y_CSS}
 </head>
 <body>
 
-  <main class="rise-block-wrapper"${backgroundStyle} aria-labelledby="${instanceId}-block-headline">
-    <div class="block-header">
-      <div class="block-label">${blockLabel}</div>
-      <${headingTag} class="block-headline" id="${instanceId}-block-headline">${blockHeadline}</${headingTag}>
-      <div class="block-desc">${blockDesc}</div>
-    </div>
+  <main class="rise-block-wrapper${densityClass}"${backgroundStyle} aria-labelledby="${instanceId}-block-headline">${headerHtml}${contextBandHtml}
 
     <div class="block-content">
       ${componentHTML}

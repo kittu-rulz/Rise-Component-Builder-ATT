@@ -118,6 +118,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputBlockHeadline = document.getElementById('input-block-headline');
   const inputBlockDesc = document.getElementById('input-block-desc');
   const selectHeadingLevel = document.getElementById('select-heading-level');
+  const selectHeaderStyle = document.getElementById('select-header-style');
+  const inputHeaderCyanRule = document.getElementById('input-header-cyan-rule');
+  const headerCyanRuleWrapper = document.getElementById('header-cyan-rule-wrapper');
+  const selectSpacingDensity = document.getElementById('select-spacing-density');
+  const inputContextBandEnabled = document.getElementById('input-context-band-enabled');
+  const contextBandFields = document.getElementById('context-band-fields');
+  const inputContextBandText = document.getElementById('input-context-band-text');
+  const selectContextBandAlignment = document.getElementById('select-context-band-alignment');
 
   const inputBehaviorAccordionMulti = document.getElementById('input-behavior-accordion-multi');
   const inputBehaviorAccordionAnimation = document.getElementById('input-behavior-accordion-animation');
@@ -742,6 +750,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateLivePreview();
     });
 
+    if (selectHeaderStyle) {
+      selectHeaderStyle.addEventListener('change', (e) => {
+        appState.config.headerStyle = e.target.value;
+        if (headerCyanRuleWrapper) headerCyanRuleWrapper.style.display = e.target.value === 'editorial' ? 'flex' : 'none';
+        updateLivePreview();
+      });
+    }
+
+    if (inputHeaderCyanRule) {
+      inputHeaderCyanRule.addEventListener('change', (e) => {
+        appState.config.headerCyanRule = e.target.checked;
+        updateLivePreview();
+      });
+    }
+
+    if (selectSpacingDensity) {
+      selectSpacingDensity.addEventListener('change', (e) => {
+        appState.config.spacingDensity = e.target.value;
+        updateLivePreview();
+      });
+    }
+
+    if (inputContextBandEnabled) {
+      inputContextBandEnabled.addEventListener('change', (e) => {
+        appState.config.contextBandEnabled = e.target.checked;
+        if (contextBandFields) contextBandFields.style.display = e.target.checked ? 'block' : 'none';
+        updateLivePreview();
+      });
+    }
+
+    if (inputContextBandText) {
+      syncText(inputContextBandText, 'contextBandText');
+    }
+
+    if (selectContextBandAlignment) {
+      selectContextBandAlignment.addEventListener('change', (e) => {
+        appState.config.contextBandAlignment = e.target.value;
+        updateLivePreview();
+      });
+    }
+
     // Colors, fonts, border radius, and shadow are permanently locked to the single AT&T
     // theme (js/themes.js) — no per-component override UI exists in this build.
 
@@ -1194,6 +1243,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputBlockDesc.value = config.blockDesc;
     config.blockHeadingLevel = normalizeHeadingLevel(config.blockHeadingLevel);
     selectHeadingLevel.value = config.blockHeadingLevel;
+    if (selectHeaderStyle) selectHeaderStyle.value = config.headerStyle || 'minimal';
+    if (inputHeaderCyanRule) inputHeaderCyanRule.checked = config.headerCyanRule === true;
+    if (headerCyanRuleWrapper) headerCyanRuleWrapper.style.display = config.headerStyle === 'editorial' ? 'flex' : 'none';
+    if (selectSpacingDensity) selectSpacingDensity.value = config.spacingDensity || 'standard';
+    if (inputContextBandEnabled) inputContextBandEnabled.checked = config.contextBandEnabled === true;
+    if (contextBandFields) contextBandFields.style.display = config.contextBandEnabled ? 'block' : 'none';
+    if (inputContextBandText) inputContextBandText.value = config.contextBandText || '';
+    if (selectContextBandAlignment) selectContextBandAlignment.value = config.contextBandAlignment || 'left';
     inputBehaviorAccordionMulti.checked = config.accordionMulti;
     inputBehaviorAccordionAnimation.checked = config.accordionAnimation;
     selectIconStyle.value = config.iconStyle;

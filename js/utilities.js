@@ -313,6 +313,14 @@ export function sanitizePreviewConfig(config, componentId) {
   result.shadowDepth = ['none', 'soft', 'medium', 'premium'].includes(config.shadowDepth) ? config.shadowDepth : 'soft';
   result.iconStyle = ['chevron', 'plus-minus', 'arrow'].includes(config.iconStyle) ? config.iconStyle : 'chevron';
   result.blockHeadingLevel = normalizeHeadingLevel(config.blockHeadingLevel);
+  result.headerStyle = ['minimal', 'editorial'].includes(config.headerStyle) ? config.headerStyle : 'minimal';
+  result.headerCyanRule = Boolean(config.headerCyanRule);
+  result.spacingDensity = ['compact', 'standard', 'spacious'].includes(config.spacingDensity)
+    ? config.spacingDensity
+    : (config.spacingDensity === 'comfortable' ? 'standard' : 'standard');
+  result.contextBandEnabled = Boolean(config.contextBandEnabled);
+  result.contextBandText = sanitizeRichText(config.contextBandText || '');
+  result.contextBandAlignment = ['left', 'center'].includes(config.contextBandAlignment) ? config.contextBandAlignment : 'left';
   result.accordionMulti = Boolean(config.accordionMulti);
   result.accordionAnimation = Boolean(config.accordionAnimation);
   result.trackCompletion = Boolean(config.trackCompletion);
