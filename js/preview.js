@@ -94,17 +94,17 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
     .map(font => CUSTOM_FONT_FACES_BY_FAMILY[font]).filter(Boolean).join('\n\n');
   const density = c.spacingDensity || themeTokens.spacingDensity || 'standard';
   const spacingScale = { compact: 0.82, standard: 1, comfortable: 1, spacious: 1.18 }[density] || 1;
-  const primaryLight = toRgba(c.colorPrimary, 0.12, 'rgba(37, 99, 235, 0.12)');
-  const primaryTint = toRgba(c.colorPrimary, 0.05, 'rgba(37, 99, 235, 0.05)');
-  const focusRing = toRgba(c.colorPrimary, 0.16, 'rgba(37, 99, 235, 0.16)');
-  const accentLight = toRgba(c.colorAccent, 0.14, 'rgba(245, 158, 11, 0.14)');
-  const accentTint = toRgba(c.colorAccent, 0.07, 'rgba(245, 158, 11, 0.07)');
+  const primaryLight = toRgba(c.colorPrimary, 0.12, 'rgba(0, 56, 143, 0.12)');
+  const primaryTint = toRgba(c.colorPrimary, 0.05, 'rgba(0, 56, 143, 0.05)');
+  const focusRing = toRgba(c.colorPrimary, 0.16, 'rgba(0, 56, 143, 0.16)');
+  const accentLight = toRgba(c.colorAccent, 0.14, 'rgba(0, 159, 219, 0.14)');
+  const accentTint = toRgba(c.colorAccent, 0.07, 'rgba(0, 159, 219, 0.07)');
   // Feedback-panel tints: not AT&T brand colors (success/danger are neutral-palette
   // status tokens, not derived from --primary/--accent), so opacity-based tinting here
   // isn't the "improvised brand shade" the AT&T theme rules prohibit — it only bars
   // inventing tints of the blue brand colors themselves.
-  const successTint = toRgba(themeTokens.success, 0.1, 'rgba(16, 185, 129, 0.1)');
-  const dangerTint = toRgba(themeTokens.danger, 0.1, 'rgba(239, 68, 68, 0.1)');
+  const successTint = toRgba(themeTokens.success, 0.1, 'rgba(145, 220, 0, 0.1)');
+  const dangerTint = toRgba(themeTokens.danger, 0.1, 'rgba(0, 56, 143, 0.1)');
   const onPrimary = themeTokens.surface;
   const onAccent = themeTokens.surface;
 
@@ -137,8 +137,8 @@ export function generateIframeContent(appState, componentRegistry, colorToRgba) 
       --danger-tint: ${dangerTint};
       --on-primary: ${onPrimary};
       --on-accent: ${onAccent};
-      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
-      --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
       --component-max-width: ${COMPONENT_MAX_WIDTH}px;
 
       /* AT&T brand token layer (js/att-tokens.js ← design/att-tokens.css). Present in

@@ -184,7 +184,7 @@ export function generateCSS() {
       position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
-      background-color: #000;
+      background-color: var(--att-black, #000000);
       border-radius: var(--border-radius);
       overflow: hidden;
     }

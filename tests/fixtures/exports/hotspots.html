@@ -67,15 +67,15 @@
       --focus-ring: rgba(0, 56, 143, 0.16);
       --accent-light: rgba(0, 159, 219, 0.14);
       --accent-tint: rgba(0, 159, 219, 0.07);
-      --success: #087F5B;
-      --warning: #9A6700;
-      --danger: #B42318;
-      --success-tint: rgba(8, 127, 91, 0.1);
-      --danger-tint: rgba(180, 35, 24, 0.1);
+      --success: #91DC00;
+      --warning: #00388F;
+      --danger: #00388F;
+      --success-tint: rgba(145, 220, 0, 0.1);
+      --danger-tint: rgba(0, 56, 143, 0.1);
       --on-primary: #FFFFFF;
       --on-accent: #FFFFFF;
-      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
-      --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
       --component-max-width: 740px;
 
       /* AT&T brand token layer (js/att-tokens.js ← design/att-tokens.css). Present in
@@ -396,7 +396,7 @@
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      box-shadow: var(--att-shadow-1, 0 4px 6px rgba(0,0,0,0.15));
       z-index: 1;
     }
     .hotspot-pin .pulse {
@@ -421,7 +421,7 @@
       color: var(--bg-card);
       padding: 12px;
       border-radius: 8px;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0, 0, 0, 0.2));
       display: none;
       z-index: 20;
       pointer-events: none;

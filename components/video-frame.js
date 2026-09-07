@@ -273,7 +273,7 @@ export function generateCSS() {
       width: 100%;
       border-radius: calc(var(--border-radius) - 4px);
       overflow: hidden;
-      background-color: #000;
+      background-color: var(--att-black, #000000);
     }
     .video-wrapper video {
       display: block;

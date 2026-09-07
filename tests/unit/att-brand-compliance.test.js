@@ -243,8 +243,9 @@ describe('AT&T brand: WCAG contrast holds for every retargeted color pairing (co
     expect(contrastRatio(tokens.primary, tokens.background)).toBeGreaterThanOrEqual(4.5);
   });
 
-  test('success and danger feedback text clear 4.5:1 on white', () => {
-    expect(contrastRatio(tokens.success, tokens.background)).toBeGreaterThanOrEqual(4.5);
+  test('success and danger feedback pairings clear 4.5:1 contrast', () => {
+    // Per AT&T standards, Lime is an accent/fill paired with black text, never text on white.
+    expect(contrastRatio(tokens.text, tokens.success)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(tokens.danger, tokens.background)).toBeGreaterThanOrEqual(4.5);
   });
 
@@ -391,3 +392,42 @@ describe('AT&T brand: new authoring features (Slides 6 and 10)', () => {
     expect(html).not.toContain('<script>alert(1)</script>');
   });
 });
+
+describe('Prompt 3: AT&T brand color tokenization and absence of off-brand literals', () => {
+  test('theme semantic status colors adhere to AT&T brand rules', () => {
+    const theme = getBuiltInTheme();
+    expect(theme.tokens.success).toBe('#91DC00'); // AT&T Lime
+    expect(theme.tokens.warning).toBe('#00388F'); // AT&T Cobalt (no brand amber/orange)
+    expect(theme.tokens.danger).toBe('#00388F');  // AT&T Cobalt (no brand red)
+  });
+
+  test('component CSS does not contain raw off-brand color literals', () => {
+    const componentGenerators = [
+      scenario, videoFrame, interactiveVideo, menuList,
+      imageGallery, hotspots, multipleChoice, multipleSelect, fillBlank
+    ];
+    for (const comp of componentGenerators) {
+      const css = comp.generateCSS();
+      expect(css).not.toContain('rgba(0,0,0,0.02)');
+      expect(css).not.toContain('rgba(0,0,0,0.01)');
+      expect(css).not.toContain('rgba(15, 23, 42, 0.9)');
+      expect(css).not.toMatch(/background-color:\s*#000;/);
+    }
+  });
+
+  test('quiz feedback pairs use high-contrast text rather than low-contrast lime text', () => {
+    const mcCSS = multipleChoice.generateCSS();
+    expect(mcCSS).toContain('.quiz-feedback.correct');
+    expect(mcCSS).toMatch(/\.quiz-feedback\.correct\s*{[^}]*color:\s*var\(--text-main\)/);
+    expect(mcCSS).toMatch(/\.quiz-feedback\.wrong\s*{[^}]*color:\s*var\(--text-main\)/);
+
+    const msCSS = multipleSelect.generateCSS();
+    expect(msCSS).toMatch(/\.quiz-feedback\.correct\s*{[^}]*color:\s*var\(--text-main\)/);
+    expect(msCSS).toMatch(/\.quiz-feedback\.wrong\s*{[^}]*color:\s*var\(--text-main\)/);
+
+    const fbCSS = fillBlank.generateCSS();
+    expect(fbCSS).toMatch(/\.quiz-feedback\.correct\s*{[^}]*color:\s*var\(--text-main\)/);
+    expect(fbCSS).toMatch(/\.quiz-feedback\.wrong\s*{[^}]*color:\s*var\(--text-main\)/);
+  });
+});
+

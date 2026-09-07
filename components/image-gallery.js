@@ -85,7 +85,7 @@ export function generateCSS() {
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(15, 23, 42, 0.9);
+      background-color: var(--att-scrim, rgba(0, 0, 0, 0.85));
       z-index: 200;
       display: flex;
       flex-direction: column;
@@ -97,7 +97,7 @@ export function generateCSS() {
       max-width: 90%;
       max-height: 80%;
       border-radius: 8px;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0,0,0,0.1));
     }
     .lightbox-caption {
       color: var(--bg-card);

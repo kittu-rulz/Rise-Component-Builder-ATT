@@ -88,7 +88,7 @@ export function generateCSS() {
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.25s ease-out;
-      background-color: rgba(0,0,0,0.01);
+      background-color: var(--att-grey-1, #F3F4F5);
     }
     .menu-item-desc p {
       padding: 0 20px 20px 48px;

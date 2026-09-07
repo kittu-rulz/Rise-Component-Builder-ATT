@@ -146,7 +146,7 @@ export function generateCSS() {
       color: var(--primary-hover);
     }
     .scenario-feedback-balloon {
-      background-color: rgba(0,0,0,0.02);
+      background-color: var(--att-grey-1, #F3F4F5);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 14px;

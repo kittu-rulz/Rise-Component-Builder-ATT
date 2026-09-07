@@ -130,13 +130,13 @@ export function generateCSS() {
     .quiz-feedback.correct {
       background-color: var(--success-tint);
       border: 1px solid var(--success);
-      color: var(--success);
+      color: var(--text-main);
     }
 
     .quiz-feedback.wrong {
       background-color: var(--danger-tint);
       border: 1px solid var(--danger);
-      color: var(--danger);
+      color: var(--text-main);
     }`;
 }
 

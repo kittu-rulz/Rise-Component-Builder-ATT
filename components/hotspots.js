@@ -113,7 +113,7 @@ export function generateCSS() {
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      box-shadow: var(--att-shadow-1, 0 4px 6px rgba(0,0,0,0.15));
       z-index: 1;
     }
     .hotspot-pin .pulse {
@@ -138,7 +138,7 @@ export function generateCSS() {
       color: var(--bg-card);
       padding: 12px;
       border-radius: 8px;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0, 0, 0, 0.2));
       display: none;
       z-index: 20;
       pointer-events: none;
