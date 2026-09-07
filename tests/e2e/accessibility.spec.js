@@ -7,6 +7,16 @@ async function openAccordion(page) {
   return page.frameLocator('#live-preview-iframe');
 }
 
+// Kill CSS transitions/animations so a contrast scan taken right after a theme toggle
+// never samples a half-faded intermediate color (the app themes via `transition: all
+// var(--transition-fast)` on many surfaces). WCAG contrast is a property of the settled
+// state, not of a 150ms cross-fade, and axe is not designed to evaluate transient frames.
+async function freezeAnimations(page) {
+  await page.addStyleTag({
+    content: '*, *::before, *::after { transition: none !important; animation: none !important; }'
+  });
+}
+
 test('application controls have accessible names and form labels', async ({ page }) => {
   await openAccordion(page);
   const results = await new AxeBuilder({ page }).include('#editor-state').withRules([
@@ -29,11 +39,14 @@ test('builder chrome has sufficient color contrast and one main landmark', async
 
 test('editor screen chrome has sufficient color contrast in both light and dark mode', async ({ page }) => {
   await openAccordion(page);
+  await freezeAnimations(page);
+
   const lightResults = await new AxeBuilder({ page }).include('#editor-state').exclude('#live-preview-iframe')
     .withRules(['color-contrast']).analyze();
   expect(lightResults.violations).toEqual([]);
 
   await page.locator('#btn-theme').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const darkResults = await new AxeBuilder({ page }).include('#editor-state').exclude('#live-preview-iframe')
     .withRules(['color-contrast']).analyze();
   expect(darkResults.violations).toEqual([]);

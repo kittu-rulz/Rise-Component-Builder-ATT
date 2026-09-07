@@ -115,10 +115,30 @@ test.describe('exported fixtures are keyboard-operable standalone', () => {
     await page.keyboard.press('Space');
     await expect(playBtn).toHaveAttribute('aria-pressed', 'false');
 
+    // aria-valuenow on the scrub slider has two writers: the keydown handler (immediate,
+    // authoritative for keyboard) and the playback `timeupdate` handler (async, fired by
+    // every currentTime change including a programmatic seek). Under test speed they race
+    // — a queued timeupdate from one seek can land after the next key press and clobber
+    // the value. To keep this deterministic, after every step we wait for that step's
+    // timeupdate to fully land (aria-valuetext switches from "<n> percent", set by the
+    // key handler, to the "M:SS of M:SS" form, set by timeupdate) before the next press.
     const scrubBar = page.locator('.video-timeline-scrub');
+    const timeupdateLanded = () => expect(scrubBar).toHaveAttribute('aria-valuetext', /\d+:\d\d of /);
+
+    // The brief play/pause above nudged currentTime off 0; pin it back and let it settle.
+    await page.evaluate(() => {
+      const video = document.querySelector('video');
+      video.pause();
+      video.currentTime = 0;
+    });
+    await expect(scrubBar).toHaveAttribute('aria-valuenow', '0');
+    await timeupdateLanded();
+
     await scrubBar.focus();
     await page.keyboard.press('ArrowRight');
     await expect(scrubBar).toHaveAttribute('aria-valuenow', '5');
+    await timeupdateLanded();
+
     await page.keyboard.press('Home');
     await expect(scrubBar).toHaveAttribute('aria-valuenow', '0');
   });
