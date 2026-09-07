@@ -7,7 +7,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The three-browser Playwright run (serial: workers 1, fullyParallel false, retries 2)
+    # plus lint/typecheck/unit/coverage/build was overrunning the previous 20-minute cap
+    # and getting cancelled mid-e2e. 45 gives the browser suite room to finish with margin.
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -43,6 +46,7 @@ jobs:
         run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Run browser and accessibility tests
+        timeout-minutes: 32
         run: npm run test:e2e
 
       - name: Upload Playwright failure artifacts
