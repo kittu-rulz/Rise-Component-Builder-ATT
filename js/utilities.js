@@ -283,6 +283,9 @@ export function formatStorageBytes(bytes) {
 // byte count like "0 B of 10 GB" — and every quantity is explicitly marked as
 // an approximation, since navigator.storage.estimate() itself is documented
 // as an estimate, not an exact figure (P10 requirement 4).
+/**
+ * @param {{ supported?: boolean, usage?: number, quota?: number, failed?: boolean }} [estimate]
+ */
 export function describeStorageUsage({ supported, usage, quota, failed } = {}) {
   if (!supported || failed || !Number.isFinite(quota) || quota <= 0) {
     return {
