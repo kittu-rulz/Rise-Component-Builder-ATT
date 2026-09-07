@@ -83,14 +83,19 @@ export function generateCSS() {
       object-fit: cover;
     }
     .profile-card-content h4 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 2px;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      margin-bottom: 4px;
+      color: var(--text-main);
+      text-wrap: pretty;
     }
     .profile-card-content p {
-      font-size: 11px;
+      font-size: var(--att-fs-body, 1rem);
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
+      margin: 0;
     }`;
 }
 

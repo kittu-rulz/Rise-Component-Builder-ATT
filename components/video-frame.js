@@ -303,8 +303,8 @@ export function generateCSS() {
       background-color: var(--primary-hover);
     }
     .video-current-chapter {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       color: var(--text-muted);
     }
     .video-status-region { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -316,7 +316,7 @@ export function generateCSS() {
       background-color: var(--bg-body);
       border-radius: var(--border-radius);
       padding: 8px 10px;
-      font-size: 11px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
     }
     .video-resume-text { color: var(--text-main); margin-right: auto; }
     .video-resume-btn,
@@ -324,11 +324,16 @@ export function generateCSS() {
       background-color: var(--bg-card);
       border: 1px solid var(--primary);
       color: var(--primary);
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 600;
+      padding: 6px 12px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       border-radius: var(--button-radius);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
     }
     .video-resume-btn { background-color: var(--primary); color: var(--on-primary); }
     .video-resume-btn:hover { background-color: var(--primary-hover); border-color: var(--primary-hover); }
@@ -345,8 +350,8 @@ export function generateCSS() {
        Cobalt-outlined at rest like sorting-activity's .target-btn, since these are
        clickable at all times, matching components/audio-player.js's own convention. */
     .video-skip-btn {
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background-color: var(--bg-card);
       border: 1px solid var(--primary);
@@ -362,8 +367,8 @@ export function generateCSS() {
     .video-skip-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
     .video-skip-btn:disabled { opacity: 0.5; cursor: default; }
     .video-mini-play {
-      width: 30px;
-      height: 30px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: transparent;
       border: 1px solid var(--primary);
@@ -433,7 +438,7 @@ export function generateCSS() {
     }
     .video-chapter-marker:hover::before { background-color: var(--primary); }
     .video-timer {
-      font-size: 11px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
       color: var(--text-muted);
       white-space: nowrap;
     }
@@ -441,18 +446,23 @@ export function generateCSS() {
       background-color: var(--bg-card);
       border: 1px solid var(--primary);
       color: var(--primary);
-      padding: 4px 8px;
-      font-size: 11px;
-      font-weight: 600;
+      padding: 4px 10px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       border-radius: var(--button-radius);
       cursor: pointer;
       transition: all 0.2s;
       flex-shrink: 0;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
     }
     .video-speed-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
     .video-mute-btn {
-      width: 28px;
-      height: 28px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background-color: var(--bg-card);
       border: 1px solid var(--primary);
@@ -467,10 +477,10 @@ export function generateCSS() {
     }
     .video-mute-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
     .video-section-heading {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.5px;
       color: var(--text-muted);
     }
     .video-chapter-nav { border-top: var(--border-style); padding-top: 10px; }
@@ -481,9 +491,10 @@ export function generateCSS() {
       width: 100%;
       background: none;
       border: none;
-      padding: 0;
+      padding: 4px 0;
       margin-bottom: 6px;
       cursor: pointer;
+      min-height: 44px;
     }
     .video-chapter-toggle-label { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
     .video-chapter-chevron {
@@ -507,22 +518,24 @@ export function generateCSS() {
       background: none;
       border: none;
       border-radius: 6px;
-      padding: 6px 8px;
+      padding: 8px 10px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
       color: var(--text-main);
+      min-height: 44px;
+      box-sizing: border-box;
     }
     .video-chapter-item:hover { background-color: var(--bg-body); }
     .video-chapter-item.video-chapter-active {
       background-color: var(--bg-body);
-      font-weight: 700;
+      font-weight: var(--att-fw-bold, 700);
       /* Not color alone: the active row also gets aria-current="true" (generateJS) and a
          leading marker character, not just a background tint. */
     }
     .video-chapter-item.video-chapter-active .video-chapter-title::before { content: '▸ '; color: var(--primary); }
     .video-chapter-time { color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-    .video-chapter-desc { display: block; width: 100%; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .video-progress-status { font-size: 11px; color: var(--text-muted); }
+    .video-chapter-desc { display: block; width: 100%; font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); margin-top: 2px; }
+    .video-progress-status { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); }
     .video-transcript-section { border-top: var(--border-style); padding-top: 10px; }
     .video-transcript-toggle {
       display: flex;
@@ -531,10 +544,11 @@ export function generateCSS() {
       background: none;
       border: none;
       color: var(--primary);
-      font-size: 12px;
-      font-weight: 600;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
       cursor: pointer;
       padding: 4px 0;
+      min-height: 44px;
     }
     .video-transcript-toggle:hover { color: var(--primary-hover); }
     .video-transcript-panel {
@@ -549,14 +563,15 @@ export function generateCSS() {
     .video-transcript-search {
       width: 100%;
       box-sizing: border-box;
-      padding: 6px 8px;
-      font-size: 12px;
+      padding: 8px 12px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
       border: var(--border-style);
       border-radius: 6px;
       background-color: var(--bg-card);
       color: var(--text-main);
+      min-height: 44px;
     }
-    .video-transcript-search-status { font-size: 11px; color: var(--text-muted); margin: 0 0 6px; }
+    .video-transcript-search-status { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); margin: 0 0 6px; }
     .video-transcript-segments { display: flex; flex-direction: column; gap: 2px; }
     .video-transcript-segment {
       display: flex;
@@ -568,31 +583,49 @@ export function generateCSS() {
       background: none;
       border: none;
       border-radius: 6px;
-      padding: 6px 8px;
+      padding: 8px 10px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: var(--att-fs-body, 1rem);
       color: var(--text-main);
-      line-height: 1.5;
+      line-height: var(--att-lh-body, 1.5);
+      min-height: 44px;
+      box-sizing: border-box;
     }
     .video-transcript-segment:hover { background-color: var(--bg-body); }
     .video-transcript-segment.video-segment-active {
       background-color: var(--bg-body);
       border-left: 3px solid var(--primary);
-      font-weight: 600;
+      font-weight: var(--att-fw-bold, 700);
     }
-    .video-segment-time { color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; font-weight: 400; }
-    .video-segment-speaker { font-weight: 700; flex-shrink: 0; }
+    .video-segment-time { color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; font-weight: 400; font-size: var(--att-fs-body-sm, 0.875rem); }
+    .video-segment-speaker { font-weight: var(--att-fw-bold, 700); flex-shrink: 0; }
+    .video-segment-text { max-width: 70ch; }
     .video-search-highlight { background-color: var(--warning); color: var(--text-main); border-radius: 2px; padding: 0 1px; }
-    .video-transcript-plain { font-size: 12px; line-height: 1.6; }
-    .video-transcript-no-results { font-size: 12px; color: var(--text-muted); font-style: italic; }
+    .video-transcript-plain { font-size: var(--att-fs-body, 1rem); line-height: var(--att-lh-body, 1.5); max-width: 70ch; }
+    .video-transcript-no-results { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); font-style: italic; }
     .video-takeaways-panel {
       background-color: var(--bg-body);
       border-radius: var(--border-radius);
-      padding: 12px;
+      padding: 16px;
     }
-    .video-takeaways-heading { display: flex; align-items: center; gap: 6px; }
-    .video-takeaways-list { padding-left: 18px; font-size: 12px; line-height: 1.7; }
-    .video-takeaways-locked-msg { font-size: 12px; color: var(--text-muted); font-style: italic; }
+    .video-takeaways-heading {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .video-takeaways-list {
+      padding-left: 20px;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
+      color: var(--text-main);
+    }
+    .video-takeaways-locked-msg { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); font-style: italic; }
     @media (max-width: 420px) {
       .video-control-strip { row-gap: 10px; }
       .video-scrub-wrap { flex-basis: 100%; order: 1; }

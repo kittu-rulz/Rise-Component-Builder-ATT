@@ -87,14 +87,19 @@ export function generateCSS() {
       border-radius: calc(var(--border-radius) / 2);
     }
     .info-grid-item h4 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      margin-bottom: 8px;
+      color: var(--text-main);
+      text-wrap: pretty;
     }
     .info-grid-item p {
-      font-size: 11px;
+      font-size: var(--att-fs-body, 1rem);
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
+      margin: 0;
     }`;
 }
 

@@ -55,6 +55,8 @@ export function generateCSS() {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      min-height: 44px;
+      box-sizing: border-box;
     }
     .menu-item-left {
       display: flex;
@@ -62,17 +64,19 @@ export function generateCSS() {
       gap: 14px;
     }
     .menu-num {
-      font-size: 14px;
-      font-weight: 700;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
       /* Cobalt (--primary), not AT&T Blue: this index number is part of a
          clickable drawer header's own content, so it needs the Cobalt clickable
          treatment. */
       color: var(--primary);
     }
     .menu-title {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
       color: var(--text-main);
+      text-wrap: pretty;
     }
     .menu-arrow {
       /* Cobalt (--primary), not a neutral gray: this icon is the clickable
@@ -92,12 +96,14 @@ export function generateCSS() {
     }
     .menu-item-desc p {
       padding: 0 20px 20px 48px;
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);
+      max-width: 70ch;
+      margin: 0;
     }
     .menu-drawer-item.active .menu-item-desc {
-      max-height: 200px;
+      max-height: 300px;
     }`;
 }
 

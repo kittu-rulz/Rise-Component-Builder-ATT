@@ -74,10 +74,11 @@ export function generateCSS() {
          any size, without needing to enlarge the caption to the AT&T-Blue-text
          19px threshold. */
       background-color: var(--text-main);
-      padding: 10px;
+      padding: 12px 14px;
       color: var(--bg-card);
-      font-size: 11px;
-      font-weight: 500;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
+      line-height: var(--att-lh-body, 1.5);
     }
     .lightbox-overlay {
       position: fixed;
@@ -96,14 +97,16 @@ export function generateCSS() {
     .lightbox-img {
       max-width: 90%;
       max-height: 80%;
-      border-radius: 8px;
+      border-radius: var(--border-radius, 8px);
       box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0,0,0,0.1));
     }
     .lightbox-caption {
       color: var(--bg-card);
-      font-size: 13px;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       margin-top: 16px;
       text-align: center;
+      max-width: 70ch;
     }
     .lightbox-close {
       position: absolute;
@@ -112,6 +115,13 @@ export function generateCSS() {
       color: var(--bg-card);
       font-size: 32px;
       cursor: pointer;
+      background: none;
+      border: none;
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }`;
 }
 

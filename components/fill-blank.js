@@ -75,13 +75,14 @@ export function generateCSS() {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 700;
       flex-shrink: 0;
     }
     .blank-sentence-content {
-      font-size: 13px;
-      line-height: 1.8;
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
     }
     .blank-input {
       border: none;
@@ -89,9 +90,10 @@ export function generateCSS() {
       background-color: transparent;
       outline: none;
       padding: 0 4px;
+      font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       color: var(--text-main);
-      width: 100px;
+      width: 120px;
       text-align: center;
       transition: border-bottom-color 0.2s;
     }
@@ -107,9 +109,13 @@ export function generateCSS() {
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
-      font-size: 13px;
+      font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: all var(--animation-speed);
     }
     .quiz-submit-btn:hover {
@@ -119,8 +125,9 @@ export function generateCSS() {
       margin-top: 14px;
       padding: 16px;
       border-radius: var(--border-radius);
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
       animation: fadeIn 0.3s ease;
     }
     .quiz-feedback.correct {

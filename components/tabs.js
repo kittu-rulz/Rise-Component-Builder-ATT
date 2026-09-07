@@ -116,20 +116,24 @@ export function generateCSS() {
       border: var(--border-style);
       border-radius: var(--button-radius);
       padding: 6px 14px;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-main);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .tabs-toolbar-btn[aria-pressed="true"] {
       /* Cobalt (--primary), not AT&T Blue: this is the pressed/active state of a
-         clickable toggle button, which must use the Cobalt clickable treatment. */
+          clickable toggle button, which must use the Cobalt clickable treatment. */
       border-color: var(--primary);
       box-shadow: 0 0 0 1px var(--primary) inset;
     }
     .tabs-progress-text {
       margin-left: auto;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-muted);
     }
@@ -142,10 +146,10 @@ export function generateCSS() {
     }
     .tab-btn {
       /* Complete capsule (full var(--button-radius)), not an underline tab —
-         capsule shapes are reserved for clickable elements and must be a whole
-         pill, never a partial rounding. Cobalt outline at rest, filled Cobalt
-         when active/selected: every tab is clickable at all times, not only
-         once selected, so it carries the Cobalt treatment throughout. */
+          capsule shapes are reserved for clickable elements and must be a whole
+          pill, never a partial rounding. Cobalt outline at rest, filled Cobalt
+          when active/selected: every tab is clickable at all times, not only
+          once selected, so it carries the Cobalt treatment throughout. */
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -153,11 +157,12 @@ export function generateCSS() {
       border: 1px solid var(--primary);
       border-radius: var(--button-radius);
       padding: 10px 20px;
-      font-size: 13px;
+      font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       color: var(--primary);
       cursor: pointer;
       white-space: nowrap;
+      min-height: 44px;
       transition: all 0.2s;
     }
     .tab-btn:hover:not(.active) {
@@ -185,7 +190,7 @@ export function generateCSS() {
       flex-shrink: 0;
     }
     .tab-visited-badge {
-      font-size: 9px;
+      font-size: var(--att-fs-eyebrow, 12px);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
@@ -201,9 +206,10 @@ export function generateCSS() {
     }
     .tab-panel {
       display: none;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--text-muted);
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
+      color: var(--text-main);
+      max-width: 70ch;
       animation: fadeIn 0.3s ease;
     }
     .tab-panel.active {
@@ -250,7 +256,7 @@ export function generateCSS() {
       }
     }
 
-    .tabs-compare-panel {
+    .tabs-compare-section {
       border-top: var(--border-style);
       padding: 16px 20px;
       display: flex;
@@ -258,7 +264,7 @@ export function generateCSS() {
       gap: 12px;
     }
     .tabs-compare-hint {
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       color: var(--text-muted);
     }
     .tabs-compare-checklist {
@@ -270,7 +276,7 @@ export function generateCSS() {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       cursor: pointer;
     }
@@ -284,15 +290,16 @@ export function generateCSS() {
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 14px 16px;
-      font-size: 12px;
-      line-height: 1.6;
-      color: var(--text-muted);
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
+      color: var(--text-main);
     }
     .tabs-compare-column h4 {
-      font-size: 13px;
+      font-size: var(--att-fs-body-lg, 18px);
       font-weight: 700;
       color: var(--text-main);
       margin-bottom: 6px;
+      text-wrap: pretty;
     }
     @media (max-width: 600px) {
       .tabs-compare-columns {

@@ -80,10 +80,12 @@ export function generateCSS() {
       cursor: pointer;
       z-index: 2;
       flex: 1;
+      min-height: 44px;
+      justify-content: flex-start;
     }
     .node-marker {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       background-color: var(--bg-card);
       /* Cobalt (--primary) at rest, not a neutral gray: this marker sits inside
@@ -98,8 +100,8 @@ export function generateCSS() {
       justify-content: center;
     }
     .node-marker-label {
-      font-size: 10px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       line-height: 1;
       /* Cobalt (--primary), not AT&T Blue: this marker is part of a clickable
          timeline node (role="tab"), so it needs the Cobalt clickable treatment
@@ -116,8 +118,8 @@ export function generateCSS() {
       color: var(--on-primary);
     }
     .node-label {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       color: var(--text-muted);
       margin-top: 8px;
       text-align: center;
@@ -127,11 +129,12 @@ export function generateCSS() {
       /* Cobalt (--primary), not AT&T Blue: active label of a clickable control,
          and --accent text is restricted to >=19px (this renders at 11px). */
       color: var(--primary);
+      font-weight: var(--att-fw-bold, 700);
     }
     .timeline-slider-box {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: var(--border-radius, 8px);
       padding: 20px;
       min-height: 100px;
     }
@@ -143,14 +146,19 @@ export function generateCSS() {
       display: block;
     }
     .timeline-slide h4 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 6px;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      margin-bottom: 8px;
+      color: var(--text-main);
+      text-wrap: pretty;
     }
     .timeline-slide p {
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);
+      max-width: 70ch;
+      margin: 0;
     }`;
 }
 

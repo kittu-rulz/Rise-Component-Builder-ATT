@@ -38,7 +38,7 @@ export function generateHTML(config, instanceId) {
           <circle cx="400" cy="225" r="100" fill="none" class="hotspot-schematic-ring" stroke-width="4" stroke-dasharray="10 10"></circle>
           <line x1="100" y1="225" x2="700" y2="225" class="hotspot-schematic-line" stroke-width="2"></line>
           <line x1="400" y1="50" x2="400" y2="400" class="hotspot-schematic-line" stroke-width="2"></line>
-          <text x="400" y="230" text-anchor="middle" class="hotspot-schematic-label" font-size="16" font-weight="600">SCHEMATIC PATHWAY MAP</text>
+          <text x="400" y="230" text-anchor="middle" class="hotspot-schematic-label" font-size="16" font-weight="600">Schematic Pathway Map</text>
         </svg>`}
         ${config.items.map((item, idx) => `
           <span class="hotspot-point" style="left: ${item.x || '50'}%; top: ${item.y || '50'}%;">
@@ -89,15 +89,15 @@ export function generateCSS() {
     }
     .hotspot-point {
       position: absolute;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       transform: translate(-50%, -50%);
       z-index: 10;
     }
     .hotspot-pin {
       position: relative;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       /* Cobalt (--primary), not AT&T Blue (--accent): this pin is a clickable
          control, and clickable elements must use the Cobalt-on-white or
          white-on-Cobalt treatment, not the accent color. Cobalt's 10.7:1
@@ -110,11 +110,12 @@ export function generateCSS() {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
       cursor: pointer;
       box-shadow: var(--att-shadow-1, 0 4px 6px rgba(0,0,0,0.15));
       z-index: 1;
+      padding: 0;
     }
     .hotspot-pin .pulse {
       position: absolute;
@@ -127,17 +128,18 @@ export function generateCSS() {
     }
     .hotspot-tooltip {
       position: absolute;
-      bottom: 38px;
+      bottom: 42px;
       left: 50%;
       transform: translateX(-50%) translateY(8px);
-      width: 220px;
+      width: 260px;
+      max-width: 70ch;
       /* This popup is passive content (no interactive control inside it), so it
          must not use Cobalt as its surface color. Built from the theme's own
          text/surface tokens (inverted) rather than an invented dark-gray hex. */
       background-color: var(--text-main);
       color: var(--bg-card);
-      padding: 12px;
-      border-radius: 8px;
+      padding: 14px 16px;
+      border-radius: var(--border-radius, 8px);
       box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0, 0, 0, 0.2));
       display: none;
       z-index: 20;
@@ -152,28 +154,31 @@ export function generateCSS() {
       transform: translateX(-50%) translateY(0);
     }
     .hotspot-tooltip h5 {
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 4px;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      margin-bottom: 6px;
       color: var(--bg-card);
     }
     .hotspot-tooltip-title {
       display: block;
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 4px;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      margin-bottom: 6px;
       color: var(--bg-card);
     }
     .hotspot-tooltip p {
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      line-height: var(--att-lh-body, 1.5);
       font-weight: 400;
       color: var(--bg-card);
+      margin: 0;
     }
     .hotspot-tooltip-content {
       display: block;
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      line-height: var(--att-lh-body, 1.5);
       font-weight: 400;
       color: var(--bg-card);
     }

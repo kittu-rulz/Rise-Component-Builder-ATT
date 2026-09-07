@@ -36,14 +36,17 @@ export function generateCSS() {
     .link-button-item {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
       background-color: var(--primary);
       color: var(--on-primary);
       padding: 12px 20px;
       border-radius: var(--button-radius);
       box-shadow: var(--shadow-style);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
+      min-height: 44px;
+      box-sizing: border-box;
       transition: all var(--animation-speed);
       border: var(--border-style);
     }

@@ -185,14 +185,16 @@ export function generateCSS() {
     }
 
     .flip-card-front h3, .flip-card-back h3 {
-      font-size: 15px;
+      font-size: var(--att-fs-body-lg, 18px);
       font-weight: 600;
+      text-wrap: pretty;
     }
 
     .flip-card-front p, .flip-card-back p {
-      font-size: 12px;
+      font-size: var(--att-fs-body, 16px);
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
     }
 
     .flip-card-back {
@@ -213,7 +215,7 @@ export function generateCSS() {
       position: absolute;
       top: 10px;
       right: 10px;
-      font-size: 10px;
+      font-size: var(--att-fs-eyebrow, 12px);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
@@ -245,10 +247,11 @@ export function generateCSS() {
       color: var(--text-main);
       border: 1px solid var(--bg-card);
       border-radius: var(--button-radius);
-      padding: 6px 12px;
-      font-size: 11px;
+      padding: 8px 14px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       cursor: pointer;
+      min-height: 44px;
       transition: all 0.2s;
     }
 
@@ -278,11 +281,15 @@ export function generateCSS() {
       background-color: var(--bg-card);
       border: var(--border-style);
       border-radius: var(--button-radius);
-      padding: 6px 14px;
-      font-size: 12px;
+      padding: 8px 16px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-main);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.2s;
     }
 
@@ -292,7 +299,7 @@ export function generateCSS() {
     }
 
     .flip-study-counts {
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-muted);
     }
@@ -308,7 +315,7 @@ export function generateCSS() {
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      font-size: 13px;
+      font-size: var(--att-fs-body, 16px);
     }
 
     .flip-card[hidden] {

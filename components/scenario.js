@@ -32,7 +32,7 @@ export function generateHTML(config, instanceId) {
           <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M20 15.8C21.8 14.5 23 12.4 23 10 23 6.1 19.9 3 16 3 12.1 3 9 6.1 9 10 9 12.4 10.2 14.5 12 15.8 7.9 17.4 5 21.3 5 26L5 29 7 29 7 26C7 21 11 17 16 17 21 17 25 21 25 26L25 29 27 29 27 26C27 21.3 24.1 17.4 20 15.8ZM11 10C11 7.2 13.2 5 16 5 18.8 5 21 7.2 21 10 21 12.8 18.8 15 16 15 13.2 15 11 12.8 11 10Z"/></svg>
         </div>
         <div class="scenario-bubble">
-          <div class="speaker-name">CHRIS (TEAM LEAD)</div>
+          <div class="speaker-name">Chris (Team Lead)</div>
           <div class="speech-text" id="${instanceId}-scenario-speech">${escapeHTML(q.title)}</div>
         </div>
       </div>
@@ -83,8 +83,8 @@ export function generateCSS() {
       flex: 1;
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 14px 18px;
+      border-radius: var(--border-radius, 12px);
+      padding: 16px 20px;
       position: relative;
     }
     .scenario-bubble::before {
@@ -108,21 +108,23 @@ export function generateCSS() {
     .speaker-name {
       /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
          text (3.01:1 on white — accepted at large-text size, not below it). */
-      font-size: 19px;
-      font-weight: 700;
+      font-size: var(--att-fs-h3, 1.25rem);
+      font-weight: var(--att-fw-bold, 700);
       color: var(--accent);
-      letter-spacing: 0.6px;
-      margin-bottom: 2px;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      text-wrap: pretty;
     }
     .speech-text {
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
+      max-width: 70ch;
     }
     .scenario-choices-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       margin-top: 10px;
     }
     .scenario-choice-btn {
@@ -134,11 +136,16 @@ export function generateCSS() {
       border: 1px solid var(--primary);
       color: var(--primary);
       padding: 12px 16px;
-      border-radius: 8px;
+      border-radius: var(--button-radius, 8px);
       text-align: left;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-medium, 500);
+      line-height: var(--att-lh-body, 1.5);
       cursor: pointer;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
       transition: all 0.2s;
     }
     .scenario-choice-btn:hover {
@@ -148,10 +155,12 @@ export function generateCSS() {
     .scenario-feedback-balloon {
       background-color: var(--att-grey-1, #F3F4F5);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 12px;
-      line-height: 1.5;
+      border-radius: var(--border-radius, 8px);
+      padding: 16px;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      color: var(--text-main);
+      max-width: 70ch;
       animation: fadeIn 0.3s ease;
     }`;
 }

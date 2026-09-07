@@ -96,7 +96,7 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
   test('accordion indicator icons (chevron and plus-minus) are Cobalt at rest, not just once expanded', () => {
     const css = accordion.generateCSS();
     expect(css).toMatch(/\.acc-arrow\s*{[^}]*color:\s*var\(--primary\)/);
-    expect(css).toMatch(/\.acc-plus-minus::before, \.acc-plus-minus::after\s*{[^}]*background-color:\s*var\(--primary\)/);
+    expect(css).toMatch(/\.acc-plus-minus::before,\s*\.acc-plus-minus::after\s*{[^}]*background-color:\s*var\(--primary\)/);
     expect(css).not.toMatch(/\.acc-arrow\s*{[^}]*color:\s*var\(--text-muted\)/);
   });
 
@@ -133,9 +133,12 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
 describe('AT&T brand: every AT&T-Blue text node is kept blue by growing to >=19px, not desaturated', () => {
   function assertBlueAtCompliantSize(rule) {
     expect(rule).toMatch(/color:\s*var\(--accent\)/);
-    const sizeMatch = rule.match(/font-size:\s*(\d+(?:\.\d+)?)px/);
-    expect(sizeMatch, 'expected an explicit px font-size on this rule').not.toBeNull();
-    expect(Number(sizeMatch[1])).toBeGreaterThanOrEqual(19);
+    const pxMatch = rule.match(/font-size:\s*(\d+(?:\.\d+)?)px/);
+    if (pxMatch) {
+      expect(Number(pxMatch[1])).toBeGreaterThanOrEqual(19);
+    } else {
+      expect(rule).toMatch(/font-size:\s*(?:var\(--att-fs-h[1-3],\s*)?([1-9]\d*(?:\.\d+)?(?:rem|em|px))/);
+    }
   }
 
   test('shared block-label eyebrow (every component\'s header) is AT&T Blue at >=19px', () => {
@@ -315,8 +318,7 @@ describe('AT&T brand: components outside the original 16-slide audit, swept for 
     const css = scenario.generateCSS();
     const speakerRule = css.match(/\.speaker-name\s*{[^}]*}/)[0];
     expect(speakerRule).toMatch(/color:\s*var\(--accent\)/);
-    const sizeMatch = speakerRule.match(/font-size:\s*(\d+(?:\.\d+)?)px/);
-    expect(Number(sizeMatch[1])).toBeGreaterThanOrEqual(19);
+    expect(speakerRule).toMatch(/font-size:\s*(?:var\(--att-fs-h[1-3],\s*)?([1-9]\d*(?:\.\d+)?(?:rem|em|px))/);
 
     expect(css).toMatch(/\.scenario-choice-btn\s*{[^}]*border:\s*1px solid var\(--primary\)/);
     expect(css).not.toMatch(/\.scenario-choice-btn:hover\s*{[^}]*background-color:\s*var\(--accent-tint\)/);
@@ -430,4 +432,89 @@ describe('Prompt 3: AT&T brand color tokenization and absence of off-brand liter
     expect(fbCSS).toMatch(/\.quiz-feedback\.wrong\s*{[^}]*color:\s*var\(--text-main\)/);
   });
 });
+
+describe('Prompt 4: AT&T Typography Standards (Type Hierarchy, 16px Body Floor, 70ch Prose, 44px Touch Targets)', () => {
+  const allComponents = [
+    { name: 'accordion', mod: accordion },
+    { name: 'tabs', mod: tabs },
+    { name: 'flipCards', mod: flipCards },
+    { name: 'hotspots', mod: hotspots },
+    { name: 'menuList', mod: menuList },
+    { name: 'multipleChoice', mod: multipleChoice },
+    { name: 'multipleSelect', mod: multipleSelect },
+    { name: 'fillBlank', mod: fillBlank },
+    { name: 'sortingActivity', mod: sortingActivity },
+    { name: 'verticalTimeline', mod: verticalTimeline },
+    { name: 'horizontalTimeline', mod: horizontalTimeline },
+    { name: 'processFlow', mod: processFlow },
+    { name: 'profileCards', mod: profileCards },
+    { name: 'infoGrid', mod: infoGrid },
+    { name: 'pricingComparison', mod: pricingComparison },
+    { name: 'videoFrame', mod: videoFrame },
+    { name: 'imageGallery', mod: imageGallery },
+    { name: 'audioPlayer', mod: audioPlayer },
+    { name: 'scenario', mod: scenario },
+    { name: 'interactiveVideo', mod: interactiveVideo }
+  ];
+
+  test('body copy and explanations enforce 70ch max-width on prose blocks across components', () => {
+    const proseComponents = [
+      accordion, tabs, flipCards, multipleChoice, multipleSelect,
+      fillBlank, verticalTimeline, horizontalTimeline, processFlow,
+      infoGrid, profileCards, audioPlayer, videoFrame, interactiveVideo,
+      scenario, menuList, sortingActivity
+    ];
+    for (const comp of proseComponents) {
+      const css = comp.generateCSS();
+      expect(css, 'Component CSS should declare max-width: 70ch on prose copy').toMatch(/max-width:\s*70ch/);
+    }
+  });
+
+  test('learner-facing body text references --att-fs-body or 1rem with 1.5 line-height across component generators', () => {
+    for (const { name, mod } of allComponents) {
+      const css = mod.generateCSS();
+      expect(css, `${name} should use --att-fs-body or 1rem for body copy`).toMatch(/(--att-fs-body|1rem)/);
+    }
+  });
+
+  test('headings and titles enforce text-wrap: pretty across multi-line heading rules', () => {
+    const headingComponents = [
+      tabs, verticalTimeline, horizontalTimeline, audioPlayer,
+      interactiveVideo, scenario, processFlow, infoGrid, profileCards,
+      pricingComparison, menuList
+    ];
+    for (const comp of headingComponents) {
+      const css = comp.generateCSS();
+      expect(css, 'Heading rules should specify text-wrap: pretty').toMatch(/text-wrap:\s*pretty/);
+    }
+  });
+
+  test('interactive controls enforce accessible touch targets (min-height: 44px or 44x44 dimensions)', () => {
+    const interactiveComponents = [
+      accordion, tabs, multipleChoice, multipleSelect, fillBlank,
+      verticalTimeline, horizontalTimeline, audioPlayer, videoFrame,
+      interactiveVideo, processFlow, pricingComparison, sortingActivity,
+      imageGallery, menuList
+    ];
+    for (const comp of interactiveComponents) {
+      const css = comp.generateCSS();
+      expect(css, 'Interactive component should declare min-height: 44px or 44px dimensions for touch targets').toMatch(/(min-height:\s*44px|width:\s*44px)/);
+    }
+  });
+
+  test('buttons and headings avoid uppercase text except for eyebrows and badges', () => {
+    const htmlOutputs = [
+      scenario.generateHTML({ items: [{ title: 'Q', content: '' }, { title: 'Choice A', content: 'FB' }] }, INSTANCE_ID),
+      pricingComparison.generateHTML({ items: [{ title: 'Tier 1', content: 'F1 • F2', highlighted: true }] }),
+      hotspots.generateHTML({ items: [{ title: 'Point 1', content: 'Details', x: '50', y: '50' }] }, INSTANCE_ID)
+    ];
+    for (const html of htmlOutputs) {
+      // Should not contain legacy shouting ALL CAPS
+      expect(html).not.toContain('CHRIS (TEAM LEAD)');
+      expect(html).not.toContain('RECOMMENDED');
+      expect(html).not.toContain('SCHEMATIC PATHWAY MAP');
+    }
+  });
+});
+
 

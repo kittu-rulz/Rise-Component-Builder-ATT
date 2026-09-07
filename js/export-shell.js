@@ -69,19 +69,20 @@ export const BASE_RESET_CSS = `
     .block-headline {
       font-family: var(--heading-font-family);
       white-space: pre-line;
-      font-size: 22px;
-      font-weight: 600;
+      font-size: var(--att-fs-h2, 1.5rem);
+      font-weight: var(--att-fw-bold, 700);
       color: var(--text-main);
-      line-height: 1.3;
+      line-height: var(--att-lh-heading, 1.25);
       text-wrap: pretty;
     }
 
     .block-desc {
-      font-size: 13px;
+      font-size: var(--att-fs-body, 1rem);
       color: var(--text-muted);
       margin-top: 6px;
-      line-height: 1.5;
+      line-height: var(--att-lh-body, 1.5);
       white-space: pre-line;
+      max-width: 70ch;
     }
 
     /* AT&T Editorial Header Presentation */

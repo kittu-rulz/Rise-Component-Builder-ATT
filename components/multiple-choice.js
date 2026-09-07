@@ -144,12 +144,13 @@ export function generateCSS() {
     }
 
     .option-text {
-      font-size: 13px;
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
       font-weight: 500;
     }
 
     .option-correct-flag {
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 700;
       color: var(--success);
     }
@@ -159,7 +160,7 @@ export function generateCSS() {
     }
 
     .quiz-confidence-label {
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-muted);
       margin-bottom: 8px;
@@ -176,9 +177,13 @@ export function generateCSS() {
       border: var(--border-style);
       border-radius: var(--button-radius);
       padding: 8px 16px;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.2s ease;
     }
 
@@ -200,9 +205,13 @@ export function generateCSS() {
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
-      font-size: 13px;
+      font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: all var(--animation-speed);
     }
 
@@ -222,16 +231,20 @@ export function generateCSS() {
       border: var(--border-style);
       background-color: transparent;
       color: var(--text-main);
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .quiz-hint {
       padding: 12px 16px;
       border-radius: var(--border-radius);
       border: 1px dashed var(--border-color);
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       line-height: 1.5;
       color: var(--text-main);
     }
@@ -240,8 +253,9 @@ export function generateCSS() {
       margin-top: 14px;
       padding: 16px;
       border-radius: var(--border-radius);
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
       animation: fadeIn 0.3s ease;
     }
 

@@ -163,13 +163,13 @@ export function generateCSS() {
 
     .accordion-lock-note {
       margin: -8px 20px 12px;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-style: italic;
       color: var(--text-muted);
     }
 
     .accordion-visited-badge {
-      font-size: 11px;
+      font-size: var(--att-fs-eyebrow, 12px);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
@@ -202,11 +202,12 @@ export function generateCSS() {
       flex-shrink: 0;
     }
 
-    .acc-plus-minus::before, .acc-plus-minus::after {
+    .acc-plus-minus::before,
+    .acc-plus-minus::after {
       content: '';
       position: absolute;
       background-color: var(--primary);
-      transition: transform 0.25s ease, background-color 0.25s ease;
+      transition: transform 0.25s ease, opacity 0.25s ease;
     }
 
     .acc-plus-minus::before {
@@ -244,6 +245,7 @@ export function generateCSS() {
       font-size: var(--att-fs-body, 16px);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
+      max-width: 70ch;
     }
 
     .accordion-toolbar {
@@ -265,7 +267,7 @@ export function generateCSS() {
       border: var(--border-style);
       border-radius: var(--button-radius);
       padding: 8px 14px;
-      font-size: 14px;
+      font-size: var(--att-fs-body-sm, 14px);
       color: var(--text-main);
       min-height: 44px;
     }
@@ -287,7 +289,7 @@ export function generateCSS() {
       border: var(--border-style);
       border-radius: var(--button-radius);
       padding: 8px 16px;
-      font-size: 13px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-main);
       cursor: pointer;
@@ -302,10 +304,8 @@ export function generateCSS() {
       outline-offset: 2px !important;
     }
 
-    .accordion-progress-text {
-      margin-left: auto;
-      font-size: 13px;
-      font-weight: 600;
+    .accordion-progress, .accordion-search-status {
+      font-size: var(--att-fs-body-sm, 14px);
       color: var(--text-muted);
     }
 

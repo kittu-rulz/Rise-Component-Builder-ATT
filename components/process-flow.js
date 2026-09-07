@@ -66,16 +66,17 @@ export function generateCSS() {
       align-items: center;
     }
     .step-badge {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
       /* Not --accent-light + AT&T Blue text: a derived shade, and below-19px blue
          text fails the brand's own contrast threshold. Neutral background, dark
          text. Not a capsule either — a static "Step X of Y" readout, not a
          clickable control. */
       color: var(--text-main);
       text-transform: uppercase;
+      letter-spacing: 0.5px;
       background-color: var(--border-color);
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 6px;
     }
     .process-dots {
@@ -83,8 +84,8 @@ export function generateCSS() {
       gap: 6px;
     }
     .p-dot {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       background-color: var(--border-color);
       /* Stakeholder request: a visible step number, not just a bare dot. Still
@@ -94,8 +95,8 @@ export function generateCSS() {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       transition: all 0.2s;
     }
     .p-dot.active {
@@ -117,38 +118,50 @@ export function generateCSS() {
       display: block;
     }
     .process-slide h3 {
-      font-size: 16px;
-      font-weight: 600;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
       margin-bottom: 8px;
+      color: var(--text-main);
+      text-wrap: pretty;
     }
     .process-slide p {
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);
+      max-width: 70ch;
+      margin: 0;
     }
     .process-step-duration {
       /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
          text (3.01:1 on white — accepted at large-text size, not below it). */
-      font-size: 19px;
-      font-weight: 600;
+      font-size: var(--att-fs-h3, 1.25rem);
+      font-weight: var(--att-fw-bold, 700);
       color: var(--accent);
       margin-bottom: 8px;
     }
     .process-controls-row {
       display: flex;
       justify-content: space-between;
+      gap: 12px;
     }
     .process-controls-row .btn {
       padding: 10px 24px;
       border-radius: var(--button-radius);
       border: none;
-      font-weight: 600;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
       transition: all var(--animation-speed);
     }
     .process-controls-row .btn-small {
-      padding: 8px 18px;
-      font-size: 13px;
+      padding: 10px 20px;
+      font-size: var(--att-fs-body, 1rem);
     }
     .process-controls-row .btn-primary {
       background-color: var(--primary);

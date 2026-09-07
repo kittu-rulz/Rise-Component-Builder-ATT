@@ -229,19 +229,20 @@
     .block-headline {
       font-family: var(--heading-font-family);
       white-space: pre-line;
-      font-size: 22px;
-      font-weight: 600;
+      font-size: var(--att-fs-h2, 1.5rem);
+      font-weight: var(--att-fw-bold, 700);
       color: var(--text-main);
-      line-height: 1.3;
+      line-height: var(--att-lh-heading, 1.25);
       text-wrap: pretty;
     }
 
     .block-desc {
-      font-size: 13px;
+      font-size: var(--att-fs-body, 1rem);
       color: var(--text-muted);
       margin-top: 6px;
-      line-height: 1.5;
+      line-height: var(--att-lh-body, 1.5);
       white-space: pre-line;
+      max-width: 70ch;
     }
 
     /* AT&T Editorial Header Presentation */
@@ -404,13 +405,13 @@
 
     .accordion-lock-note {
       margin: -8px 20px 12px;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-style: italic;
       color: var(--text-muted);
     }
 
     .accordion-visited-badge {
-      font-size: 11px;
+      font-size: var(--att-fs-eyebrow, 12px);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
@@ -443,11 +444,12 @@
       flex-shrink: 0;
     }
 
-    .acc-plus-minus::before, .acc-plus-minus::after {
+    .acc-plus-minus::before,
+    .acc-plus-minus::after {
       content: '';
       position: absolute;
       background-color: var(--primary);
-      transition: transform 0.25s ease, background-color 0.25s ease;
+      transition: transform 0.25s ease, opacity 0.25s ease;
     }
 
     .acc-plus-minus::before {
@@ -485,6 +487,7 @@
       font-size: var(--att-fs-body, 16px);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
+      max-width: 70ch;
     }
 
     .accordion-toolbar {
@@ -506,7 +509,7 @@
       border: var(--border-style);
       border-radius: var(--button-radius);
       padding: 8px 14px;
-      font-size: 14px;
+      font-size: var(--att-fs-body-sm, 14px);
       color: var(--text-main);
       min-height: 44px;
     }
@@ -528,7 +531,7 @@
       border: var(--border-style);
       border-radius: var(--button-radius);
       padding: 8px 16px;
-      font-size: 13px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-main);
       cursor: pointer;
@@ -543,10 +546,8 @@
       outline-offset: 2px !important;
     }
 
-    .accordion-progress-text {
-      margin-left: auto;
-      font-size: 13px;
-      font-weight: 600;
+    .accordion-progress, .accordion-search-status {
+      font-size: var(--att-fs-body-sm, 14px);
       color: var(--text-muted);
     }
 

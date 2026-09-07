@@ -150,11 +150,15 @@ export function generateCSS() {
       background-color: var(--bg-card);
       border: var(--border-style);
       border-radius: var(--button-radius);
-      padding: 6px 14px;
-      font-size: 12px;
+      padding: 8px 16px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-main);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .timeline-filter-chip.active {
       border-color: var(--primary);
@@ -162,7 +166,7 @@ export function generateCSS() {
     }
     .timeline-progress-text {
       margin-left: auto;
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
       color: var(--text-muted);
     }
@@ -181,9 +185,6 @@ export function generateCSS() {
       top: 8px;
       bottom: 8px;
       width: 2px;
-      /* Not an opacity-faked tint of --accent: the brand rules bar inventing
-         shades of the brand colors, so this connecting rail uses the theme's own
-         approved neutral border color at full opacity instead. */
       background-color: var(--border-color);
     }
 
@@ -205,13 +206,10 @@ export function generateCSS() {
     .step-marker {
       position: absolute;
       left: -32px;
-      top: 4px;
+      top: 14px;
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      /* Not --accent-light: a shade of AT&T Blue, not the approved palette. Border
-         is Cobalt (--primary), not AT&T Blue: this marker sits inside the
-         clickable timeline step and should carry the clickable treatment. */
       background-color: var(--border-color);
       border: 2px solid var(--primary);
       display: flex;
@@ -221,10 +219,8 @@ export function generateCSS() {
     }
 
     .step-num {
-      font-size: 11px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-weight: 700;
-      /* Not --accent (AT&T Blue): at 11px, non-bold-equivalent contrast, this fails
-         the brand's own 19px threshold for AT&T-Blue-colored text. */
       color: var(--text-main);
     }
 
@@ -237,18 +233,20 @@ export function generateCSS() {
     }
 
     .step-card h4 {
-      font-size: 14px;
+      font-size: var(--att-fs-body-lg, 18px);
       font-weight: 600;
       margin-bottom: 4px;
       display: flex;
       align-items: center;
       gap: 8px;
+      text-wrap: pretty;
     }
 
     .step-card p {
-      font-size: 12px;
+      font-size: var(--att-fs-body, 16px);
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
     }
     .timeline-step.active .step-marker {
       background-color: var(--primary);
@@ -261,7 +259,7 @@ export function generateCSS() {
     }
 
     .step-category-badge {
-      font-size: 9px;
+      font-size: var(--att-fs-eyebrow, 12px);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
@@ -279,7 +277,7 @@ export function generateCSS() {
 
     .step-lock-note {
       margin-top: 6px;
-      font-size: 11px;
+      font-size: var(--att-fs-body-sm, 14px);
       font-style: italic;
       color: var(--text-muted);
     }
@@ -296,6 +294,11 @@ export function generateCSS() {
       cursor: pointer;
       font: inherit;
       color: inherit;
+    }
+
+    .step-toggle-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary)) !important;
+      outline-offset: 2px !important;
     }
 
     .step-toggle-btn[aria-disabled="true"] {

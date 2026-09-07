@@ -18,14 +18,14 @@ export function generateHTML(config) {
     <div class="pricing-table-container">
       ${config.items.map((item, idx) => `
         <div class="pricing-card-item ${item.highlighted ? 'premium-highlight' : ''}">
-          ${item.highlighted ? '<div class="popular-ribbon">RECOMMENDED</div>' : ''}
+          ${item.highlighted ? '<div class="popular-ribbon">Recommended</div>' : ''}
           <div class="pricing-tier-header">
             <h4>${escapeHTML(item.title || 'Service Plan')}</h4>
           </div>
           <div class="pricing-features-list">
             ${(item.content || '').split('•').map(feat => `
               <div class="pricing-feature-line">
-                <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" class="tick-icon"><path d="M11.33 26.75 1.29 16.71 2.71 15.29 11.33 23.92 29.29 5.96 30.71 7.37 11.33 26.75Z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" class="tick-icon"><path d="M11.33 26.75 1.29 16.71 2.71 15.29 11.33 23.92 29.29 5.96 30.71 7.37 11.33 26.75Z"/></svg>
                 <span>${feat.trim()}</span>
               </div>
             `).join('')}
@@ -73,11 +73,12 @@ export function generateCSS() {
       /* Not --on-accent (white): at 9px this is well under the brand's 19px
          threshold for white text on an AT&T Blue background. */
       color: var(--text-main);
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 8px;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
+      padding: 3px 10px;
       border-radius: 4px;
       letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
     .pricing-tier-header {
       margin-bottom: 16px;
@@ -85,8 +86,12 @@ export function generateCSS() {
       padding-bottom: 12px;
     }
     .pricing-tier-header h4 {
-      font-size: 15px;
-      font-weight: 600;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      color: var(--text-main);
+      text-wrap: pretty;
+      margin: 0;
     }
     .pricing-features-list {
       display: flex;
@@ -98,8 +103,10 @@ export function generateCSS() {
     .pricing-feature-line {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 12px;
+      gap: 10px;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      color: var(--text-main);
     }
     .tick-icon {
       color: var(--accent);
@@ -112,10 +119,15 @@ export function generateCSS() {
       /* Full capsule, not a partial rounding: the brand's own button spec is a
          complete pill, and this is the card's clickable CTA. */
       border-radius: var(--button-radius);
-      padding: 8px;
-      font-size: 12px;
-      font-weight: 600;
+      padding: 10px 16px;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
       transition: all var(--animation-speed);
       /* Cobalt text on white, the brand's clickable treatment for this
          non-highlighted button (highlighted cards invert it below). */

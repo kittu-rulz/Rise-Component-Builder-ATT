@@ -78,12 +78,12 @@ export function generateCSS() {
     .sorting-draggable {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: var(--border-radius, 8px);
       padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 13px;
+      font-size: var(--att-fs-body, 1rem);
       transition: all 0.2s;
     }
     .drag-handle {
@@ -94,11 +94,13 @@ export function generateCSS() {
     }
     .drag-text {
       flex: 1;
-      font-weight: 500;
+      font-weight: var(--att-fw-medium, 500);
+      max-width: 70ch;
     }
     .sorting-targets-row {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
     .target-btn {
       background-color: var(--bg-card);
@@ -107,14 +109,19 @@ export function generateCSS() {
          Cobalt clickable treatment from the start. */
       border: 1px solid var(--primary);
       color: var(--primary);
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 600;
+      padding: 6px 14px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       /* Full capsule, not a partial rounding: this is a clickable control, and
          capsule shapes are only allowed on clickable elements when they're a
          complete pill. */
       border-radius: var(--button-radius);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
       transition: all 0.2s;
     }
     .target-btn:hover {
@@ -146,10 +153,10 @@ export function generateCSS() {
     .column-header {
       /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
          text (3.01:1 on white — accepted at large-text size, not below it). */
-      font-size: 19px;
-      font-weight: 700;
+      font-size: var(--att-fs-h3, 1.25rem);
+      font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.5px;
       color: var(--accent);
       border-bottom: 1px dashed var(--border-color);
       padding-bottom: 8px;
@@ -166,13 +173,13 @@ export function generateCSS() {
       border: 1px solid var(--border-color);
       border-radius: 6px;
       padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       animation: fadeIn 0.2s ease;
     }
     .sort-status-indicator {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       margin-left: 10px;
     }
 
@@ -184,9 +191,14 @@ export function generateCSS() {
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
       transition: all var(--animation-speed);
     }
     .quiz-submit-btn:hover {
@@ -196,8 +208,9 @@ export function generateCSS() {
       margin-top: 14px;
       padding: 16px;
       border-radius: var(--border-radius);
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
       animation: fadeIn 0.3s ease;
     }
     .quiz-feedback.correct {

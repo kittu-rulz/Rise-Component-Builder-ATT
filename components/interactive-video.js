@@ -168,17 +168,21 @@ export function generateCSS() {
     .iv-block {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
     .iv-title {
-      font-size: 16px;
-      font-weight: 700;
+      font-size: var(--att-fs-h2, 1.5rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
       color: var(--text-main);
+      text-wrap: pretty;
+      margin: 0;
     }
     .iv-introduction {
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);
+      max-width: 70ch;
     }
     .iv-video-wrapper {
       position: relative;
@@ -204,8 +208,8 @@ export function generateCSS() {
          invented dark-gray hex, matching the hotspot tooltip's same pattern. */
       color: var(--bg-card);
       background-color: var(--text-main);
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      line-height: var(--att-lh-body, 1.5);
     }
     .iv-interaction-panel {
       background-color: var(--bg-card);
@@ -215,15 +219,15 @@ export function generateCSS() {
       padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       outline: none;
     }
     .iv-interaction-panel[hidden] {
       display: none;
     }
     .iv-panel-type-label {
-      font-size: 10px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       /* --text-muted (matching .iv-marker-nav-title/.iv-marker-type-label below), not
@@ -234,14 +238,18 @@ export function generateCSS() {
       color: var(--text-muted);
     }
     .iv-panel-title {
-      font-size: 15px;
-      font-weight: 700;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
       color: var(--text-main);
+      text-wrap: pretty;
+      margin: 0;
     }
     .iv-panel-body {
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);
+      max-width: 70ch;
     }
     .iv-continue-btn {
       align-self: flex-start;
@@ -251,18 +259,24 @@ export function generateCSS() {
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
       transition: all var(--animation-speed);
     }
     .iv-continue-btn:hover {
       background-color: var(--primary-hover);
     }
     .iv-panel-question {
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
+      max-width: 70ch;
     }
     .iv-mc-options {
       display: flex;
@@ -279,7 +293,9 @@ export function generateCSS() {
       gap: 10px;
       cursor: pointer;
       transition: all 0.2s ease;
-      font-size: 13px;
+      font-size: var(--att-fs-body, 1rem);
+      min-height: 44px;
+      box-sizing: border-box;
     }
     .iv-mc-option:hover {
       border-color: var(--primary);
@@ -296,8 +312,8 @@ export function generateCSS() {
       opacity: 0.7;
     }
     .iv-mc-option-check {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       border: 2px solid var(--text-muted);
       position: relative;
@@ -311,8 +327,8 @@ export function generateCSS() {
     .iv-mc-option.iv-mc-selected .iv-mc-option-check::after {
       content: '';
       position: absolute;
-      top: 3px;
-      left: 3px;
+      top: 4px;
+      left: 4px;
       width: 6px;
       height: 6px;
       border-radius: 50%;
@@ -320,10 +336,11 @@ export function generateCSS() {
     }
     .iv-mc-option-text {
       flex: 1;
+      max-width: 70ch;
     }
     .iv-mc-correct-flag {
-      font-size: 11px;
-      font-weight: 700;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
       color: var(--success);
       flex-shrink: 0;
     }
@@ -335,9 +352,14 @@ export function generateCSS() {
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
       transition: all var(--animation-speed);
     }
     .iv-mc-submit-btn:hover {
@@ -351,15 +373,17 @@ export function generateCSS() {
       padding: 10px 14px;
       border-radius: var(--border-radius);
       border: 1px dashed var(--border-color);
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
+      max-width: 70ch;
     }
     .iv-mc-feedback {
       padding: 14px;
       border-radius: var(--border-radius);
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
     }
     .iv-mc-feedback.iv-correct {
       background-color: var(--success-tint);
@@ -379,8 +403,8 @@ export function generateCSS() {
       padding: 16px 20px;
     }
     .iv-marker-nav-title {
-      font-size: 12px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
@@ -395,7 +419,7 @@ export function generateCSS() {
     .iv-marker-item {
       border-radius: 8px;
       background-color: var(--bg-body);
-      font-size: 12px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
       transition: box-shadow 0.2s ease;
     }
     .iv-marker-item.iv-marker-item-active {
@@ -416,6 +440,8 @@ export function generateCSS() {
       text-align: left;
       cursor: pointer;
       border-radius: 8px;
+      min-height: 44px;
+      box-sizing: border-box;
     }
     .iv-marker-item-btn:hover {
       /* Not an invented AT&T-Blue tint: matches .iv-restart-btn's own neutral
@@ -423,8 +449,8 @@ export function generateCSS() {
       background-color: var(--bg-body);
     }
     .iv-marker-state-badge {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.4px;
       padding: 2px 8px;
@@ -450,8 +476,8 @@ export function generateCSS() {
       color: var(--danger);
     }
     .iv-progress-summary {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       color: var(--text-muted);
       margin-bottom: 10px;
     }
@@ -462,9 +488,14 @@ export function generateCSS() {
       border: var(--border-style);
       background-color: transparent;
       color: var(--text-main);
-      font-size: 12px;
-      font-weight: 600;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
     }
     .iv-restart-btn:hover {
       background-color: var(--bg-body);
@@ -475,15 +506,16 @@ export function generateCSS() {
       flex-shrink: 0;
     }
     .iv-marker-time {
-      font-weight: 700;
+      font-weight: var(--att-fw-bold, 700);
       font-variant-numeric: tabular-nums;
       color: var(--text-main);
       flex-shrink: 0;
       min-width: 44px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
     }
     .iv-marker-type-label {
-      font-size: 10px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.4px;
       color: var(--text-muted);
@@ -495,10 +527,11 @@ export function generateCSS() {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-size: var(--att-fs-body-sm, 0.875rem);
     }
     .iv-marker-required-badge {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.4px;
       padding: 2px 8px;
@@ -516,15 +549,19 @@ export function generateCSS() {
     }
     .iv-transcript summary {
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
       color: var(--text-main);
+      min-height: 44px;
+      display: flex;
+      align-items: center;
     }
     .iv-transcript-body {
       margin-top: 10px;
-      font-size: 12px;
-      line-height: 1.6;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);
+      max-width: 70ch;
     }
     @media (max-width: 480px) {
       .iv-marker-item {
