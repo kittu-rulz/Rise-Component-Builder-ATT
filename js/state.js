@@ -39,6 +39,9 @@ export const appState = {
   activeTheme: initialTheme,
   componentOverrides: {},
   activeCategory: 'interactive',
+  // Independent of activeCategory (see js/catalog.js#filterCatalog) — 'all', 'enhanced', or
+  // 'custom'. Same transient-UI-filter status as activeCategory/searchQuery above.
+  activeClassification: 'all',
   searchQuery: '',
   selectedComponent: null,
   favorites: new Set(),

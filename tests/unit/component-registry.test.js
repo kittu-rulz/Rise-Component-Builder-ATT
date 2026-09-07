@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  CATEGORIES, COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById,
+  CATEGORIES, CLASSIFICATIONS, COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById,
   getDefaultConfig, searchComponents, validateRegistry
 } from '../../js/component-registry.js';
 import { componentCatalog, filterCatalog } from '../../js/catalog.js';
@@ -26,6 +26,8 @@ function baseEntry(overrides = {}) {
     media: { required: false, kinds: [] },
     completionSupport: true,
     status: 'production',
+    classification: 'enhanced',
+    differentiator: 'A helpful, concrete reason to pick this over the native Rise block.',
     ...overrides
   };
 }
@@ -103,6 +105,54 @@ describe('component registry integrity', () => {
 
 });
 
+describe('catalog-positioning metadata (classification + differentiator)', () => {
+  const classificationIds = new Set(CLASSIFICATIONS.map(c => c.id));
+
+  test('every registered component has a classification from the known set', () => {
+    COMPONENT_REGISTRY.forEach(entry => {
+      expect(classificationIds.has(entry.classification)).toBe(true);
+    });
+  });
+
+  test('every registered component has non-empty differentiator text', () => {
+    COMPONENT_REGISTRY.forEach(entry => {
+      expect(typeof entry.differentiator).toBe('string');
+      expect(entry.differentiator.trim().length).toBeGreaterThan(0);
+    });
+  });
+
+  test('CLASSIFICATIONS defines exactly the two required, distinctly-labeled options', () => {
+    const ids = CLASSIFICATIONS.map(c => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(CLASSIFICATIONS.map(c => c.name)).toEqual(
+      expect.arrayContaining(['Enhanced Rise Alternative', 'Advanced Custom Interaction']));
+    // Never ships an absolute "Rise Unique" style claim (P-series requirement — a future
+    // Rise update could make that claim inaccurate).
+    CLASSIFICATIONS.forEach(c => expect(c.name.toLowerCase()).not.toContain('rise unique'));
+  });
+
+  test('the classification split matches the assigned catalog positioning exactly', () => {
+    const enhanced = COMPONENT_REGISTRY.filter(e => e.classification === 'enhanced').map(e => e.id).sort();
+    const custom = COMPONENT_REGISTRY.filter(e => e.classification === 'custom').map(e => e.id).sort();
+    expect(enhanced).toEqual([
+      'accordion', 'button-list', 'fill-blank', 'flip-cards', 'hotspots', 'image-gallery',
+      'info-grid', 'multiple-choice', 'multiple-select', 'process-flow', 'scenario',
+      'sorting-activity', 'tab-blocks', 'vertical-timeline'
+    ].sort());
+    expect(custom).toEqual([
+      'audio-player', 'horizontal-timeline', 'interactive-video', 'menu-list',
+      'pricing-comparison', 'profile-cards', 'video-frame'
+    ].sort());
+  });
+
+  test('componentCatalog carries the classification label and differentiator through from the registry', () => {
+    const accordion = componentCatalog.find(item => item.id === 'accordion');
+    expect(accordion.classification).toBe('enhanced');
+    expect(accordion.classificationLabel).toBe('Enhanced Rise Alternative');
+    expect(accordion.differentiator).toMatch(/branded styling/i);
+  });
+});
+
 describe('component registry validation', () => {
   test('rejects a duplicate id', () => {
     const registry = [baseEntry({ id: 'dup' }), baseEntry({ id: 'dup' })];
@@ -146,7 +196,12 @@ describe('component registry validation', () => {
     ['media', { media: { required: false } }, /invalid media requirements/i],
     ['accessibilitySupport', { accessibilitySupport: undefined }, /missing accessibility support status/i],
     ['completionSupport', { completionSupport: undefined }, /missing completion support status/i],
-    ['status', { status: 'unreleased' }, /invalid status/i]
+    ['status', { status: 'unreleased' }, /invalid status/i],
+    ['classification', { classification: 'not-a-real-classification' }, /unknown classification/i],
+    ['classification', { classification: undefined }, /unknown classification/i],
+    ['differentiator', { differentiator: '' }, /missing a differentiator/i],
+    ['differentiator', { differentiator: '   ' }, /missing a differentiator/i],
+    ['differentiator', { differentiator: undefined }, /missing a differentiator/i]
   ])('rejects an entry with an invalid %s', (_label, overrides, expectedMessage) => {
     expect(() => validateRegistry([baseEntry(overrides)])).toThrow(expectedMessage);
   });
@@ -191,6 +246,43 @@ describe('search', () => {
   test('catalog search matches names, descriptions, and keywords', () => {
     const byKeyword = filterCatalog(componentCatalog, { activeCategory: 'interactive', searchQuery: 'faq', favorites: new Set() });
     expect(byKeyword.some(item => item.id === 'accordion')).toBe(true);
+  });
+
+  test('finds a component by category display name substring', () => {
+    // "Knowledge Checks" is the display name, not the categoryId ("knowledge") — confirms
+    // the lookup, not just an accidental substring match.
+    const results = searchComponents(COMPONENT_REGISTRY, 'Knowledge Checks');
+    expect(results.some(entry => entry.id === 'multiple-choice')).toBe(true);
+    expect(results.every(entry => entry.categoryId === 'knowledge')).toBe(true);
+  });
+
+  test('finds a component by classification label substring', () => {
+    const enhanced = searchComponents(COMPONENT_REGISTRY, 'Enhanced Rise Alternative');
+    expect(enhanced.some(entry => entry.id === 'accordion')).toBe(true);
+    expect(enhanced.every(entry => entry.classification === 'enhanced')).toBe(true);
+
+    const custom = searchComponents(COMPONENT_REGISTRY, 'Advanced Custom Interaction');
+    expect(custom.some(entry => entry.id === 'audio-player')).toBe(true);
+    expect(custom.every(entry => entry.classification === 'custom')).toBe(true);
+  });
+
+  test('finds a component by differentiator text, isolated from name/description/keywords', () => {
+    // "behaviour" appears only in accordion's differentiator, not its name, description,
+    // or keywords — a clean signal that this match came from the new field.
+    const results = searchComponents(COMPONENT_REGISTRY, 'behaviour');
+    expect(results.some(entry => entry.id === 'accordion')).toBe(true);
+  });
+
+  test('catalog search (js/catalog.js#filterCatalog) matches category, classification, and differentiator text, across categories via Favorites', () => {
+    const favorites = new Set(['accordion', 'menu-list']);
+    const byCategory = filterCatalog(componentCatalog, { activeCategory: 'favorites', searchQuery: 'Interactive', favorites });
+    expect(byCategory.map(item => item.id)).toEqual(['accordion']);
+
+    const byClassification = filterCatalog(componentCatalog, { activeCategory: 'favorites', searchQuery: 'Advanced Custom Interaction', favorites });
+    expect(byClassification.map(item => item.id)).toEqual(['menu-list']);
+
+    const byDifferentiator = filterCatalog(componentCatalog, { activeCategory: 'favorites', searchQuery: 'behaviour', favorites });
+    expect(byDifferentiator.map(item => item.id)).toEqual(['accordion']);
   });
 
   test('catalog search trims surrounding whitespace and ignores case', () => {

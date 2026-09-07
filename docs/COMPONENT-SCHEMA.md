@@ -257,6 +257,23 @@ validate(config)             → { valid: boolean, errors: string[] }
 
 The automated generator-contract test suite (`tests/unit/generators.test.js`) exercises 20 of the 21 modular components — every one whose items share the uniform `{title, content}`-shaped assumption this test's shared loop makes — with empty, one-item, many-item, long-text, emoji, multilingual, right-to-left, quote, closing-script, and unsafe-URL fixtures. It parses generated HTML, checks id uniqueness within an instance, parses CSS, compiles JavaScript, and rejects accidental `undefined` or object-string output. `interactive-video` has its own dedicated equivalent (`tests/unit/interactive-video.test.js`) instead, since its type-discriminated, optionally-empty marker list doesn't fit that shared loop's assumptions. Any newly added component should gain the same fixture coverage (`docs/TESTING-STRATEGY.md`).
 
+## Catalog positioning: classification and differentiator
+
+Every catalog entry (`js/component-registry.js#fromModule`'s options, alongside `description`/`keywords`/`icon`) also carries two required, author-facing fields, surfaced on the template-selection card (`js/catalog.js#createCatalogCard`) so an author can tell at a glance how a component differs from what Rise already offers natively — this is presentation-only catalog metadata, not part of a project's saved `config` and not something an author edits per-instance.
+
+**The two classifications** (`js/component-registry.js#CLASSIFICATIONS`):
+
+- **`enhanced` → "Enhanced Rise Alternative"** — Rise has a broadly similar native block, and this builder's version adds branding, presentation, or learning behaviour on top of that same basic interaction (e.g. Accordion, Multiple Choice Check, Sorting Drag-and-Drop).
+- **`custom` → "Advanced Custom Interaction"** — the component is a purpose-built layout or learning experience with no single native Rise block equivalent (e.g. Interactive Learning Audio, Custom Video Embed, Product Matrix Cards).
+
+Deliberately never "Rise Unique" or any other absolute-uniqueness phrasing — a future Rise release could add a native equivalent, which would make an absolute claim like that inaccurate; "Advanced Custom Interaction" describes what the component *is* (a purpose-built interaction), not a permanent claim about Rise's own roadmap.
+
+**How the classification is determined**: judgment, made once per component at the time it's added to the registry, against the test above — "does an author already have a native Rise block that does roughly this, just less branded?" (→ `enhanced`) vs. "would an author have to build this from several native blocks bolted together, or not be able to build it at all?" (→ `custom`). It is not derived from `categoryId` (a separate, pre-existing sidebar grouping — `CATEGORIES` in the same file — that this classification is deliberately independent of, including sharing no id strings with it) or from any other schema property; there's no way to compute it from the component's own code.
+
+**Where it's maintained**: both `classification` and `differentiator` are set inline as options on each `fromModule(...)` call in `js/component-registry.js#COMPONENT_REGISTRY` — the single source of truth. `js/catalog.js` resolves `classification`'s id to its display name (`classificationLabel`) and carries `differentiator` through onto the plain object each template card renders from; neither is duplicated or hand-maintained anywhere else. The classification badge and "Why use it?" text are rendered by `js/catalog.js#createCatalogCard`; their visual treatment lives in `styles.css` under `.card-classification-badge`/`.card-classification-enhanced`/`.card-classification-custom`/`.card-why*`.
+
+**Requirement for every future component**: `validateRegistry()` (`js/component-registry.js`, run automatically at module load against the live `COMPONENT_REGISTRY`, and callable against any candidate registry) throws if `classification` isn't one of the two known ids, or if `differentiator` is missing/empty — so a new component genuinely cannot ship without both. `differentiator` should stay a single, concrete, concise sentence (see the existing 21 for tone and length) describing what an author specifically gains over the native Rise equivalent — it renders in full, always visible, never truncated or hidden behind a hover/disclosure control (`tests/unit/component-registry.test.js`'s "catalog-positioning metadata" suite, `tests/unit/catalog-card.test.js`).
+
 ## Recommended schema improvements
 
 **Planned, not yet implemented:**

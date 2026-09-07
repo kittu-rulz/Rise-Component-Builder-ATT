@@ -10,7 +10,7 @@
 // request after P09 removed a separate hand-typed date tag; unlike that removed tag, this
 // stays attached to the version string itself and is expected to be updated by hand on
 // each meaningful release, same as the base version number.
-export const APP_VERSION = '2.0.0+20260902.1433';
+export const APP_VERSION = '2.0.0+20260907.1229';
 
 // The build-metadata suffix above is stamped as YYYYMMDD.HHmm — compact and sortable,
 // but raw semver build metadata can't contain spaces or colons (semver.org #spec-item-10),

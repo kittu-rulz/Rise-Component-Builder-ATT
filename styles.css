@@ -577,6 +577,42 @@ a {
   margin-top: 4px;
 }
 
+/* Second, independent filter facet alongside the sidebar's category nav (js/catalog.js's
+   own comment on filterCatalog explains why this stays separate rather than folding into
+   activeCategory). Text-label buttons, not icon-only like .device-switcher, so this wraps
+   onto a second line at narrow widths instead of the fixed-width squeeze an icon strip
+   would need. */
+.classification-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.classification-filter-btn {
+  appearance: none;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.classification-filter-btn:hover {
+  border-color: var(--primary);
+  color: var(--text-main);
+}
+
+.classification-filter-btn.active {
+  background-color: var(--cta);
+  border-color: var(--cta);
+  color: #FFFFFF;
+}
+
 .components-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -679,10 +715,22 @@ a {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  /* flex-start, not center: .card-footer-badges can wrap to two lines at narrow widths
+     (long classification label + category tag together) while .card-arrow stays pinned to
+     the first line rather than re-centering against a taller wrapped sibling. */
+  align-items: flex-start;
+  gap: 8px;
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
+}
+
+.card-footer-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  row-gap: 6px;
 }
 
 .card-tag {
@@ -693,16 +741,80 @@ a {
   letter-spacing: 0.4px;
 }
 
+/* Classification badge: a filled/outlined chip, deliberately distinct from .card-tag's
+   plain uppercase text (P-series requirement: never distinguish the two by color alone —
+   .card-tag has no background at all, so the badge's pill shape alone already reads as a
+   different kind of label even before color is considered). */
+.card-classification-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Enhanced Rise Alternative: restrained/neutral, blue-toned text on the app's own neutral
+   surface — --primary-text is this codebase's existing "colored text against a panel
+   background, contrast-checked in both themes" token (see docs/ACCESSIBILITY-CONFORMANCE.md
+   "What was fixed in this pass"), reused here rather than inventing a new pairing. */
+.card-classification-enhanced {
+  background-color: var(--bg-app);
+  color: var(--primary-text);
+  border: 1px solid var(--border-color);
+}
+
+/* Advanced Custom Interaction: the stronger, solid AT&T brand-blue treatment. Text is a
+   hardcoded white, not var(--text-inverse) — that token flips to a near-black in dark mode
+   (tuned for --cta as a large filled *button* background), which only reaches 3.71:1
+   against dark mode's lighter --cta and fails WCAG AA for this badge's 10px text. White
+   passes comfortably against --cta in both themes (10.70:1 light, 4.81:1 dark — verified
+   via js/themes.js#contrastRatio). Same "deliberately not the theme-flipping token"
+   reasoning as .badge-accent above. */
+.card-classification-custom {
+  background-color: var(--cta);
+  color: #FFFFFF;
+}
+
 .card-arrow {
   color: var(--primary);
   opacity: 0;
   transform: translateX(-4px);
   transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .component-select-card:hover .card-arrow {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* "Why use it?" — always-visible (not a hover tooltip or a click-to-reveal disclosure),
+   since every differentiator string is already a single short sentence: showing it plainly
+   avoids both silent truncation and the keyboard/nested-interactive complexity a real
+   disclosure control would add inside an already-clickable card (P-series: never nest an
+   interactive control inside another interactive control). */
+.card-why {
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.card-why-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.card-why-text {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-main);
 }
 
 /* Editor Screen Style */

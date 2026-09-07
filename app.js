@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchInput = document.getElementById('search-components');
   const navItems = document.querySelectorAll('.nav-item');
   const componentsGrid = document.getElementById('components-grid');
+  const classificationFilterButtons = document.querySelectorAll('.classification-filter-btn');
   
   const catalogState = document.getElementById('catalog-state');
   const editorState = document.getElementById('editor-state');
@@ -328,6 +329,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Ensure we are on the catalog view when searching
     showState('catalog');
     renderCatalog();
+  });
+
+  // Independent of the category sidebar — does not reset activeCategory/searchQuery, and
+  // applies inside Favorites/Recent the same way search already does (js/catalog.js
+  // #filterCatalog).
+  classificationFilterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      classificationFilterButtons.forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+      appState.activeClassification = btn.getAttribute('data-classification');
+      renderCatalog();
+    });
   });
 
   function showState(state) {

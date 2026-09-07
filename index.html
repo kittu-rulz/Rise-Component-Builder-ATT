@@ -203,8 +203,13 @@
           <div class="catalog-header">
             <h2>Select a Component Template</h2>
             <p>Choose a component archetype to customize, style, and generate code for Articulate Rise.</p>
+            <div class="classification-filter" id="classification-filter" role="group" aria-label="Filter by classification">
+              <button type="button" class="classification-filter-btn active" data-classification="all" aria-pressed="true">All Components</button>
+              <button type="button" class="classification-filter-btn" data-classification="enhanced" aria-pressed="false">Enhanced Rise Alternatives</button>
+              <button type="button" class="classification-filter-btn" data-classification="custom" aria-pressed="false">Advanced Custom Interactions</button>
+            </div>
           </div>
-          
+
           <div class="components-grid" id="components-grid">
             <!-- Cards will be populated dynamically by app.js based on active category -->
           </div>
