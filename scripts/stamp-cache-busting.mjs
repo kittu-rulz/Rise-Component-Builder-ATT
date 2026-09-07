@@ -60,8 +60,8 @@ const MARKER_END = '<!-- BUILD:CACHE-BUSTING:END -->';
 
 /**
  * @returns {Promise<string>} a URL-safe cache-busting token derived from
- * js/version.js's APP_VERSION — the build-metadata suffix (`2.0.0+20260907.1245`
- * → `20260907.1245`) when present, otherwise the sanitised version itself.
+ * js/version.js's APP_VERSION — the build-metadata suffix (`2.1.0+20260907.1630`
+ * → `20260907.1630`) when present, otherwise the sanitised version itself.
  */
 export async function deriveToken() {
   const source = await readFile(versionPath, 'utf8');

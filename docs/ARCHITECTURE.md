@@ -248,7 +248,7 @@ There is no other outbound message type and no other channel (no `fetch`, no `XM
 
 ### Cache-busting (`scripts/stamp-cache-busting.mjs`)
 
-GitHub Pages serves the branch root with `Cache-Control: max-age=600` and no hashed filenames, so a returning visitor's browser kept serving a stale `app.js` / `styles.css` / `js/*.js` after a deploy — a half-updated page. `npm run build` (and `npm run stamp`) now runs `scripts/stamp-cache-busting.mjs`, which derives a short token from `js/version.js`'s `APP_VERSION` build metadata (`2.0.0+20260907.1245` → `20260907.1245`) and stamps it into `index.html`:
+GitHub Pages serves the branch root with `Cache-Control: max-age=600` and no hashed filenames, so a returning visitor's browser kept serving a stale `app.js` / `styles.css` / `js/*.js` after a deploy — a half-updated page. `npm run build` (and `npm run stamp`) now runs `scripts/stamp-cache-busting.mjs`, which derives a short token from `js/version.js`'s `APP_VERSION` build metadata (`2.1.0+20260907.1630` → `20260907.1630`) and stamps it into `index.html`:
 
 - `?v=<token>` on the `fonts.css` / `styles.css` / `app.js` references, and
 - a generated `<script type="importmap">` (between `BUILD:CACHE-BUSTING` markers) mapping every `./js/*.js` and `./components/*.js` specifier to the same path + `?v=<token>`, so the entire ES module graph is covered without touching the `.js` sources' own clean relative imports.
