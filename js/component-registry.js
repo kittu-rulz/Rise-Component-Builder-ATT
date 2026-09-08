@@ -239,7 +239,7 @@ export const COMPONENT_REGISTRY = [
   fromModule(imageGallery, {
     description: 'Responsive photo gallery with beautiful modal popups and image detail descriptions.',
     keywords: ['gallery', 'photos', 'modal', 'grid'],
-    icon: getAttIconSvg('camera', { width: 24, height: 24, ariaHidden: true }),
+    icon: getAttIconSvg('photo-gallery', { width: 24, height: 24, ariaHidden: true }),
     classification: 'enhanced',
     differentiator: 'Adds responsive image grids, detailed descriptions, and modal viewing.'
   }),
