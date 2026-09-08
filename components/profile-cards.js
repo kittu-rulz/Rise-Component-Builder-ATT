@@ -1,5 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML } from '../js/utilities.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 export const id = 'profile-cards';
 export const name = 'Modern Profile Grid';
@@ -12,19 +13,14 @@ export const defaultConfig = {
 };
 export const editorSchema = getEditorSchema(id);
 
-// Default avatar glyph is a byte-for-byte match with the local AT&T Brand
-// Center icon library export (ATT Design System/Icon_Library_Mar_2026_032726.pptx
-// — People category, "person") — already the approved icon, just undocumented
-// until now. The circular crop comes from .profile-avatar-circle's own CSS, so
-// this stays the plain (non-circled) glyph rather than "person-circle" to avoid
-// a doubled ring.
+// Default avatar glyph uses official AT&T "person" functional icon
 export function generateHTML(config) {
   return `
     <div class="profiles-grid">
       ${config.items.map((item) => `
         <div class="profile-card-item">
           <div class="profile-avatar-circle ${item.imageCrop === 'square' ? 'square' : ''}">
-            ${item.image ? `<img src="${escapeAttribute(item.image)}" alt="${item.decorative ? '' : escapeAttribute(item.altText || '')}" ${item.decorative ? 'aria-hidden="true"' : ''}>` : `<svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M20 15.8C21.8 14.5 23 12.4 23 10 23 6.1 19.9 3 16 3 12.1 3 9 6.1 9 10 9 12.4 10.2 14.5 12 15.8 7.9 17.4 5 21.3 5 26L5 29 7 29 7 26C7 21 11 17 16 17 21 17 25 21 25 26L25 29 27 29 27 26C27 21.3 24.1 17.4 20 15.8ZM11 10C11 7.2 13.2 5 16 5 18.8 5 21 7.2 21 10 21 12.8 18.8 15 16 15 13.2 15 11 12.8 11 10Z"/></svg>`}
+            ${item.image ? `<img src="${escapeAttribute(item.image)}" alt="${item.decorative ? '' : escapeAttribute(item.altText || '')}" ${item.decorative ? 'aria-hidden="true"' : ''}>` : getAttIconSvg('person', { width: 24, height: 24, ariaHidden: true })}
           </div>
           <div class="profile-card-content">
             <h4>${escapeHTML(item.title || 'Expert Name')}</h4>

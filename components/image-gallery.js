@@ -1,5 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML } from '../js/utilities.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 export const id = 'image-gallery';
 export const name = 'Grid Photo Gallery';
@@ -25,7 +26,7 @@ export function generateHTML(config, instanceId) {
       `).join('')}
     </div>
     <div id="${instanceId}-gallery-lightbox" class="lightbox-overlay" role="dialog" aria-modal="true" aria-labelledby="${instanceId}-lightbox-expanded-caption" tabindex="-1" style="display:none;">
-      <button type="button" class="lightbox-close" aria-label="Close image dialog">&times;</button>
+      <button type="button" class="lightbox-close" aria-label="Close image dialog">${getAttIconSvg('close', { className: 'lightbox-close-icon', width: 20, height: 20, ariaHidden: true })}</button>
       <img class="lightbox-img" id="${instanceId}-lightbox-expanded-img" src="" alt="Lightbox image">
       <div class="lightbox-caption" id="${instanceId}-lightbox-expanded-caption">Caption details</div>
     </div>

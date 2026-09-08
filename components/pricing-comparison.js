@@ -1,5 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML } from '../js/utilities.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 export const id = 'pricing-comparison';
 export const name = 'Product Matrix Cards';
@@ -25,7 +26,7 @@ export function generateHTML(config) {
           <div class="pricing-features-list">
             ${(item.content || '').split('•').map(feat => `
               <div class="pricing-feature-line">
-                <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" class="tick-icon"><path d="M11.33 26.75 1.29 16.71 2.71 15.29 11.33 23.92 29.29 5.96 30.71 7.37 11.33 26.75Z"/></svg>
+                ${getAttIconSvg('check', { className: 'tick-icon', width: 16, height: 16, ariaHidden: true })}
                 <span>${feat.trim()}</span>
               </div>
             `).join('')}

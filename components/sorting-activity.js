@@ -1,6 +1,7 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML, serializeForInlineScript } from '../js/utilities.js';
 import { combineValidationResults } from '../js/validation-utils.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 /**
  * Sorting Activity Component Configuration
@@ -32,7 +33,7 @@ export function generateHTML(config, instanceId) {
         ${config.items.map((item, idx) => `
           <div class="sorting-draggable" id="${instanceId}-sort-card-${idx}" data-category="${escapeAttribute(item.category || '')}" role="group" aria-labelledby="${instanceId}-sort-label-${idx}">
             <div class="drag-handle">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>
+              ${getAttIconSvg('arrows-vertical-1', { width: 14, height: 14, ariaHidden: true })}
             </div>
             <div class="drag-text" id="${instanceId}-sort-label-${idx}">${escapeHTML(item.title || 'Sorting Card')}</div>
             <div class="sorting-targets-row">

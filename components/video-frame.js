@@ -1,6 +1,7 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { isEmpty } from '../js/field-validation.js';
 import { escapeAttribute, escapeHTML } from '../js/utilities.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 export const id = 'video-frame';
 export const name = 'Custom Video Embed';
@@ -29,23 +30,15 @@ const VID_COMPLETION_THRESHOLD = 0.9;
 const VID_COMPLETION_TAIL_SECONDS = 3;
 const VID_RESUME_MIN_SECONDS = 10;
 
-// Replay/Forward, volume/mute, and transcript glyphs are the exact same real AT&T Brand
-// Center icons already sourced and verified for components/audio-player.js (Navigation &
-// Controls "restart" pair, "volume-2"/"speaker-off", Documents "file") — reused verbatim
-// here for the identical function, which keeps the two media components visually
-// consistent rather than sourcing a second, redundant set of icons for the same meaning.
-const skipBackIcon = '<svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 1C11.2 1 6.8 3.3 4 7L4 3 2 3 2 11 10 11 10 9 5.1 9C7.4 5.3 11.6 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29 8.8 29 3 23.2 3 16L1 16C1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1Z"/><text x="16.5" y="20.5" font-size="11" font-weight="700" text-anchor="middle" font-family="Arial, sans-serif">10</text></svg>';
-const skipForwardIcon = '<svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M29 16C29 23.2 23.2 29 16 29 8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 20.4 3 24.6 5.3 26.9 9L22 9 22 11 30 11 30 3 28 3 28 7C25.2 3.3 20.8 1 16 1 7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16L29 16Z"/><text x="16" y="20.5" font-size="11" font-weight="700" text-anchor="middle" font-family="Arial, sans-serif">10</text></svg>';
-const volumeOnIcon = '<svg class="video-volume-on-svg" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M3.9 11C2.3 11 1 12.3 1 13.9L1 18.2C1 19.7 2.3 21 3.9 21L8.2 21 16.1 27.7 16.1 4.3 8.1 11 3.9 11ZM14 8.6 14 23.3 8.9 19 3.9 19C3.4 19 3 18.6 3 18.1L3 13.8C3 13.4 3.4 13 3.9 13L8.9 13 14 8.6Z"/><path d="M18.8 13.2C20.3 14.7 20.3 17.3 18.8 18.8L20.2 20.2C22.5 17.9 22.5 14.1 20.2 11.8L18.8 13.2Z"/><path d="M23.4 8.6 22 10C25.3 13.3 25.3 18.7 22 22L23.4 23.4C27.5 19.3 27.5 12.7 23.4 8.6Z"/></svg>';
-const volumeOffIcon = '<svg class="video-volume-off-svg" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" style="display:none;"><path d="M28.9 12.5 27.5 11.1 24 14.6 20.5 11.1 19.1 12.5 22.6 16 19.1 19.5 20.5 20.9 24 17.4 27.5 20.9 28.9 19.5 25.4 16Z"/><path d="M3.9 11C2.3 11 1 12.3 1 13.9L1 18.2C1 19.7 2.3 21 3.9 21L8.2 21 16.1 27.7 16.1 4.3 8.1 11 3.9 11ZM14 8.6 14 23.3 8.9 19 3.9 19C3.4 19 3 18.6 3 18.1L3 13.8C3 13.4 3.4 13 3.9 13L8.9 13 14 8.6Z"/></svg>';
-const transcriptIcon = '<svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M20.4 2 7 2C5.3 2 4 3.3 4 5L4 27C4 28.7 5.3 30 7 30L25 30C26.7 30 28 28.7 28 27L28 9.6 20.4 2ZM20 4.4 25.6 10 21 10C20.4 10 20 9.6 20 9L20 4.4ZM25 28 7 28C6.4 28 6 27.6 6 27L6 5C6 4.4 6.4 4 7 4L18 4 18 9C18 10.7 19.3 12 21 12L26 12 26 27C26 27.6 25.6 28 25 28Z"/></svg>';
-const chevronIcon = '<svg class="video-chapter-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>';
-// Chapters/Key Takeaways heading icons: same real AT&T Brand Center source and same
-// stripped-to-currentColor treatment as components/audio-player.js's identical additions —
-// see that file's own comment for the sourcing/verification method and why the
-// lightbulb's original accent-blue rays were removed rather than hardcoded.
-const chaptersIcon = '<svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="3" y="6" width="2" height="2"/><rect x="8" y="6" width="21" height="2"/><rect x="8" y="24.1" width="21" height="2"/><rect x="8" y="15" width="21" height="2"/><rect x="3" y="15" width="2" height="2"/><rect x="3" y="24" width="2" height="2"/></svg>';
-const takeawaysIcon = '<svg width="14" height="14" viewBox="0 0 96 96" fill="currentColor" aria-hidden="true"><path d="M73.4 30.4C72.7 26.9 71.2 23.6 68.8 20.4 63.9 13.8 56.3 10 48 10 39.7 10 32.1 13.8 27.2 20.4 24.8 23.6 23.3 26.9 22.6 30.4 21.3 37 23.3 44.2 27.8 49.6L32 54.4C36.7 59.1 37 66.8 37 67L37 80C37 83.3 39.7 86 43 86L53 86C56.3 86 59 83.3 59 80L59 67C59 66.8 59.3 59 64 54.4L68.2 49.6C72.7 44.2 74.7 37.1 73.4 30.4ZM24.6 30.8C25.2 27.6 26.6 24.6 28.8 21.6 33.3 15.5 40.4 12 48 12 55.6 12 62.7 15.5 67.2 21.6 69.4 24.5 70.8 27.6 71.4 30.8 71.8 32.8 71.8 34.9 71.6 37L24.4 37C24.1 34.9 24.2 32.8 24.6 30.8ZM57 72 39 72 39 68 57 68 57 72ZM39 74 57 74 57 78 39 78 39 74ZM53 84 43 84C40.8 84 39 82.2 39 80L57 80C57 82.2 55.2 84 53 84ZM66.7 48.3 62.5 53C58.3 57.2 57.3 63.6 57 66L38.9 66C38.7 63.6 37.7 57.3 33.5 53.1L29.3 48.4C27 45.7 25.4 42.4 24.7 39L71.3 39C70.5 42.4 69 45.6 66.7 48.3Z"/><rect x="38.4" y="42.4" width="2" height="21.3" transform="matrix(0.9401 -0.3409 0.3409 0.9401 -15.7077 16.6061)"/><rect x="46" y="52" width="21.3" height="2" transform="matrix(0.3409 -0.9401 0.9401 0.3409 -12.5193 88.1437)"/><rect x="47" y="43" width="2" height="20"/></svg>';
+// Replay/Forward, volume/mute, and transcript glyphs from AT&T Icon Library
+const skipBackIcon = getAttIconSvg('step-back-15', { width: 16, height: 16, ariaHidden: true });
+const skipForwardIcon = getAttIconSvg('step-forward-15', { width: 16, height: 16, ariaHidden: true });
+const volumeOnIcon = getAttIconSvg('volume-3', { className: 'video-volume-on-svg', width: 14, height: 14, ariaHidden: true });
+const volumeOffIcon = getAttIconSvg('volume-off', { className: 'video-volume-off-svg', width: 14, height: 14, ariaHidden: true, style: 'display:none;' });
+const transcriptIcon = getAttIconSvg('text', { width: 14, height: 14, ariaHidden: true });
+const chevronIcon = getAttIconSvg('chevron-down', { className: 'video-chapter-chevron', width: 16, height: 16, ariaHidden: true });
+const chaptersIcon = getAttIconSvg('list', { width: 14, height: 14, ariaHidden: true });
+const takeawaysIcon = getAttIconSvg('star-filled', { width: 14, height: 14, ariaHidden: true });
 
 // "3:24" / "03:24" / "1:03:24" -> seconds. Returns null (never throws) for anything else —
 // duplicated from components/audio-player.js's own identical parser rather than imported,
@@ -215,7 +208,7 @@ export function generateHTML(config, instanceId) {
           ${captionsUrl ? `<track kind="captions" src="${escapeAttribute(captionsUrl)}" srclang="en" label="English" default>` : ''}
         </video>
         <button type="button" class="video-overlay-play" aria-label="Play video">
-          <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill="currentColor"><path d="M22 16 13 22.7 13 9.3Z"/></svg>
+          ${getAttIconSvg('play', { width: 32, height: 32, ariaHidden: true })}
         </button>
       </div>
       ${describePoster ? `<span id="${instanceId}-poster-desc" class="sr-only">${escapeHTML(posterAltText)}</span>` : ''}
@@ -227,8 +220,8 @@ export function generateHTML(config, instanceId) {
       <div class="video-control-strip">
         <button type="button" class="video-skip-btn video-skip-back-btn" id="${instanceId}-skip-back" aria-label="Replay ${VID_SKIP_SECONDS} seconds" disabled>${skipBackIcon}</button>
         <button type="button" class="video-mini-play" id="${instanceId}-mini-play" aria-label="Play video" aria-pressed="false">
-          <svg class="video-play-svg" aria-hidden="true" width="14" height="14" viewBox="0 0 32 32" fill="currentColor"><path d="M22 16 13 22.7 13 9.3Z"/></svg>
-          <svg class="video-pause-svg" aria-hidden="true" width="14" height="14" viewBox="0 0 32 32" fill="currentColor" style="display:none;"><rect x="11" y="10" width="3" height="12"/><rect x="18" y="10" width="3" height="12"/></svg>
+          ${getAttIconSvg('play', { className: 'video-play-svg', width: 14, height: 14, ariaHidden: true })}
+          ${getAttIconSvg('pause', { className: 'video-pause-svg', width: 14, height: 14, ariaHidden: true, style: 'display:none;' })}
         </button>
         <button type="button" class="video-skip-btn video-skip-forward-btn" id="${instanceId}-skip-forward" aria-label="Forward ${VID_SKIP_SECONDS} seconds" disabled>${skipForwardIcon}</button>
         <div class="video-scrub-wrap">

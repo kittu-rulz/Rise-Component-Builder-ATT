@@ -1,6 +1,7 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeHTML, sanitizeRichText } from '../js/utilities.js';
 import { validateNonEmptyArray, combineValidationResults } from '../js/validation-utils.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 /**
  * Accordion Component Configuration
@@ -44,14 +45,15 @@ export const defaultConfig = {
 
 export const editorSchema = getEditorSchema(id);
 
-const lockIconSvg = '<svg width="13" height="13" viewBox="0 0 32 32" fill="currentColor" class="accordion-lock-icon" aria-hidden="true"><path d="M24 14 23 14 23 10.7C23 6.4 19.6 3 15.4 3 11.1 3 7.7 6.5 7.7 10.7L7.7 14 6.7 14C5.2 14 4 15.2 4 16.7L4 27.3C4 28.8 5.2 30 6.7 30L24 30C25.5 30 26.7 28.8 26.7 27.3L26.7 16.7C26.7 15.2 25.5 14 24 14ZM9.7 10.7C9.7 7.6 12.3 5 15.4 5 18.5 5 21 7.6 21 10.7L21 14 9.7 14 9.7 10.7ZM24.7 27.3C24.7 27.7 24.4 28 24 28L6.7 28C6.3 28 6 27.7 6 27.3L6 16.7C6 16.3 6.3 16 6.7 16L24 16C24.4 16 24.7 16.3 24.7 16.7L24.7 27.3Z"/></svg>';
+const lockIconSvg = getAttIconSvg('padlock', { className: 'accordion-lock-icon', width: 13, height: 13, ariaHidden: true });
+const visitedCheckIconSvg = getAttIconSvg('check', { className: 'accordion-visited-icon', width: 12, height: 12, ariaHidden: true });
 
 export function generateHTML(config, instanceId) {
   const icon = config.iconStyle === 'chevron'
-    ? '<svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor" class="acc-arrow"><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>'
+    ? getAttIconSvg('chevron-down', { className: 'acc-arrow', width: 18, height: 18, ariaHidden: true })
     : config.iconStyle === 'plus-minus'
       ? '<div class="acc-plus-minus"></div>'
-      : '<svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor" class="acc-arrow"><path d="M12.27 26.71 10.86 25.29 20.15 16 10.86 6.71 12.27 5.29 22.98 16Z"/></svg>';
+      : getAttIconSvg('arrow-down', { className: 'acc-arrow', width: 18, height: 18, ariaHidden: true });
 
   const sequential = config.accordionSequential === true;
   const showProgress = config.accordionShowProgress === true;
@@ -89,7 +91,7 @@ export function generateHTML(config, instanceId) {
         <span class="accordion-trigger-text">
           ${sequential ? `<span class="accordion-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : ''}
           <span>${escapeHTML(item.title || 'Item Title Header')}</span>
-          ${showVisitedBadge ? `<span class="accordion-visited-badge" hidden>Visited</span>` : ''}
+          ${showVisitedBadge ? `<span class="accordion-visited-badge" hidden>${visitedCheckIconSvg} Visited</span>` : ''}
         </span>
         ${icon}
       </button></h3>

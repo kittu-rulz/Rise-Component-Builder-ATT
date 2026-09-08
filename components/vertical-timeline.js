@@ -1,5 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML, sanitizeRichText } from '../js/utilities.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 import { combineValidationResults } from '../js/validation-utils.js';
 
 /**
@@ -37,7 +38,7 @@ export const defaultConfig = {
 };
 export const editorSchema = getEditorSchema(id);
 
-const lockIconSvg = '<svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor" class="step-lock-icon" aria-hidden="true"><path d="M24 14 23 14 23 10.7C23 6.4 19.6 3 15.4 3 11.1 3 7.7 6.5 7.7 10.7L7.7 14 6.7 14C5.2 14 4 15.2 4 16.7L4 27.3C4 28.8 5.2 30 6.7 30L24 30C25.5 30 26.7 28.8 26.7 27.3L26.7 16.7C26.7 15.2 25.5 14 24 14ZM9.7 10.7C9.7 7.6 12.3 5 15.4 5 18.5 5 21 7.6 21 10.7L21 14 9.7 14 9.7 10.7ZM24.7 27.3C24.7 27.7 24.4 28 24 28L6.7 28C6.3 28 6 27.7 6 27.3L6 16.7C6 16.3 6.3 16 6.7 16L24 16C24.4 16 24.7 16.3 24.7 16.7L24.7 27.3Z"/></svg>';
+const lockIconSvg = getAttIconSvg('padlock', { className: 'step-lock-icon', width: 11, height: 11, ariaHidden: true });
 
 function renderStep(item, index, instanceId, opts) {
   const { collapsible, locked, showCategoryBadge } = opts;

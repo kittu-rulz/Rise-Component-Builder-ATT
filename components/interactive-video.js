@@ -1,6 +1,7 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML, sanitizeRichText, sanitizeURL, serializeForInlineScript } from '../js/utilities.js';
 import { combineValidationResults } from '../js/validation-utils.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 /**
  * Interactive Video Component Configuration (Phase 1 — foundation)
@@ -81,11 +82,8 @@ export function formatTimestamp(seconds) {
 }
 
 const markerTypeIcons = {
-  // AT&T "info" and "check" glyphs, matching the icon-set already wired into this
-  // catalog's other components this session — never color-only: each marker also
-  // carries a visible text type label alongside the icon.
-  information: '<svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M17 22 17 14 13 14 13 16 15 16 15 22 12 22 12 24 20 24 20 22Z"/><path d="M16 8C14.9 8 14 8.9 14 10 14 11.1 14.9 12 16 12 17.1 12 18 11.1 18 10 18 8.9 17.1 8 16 8Z"/></svg>',
-  multipleChoice: '<svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M11.33 26.75 1.29 16.71 2.71 15.29 11.33 23.92 29.29 5.96 30.71 7.37 11.33 26.75Z"/></svg>'
+  information: getAttIconSvg('information-circle-filled', { width: 14, height: 14, ariaHidden: true }),
+  multipleChoice: getAttIconSvg('check-circle-filled', { width: 14, height: 14, ariaHidden: true })
 };
 
 function renderMarkerListItem(item, originalIndex) {

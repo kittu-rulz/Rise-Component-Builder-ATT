@@ -1,5 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML, sanitizeRichText, sanitizeURL, serializeForInlineScript } from '../js/utilities.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 /**
  * Horizontal Tabs Component Configuration
@@ -36,7 +37,8 @@ export const defaultConfig = {
 };
 export const editorSchema = getEditorSchema(id);
 
-const lockIconSvg = '<svg width="12" height="12" viewBox="0 0 32 32" fill="currentColor" class="tab-lock-icon" aria-hidden="true"><path d="M24 14 23 14 23 10.7C23 6.4 19.6 3 15.4 3 11.1 3 7.7 6.5 7.7 10.7L7.7 14 6.7 14C5.2 14 4 15.2 4 16.7L4 27.3C4 28.8 5.2 30 6.7 30L24 30C25.5 30 26.7 28.8 26.7 27.3L26.7 16.7C26.7 15.2 25.5 14 24 14ZM9.7 10.7C9.7 7.6 12.3 5 15.4 5 18.5 5 21 7.6 21 10.7L21 14 9.7 14 9.7 10.7ZM24.7 27.3C24.7 27.7 24.4 28 24 28L6.7 28C6.3 28 6 27.7 6 27.3L6 16.7C6 16.3 6.3 16 6.7 16L24 16C24.4 16 24.7 16.3 24.7 16.7L24.7 27.3Z"/></svg>';
+const lockIconSvg = getAttIconSvg('padlock', { className: 'tab-lock-icon', width: 12, height: 12, ariaHidden: true });
+const visitedCheckIconSvg = getAttIconSvg('check', { className: 'tab-visited-icon', width: 12, height: 12, ariaHidden: true });
 
 function renderTabIcon(item) {
   const source = sanitizeURL(item?.iconImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
@@ -67,7 +69,7 @@ export function generateHTML(config, instanceId) {
   const tabHeaders = config.items.map((item, index) => {
     const locked = sequential && index > 0;
     const icon = renderTabIcon(item);
-    return `<button class="tab-btn ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-${index}" role="tab" aria-selected="${index === 0}" aria-controls="${instanceId}-tab-panel-${index}" tabindex="${index === 0 ? '0' : '-1'}" data-idx="${index}" ${sequential ? `aria-describedby="${instanceId}-tab-lock-note-${index}"` : ''} ${locked ? 'aria-disabled="true"' : ''}>${sequential ? `<span class="tab-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : ''}${icon}${numbered ? `<span class="tab-number" aria-hidden="true">${index + 1}.</span>` : ''}<span class="tab-label-text">${escapeHTML(item.title || 'Tab')}</span>${showVisitedBadge ? '<span class="tab-visited-badge" hidden>Visited</span>' : ''}</button>${sequential ? `<span class="sr-only tab-lock-note" id="${instanceId}-tab-lock-note-${index}" ${locked ? '' : 'hidden'}>Locked. Select the previous tab first.</span>` : ''}`;
+    return `<button class="tab-btn ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-${index}" role="tab" aria-selected="${index === 0}" aria-controls="${instanceId}-tab-panel-${index}" tabindex="${index === 0 ? '0' : '-1'}" data-idx="${index}" ${sequential ? `aria-describedby="${instanceId}-tab-lock-note-${index}"` : ''} ${locked ? 'aria-disabled="true"' : ''}>${sequential ? `<span class="tab-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : ''}${icon}${numbered ? `<span class="tab-number" aria-hidden="true">${index + 1}.</span>` : ''}<span class="tab-label-text">${escapeHTML(item.title || 'Tab')}</span>${showVisitedBadge ? `<span class="tab-visited-badge" hidden>${visitedCheckIconSvg} Visited</span>` : ''}</button>${sequential ? `<span class="sr-only tab-lock-note" id="${instanceId}-tab-lock-note-${index}" ${locked ? '' : 'hidden'}>Locked. Select the previous tab first.</span>` : ''}`;
   }).join('');
 
   const tabPanels = config.items.map((item, index) => `<div class="tab-panel ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-panel-${index}" role="tabpanel" aria-labelledby="${instanceId}-tab-${index}" tabindex="0" ${index === 0 ? '' : 'hidden'}><p>${sanitizeRichText(item.content || '')}</p></div>`).join('');

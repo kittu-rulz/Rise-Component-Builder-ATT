@@ -1,5 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML, sanitizeRichText, sanitizeURL } from '../js/utilities.js';
+import { getAttIconSvg } from '../js/att-icons.js';
 
 export const id = 'flip-cards';
 export const name = '3D Flip Cards';
@@ -25,13 +26,8 @@ export const defaultConfig = {
 };
 export const editorSchema = getEditorSchema(id);
 
-// Sourced from the local AT&T Brand Center icon library export (ATT Design
-// System/Icon_Library_Mar_2026_032726.pptx — People/Communications categories,
-// "question-circle"), not hand-drawn — matches the same sourcing already used
-// for index.html's toolbar icons. fill="currentColor" replaces the source
-// library's fixed glyph color so it still adapts to theme/state.
-const defaultFrontIcon = '<svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1ZM16 29C8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29Z"/><rect x="15" y="22" width="2" height="2"/><path d="M16.5 9C14.4 9 12.8 10.1 11.9 11L13.2 12.5C13.9 11.8 15.1 11.1 16.5 11.1 17.1 11.1 18.9 11.2 18.9 12.9 18.9 13.9 18.3 14.5 17.6 15L17.4 15.2C16 16.3 15 17.2 15 19.4L15 20 17 20 17 19.3C17 18 17.4 17.7 18.7 16.7L18.9 16.5C19.5 16 20.9 14.9 20.9 12.9 20.9 10.5 19.1 9 16.5 9Z"/></svg>';
-const knowIcon = '<svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M11.33 26.75 1.29 16.71 2.71 15.29 11.33 23.92 29.29 5.96 30.71 7.37 11.33 26.75Z"/></svg>';
+const defaultFrontIcon = getAttIconSvg('question-circle-filled', { width: 20, height: 20, ariaHidden: true });
+const knowIcon = getAttIconSvg('check', { className: 'flip-know-icon', width: 14, height: 14, ariaHidden: true });
 
 function renderCardArtwork(item, fallback = '') {
   const source = sanitizeURL(item?.iconImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
