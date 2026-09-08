@@ -50,12 +50,12 @@ export function generateCSS() {
     .horizontal-timeline-container {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 24px;
+      padding: var(--att-space-5, 24px);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
     }
     .timeline-nodes-row {
       display: flex;
@@ -134,8 +134,8 @@ export function generateCSS() {
     .timeline-slider-box {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: var(--border-radius, 8px);
-      padding: 20px;
+      border-radius: var(--att-radius-md, var(--border-radius, 12px));
+      padding: var(--att-space-5, 20px);
       min-height: 100px;
     }
     .timeline-slide {

@@ -39,19 +39,19 @@ export function generateCSS() {
     .menu-drawer-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: var(--att-space-3, 12px);
     }
     .menu-drawer-item {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
       overflow: hidden;
       cursor: pointer;
       transition: all 0.2s;
     }
     .menu-item-summary {
-      padding: 16px 20px;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -61,7 +61,7 @@ export function generateCSS() {
     .menu-item-left {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: var(--att-space-3, 14px);
     }
     .menu-num {
       font-size: var(--att-fs-body, 1rem);
@@ -95,7 +95,7 @@ export function generateCSS() {
       background-color: var(--att-grey-1, #F3F4F5);
     }
     .menu-item-desc p {
-      padding: 0 20px 20px 48px;
+      padding: 0 var(--att-space-5, 24px) var(--att-space-5, 24px) 48px;
       font-size: var(--att-fs-body, 1rem);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);

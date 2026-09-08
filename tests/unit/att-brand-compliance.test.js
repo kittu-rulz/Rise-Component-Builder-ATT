@@ -42,7 +42,7 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
 
   test('tabs are complete Cobalt capsules — outlined at rest, filled when active — not underline tabs', () => {
     const css = tabs.generateCSS();
-    expect(css).toMatch(/\.tab-btn\s*{[^}]*border-radius:\s*var\(--button-radius\)/);
+    expect(css).toMatch(/\.tab-btn\s*{[^}]*border-radius:\s*var\(--button-radius/);
     expect(css).toMatch(/\.tab-btn\s*{[^}]*border:\s*1px solid var\(--primary\)/);
     expect(css).toMatch(/\.tab-btn\.active\s*{[^}]*background:\s*var\(--primary\)/);
     expect(css).toMatch(/\.tab-btn\.active\s*{[^}]*color:\s*var\(--on-primary\)/);
@@ -59,7 +59,7 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
   test('active sorting target button is a Cobalt-filled capsule, not an AT&T-Blue rectangle', () => {
     const css = sortingActivity.generateCSS();
     expect(css).toMatch(/\.target-btn\.active\s*{[^}]*background-color:\s*var\(--primary\)/);
-    expect(css).toMatch(/\.target-btn\s*{[^}]*border-radius:\s*var\(--button-radius\)/);
+    expect(css).toMatch(/\.target-btn\s*{[^}]*border-radius:\s*var\(--button-radius/);
   });
 
   test('active vertical-timeline step marker is Cobalt, not AT&T Blue', () => {
@@ -82,7 +82,7 @@ describe('AT&T brand: clickable elements use Cobalt (--primary), not AT&T Blue (
 
   test('pricing action button is a Cobalt capsule (full var(--button-radius)), not a partially-rounded rectangle', () => {
     const css = pricingComparison.generateCSS();
-    expect(css).toMatch(/\.pricing-action-btn\s*{[^}]*border-radius:\s*var\(--button-radius\)/);
+    expect(css).toMatch(/\.pricing-action-btn\s*{[^}]*border-radius:\s*var\(--button-radius/);
     expect(css).not.toContain('border-radius: calc(var(--border-radius) - 4px)');
   });
 
@@ -293,7 +293,7 @@ describe('AT&T brand: components outside the original 16-slide audit, swept for 
     const speedRule = css.match(/\.aud-speed-btn\s*{[^}]*}/)[0];
     expect(speedRule).toContain('border: 1px solid var(--primary)');
     expect(speedRule).toContain('color: var(--primary)');
-    expect(speedRule).toContain('border-radius: var(--button-radius)');
+    expect(speedRule).toMatch(/border-radius:\s*var\(--button-radius/);
     const skipRule = css.match(/\.aud-skip-btn\s*{[^}]*}/)[0];
     expect(skipRule).toContain('border: 1px solid var(--primary)');
     const muteRule = css.match(/\.aud-mute-btn\s*{[^}]*}/)[0];
@@ -306,7 +306,7 @@ describe('AT&T brand: components outside the original 16-slide audit, swept for 
     const speedRule = css.match(/\.video-speed-btn\s*{[^}]*}/)[0];
     expect(speedRule).toContain('border: 1px solid var(--primary)');
     expect(speedRule).toContain('color: var(--primary)');
-    expect(speedRule).toContain('border-radius: var(--button-radius)');
+    expect(speedRule).toMatch(/border-radius:\s*var\(--button-radius/);
     const skipRule = css.match(/\.video-skip-btn\s*{[^}]*}/)[0];
     expect(skipRule).toContain('border: 1px solid var(--primary)');
     const muteRule = css.match(/\.video-mute-btn\s*{[^}]*}/)[0];
@@ -516,5 +516,70 @@ describe('Prompt 4: AT&T Typography Standards (Type Hierarchy, 16px Body Floor, 
     }
   });
 });
+
+describe('Prompt 5: Curvature and spacing compliance across all components', () => {
+  const allComponents = [
+    { name: 'accordion', mod: accordion },
+    { name: 'tabs', mod: tabs },
+    { name: 'flipCards', mod: flipCards },
+    { name: 'hotspots', mod: hotspots },
+    { name: 'menuList', mod: menuList },
+    { name: 'multipleChoice', mod: multipleChoice },
+    { name: 'multipleSelect', mod: multipleSelect },
+    { name: 'sortingActivity', mod: sortingActivity },
+    { name: 'fillBlank', mod: fillBlank },
+    { name: 'verticalTimeline', mod: verticalTimeline },
+    { name: 'horizontalTimeline', mod: horizontalTimeline },
+    { name: 'processFlow', mod: processFlow },
+    { name: 'profileCards', mod: profileCards },
+    { name: 'infoGrid', mod: infoGrid },
+    { name: 'pricingComparison', mod: pricingComparison },
+    { name: 'videoFrame', mod: videoFrame },
+    { name: 'imageGallery', mod: imageGallery },
+    { name: 'audioPlayer', mod: audioPlayer },
+    { name: 'scenario', mod: scenario },
+    { name: 'interactiveVideo', mod: interactiveVideo }
+  ];
+
+  test('media frames and video wrappers enforce --att-radius-lg with overflow: hidden', () => {
+    const mediaComponents = [videoFrame, interactiveVideo, imageGallery, hotspots];
+    for (const comp of mediaComponents) {
+      const css = comp.generateCSS();
+      expect(css, 'Media container should enforce overflow: hidden').toMatch(/overflow:\s*hidden/);
+      expect(css, 'Media container should use --att-radius-lg').toMatch(/--att-radius-lg/);
+    }
+  });
+
+  test('content cards, panels, and accordion rows use --att-radius-lg or token fallbacks', () => {
+    const cardComponents = [
+      accordion, tabs, flipCards, verticalTimeline, horizontalTimeline,
+      processFlow, profileCards, infoGrid, pricingComparison, menuList,
+      sortingActivity, audioPlayer, videoFrame, interactiveVideo
+    ];
+    for (const comp of cardComponents) {
+      const css = comp.generateCSS();
+      expect(css, 'Card/panel components should declare --att-radius-lg').toMatch(/--att-radius-lg/);
+    }
+  });
+
+  test('badges and pill chips use --att-radius-pill or --att-radius-sm', () => {
+    const pillComponents = [
+      accordion, tabs, flipCards, verticalTimeline, processFlow,
+      pricingComparison, sortingActivity, interactiveVideo
+    ];
+    for (const comp of pillComponents) {
+      const css = comp.generateCSS();
+      expect(css, 'Pill/badge components should declare --att-radius-pill or --att-radius-sm').toMatch(/(--att-radius-pill|--att-radius-sm)/);
+    }
+  });
+
+  test('spacing scale tokens (--att-space-*) are used across all component generators', () => {
+    for (const { name, mod } of allComponents) {
+      const css = mod.generateCSS();
+      expect(css, `${name} should use --att-space-* scale tokens`).toMatch(/--att-space-[1-8]/);
+    }
+  });
+});
+
 
 

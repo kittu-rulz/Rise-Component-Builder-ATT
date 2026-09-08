@@ -35,24 +35,24 @@ export function generateCSS() {
     .quiz-block {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: var(--att-space-3, 12px);
     }
 
     .quiz-options {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: var(--att-space-2, 8px);
     }
 
     .quiz-option {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-md, var(--border-radius, 12px));
       box-shadow: var(--shadow-style);
-      padding: 14px 20px;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: var(--att-space-3, 12px);
       cursor: pointer;
       transition: all 0.2s ease;
     }
@@ -72,7 +72,7 @@ export function generateCSS() {
     .option-check-square {
       width: 18px;
       height: 18px;
-      border-radius: 4px;
+      border-radius: var(--att-radius-sm, 4px);
       border: 2px solid var(--text-muted);
       position: relative;
       transition: all 0.2s ease;
@@ -105,7 +105,7 @@ export function generateCSS() {
       align-self: flex-start;
       margin-top: 10px;
       padding: 10px 24px;
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
@@ -124,9 +124,9 @@ export function generateCSS() {
     }
 
     .quiz-feedback {
-      margin-top: 14px;
-      padding: 16px;
-      border-radius: var(--border-radius);
+      margin-top: var(--att-space-4, 16px);
+      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       font-size: var(--att-fs-body, 16px);
       line-height: var(--att-lh-body, 1.5);
       max-width: 70ch;

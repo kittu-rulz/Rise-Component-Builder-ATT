@@ -42,15 +42,15 @@ export function generateCSS() {
     .pricing-table-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
       align-items: stretch;
     }
     .pricing-card-item {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 24px;
+      padding: var(--att-space-5, 24px);
       display: flex;
       flex-direction: column;
       position: relative;
@@ -75,15 +75,15 @@ export function generateCSS() {
       color: var(--text-main);
       font-size: var(--att-fs-eyebrow, 0.75rem);
       font-weight: var(--att-fw-bold, 700);
-      padding: 3px 10px;
-      border-radius: 4px;
+      padding: 3px 12px;
+      border-radius: var(--att-radius-pill, 999px);
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
     .pricing-tier-header {
-      margin-bottom: 16px;
+      margin-bottom: var(--att-space-4, 16px);
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 12px;
+      padding-bottom: var(--att-space-3, 12px);
     }
     .pricing-tier-header h4 {
       font-size: var(--att-fs-h4, 1.125rem);
@@ -96,14 +96,14 @@ export function generateCSS() {
     .pricing-features-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: var(--att-space-3, 10px);
       flex: 1;
-      margin-bottom: 20px;
+      margin-bottom: var(--att-space-5, 20px);
     }
     .pricing-feature-line {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: var(--att-space-2, 10px);
       font-size: var(--att-fs-body, 1rem);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
@@ -118,7 +118,7 @@ export function generateCSS() {
       border: 1px solid var(--primary);
       /* Full capsule, not a partial rounding: the brand's own button spec is a
          complete pill, and this is the card's clickable CTA. */
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       padding: 10px 16px;
       font-size: var(--att-fs-body, 1rem);
       font-weight: var(--att-fw-bold, 700);

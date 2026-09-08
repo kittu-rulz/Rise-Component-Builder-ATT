@@ -30,18 +30,18 @@ export function generateCSS() {
     .buttons-container {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: var(--att-space-3, 12px);
       justify-content: flex-start;
     }
     .link-button-item {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
       background-color: var(--primary);
       color: var(--on-primary);
       padding: 12px 20px;
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       box-shadow: var(--shadow-style);
       font-size: var(--att-fs-body, 1rem);
       font-weight: var(--att-fw-bold, 700);

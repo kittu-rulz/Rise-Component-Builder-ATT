@@ -133,23 +133,23 @@ export function generateCSS() {
     .timeline-toolbar {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: var(--att-space-3, 12px);
+      margin-bottom: var(--att-space-4, 16px);
     }
     .timeline-filter-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
     }
     .timeline-toolbar-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
     }
     .timeline-filter-chip, .timeline-toolbar-btn {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       padding: 8px 16px;
       font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
@@ -175,7 +175,7 @@ export function generateCSS() {
       display: flex;
       flex-direction: column;
       position: relative;
-      padding-left: 32px;
+      padding-left: var(--att-space-6, 32px);
     }
 
     .vertical-timeline-container::before {
@@ -190,7 +190,7 @@ export function generateCSS() {
 
     .timeline-step {
       position: relative;
-      margin-bottom: 24px;
+      margin-bottom: var(--att-space-5, 24px);
       cursor: pointer;
     }
 
@@ -227,9 +227,9 @@ export function generateCSS() {
     .step-card {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 16px 20px;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
     }
 
     .step-card h4 {
@@ -238,7 +238,7 @@ export function generateCSS() {
       margin-bottom: 4px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
       text-wrap: pretty;
     }
 
@@ -263,8 +263,8 @@ export function generateCSS() {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 10px;
+      border-radius: var(--att-radius-pill, 999px);
       background-color: var(--border-color);
       color: var(--text-main);
     }
@@ -315,15 +315,22 @@ export function generateCSS() {
     }
 
     .step-body p {
-      font-size: 12px;
+      font-size: var(--att-fs-body, 16px);
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
     }
 
     .timeline-compare-layout {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--att-space-5, 24px);
+    }
+    .timeline-compare-column {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--att-radius-lg, 20px);
+      padding: var(--att-space-4, 16px);
     }
     .timeline-compare-column-title {
       font-size: 13px;

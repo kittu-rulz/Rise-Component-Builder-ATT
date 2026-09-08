@@ -346,7 +346,7 @@
     .tabs-container {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
       overflow: hidden;
     }
@@ -354,13 +354,13 @@
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
       padding: 12px 16px 0;
     }
     .tabs-toolbar-btn {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--button-radius);
+      border-radius: var(--att-radius-md, var(--button-radius, 12px));
       padding: 6px 14px;
       font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
@@ -385,7 +385,7 @@
     }
     .tabs-header {
       display: flex;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
       flex-wrap: wrap;
       padding: 16px 20px 0;
       overflow-x: auto;
@@ -401,7 +401,7 @@
       gap: 6px;
       background: var(--bg-card);
       border: 1px solid var(--primary);
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       padding: 10px 20px;
       font-size: var(--att-fs-body, 16px);
       font-weight: 600;
@@ -428,7 +428,7 @@
       width: 18px;
       height: 18px;
       flex-shrink: 0;
-      border-radius: 4px;
+      border-radius: var(--att-radius-sm, 6px);
     }
     .tab-lock-icon-slot {
       display: inline-flex;
@@ -440,8 +440,8 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      padding: 1px 6px;
-      border-radius: 6px;
+      padding: 2px 8px;
+      border-radius: var(--att-radius-pill, 999px);
       background-color: var(--border-color);
       color: var(--text-main);
     }
@@ -534,7 +534,7 @@
     .tabs-compare-column {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
+      border-radius: var(--att-radius-md, 12px);
       padding: 14px 16px;
       font-size: var(--att-fs-body, 16px);
       line-height: var(--att-lh-body, 1.5);

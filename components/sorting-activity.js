@@ -63,22 +63,22 @@ export function generateCSS() {
     .sorting-activity-container {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
     }
     .sorting-card-pool {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 20px;
+      padding: var(--att-space-5, 20px);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: var(--att-space-3, 12px);
     }
     .sorting-draggable {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: var(--border-radius, 8px);
+      border-radius: var(--att-radius-md, var(--border-radius, 12px));
       padding: 12px 16px;
       display: flex;
       justify-content: space-between;
@@ -99,7 +99,7 @@ export function generateCSS() {
     }
     .sorting-targets-row {
       display: flex;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
       flex-wrap: wrap;
     }
     .target-btn {
@@ -115,7 +115,7 @@ export function generateCSS() {
       /* Full capsule, not a partial rounding: this is a clickable control, and
          capsule shapes are only allowed on clickable elements when they're a
          complete pill. */
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       cursor: pointer;
       min-height: 44px;
       display: inline-flex;
@@ -140,15 +140,15 @@ export function generateCSS() {
     }
     .sorting-categories-columns {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--att-space-4, 16px);
     }
     .sorting-column {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 16px;
+      padding: var(--att-space-4, 16px);
     }
     .column-header {
       /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
@@ -166,12 +166,12 @@ export function generateCSS() {
       min-height: 80px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
     }
     .sorted-item-badge {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border-radius: var(--att-radius-pill, 999px);
       padding: 6px 12px;
       font-size: var(--att-fs-body-sm, 0.875rem);
       font-weight: var(--att-fw-medium, 500);
@@ -187,7 +187,7 @@ export function generateCSS() {
       align-self: flex-start;
       margin-top: 10px;
       padding: 10px 24px;
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
@@ -205,9 +205,9 @@ export function generateCSS() {
       background-color: var(--primary-hover);
     }
     .quiz-feedback {
-      margin-top: 14px;
-      padding: 16px;
-      border-radius: var(--border-radius);
+      margin-top: var(--att-space-4, 16px);
+      padding: var(--att-space-4, 16px);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       font-size: var(--att-fs-body, 1rem);
       line-height: var(--att-lh-body, 1.5);
       max-width: 70ch;

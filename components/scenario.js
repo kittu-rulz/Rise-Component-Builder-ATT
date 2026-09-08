@@ -53,16 +53,16 @@ export function generateCSS() {
     .scenario-container {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 24px;
+      padding: var(--att-space-5, 24px);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
     }
     .scenario-avatar-row {
       display: flex;
-      gap: 16px;
+      gap: var(--att-space-4, 16px);
       align-items: flex-start;
     }
     .char-avatar-img {
@@ -83,8 +83,8 @@ export function generateCSS() {
       flex: 1;
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
-      border-radius: var(--border-radius, 12px);
-      padding: 16px 20px;
+      border-radius: var(--att-radius-md, var(--border-radius, 12px));
+      padding: var(--att-space-4, 16px) var(--att-space-5, 20px);
       position: relative;
     }
     .scenario-bubble::before {
@@ -124,8 +124,8 @@ export function generateCSS() {
     .scenario-choices-list {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-top: 10px;
+      gap: var(--att-space-3, 10px);
+      margin-top: var(--att-space-3, 10px);
     }
     .scenario-choice-btn {
       width: 100%;
@@ -136,7 +136,7 @@ export function generateCSS() {
       border: 1px solid var(--primary);
       color: var(--primary);
       padding: 12px 16px;
-      border-radius: var(--button-radius, 8px);
+      border-radius: var(--button-radius, var(--att-radius-md, 12px));
       text-align: left;
       font-size: var(--att-fs-body, 1rem);
       font-weight: var(--att-fw-medium, 500);
@@ -155,8 +155,8 @@ export function generateCSS() {
     .scenario-feedback-balloon {
       background-color: var(--att-grey-1, #F3F4F5);
       border: 1px solid var(--border-color);
-      border-radius: var(--border-radius, 8px);
-      padding: 16px;
+      border-radius: var(--att-radius-md, var(--border-radius, 12px));
+      padding: var(--att-space-4, 16px);
       font-size: var(--att-fs-body, 1rem);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);

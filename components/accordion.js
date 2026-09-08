@@ -104,13 +104,13 @@ export function generateCSS() {
     .accordion-group {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: var(--att-space-3, 12px);
     }
 
     .accordion-item {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
       overflow: hidden;
       transition: border-color 0.2s ease, box-shadow 0.2s ease, border-left 0.2s ease;
@@ -125,7 +125,7 @@ export function generateCSS() {
       min-height: 44px;
       background: transparent;
       border: none;
-      padding: 16px 20px;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -173,8 +173,8 @@ export function generateCSS() {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      padding: 2px 8px;
-      border-radius: var(--att-radius-sm, 6px);
+      padding: 2px 10px;
+      border-radius: var(--att-radius-pill, 999px);
       background-color: var(--att-grey-2, var(--border-color));
       color: var(--text-main);
     }
@@ -241,7 +241,7 @@ export function generateCSS() {
     }
 
     .accordion-body {
-      padding: 0 20px 20px 20px;
+      padding: 0 var(--att-space-5, 24px) var(--att-space-5, 24px) var(--att-space-5, 24px);
       font-size: var(--att-fs-body, 16px);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
@@ -265,7 +265,7 @@ export function generateCSS() {
       flex: 1;
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--button-radius);
+      border-radius: var(--att-radius-md, var(--button-radius, 12px));
       padding: 8px 14px;
       font-size: var(--att-fs-body-sm, 14px);
       color: var(--text-main);
@@ -287,7 +287,7 @@ export function generateCSS() {
     .accordion-toolbar-btn, .accordion-search-clear {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--button-radius);
+      border-radius: var(--att-radius-md, var(--button-radius, 12px));
       padding: 8px 16px;
       font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;

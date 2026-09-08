@@ -261,17 +261,17 @@ export function generateCSS() {
     .video-player-block {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 12px;
+      padding: var(--att-space-4, 16px);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: var(--att-space-3, 12px);
     }
     .video-wrapper {
       position: relative;
       width: 100%;
-      border-radius: calc(var(--border-radius) - 4px);
+      border-radius: var(--att-radius-lg, 20px);
       overflow: hidden;
       background-color: var(--att-black, #000000);
     }
@@ -311,10 +311,10 @@ export function generateCSS() {
     .video-resume-prompt {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
       flex-wrap: wrap;
       background-color: var(--bg-body);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-md, 12px);
       padding: 8px 10px;
       font-size: var(--att-fs-body-sm, 0.875rem);
     }
@@ -327,7 +327,7 @@ export function generateCSS() {
       padding: 6px 12px;
       font-size: var(--att-fs-body-sm, 0.875rem);
       font-weight: var(--att-fw-medium, 500);
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       cursor: pointer;
       min-height: 44px;
       display: inline-flex;
@@ -341,7 +341,7 @@ export function generateCSS() {
     .video-control-strip {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: var(--att-space-3, 10px);
       padding: 4px;
       flex-wrap: wrap;
       row-gap: 8px;
@@ -395,14 +395,14 @@ export function generateCSS() {
     .video-timeline-scrub {
       height: 6px;
       background-color: var(--bg-body);
-      border-radius: 4px;
+      border-radius: var(--att-radius-pill, 999px);
       position: relative;
       cursor: pointer;
     }
     .video-fill {
       height: 100%;
       background-color: var(--accent);
-      border-radius: 4px;
+      border-radius: var(--att-radius-pill, 999px);
     }
     .video-chapter-markers {
       position: absolute;
@@ -449,7 +449,7 @@ export function generateCSS() {
       padding: 4px 10px;
       font-size: var(--att-fs-body-sm, 0.875rem);
       font-weight: var(--att-fw-medium, 500);
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       cursor: pointer;
       transition: all 0.2s;
       flex-shrink: 0;
@@ -517,7 +517,7 @@ export function generateCSS() {
       text-align: left;
       background: none;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--att-radius-sm, 8px);
       padding: 8px 10px;
       cursor: pointer;
       font-size: var(--att-fs-body-sm, 0.875rem);
@@ -556,7 +556,7 @@ export function generateCSS() {
       max-height: 260px;
       overflow-y: auto;
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-md, 12px);
       padding: 10px;
     }
     .video-transcript-search-row { margin-bottom: 8px; }
@@ -566,7 +566,7 @@ export function generateCSS() {
       padding: 8px 12px;
       font-size: var(--att-fs-body-sm, 0.875rem);
       border: var(--border-style);
-      border-radius: 6px;
+      border-radius: var(--att-radius-sm, 8px);
       background-color: var(--bg-card);
       color: var(--text-main);
       min-height: 44px;
@@ -582,7 +582,7 @@ export function generateCSS() {
       text-align: left;
       background: none;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--att-radius-sm, 8px);
       padding: 8px 10px;
       cursor: pointer;
       font-size: var(--att-fs-body, 1rem);
@@ -605,7 +605,7 @@ export function generateCSS() {
     .video-transcript-no-results { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); font-style: italic; }
     .video-takeaways-panel {
       background-color: var(--bg-body);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-md, 12px);
       padding: 16px;
     }
     .video-takeaways-heading {

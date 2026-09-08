@@ -168,7 +168,7 @@ export function generateCSS() {
     .iv-block {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: var(--att-space-4, 16px);
     }
     .iv-title {
       font-size: var(--att-fs-h2, 1.5rem);
@@ -189,7 +189,7 @@ export function generateCSS() {
       width: 100%;
       aspect-ratio: 16 / 9;
       background-color: var(--att-black, #000000);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, 20px);
       overflow: hidden;
     }
     .iv-video {
@@ -214,12 +214,12 @@ export function generateCSS() {
     .iv-interaction-panel {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 20px;
+      padding: var(--att-space-5, 20px);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: var(--att-space-3, 12px);
       outline: none;
     }
     .iv-interaction-panel[hidden] {
@@ -255,7 +255,7 @@ export function generateCSS() {
       align-self: flex-start;
       margin-top: 4px;
       padding: 10px 24px;
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
@@ -281,16 +281,16 @@ export function generateCSS() {
     .iv-mc-options {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
     }
     .iv-mc-option {
       background-color: var(--bg-body);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-md, 12px);
       padding: 10px 16px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: var(--att-space-2, 10px);
       cursor: pointer;
       transition: all 0.2s ease;
       font-size: var(--att-fs-body, 1rem);
@@ -348,7 +348,7 @@ export function generateCSS() {
       align-self: flex-start;
       margin-top: 4px;
       padding: 10px 24px;
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       border: none;
       background-color: var(--primary);
       color: var(--on-primary);
@@ -371,7 +371,7 @@ export function generateCSS() {
     }
     .iv-mc-hint {
       padding: 10px 14px;
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-md, 12px);
       border: 1px dashed var(--border-color);
       font-size: var(--att-fs-body-sm, 0.875rem);
       line-height: var(--att-lh-body, 1.5);
@@ -379,8 +379,8 @@ export function generateCSS() {
       max-width: 70ch;
     }
     .iv-mc-feedback {
-      padding: 14px;
-      border-radius: var(--border-radius);
+      padding: var(--att-space-4, 16px);
+      border-radius: var(--att-radius-md, 12px);
       font-size: var(--att-fs-body, 1rem);
       line-height: var(--att-lh-body, 1.5);
       max-width: 70ch;
@@ -398,9 +398,9 @@ export function generateCSS() {
     .iv-marker-nav {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 16px 20px;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 20px);
     }
     .iv-marker-nav-title {
       font-size: var(--att-fs-eyebrow, 0.75rem);
@@ -417,7 +417,7 @@ export function generateCSS() {
       gap: 8px;
     }
     .iv-marker-item {
-      border-radius: 8px;
+      border-radius: var(--att-radius-md, 12px);
       background-color: var(--bg-body);
       font-size: var(--att-fs-body-sm, 0.875rem);
       transition: box-shadow 0.2s ease;
@@ -430,7 +430,7 @@ export function generateCSS() {
     .iv-marker-item-btn {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: var(--att-space-2, 10px);
       width: 100%;
       padding: 8px 10px;
       border: none;
@@ -439,7 +439,7 @@ export function generateCSS() {
       color: inherit;
       text-align: left;
       cursor: pointer;
-      border-radius: 8px;
+      border-radius: var(--att-radius-md, 12px);
       min-height: 44px;
       box-sizing: border-box;
     }
@@ -453,8 +453,8 @@ export function generateCSS() {
       font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 10px;
+      border-radius: var(--att-radius-pill, 999px);
       flex-shrink: 0;
     }
     .iv-marker-state-badge.iv-state-visited {
@@ -484,7 +484,7 @@ export function generateCSS() {
     .iv-restart-btn {
       align-self: flex-start;
       padding: 8px 20px;
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       border: var(--border-style);
       background-color: transparent;
       color: var(--text-main);
@@ -534,8 +534,8 @@ export function generateCSS() {
       font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 10px;
+      border-radius: var(--att-radius-pill, 999px);
       background-color: var(--border-color);
       color: var(--text-main);
       flex-shrink: 0;
@@ -543,9 +543,9 @@ export function generateCSS() {
     .iv-transcript {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 14px 18px;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 20px);
     }
     .iv-transcript summary {
       cursor: pointer;

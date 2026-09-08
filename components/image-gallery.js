@@ -37,11 +37,11 @@ export function generateCSS() {
     .gallery-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 16px;
+      gap: var(--att-space-4, 16px);
     }
     .gallery-item-card {
       position: relative;
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       border: var(--border-style);
       box-shadow: var(--shadow-style);
       overflow: hidden;
@@ -97,7 +97,7 @@ export function generateCSS() {
     .lightbox-img {
       max-width: 90%;
       max-height: 80%;
-      border-radius: var(--border-radius, 8px);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0,0,0,0.1));
     }
     .lightbox-caption {

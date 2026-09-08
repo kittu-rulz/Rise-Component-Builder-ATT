@@ -41,16 +41,16 @@ export function generateCSS() {
     .profiles-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
     }
     .profile-card-item {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 20px;
+      padding: var(--att-space-5, 20px);
       display: flex;
-      gap: 16px;
+      gap: var(--att-space-4, 16px);
       align-items: flex-start;
       transition: border-color 0.2s;
     }
@@ -76,7 +76,7 @@ export function generateCSS() {
       border: 1px solid var(--border-color);
       overflow: hidden;
     }
-    .profile-avatar-circle.square { border-radius: calc(var(--border-radius) / 2); }
+    .profile-avatar-circle.square { border-radius: var(--att-radius-sm, 8px); }
     .profile-avatar-circle img {
       width: 100%;
       height: 100%;

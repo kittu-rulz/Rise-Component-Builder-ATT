@@ -112,13 +112,13 @@ export function generateCSS() {
     .flip-cards-block {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: var(--att-space-4, 16px);
     }
 
     .flip-cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
     }
 
     .flip-card {
@@ -147,15 +147,15 @@ export function generateCSS() {
       height: 100%;
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       border: var(--border-style);
       box-shadow: var(--shadow-style);
-      padding: 24px;
+      padding: var(--att-space-5, 24px);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
     }
 
     /* backface-visibility:hidden only hides a rotated-away face visually — it does not
@@ -181,7 +181,7 @@ export function generateCSS() {
     .card-icon-badge .custom-item-icon {
       width: 32px;
       height: 32px;
-      border-radius: calc(var(--border-radius) / 2);
+      border-radius: var(--att-radius-sm, 8px);
     }
 
     .flip-card-front h3, .flip-card-back h3 {
@@ -219,8 +219,8 @@ export function generateCSS() {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 10px;
+      border-radius: var(--att-radius-pill, 999px);
       background-color: var(--border-color);
       color: var(--text-main);
     }
@@ -235,7 +235,7 @@ export function generateCSS() {
 
     .flip-classify-row {
       display: flex;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
       margin-top: 6px;
     }
 
@@ -246,7 +246,7 @@ export function generateCSS() {
       background-color: var(--bg-card);
       color: var(--text-main);
       border: 1px solid var(--bg-card);
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-md, 12px));
       padding: 8px 14px;
       font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
@@ -268,19 +268,19 @@ export function generateCSS() {
     .flip-study-toolbar {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: var(--att-space-3, 12px);
     }
 
     .flip-category-filters, .flip-study-controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: var(--att-space-2, 8px);
     }
 
     .flip-filter-chip, .flip-review-filter-btn, .flip-reset-btn, .flip-summary-reset-btn {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       padding: 8px 16px;
       font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
@@ -307,14 +307,14 @@ export function generateCSS() {
     .flip-summary-panel {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 16px 20px;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: var(--att-space-3, 12px);
       font-size: var(--att-fs-body, 16px);
     }
 

@@ -47,14 +47,14 @@ export function generateCSS() {
     .info-grid-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
     }
     .info-grid-item {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 20px;
+      padding: var(--att-space-5, 20px);
       transition: all 0.2s;
     }
     .info-grid-item:hover {
@@ -73,7 +73,7 @@ export function generateCSS() {
       /* Decorative branding icon, not itself a control — AT&T Blue is the
          approved usage here. */
       color: var(--accent);
-      margin-bottom: 12px;
+      margin-bottom: var(--att-space-3, 12px);
     }
     .info-grid-icon-accent-dots {
       /* Matches the fallback icon's own baked-in accent-dot styling, sourced
@@ -84,7 +84,7 @@ export function generateCSS() {
     .info-grid-icon .custom-item-icon {
       width: 42px;
       height: 42px;
-      border-radius: calc(var(--border-radius) / 2);
+      border-radius: var(--att-radius-sm, 8px);
     }
     .info-grid-item h4 {
       font-size: var(--att-fs-h4, 1.125rem);

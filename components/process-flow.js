@@ -53,12 +53,12 @@ export function generateCSS() {
     .process-steps-container {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 24px;
+      padding: var(--att-space-5, 24px);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: var(--att-space-5, 20px);
     }
     .process-progress-header {
       display: flex;
@@ -77,11 +77,11 @@ export function generateCSS() {
       letter-spacing: 0.5px;
       background-color: var(--border-color);
       padding: 4px 12px;
-      border-radius: 6px;
+      border-radius: var(--att-radius-pill, 999px);
     }
     .process-dots {
       display: flex;
-      gap: 6px;
+      gap: var(--att-space-2, 6px);
     }
     .p-dot {
       width: 24px;
@@ -143,11 +143,11 @@ export function generateCSS() {
     .process-controls-row {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: var(--att-space-3, 12px);
     }
     .process-controls-row .btn {
       padding: 10px 24px;
-      border-radius: var(--button-radius);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       border: none;
       font-size: var(--att-fs-body, 1rem);
       font-weight: var(--att-fw-bold, 700);

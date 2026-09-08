@@ -62,14 +62,14 @@ export function generateCSS() {
     .hotspots-container {
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--border-radius);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
       box-shadow: var(--shadow-style);
-      padding: 12px;
+      padding: var(--att-space-4, 16px);
     }
     .hotspot-img-wrapper {
       position: relative;
       width: 100%;
-      border-radius: calc(var(--border-radius) - 4px);
+      border-radius: var(--att-radius-lg, 20px);
       overflow: hidden;
     }
     .hotspot-schematic-svg {
@@ -138,8 +138,8 @@ export function generateCSS() {
          text/surface tokens (inverted) rather than an invented dark-gray hex. */
       background-color: var(--text-main);
       color: var(--bg-card);
-      padding: 14px 16px;
-      border-radius: var(--border-radius, 8px);
+      padding: var(--att-space-4, 16px);
+      border-radius: var(--att-radius-md, var(--border-radius, 12px));
       box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0, 0, 0, 0.2));
       display: none;
       z-index: 20;
