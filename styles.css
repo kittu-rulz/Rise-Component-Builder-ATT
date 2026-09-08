@@ -682,14 +682,23 @@ a {
 .card-icon-container {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  background-color: var(--bg-app);
-  color: var(--text-muted);
+  border-radius: 12px;
+  background-color: var(--att-grey-1, var(--bg-app));
+  color: var(--text-main);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
   transition: all var(--transition-fast);
+}
+
+.card-icon-container svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+  stroke-width: 0.45px;
+  paint-order: stroke fill;
+  display: block;
 }
 
 .component-select-card:hover .card-icon-container {
