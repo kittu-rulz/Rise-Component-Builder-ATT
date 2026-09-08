@@ -53,10 +53,10 @@
       --bg-card: #FFFFFF;
       --text-main: #000000;
       --text-muted: #4B5563;
-      --border-color: #DCDFE3;
+      --border-color: transparent;
       --border-radius: 12px;
       --button-radius: 20px;
-      --border-style: 1px solid var(--border-color);
+      --border-style: none;
       --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
       --font-family: 'ATT Aleck Sans', sans-serif;
       --heading-font-family: 'ATT Aleck Sans', sans-serif;
@@ -343,253 +343,392 @@
       object-fit: contain;
     }
 
-    .flip-cards-block {
+    .video-player-block {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
+      box-shadow: var(--shadow-style);
+      padding: var(--att-space-4, 16px);
       display: flex;
       flex-direction: column;
-      gap: var(--att-space-4, 16px);
+      gap: var(--att-space-3, 12px);
     }
-
-    .flip-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: var(--att-space-5, 20px);
-    }
-
-    .flip-card {
-      background-color: transparent;
-      height: 180px;
-      perspective: 1000px;
-      cursor: pointer;
-    }
-
-    .flip-card:focus-visible {
-      outline: none;
-    }
-
-    .flip-card:focus-visible .flip-card-front,
-    .flip-card:focus-visible .flip-card-back {
-      outline: 3px solid var(--att-cobalt, var(--primary));
-      outline-offset: 2px;
-    }
-
-    .flip-card:active:not(.flipped) .flip-card-inner {
-      transform: scale(0.98);
-    }
-
-    .flip-card.flipped:active .flip-card-inner {
-      transform: rotateY(180deg) scale(0.98);
-    }
-
-    .flip-card-inner {
+    .video-wrapper {
       position: relative;
       width: 100%;
-      height: 100%;
-      text-align: center;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      transform-style: preserve-3d;
+      border-radius: var(--att-radius-lg, 20px);
+      overflow: hidden;
+      background-color: var(--att-black, #000000);
     }
-
-    .flip-card.flipped .flip-card-inner {
-      transform: rotateY(180deg);
+    .video-wrapper video {
+      display: block;
     }
-
-    .flip-card-front, .flip-card-back {
+    .video-overlay-play {
       position: absolute;
-      width: 100%;
-      height: 100%;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
-      border: var(--border-style);
-      box-shadow: var(--shadow-style);
-      padding: var(--att-space-5, 24px);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: var(--att-space-2, 8px);
-    }
-
-    /* backface-visibility:hidden only hides a rotated-away face visually — it does not
-       reliably stop it from receiving clicks in every rendering engine, which silently
-       blocked the Know/Review buttons underneath once a card was flipped. The JS already
-       toggles aria-hidden on whichever face isn't showing, so keying pointer-events off
-       that (rather than adding separate state) can't drift out of sync with it. */
-    .flip-card-front[aria-hidden="true"], .flip-card-back[aria-hidden="true"] {
-      pointer-events: none;
-    }
-
-    .flip-card-front {
-      background-color: var(--bg-card);
-      color: var(--text-main);
-      position: absolute;
-    }
-
-    .card-icon-badge {
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-
-    .card-icon-badge .custom-item-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--att-radius-sm, 8px);
-    }
-
-    .flip-card-front h3, .flip-card-back h3 {
-      font-size: var(--att-fs-body-lg, 18px);
-      font-weight: 600;
-      text-wrap: pretty;
-    }
-
-    .flip-card-front p, .flip-card-back p {
-      font-size: var(--att-fs-body, 16px);
-      color: var(--text-muted);
-      line-height: var(--att-lh-body, 1.5);
-      max-width: 70ch;
-    }
-
-    .flip-card-back {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      /* White icon on Cobalt Blue (--primary): the brand's clickable treatment,
+         not a neutral dark wash or AT&T Blue. */
       background-color: var(--primary);
       color: var(--on-primary);
-      transform: rotateY(180deg);
-    }
-
-    .flip-card-back h3 {
-      color: var(--on-primary);
-    }
-
-    .flip-card-back p {
-      color: var(--on-primary);
-    }
-
-    .flip-status-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: var(--att-fs-eyebrow, 12px);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      padding: 2px 10px;
-      border-radius: var(--att-radius-pill, 999px);
-      background-color: var(--border-color);
-      color: var(--text-main);
-    }
-
-    .flip-status-badge.flip-status-know {
-      background-color: var(--att-grey-2, var(--border-color));
-      color: var(--text-main);
-    }
-
-    .flip-status-badge.flip-status-review {
-      background-color: var(--att-grey-2, var(--border-color));
-      color: var(--text-main);
-    }
-
-    .flip-classify-row {
       display: flex;
-      gap: var(--att-space-2, 8px);
-      margin-top: 6px;
-    }
-
-    .flip-classify-btn {
-      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background-color: var(--bg-card);
-      color: var(--text-main);
-      border: 1px solid var(--bg-card);
-      border-radius: var(--button-radius, var(--att-radius-md, 12px));
-      padding: 8px 14px;
-      font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
+      justify-content: center;
       cursor: pointer;
-      min-height: 44px;
       transition: all 0.2s;
+      padding: 0;
+      font: inherit;
+      border: 0;
     }
-
-    .flip-classify-btn:hover {
-      border-color: var(--primary);
+    .video-wrapper:hover .video-overlay-play {
+      background-color: var(--primary-hover);
     }
-
-    .flip-classify-btn.active {
-      background-color: var(--bg-card);
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px var(--primary) inset;
+    .video-current-chapter {
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
+      color: var(--text-muted);
     }
-
-    .flip-study-toolbar {
+    .video-status-region { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .video-resume-prompt {
       display: flex;
-      flex-direction: column;
-      gap: var(--att-space-3, 12px);
-    }
-
-    .flip-category-filters, .flip-study-controls {
-      display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       gap: var(--att-space-2, 8px);
+      flex-wrap: wrap;
+      background-color: var(--bg-body);
+      border-radius: var(--att-radius-md, 12px);
+      padding: 8px 10px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
     }
-
-    .flip-filter-chip, .flip-review-filter-btn, .flip-reset-btn, .flip-summary-reset-btn {
+    .video-resume-text { color: var(--text-main); margin-right: auto; }
+    .video-resume-btn,
+    .video-restart-choice-btn {
       background-color: var(--bg-card);
-      border: var(--border-style);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 6px 12px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
       border-radius: var(--button-radius, var(--att-radius-pill, 999px));
-      padding: 8px 16px;
-      font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
-      color: var(--text-main);
       cursor: pointer;
       min-height: 44px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      box-sizing: border-box;
+    }
+    .video-resume-btn { background-color: var(--primary); color: var(--on-primary); }
+    .video-resume-btn:hover { background-color: var(--primary-hover); border-color: var(--primary-hover); }
+    .video-restart-choice-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
+    .video-control-strip {
+      display: flex;
+      align-items: center;
+      gap: var(--att-space-3, 10px);
+      padding: 4px;
+      flex-wrap: wrap;
+      row-gap: 8px;
+    }
+    /* Replay/Forward are secondary to the main play control — small and outlined,
+       Cobalt-outlined at rest like sorting-activity's .target-btn, since these are
+       clickable at all times, matching components/audio-player.js's own convention. */
+    .video-skip-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background-color: var(--bg-card);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
       transition: all 0.2s;
+      flex-shrink: 0;
+      padding: 0;
     }
-
-    .flip-filter-chip.active, .flip-review-filter-btn[aria-pressed="true"] {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 1px var(--primary) inset;
+    .video-overlay-play:active {
+      transform: translate(-50%, -50%) scale(0.98);
     }
-
-    .flip-classify-btn:active, .flip-filter-chip:active, .flip-review-filter-btn:active, .flip-reset-btn:active, .flip-summary-reset-btn:active {
-      transform: scale(0.98);
-    }
-
-    .flip-classify-btn:focus-visible, .flip-filter-chip:focus-visible, .flip-review-filter-btn:focus-visible, .flip-reset-btn:focus-visible, .flip-summary-reset-btn:focus-visible {
+    .video-overlay-play:focus-visible, .video-skip-btn:focus-visible, .video-mini-play:focus-visible, .video-control-btn:focus-visible, .video-rate-btn:focus-visible, .video-resume-btn:focus-visible, .video-restart-choice-btn:focus-visible {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
     }
-
-    .flip-study-counts {
-      font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
+    .video-skip-btn:active, .video-mini-play:active, .video-control-btn:active, .video-rate-btn:active, .video-resume-btn:active, .video-restart-choice-btn:active {
+      transform: scale(0.98);
+    }
+    .video-skip-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
+    .video-skip-btn:disabled { opacity: 0.5; cursor: default; }
+    .video-mini-play {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+      transition: all 0.2s;
+    }
+    .video-mini-play:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
+    /* Chapter markers are a sibling overlay (.video-chapter-markers), not children of
+       .video-timeline-scrub itself: axe's "nested-interactive" rule correctly flags real
+       <button> markers living inside an element with role="slider" — a slider's content
+       model doesn't expect focusable descendants (the same real bug found and fixed for
+       components/audio-player.js's own chapter markers). */
+    .video-scrub-wrap {
+      position: relative;
+      flex: 1 1 60px;
+      min-width: 60px;
+    }
+    .video-timeline-scrub {
+      height: 6px;
+      background-color: var(--bg-body);
+      border-radius: var(--att-radius-pill, 999px);
+      position: relative;
+      cursor: pointer;
+    }
+    .video-fill {
+      height: 100%;
+      background-color: var(--accent);
+      border-radius: var(--att-radius-pill, 999px);
+    }
+    .video-chapter-markers {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    /* A 24x24 hit target (WCAG 2.2 target-size) centered on the timestamp, but the visible
+       glyph (::before) stays a small 10px dot — see components/audio-player.js's identical
+       pattern and its own comment for why hit-area and visible-size are decoupled here. */
+    .video-chapter-marker {
+      position: absolute;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      margin-left: -12px;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-chapter-marker::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--bg-card);
+      border: 2px solid var(--primary);
+    }
+    .video-chapter-marker:hover::before { background-color: var(--primary); }
+    .video-timer {
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .video-speed-btn {
+      background-color: var(--bg-card);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 4px 10px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-medium, 500);
+      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .video-speed-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
+    .video-mute-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background-color: var(--bg-card);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      padding: 0;
+    }
+    .video-mute-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
+    .video-section-heading {
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: var(--text-muted);
     }
-
-    .flip-summary-panel {
-      background-color: var(--bg-card);
-      border: var(--border-style);
-      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
-      box-shadow: var(--shadow-style);
-      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
+    .video-chapter-nav { border-top: var(--border-style); padding-top: 10px; }
+    .video-chapter-toggle {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: var(--att-space-3, 12px);
-      font-size: var(--att-fs-body, 16px);
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 4px 0;
+      margin-bottom: 6px;
+      cursor: pointer;
+      min-height: 44px;
     }
-
-    .flip-card[hidden] {
-      display: none;
+    .video-chapter-toggle-label { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
+    .video-chapter-chevron {
+      color: var(--primary);
+      flex-shrink: 0;
+      transition: transform 0.25s ease;
     }
-
-    @media (prefers-reduced-motion: reduce) {
-      .flip-card-inner { transform: none !important; }
-      .flip-card-front, .flip-card-back { transition: none !important; }
-      .flip-card.flipped .flip-card-front { display: none; }
-      .flip-card:not(.flipped) .flip-card-back { display: none; }
+    .video-chapter-toggle[aria-expanded="false"] .video-chapter-chevron { transform: rotate(-90deg); }
+    /* list-style/margin/padding reset: a bare <ul>'s browser-default bullet + indent
+       otherwise leaks through — display:flex on the *list* doesn't change each <li>'s own
+       default display:list-item, which the bullet actually depends on (the same real bug
+       found and fixed for components/audio-player.js's own chapter list). */
+    .video-chapter-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .video-chapter-list li { list-style: none; margin: 0; padding: 0; }
+    .video-chapter-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      border-radius: var(--att-radius-sm, 8px);
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      color: var(--text-main);
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    .video-chapter-item:hover { background-color: var(--bg-body); }
+    .video-chapter-item.video-chapter-active {
+      background-color: var(--bg-body);
+      font-weight: var(--att-fw-bold, 700);
+      /* Not color alone: the active row also gets aria-current="true" (generateJS) and a
+         leading marker character, not just a background tint. */
+    }
+    .video-chapter-item.video-chapter-active .video-chapter-title::before { content: '▸ '; color: var(--primary); }
+    .video-chapter-time { color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .video-chapter-desc { display: block; width: 100%; font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); margin-top: 2px; }
+    .video-progress-status { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); }
+    .video-transcript-section { border-top: var(--border-style); padding-top: 10px; }
+    .video-transcript-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
+      cursor: pointer;
+      padding: 4px 0;
+      min-height: 44px;
+    }
+    .video-transcript-toggle:hover { color: var(--primary-hover); }
+    .video-transcript-panel {
+      margin-top: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      border: var(--border-style);
+      border-radius: var(--att-radius-md, 12px);
+      padding: 10px;
+    }
+    .video-transcript-search-row { margin-bottom: 8px; }
+    .video-transcript-search {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 12px;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      border: var(--border-style);
+      border-radius: var(--att-radius-sm, 8px);
+      background-color: var(--bg-card);
+      color: var(--text-main);
+      min-height: 44px;
+    }
+    .video-transcript-search-status { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); margin: 0 0 6px; }
+    .video-transcript-segments { display: flex; flex-direction: column; gap: 2px; }
+    .video-transcript-segment {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      border-radius: var(--att-radius-sm, 8px);
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: var(--att-fs-body, 1rem);
+      color: var(--text-main);
+      line-height: var(--att-lh-body, 1.5);
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    .video-transcript-segment:hover { background-color: var(--bg-body); }
+    .video-transcript-segment.video-segment-active {
+      background-color: var(--bg-body);
+      border-left: 3px solid var(--primary);
+      font-weight: var(--att-fw-bold, 700);
+    }
+    .video-segment-time { color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; font-weight: 400; font-size: var(--att-fs-body-sm, 0.875rem); }
+    .video-segment-speaker { font-weight: var(--att-fw-bold, 700); flex-shrink: 0; }
+    .video-segment-text { max-width: 70ch; }
+    .video-search-highlight { background-color: var(--warning); color: var(--text-main); border-radius: 2px; padding: 0 1px; }
+    .video-transcript-plain { font-size: var(--att-fs-body, 1rem); line-height: var(--att-lh-body, 1.5); max-width: 70ch; }
+    .video-transcript-no-results { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); font-style: italic; }
+    .video-takeaways-panel {
+      background-color: var(--bg-body);
+      border-radius: var(--att-radius-md, 12px);
+      padding: 16px;
+    }
+    .video-takeaways-heading {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--att-fs-h4, 1.125rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .video-takeaways-list {
+      padding-left: 20px;
+      font-size: var(--att-fs-body, 1rem);
+      line-height: var(--att-lh-body, 1.5);
+      max-width: 70ch;
+      color: var(--text-main);
+    }
+    .video-takeaways-locked-msg { font-size: var(--att-fs-body-sm, 0.875rem); color: var(--text-muted); font-style: italic; }
+    @media (max-width: 420px) {
+      .video-control-strip { row-gap: 10px; }
+      .video-scrub-wrap { flex-basis: 100%; order: 1; }
+      .video-timer { order: 2; }
+    }
+    @media (forced-colors: active) {
+      .video-fill { background: Highlight; }
+      .video-chapter-marker::before { border-color: Highlight; }
     }
 
     [hidden] { display: none !important; }
@@ -665,66 +804,82 @@
 </head>
 <body>
 
-  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-flip-cards-block-headline">
-    <div class="block-header header-minimal">
-      <div class="block-label">SAMPLE EXPORT</div>
-      <h2 class="block-headline" id="rcb-fixture-flip-cards-block-headline">Representative export fixture</h2>
-      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
-    </div>
+  <main class="rise-block-wrapper" aria-labelledby="rcb-snap-video-frame-block-headline">
 
     <div class="block-content">
-      <div class="flip-cards-block">
-    
-    <div class="flip-cards-grid" id="rcb-fixture-flip-cards-flip-grid">
-      <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-0" aria-label="Reveal Back of Front Side A" data-idx="0" >
-        <div class="flip-card-inner">
-        <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-0" aria-hidden="false">
+      
+    <div class="video-player-block" id="rcb-snap-video-frame-root"
+      data-chapters="[]"
+      data-segments="[]"
+      data-progress-persistence="1"
+      data-takeaways-visibility="always"
+      data-takeaways-count="0">
+      <div class="video-wrapper">
+        <video id="rcb-snap-video-frame-html5-video-element" poster="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800" width="100%" height="auto" controls aria-label="Rise Builder Workspace Walkthrough" >
+          <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
           
-          <div class="card-icon-badge"><svg viewBox="0 0 32 32" fill="currentColor" width="20" height="20" aria-hidden="true"><g><path d="M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1ZM16 29C8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29Z"/><rect x="15" y="22" width="2" height="2"/><path d="M16.5 9C14.4 9 12.8 10.1 11.9 11L13.2 12.5C13.9 11.8 15.1 11.1 16.5 11.1 17.1 11.1 18.9 11.2 18.9 12.9 18.9 13.9 18.3 14.5 17.6 15L17.4 15.2C16 16.3 15 17.2 15 19.4L15 20 17 20 17 19.3C17 18 17.4 17.7 18.7 16.7L18.9 16.5C19.5 16 20.9 14.9 20.9 12.9 20.9 10.5 19.1 9 16.5 9Z"/></svg></div><h3>Front Side A</h3><p>Hover to reveal definition.</p>
+        </video>
+        <button type="button" class="video-overlay-play" aria-label="Play video">
+          <svg viewBox="0 0 32 32" fill="currentColor" width="32" height="32" aria-hidden="true"><g><path d="M22 16 13 22.7 13 9.3Z"/></svg>
+        </button>
+      </div>
+      
+
+      
+      <p class="video-status-region sr-only" id="rcb-snap-video-frame-status" role="status" aria-live="polite"></p>
+      <div class="video-resume-prompt" id="rcb-snap-video-frame-resume-prompt" hidden>
+        <span class="video-resume-text" id="rcb-snap-video-frame-resume-text"></span>
+        <button type="button" class="video-resume-btn" id="rcb-snap-video-frame-resume-btn">Resume</button>
+        <button type="button" class="video-restart-choice-btn" id="rcb-snap-video-frame-restart-choice-btn">Start Over</button>
+      </div>
+
+      <div class="video-control-strip">
+        <button type="button" class="video-skip-btn video-skip-back-btn" id="rcb-snap-video-frame-skip-back" aria-label="Replay 10 seconds" disabled><svg viewBox="0 0 32 32" fill="currentColor" width="16" height="16" aria-hidden="true"><g><path d="M16 1C11.2 1 6.8 3.3 4 7L4 3 2 3 2 11 10 11 10 9 5.1 9C7.4 5.3 11.6 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29 8.8 29 3 23.2 3 16L1 16C1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1Z"/><path d="M14.8 20 14.8 12.1 13.2 12.1 10.8 13.9 11.6 15 13.1 13.9 13.1 20Z"/><path d="M18.1 18.7C17.8 18.7 17.4 18.7 17.1 18.6 16.8 18.5 16.4 18.4 16.1 18.2L15.7 19.5C16 19.7 16.4 19.9 16.9 20 17.3 20.1 17.8 20.2 18.2 20.2 18.8 20.2 19.3 20.1 19.7 19.9 20.1 19.7 20.5 19.4 20.8 19 21.1 18.6 21.2 18.2 21.2 17.6 21.2 16.8 20.9 16.2 20.4 15.8 19.9 15.4 19.2 15.2 18.2 15.2 18.1 15.2 17.9 15.2 17.5 15.2L17.6 13.6 20.7 13.6 20.7 12.2 16.3 12.2 16 16.5C16.7 16.5 17.2 16.5 17.8 16.5 18.9 16.5 19.5 16.9 19.5 17.6 19.5 18.3 19 18.7 18.1 18.7Z"/></svg></button>
+        <button type="button" class="video-mini-play" id="rcb-snap-video-frame-mini-play" aria-label="Play video" aria-pressed="false">
+          <svg viewBox="0 0 32 32" fill="currentColor" width="14" height="14" class="video-play-svg" aria-hidden="true"><g><path d="M22 16 13 22.7 13 9.3Z"/></svg>
+          <svg viewBox="0 0 32 32" fill="currentColor" width="14" height="14" class="video-pause-svg" style="display:none;" aria-hidden="true"><g><rect x="11" y="10" width="3" height="12"/><rect x="18" y="10" width="3" height="12"/></svg>
+        </button>
+        <button type="button" class="video-skip-btn video-skip-forward-btn" id="rcb-snap-video-frame-skip-forward" aria-label="Forward 10 seconds" disabled><svg viewBox="0 0 32 32" fill="currentColor" width="16" height="16" aria-hidden="true"><g><path d="M29 16C29 23.2 23.2 29 16 29 8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 20.4 3 24.6 5.3 26.9 9L22 9 22 11 30 11 30 3 28 3 28 7C25.2 3.3 20.8 1 16 1 7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16L29 16Z"/><path d="M14.8 20 14.8 12.1 13.2 12.1 10.8 13.9 11.6 15 13.1 13.9 13.1 20Z"/><path d="M18.1 18.7C17.8 18.7 17.4 18.7 17.1 18.6 16.8 18.5 16.4 18.4 16.1 18.2L15.7 19.5C16 19.7 16.4 19.9 16.9 20 17.3 20.1 17.8 20.2 18.2 20.2 18.8 20.2 19.3 20.1 19.7 19.9 20.1 19.7 20.5 19.4 20.8 19 21.1 18.6 21.2 18.2 21.2 17.6 21.2 16.8 20.9 16.2 20.4 15.8 19.9 15.4 19.2 15.2 18.2 15.2 18.1 15.2 17.9 15.2 17.5 15.2L17.6 13.6 20.7 13.6 20.7 12.2 16.3 12.2 16 16.5C16.7 16.5 17.2 16.5 17.8 16.5 18.9 16.5 19.5 16.9 19.5 17.6 19.5 18.3 19 18.7 18.1 18.7Z"/></svg></button>
+        <div class="video-scrub-wrap">
+          <div class="video-timeline-scrub" id="rcb-snap-video-frame-scrub" role="slider" tabindex="0" aria-label="Video position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent">
+            <div class="video-fill" id="rcb-snap-video-frame-scrub-fill" style="width: 0%;"></div>
+          </div>
+          <div class="video-chapter-markers" id="rcb-snap-video-frame-chapter-markers"></div>
         </div>
-        <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-0" aria-hidden="true">
-          <h3>Back Side A</h3><p>Definitions should be concise.</p>
-          
-        </div>
-      </div></div>
-      <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-1" aria-label="Reveal Back of Front Side B" data-idx="1" >
-        <div class="flip-card-inner">
-        <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-1" aria-hidden="false">
-          
-          <div class="card-icon-badge"><svg viewBox="0 0 32 32" fill="currentColor" width="20" height="20" aria-hidden="true"><g><path d="M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1ZM16 29C8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29Z"/><rect x="15" y="22" width="2" height="2"/><path d="M16.5 9C14.4 9 12.8 10.1 11.9 11L13.2 12.5C13.9 11.8 15.1 11.1 16.5 11.1 17.1 11.1 18.9 11.2 18.9 12.9 18.9 13.9 18.3 14.5 17.6 15L17.4 15.2C16 16.3 15 17.2 15 19.4L15 20 17 20 17 19.3C17 18 17.4 17.7 18.7 16.7L18.9 16.5C19.5 16 20.9 14.9 20.9 12.9 20.9 10.5 19.1 9 16.5 9Z"/></svg></div><h3>Front Side B</h3><p>Mobile compatibility check.</p>
-        </div>
-        <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-1" aria-hidden="true">
-          <h3>Back Side B</h3><p>Rise blocks fit full width.</p>
-          
-        </div>
-      </div></div></div>
-    
-  </div>
+        <span class="video-timer" id="rcb-snap-video-frame-timer" aria-live="off">0:00 / 0:00</span>
+        <button type="button" class="video-speed-btn" id="rcb-snap-video-frame-speed-btn" aria-label="Playback speed: 1x">1x</button>
+        <button type="button" class="video-mute-btn" id="rcb-snap-video-frame-mute-btn" aria-label="Mute video" aria-pressed="false">
+          <svg viewBox="0 0 32 32" fill="currentColor" width="14" height="14" class="video-volume-on-svg" aria-hidden="true"><g><path d="M3.9 11C2.3 11 1 12.3 1 13.9L1 18.2C1 19.7 2.3 21 3.9 21L8.2 21 16.1 27.7 16.1 4.3 8.1 11 3.9 11ZM14 8.6 14 23.3 8.9 19 3.9 19C3.4 19 3 18.6 3 18.1L3 13.8C3 13.4 3.4 13 3.9 13L8.9 13 14 8.6Z"/><path d="M18.8 13.2C20.3 14.7 20.3 17.3 18.8 18.8L20.2 20.2C22.5 17.9 22.5 14.1 20.2 11.8L18.8 13.2Z"/><path d="M23.4 8.6 22 10C25.3 13.3 25.3 18.7 22 22L23.4 23.4C27.5 19.3 27.5 12.7 23.4 8.6Z"/><path d="M26.6 5.4 25.2 6.8C30.2 11.9 30.2 20.1 25.2 25.2L26.6 26.6C32.4 20.8 32.4 11.2 26.6 5.4Z"/></svg>
+          <svg viewBox="0 0 32 32" fill="currentColor" width="14" height="14" class="video-volume-off-svg" style="display:none;" aria-hidden="true"><path d="M10.1 4.4 8.6 3C10.8 1.8 13.3 1 16 1 24.3 1 31 7.7 31 16 31 18.7 30.3 21.2 29 23.4L27.5 21.9C28.4 20.1 28.9 18.1 28.9 16 28.9 8.8 23.1 3 15.9 3 13.9 3 11.8 3.5 10.1 4.4ZM21 15.4 21 6.7 16.3 10.6 17.7 12 19 11 19 13.4 21 15.4ZM27.9 25.1 30.4 27.6 30.4 27.6 29 29.1 26.6 26.7C23.9 29.3 20.1 31 16 31 7.7 31 1 24.3 1 16 1 11.9 2.7 8.1 5.4 5.4L3.7 3.8 5.1 2.4 5.1 2.4 6.9 4.2 8.3 5.6 14.7 12 16.1 13.4 16.1 13.4 19 16.3 19 16.3 21 18.3 26.5 23.8 27.9 25.1ZM14 14 12 14C11.4 14 11 14.4 11 15L11 17C11 17.6 11.4 18 12 18L15.4 18 19 21 19 19 14 14ZM25.2 25.2 21 21 21 25.2 14.6 20 12 20C10.3 20 9 18.7 9 17L9 15C9 13.4 10.3 12 12 12L6.8 6.8C4.5 9.2 3 12.4 3 16 3 23.2 8.8 29 16 29 19.6 29 22.8 27.5 25.2 25.2Z"/></svg>
+        </button>
+      </div>
+
+      
+      <div class="video-progress-status">
+      <p class="video-progress-text" id="rcb-snap-video-frame-progress-text">Not started</p>
+    </div>
+
+      <p class="media-alternative-note sr-only">No visual description has been supplied for this video.</p>
+
+      <p class="media-alternative-note sr-only">No transcript has been supplied for this video.</p>
+      
+    </div>
+  
     </div>
 
     
-    <div class="completion-tracker" aria-labelledby="rcb-fixture-flip-cards-completion-label">
-        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
-          <span id="rcb-fixture-flip-cards-completion-label">Progress Completion</span>
-          <span id="rcb-fixture-flip-cards-completion-text" aria-hidden="true">0%</span>
-        </div>
-        <div class="progress-bar-container" id="rcb-fixture-flip-cards-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-flip-cards-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
-          <div class="progress-fill" id="rcb-fixture-flip-cards-progress-fill"></div>
-        </div>
-        <p id="rcb-fixture-flip-cards-completion-message" class="completion-success-message" hidden></p>
-      </div>
-    <div id="rcb-fixture-flip-cards-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="rcb-snap-video-frame-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   </main>
 
   <script>
     (function() {
 
     var viewedItems = new Set();
-    var totalItems = 2;
+    var totalItems = 1;
     var completionMessage = "Activity complete!";
 
     function announce(message) {
-      var status = document.getElementById('rcb-fixture-flip-cards-interaction-status');
+      var status = document.getElementById('rcb-snap-video-frame-interaction-status');
       if (!status) return;
       status.textContent = '';
       window.setTimeout(function() { status.textContent = message; }, 20);
@@ -733,7 +888,7 @@
     // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
     // completion decision here).
     function setProgressAccessibility(percent) {
-      var progress = document.getElementById('rcb-fixture-flip-cards-progress-bar');
+      var progress = document.getElementById('rcb-snap-video-frame-progress-bar');
       if (progress) {
         progress.setAttribute('aria-valuenow', String(percent));
         progress.setAttribute('aria-valuetext', percent + ' percent complete');
@@ -746,7 +901,7 @@
       if (percent < 100) return;
       if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
       announce(completionMessage);
-      var messageEl = document.getElementById('rcb-fixture-flip-cards-completion-message');
+      var messageEl = document.getElementById('rcb-snap-video-frame-completion-message');
       if (messageEl) {
         messageEl.textContent = completionMessage;
         messageEl.hidden = false;
@@ -755,10 +910,10 @@
     }
 
     function updateProgress() {
-      if (!true) return;
+      if (!false) return;
       var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
-      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
-      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      var txt = document.getElementById('rcb-snap-video-frame-completion-text');
+      var bar = document.getElementById('rcb-snap-video-frame-progress-fill');
       if (txt && bar) {
         txt.textContent = percent + '%';
         bar.style.width = percent + '%';
@@ -768,9 +923,9 @@
     }
 
     function updateTrackerComplete() {
-      if (!true) return;
-      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
-      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      if (!false) return;
+      var txt = document.getElementById('rcb-snap-video-frame-completion-text');
+      var bar = document.getElementById('rcb-snap-video-frame-progress-fill');
       if (txt && bar) {
         txt.textContent = '100%';
         bar.style.width = '100%';
@@ -779,207 +934,474 @@
       evaluateComponentCompletion(100);
     }
 
-    var RiseComponentCompletion = (function() {
-      var allowedOrigin = null;
-      var hasCompletedFlag = false;
 
-      function targetOrigin() { return allowedOrigin || '*'; }
+    var VID_SKIP_SECONDS = 10;
+    var VID_COMPLETION_THRESHOLD = 0.9;
+    var VID_COMPLETION_TAIL_SECONDS = 3;
+    var VID_RESUME_MIN_SECONDS = 10;
+    var VID_SPEEDS = [1, 1.25, 1.5, 2];
 
-      function isEmbedded() {
-        try { return Boolean(window.parent) && window.parent !== window; }
-        catch (error) { return false; }
-      }
-
-      function selectAdapterName() {
-        if (!isEmbedded()) return 'standalone';
-        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
-        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
-        return 'noop';
-      }
-
-      var adapterName = selectAdapterName();
-
-      function notifyComplete() {
-        if (hasCompletedFlag) return; // prevent duplicate completion events
-        hasCompletedFlag = true;
-        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
-        try { window.parent.postMessage({ type: 'complete' }, targetOrigin()); }
-        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
-      }
-
-      function hasCompleted() { return hasCompletedFlag; }
-
-      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
-    })();
-
-    var flipStudyMode = false;
-    var flipCardStates = {};
-
-    function shuffleFlipCards(grid) {
-      var cards = Array.prototype.slice.call(grid.children);
-      for (var i = cards.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = cards[i];
-        cards[i] = cards[j];
-        cards[j] = temp;
-      }
-      cards.forEach(function(card) { grid.appendChild(card); });
+    function vidFormatTime(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+      var total = Math.floor(seconds);
+      var hrs = Math.floor(total / 3600);
+      var mins = Math.floor((total % 3600) / 60);
+      var secs = String(total % 60).padStart(2, '0');
+      return hrs > 0 ? (hrs + ':' + String(mins).padStart(2, '0') + ':' + secs) : (mins + ':' + secs);
     }
 
-    function setCardStatusBadge(card, state) {
-      var badge = card.querySelector('.flip-status-badge');
-      if (!badge) return;
-      if (!state) {
-        badge.hidden = true;
-        badge.textContent = '';
-        badge.className = 'flip-status-badge';
-        return;
+    // A short, stable, non-cryptographic hash (djb2) of instanceId + video source — the
+    // localStorage key. Same scheme as components/audio-player.js's own audHash().
+    function vidHash(str) {
+      var hash = 5381;
+      for (var i = 0; i < str.length; i++) { hash = ((hash << 5) + hash) + str.charCodeAt(i); hash = hash & hash; }
+      return (hash >>> 0).toString(36);
+    }
+
+    function vidReadProgress(key) {
+      try {
+        var raw = window.localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    }
+    function vidWriteProgress(key, data) {
+      try { window.localStorage.setItem(key, JSON.stringify(data)); } catch (e) { /* storage unavailable/blocked — playback continues normally */ }
+    }
+
+    function vidRenderSegmentText(container, text, query) {
+      container.textContent = '';
+      if (!query) { container.appendChild(document.createTextNode(text)); return; }
+      var lower = text.toLowerCase();
+      var q = query.toLowerCase();
+      var pos = 0;
+      var idx = lower.indexOf(q, pos);
+      if (idx === -1) { container.appendChild(document.createTextNode(text)); return; }
+      while (idx !== -1) {
+        if (idx > pos) container.appendChild(document.createTextNode(text.slice(pos, idx)));
+        var mark = document.createElement('mark');
+        mark.className = 'video-search-highlight';
+        mark.textContent = text.slice(idx, idx + query.length);
+        container.appendChild(mark);
+        pos = idx + query.length;
+        idx = lower.indexOf(q, pos);
       }
-      badge.hidden = false;
-      badge.textContent = state === 'know' ? 'Known' : 'Review';
-      badge.className = 'flip-status-badge flip-status-' + state;
+      if (pos < text.length) container.appendChild(document.createTextNode(text.slice(pos)));
     }
 
-    function updateFlipCounts() {
-      var counts = document.getElementById('rcb-fixture-flip-cards-flip-counts');
-      var cards = document.querySelectorAll('.flip-card');
-      var know = 0, review = 0;
-      cards.forEach(function(card) {
-        var state = flipCardStates[card.getAttribute('data-idx')];
-        if (state === 'know') know++;
-        else if (state === 'review') review++;
-      });
-      var notViewed = cards.length - know - review;
-      if (counts) counts.textContent = 'Not viewed: ' + notViewed + ' \u00b7 Know: ' + know + ' \u00b7 Review: ' + review;
-      maybeShowSummary(cards.length, know, review);
-    }
+    function initVideoPlayer() {
+      var root = document.getElementById('rcb-snap-video-frame-root');
+      if (!root) return;
+      var video = document.getElementById('rcb-snap-video-frame-html5-video-element');
+      var overlayPlay = document.querySelector('.video-overlay-play');
+      var miniPlay = document.getElementById('rcb-snap-video-frame-mini-play');
+      var skipBackBtn = document.getElementById('rcb-snap-video-frame-skip-back');
+      var skipForwardBtn = document.getElementById('rcb-snap-video-frame-skip-forward');
+      var scrubBar = document.getElementById('rcb-snap-video-frame-scrub');
+      var scrubFill = document.getElementById('rcb-snap-video-frame-scrub-fill');
+      var chapterMarkersEl = document.getElementById('rcb-snap-video-frame-chapter-markers');
+      var timerEl = document.getElementById('rcb-snap-video-frame-timer');
+      var speedBtn = document.getElementById('rcb-snap-video-frame-speed-btn');
+      var muteBtn = document.getElementById('rcb-snap-video-frame-mute-btn');
+      var statusEl = document.getElementById('rcb-snap-video-frame-status');
+      var currentChapterEl = document.getElementById('rcb-snap-video-frame-current-chapter');
+      var chapterListEl = document.getElementById('rcb-snap-video-frame-chapter-list');
+      var chapterToggle = document.getElementById('rcb-snap-video-frame-chapter-toggle');
+      var progressTextEl = document.getElementById('rcb-snap-video-frame-progress-text');
+      var resumePrompt = document.getElementById('rcb-snap-video-frame-resume-prompt');
+      var resumeText = document.getElementById('rcb-snap-video-frame-resume-text');
+      var resumeBtn = document.getElementById('rcb-snap-video-frame-resume-btn');
+      var restartChoiceBtn = document.getElementById('rcb-snap-video-frame-restart-choice-btn');
+      var transcriptToggle = document.getElementById('rcb-snap-video-frame-transcript-toggle');
+      var transcriptPanel = document.getElementById('rcb-snap-video-frame-transcript-panel');
+      var transcriptSearch = document.getElementById('rcb-snap-video-frame-transcript-search');
+      var transcriptSearchStatus = document.getElementById('rcb-snap-video-frame-transcript-search-status');
+      var transcriptSegmentsEl = document.getElementById('rcb-snap-video-frame-transcript-segments');
+      var transcriptNoResults = document.getElementById('rcb-snap-video-frame-transcript-no-results');
+      var takeawaysList = document.getElementById('rcb-snap-video-frame-takeaways-list');
+      var takeawaysLocked = document.getElementById('rcb-snap-video-frame-takeaways-locked');
+      if (!video) return;
 
-    function maybeShowSummary(total, know, review) {
-      var summary = document.getElementById('rcb-fixture-flip-cards-flip-summary');
-      if (!summary) return;
-      if (total > 0 && know + review >= total) {
-        summary.hidden = false;
-        var text = summary.querySelector('.flip-summary-text');
-        if (text) text.textContent = 'Study set complete: ' + know + ' of ' + total + ' known, ' + review + ' flagged for review.';
-        announce('All cards classified. ' + know + ' known, ' + review + ' need review.');
-      } else {
-        summary.hidden = true;
-      }
-    }
+      var CHAPTERS = [];
+      var SEGMENTS = [];
+      try { CHAPTERS = JSON.parse(root.getAttribute('data-chapters') || '[]'); } catch (e) { CHAPTERS = []; }
+      try { SEGMENTS = JSON.parse(root.getAttribute('data-segments') || '[]'); } catch (e) { SEGMENTS = []; }
+      var PROGRESS_PERSISTENCE = root.getAttribute('data-progress-persistence') === '1';
+      var TAKEAWAYS_VISIBILITY = root.getAttribute('data-takeaways-visibility') || 'always';
+      var TAKEAWAYS_COUNT = Number(root.getAttribute('data-takeaways-count') || '0');
+      var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    function classifyFlipCard(card, state) {
-      var idx = card.getAttribute('data-idx');
-      flipCardStates[idx] = state;
-      setCardStatusBadge(card, state);
-      card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-        var isActive = btn.getAttribute('data-classify') === state;
-        btn.setAttribute('aria-pressed', String(isActive));
-        btn.classList.toggle('active', isActive);
-      });
-      var titleEl = card.querySelector('.flip-card-front h3');
-      announce((state === 'know' ? 'Marked known: ' : 'Marked for review: ') + (titleEl ? titleEl.textContent : ''));
-      updateFlipCounts();
-    }
+      var progressKey = 'rcb-video-progress-' + vidHash('rcb-snap-video-frame|' + (video.getAttribute('src') || (video.querySelector('source') && video.querySelector('source').getAttribute('src')) || ''));
+      var furthestPosition = 0;
+      var completed = false;
+      var resumeHandled = false;
+      var lastSaveTime = 0;
+      var lastActiveChapterIdx = -1;
+      var lastActiveSegmentIdx = -1;
+      var transcriptUserScrolled = false;
+      var programmaticScroll = false;
+      // Two guards, matching components/audio-player.js's own two real, testing-found bugs:
+      // progressHydrated prevents writing before localStorage has been read once (a
+      // beforeunload/visibilitychange save firing first would erase real prior progress
+      // with the freshly-initialized zeros); hasEngaged additionally prevents writing
+      // before the learner has actually played or sought *this load* (video.currentTime is
+      // still genuinely 0 right after hydration — a save in that window would silently
+      // overwrite a real stored position with 0 even while the resume prompt was still
+      // showing the correct value, unacted on).
+      var progressHydrated = !PROGRESS_PERSISTENCE;
+      var hasEngaged = false;
 
-    function applyFlipFilters() {
-      var activeChip = document.querySelector('.flip-filter-chip.active');
-      var categoryValue = activeChip ? activeChip.getAttribute('data-filter-category') : '';
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      var reviewOnly = !!reviewOnlyBtn && reviewOnlyBtn.getAttribute('aria-pressed') === 'true';
-      var visibleCount = 0;
-      document.querySelectorAll('.flip-card').forEach(function(card) {
-        var matchesCategory = !categoryValue || card.getAttribute('data-category') === categoryValue;
-        var matchesReview = !reviewOnly || flipCardStates[card.getAttribute('data-idx')] === 'review';
-        var visible = matchesCategory && matchesReview;
-        card.hidden = !visible;
-        if (visible) visibleCount++;
-      });
-      announce(visibleCount + ' card' + (visibleCount === 1 ? '' : 's') + ' shown.');
-    }
+      function announce(text) { if (statusEl) statusEl.textContent = text; }
 
-    function resetFlipStudy() {
-      flipCardStates = {};
-      document.querySelectorAll('.flip-card').forEach(function(card) {
-        card.classList.remove('flipped');
-        card.setAttribute('aria-expanded', 'false');
-        var front = card.querySelector('.flip-card-front');
-        var back = card.querySelector('.flip-card-back');
-        if (front) front.setAttribute('aria-hidden', 'false');
-        if (back) back.setAttribute('aria-hidden', 'true');
-        card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-          btn.setAttribute('aria-pressed', 'false');
-          btn.setAttribute('tabindex', '-1');
-          btn.classList.remove('active');
+      function saveProgress(force) {
+        if (!PROGRESS_PERSISTENCE || !progressHydrated || !hasEngaged) return;
+        var now = Date.now();
+        if (!force && now - lastSaveTime < 5000) return;
+        lastSaveTime = now;
+        vidWriteProgress(progressKey, {
+          position: video.currentTime || 0,
+          furthest: furthestPosition,
+          completed: completed,
+          updatedAt: now
         });
-        setCardStatusBadge(card, null);
-        card.hidden = false;
-      });
-      document.querySelectorAll('.flip-filter-chip').forEach(function(chip) {
-        chip.classList.toggle('active', chip.getAttribute('data-filter-category') === '');
-      });
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      if (reviewOnlyBtn) reviewOnlyBtn.setAttribute('aria-pressed', 'false');
-      viewedItems.clear();
-      updateProgress();
-      updateFlipCounts();
-      announce('Study set restarted.');
-    }
+      }
 
-    function initComponent() {
-      var grid = document.getElementById('rcb-fixture-flip-cards-flip-grid');
-      if (grid && false) shuffleFlipCards(grid);
+      function updateProgressStatusText() {
+        if (!progressTextEl) return;
+        if (completed) { progressTextEl.textContent = 'Completed'; return; }
+        if (video.duration && furthestPosition > 0) {
+          var pct = Math.round(Math.max(0, Math.min(1, furthestPosition / video.duration)) * 100);
+          progressTextEl.textContent = pct + '% watched';
+          return;
+        }
+        progressTextEl.textContent = 'Not started';
+      }
 
-      document.querySelectorAll('.flip-card').forEach(function(card, idx) {
-        card.addEventListener('click', function(event) {
-          if (event.target.closest('.flip-classify-btn')) return;
-          var flipped = card.classList.toggle('flipped');
-          card.setAttribute('aria-expanded', String(flipped));
-          var titleEl = card.querySelector('.flip-card-front h3');
-          var titleText = titleEl ? titleEl.textContent : '';
-          card.setAttribute('aria-label', (flipped ? 'Show ' + "Front" : 'Reveal ' + "Back") + ' of ' + titleText);
-          card.querySelector('.flip-card-front').setAttribute('aria-hidden', String(flipped));
-          card.querySelector('.flip-card-back').setAttribute('aria-hidden', String(!flipped));
-          card.querySelectorAll('.flip-classify-btn').forEach(function(btn) { btn.setAttribute('tabindex', flipped ? '0' : '-1'); });
-          announce((flipped ? "Back" : "Front") + ' shown');
-          viewedItems.add(idx);
-          updateProgress();
-        });
-        card.addEventListener('keydown', function(event) {
-          if (event.target.closest('.flip-classify-btn')) return;
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            card.click();
-          }
-        });
-        card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-          btn.addEventListener('click', function(event) {
+      function markCompleted() {
+        if (completed) return;
+        completed = true;
+        saveProgress(true);
+        if (TAKEAWAYS_VISIBILITY === 'afterCompletion' && takeawaysList) {
+          takeawaysList.hidden = false;
+          if (takeawaysLocked) takeawaysLocked.hidden = true;
+        }
+        updateProgressStatusText();
+        announce('Video completed.' + (TAKEAWAYS_COUNT ? ' Key takeaways are now available.' : ''));
+        viewedItems.add(0);
+        updateProgress();
+      }
+
+      function checkCompletion() {
+        if (completed || !video.duration) return;
+        var reachedThreshold = (video.currentTime / video.duration) >= VID_COMPLETION_THRESHOLD;
+        var reachedTail = (video.duration - video.currentTime) <= VID_COMPLETION_TAIL_SECONDS;
+        if (reachedThreshold || reachedTail) markCompleted();
+      }
+
+      // --- Playback core: play/pause, Replay/Forward, scrub, speed, mute ---
+      function toggleVideoPlayback() {
+        if (video.paused) {
+          video.play().catch(function() { /* autoplay blocked or invalid source URL */ });
+        } else {
+          video.pause();
+        }
+      }
+      if (overlayPlay) overlayPlay.addEventListener('click', toggleVideoPlayback);
+      if (miniPlay) miniPlay.addEventListener('click', toggleVideoPlayback);
+
+      video.addEventListener('play', function() {
+        hasEngaged = true;
+        // Pause any other audio/video element on the page — multiple instances of this
+        // (or any other) component must operate independently, but only one should audibly
+        // play at once. Plain DOM traversal, no shared global state.
+        var others = document.querySelectorAll('audio, video');
+        for (var i = 0; i < others.length; i++) {
+          if (others[i] !== video && !others[i].paused) others[i].pause();
+        }
+        if (overlayPlay) overlayPlay.style.display = 'none';
+        if (miniPlay) {
+          miniPlay.querySelector('.video-play-svg').style.display = 'none';
+          miniPlay.querySelector('.video-pause-svg').style.display = 'block';
+          miniPlay.setAttribute('aria-label', 'Pause video');
+          miniPlay.setAttribute('aria-pressed', 'true');
+        }
+        if (resumePrompt && !resumePrompt.hidden) resumePrompt.hidden = true;
+        announce('Playing.');
+      });
+      video.addEventListener('pause', function() {
+        if (overlayPlay && !video.ended) overlayPlay.style.display = 'flex';
+        if (miniPlay) {
+          miniPlay.querySelector('.video-play-svg').style.display = 'block';
+          miniPlay.querySelector('.video-pause-svg').style.display = 'none';
+          miniPlay.setAttribute('aria-label', 'Play video');
+          miniPlay.setAttribute('aria-pressed', 'false');
+        }
+        saveProgress(true);
+        if (!video.ended) announce('Paused.');
+      });
+
+      function skipBy(delta) {
+        if (!Number.isFinite(video.duration)) return;
+        video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + delta));
+      }
+      if (skipBackBtn) skipBackBtn.addEventListener('click', function() { skipBy(-VID_SKIP_SECONDS); });
+      if (skipForwardBtn) skipForwardBtn.addEventListener('click', function() { skipBy(VID_SKIP_SECONDS); });
+
+      function scrubVideo(event) {
+        var rect = scrubBar.getBoundingClientRect();
+        var percentage = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+        scrubFill.style.width = percentage + '%';
+        scrubBar.setAttribute('aria-valuenow', String(Math.round(percentage)));
+        scrubBar.setAttribute('aria-valuetext', Math.round(percentage) + ' percent');
+        if (video.duration) video.currentTime = video.duration * percentage / 100;
+      }
+      scrubBar.addEventListener('click', scrubVideo);
+      scrubBar.addEventListener('keydown', function(event) {
+        if (['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowUp', 'Home', 'End'].indexOf(event.key) === -1) return;
+        event.preventDefault();
+        var value = Number(scrubBar.getAttribute('aria-valuenow')) || 0;
+        if (event.key === 'Home') value = 0;
+        else if (event.key === 'End') value = 100;
+        else value += (event.key === 'ArrowRight' || event.key === 'ArrowUp') ? 5 : -5;
+        value = Math.max(0, Math.min(100, value));
+        scrubBar.setAttribute('aria-valuenow', String(value));
+        scrubBar.setAttribute('aria-valuetext', value + ' percent');
+        scrubFill.style.width = value + '%';
+        if (video.duration) video.currentTime = video.duration * value / 100;
+      });
+
+      if (speedBtn) speedBtn.addEventListener('click', function() {
+        var current = video.playbackRate || 1;
+        var idx = VID_SPEEDS.indexOf(current);
+        if (idx === -1) idx = 0;
+        var next = VID_SPEEDS[(idx + 1) % VID_SPEEDS.length];
+        video.playbackRate = next;
+        var label = next + 'x';
+        speedBtn.textContent = label;
+        speedBtn.setAttribute('aria-label', 'Playback speed: ' + label);
+      });
+
+      if (muteBtn) muteBtn.addEventListener('click', function() {
+        video.muted = !video.muted;
+        var onSvg = muteBtn.querySelector('.video-volume-on-svg');
+        var offSvg = muteBtn.querySelector('.video-volume-off-svg');
+        if (video.muted) {
+          if (onSvg) onSvg.style.display = 'none';
+          if (offSvg) offSvg.style.display = 'block';
+          muteBtn.setAttribute('aria-label', 'Unmute video');
+          muteBtn.setAttribute('aria-pressed', 'true');
+        } else {
+          if (onSvg) onSvg.style.display = 'block';
+          if (offSvg) offSvg.style.display = 'none';
+          muteBtn.setAttribute('aria-label', 'Mute video');
+          muteBtn.setAttribute('aria-pressed', 'false');
+        }
+      });
+
+      // --- Chapters: markers on the scrub bar, chapter list, "current chapter" label ---
+      function renderChapterMarkers() {
+        if (!chapterMarkersEl || !video.duration || !CHAPTERS.length) return;
+        chapterMarkersEl.innerHTML = '';
+        CHAPTERS.forEach(function(chapter, i) {
+          if (chapter.timestamp > video.duration) return;
+          // Inset slightly from the very ends of the track — see
+          // components/audio-player.js's identical comment for why.
+          var pct = Math.max(6, Math.min(94, (chapter.timestamp / video.duration) * 100));
+          var marker = document.createElement('button');
+          marker.type = 'button';
+          marker.className = 'video-chapter-marker';
+          marker.style.left = pct + '%';
+          marker.setAttribute('aria-label', 'Jump to chapter: ' + chapter.title + ', ' + vidFormatTime(chapter.timestamp));
+          marker.addEventListener('click', function(event) {
             event.stopPropagation();
-            classifyFlipCard(card, btn.getAttribute('data-classify'));
+            seekTo(chapter.timestamp);
+          });
+          chapterMarkersEl.appendChild(marker);
+        });
+      }
+
+      function seekTo(seconds) {
+        video.currentTime = seconds;
+        if (video.paused) video.play().catch(function() {});
+      }
+
+      if (chapterListEl) {
+        Array.prototype.forEach.call(chapterListEl.querySelectorAll('.video-chapter-item'), function(btn) {
+          btn.addEventListener('click', function() {
+            var time = Number(btn.getAttribute('data-time'));
+            if (Number.isFinite(time)) seekTo(time);
           });
         });
-      });
+      }
 
-      document.querySelectorAll('.flip-filter-chip').forEach(function(chip) {
-        chip.addEventListener('click', function() {
-          document.querySelectorAll('.flip-filter-chip').forEach(function(c) { c.classList.remove('active'); });
-          chip.classList.add('active');
-          applyFlipFilters();
+      if (chapterToggle && chapterListEl) {
+        chapterToggle.addEventListener('click', function() {
+          var expanded = chapterToggle.getAttribute('aria-expanded') === 'true';
+          chapterToggle.setAttribute('aria-expanded', String(!expanded));
+          chapterListEl.hidden = expanded;
         });
+      }
+
+      function updateCurrentChapter() {
+        if (!CHAPTERS.length) return;
+        var activeIdx = -1;
+        for (var i = 0; i < CHAPTERS.length; i++) {
+          if (CHAPTERS[i].timestamp <= video.currentTime) activeIdx = i; else break;
+        }
+        if (activeIdx === lastActiveChapterIdx) return;
+        lastActiveChapterIdx = activeIdx;
+        var active = activeIdx >= 0 ? CHAPTERS[activeIdx] : null;
+        if (currentChapterEl && active) currentChapterEl.textContent = active.title;
+        if (chapterListEl) {
+          Array.prototype.forEach.call(chapterListEl.querySelectorAll('.video-chapter-item'), function(el, i) {
+            var isActive = i === activeIdx;
+            el.classList.toggle('video-chapter-active', isActive);
+            if (isActive) el.setAttribute('aria-current', 'true'); else el.removeAttribute('aria-current');
+          });
+        }
+      }
+
+      // --- Synchronized transcript: toggle, search, click-to-seek, active-segment sync ---
+      if (transcriptToggle && transcriptPanel) {
+        transcriptToggle.addEventListener('click', function() {
+          var expanded = transcriptToggle.getAttribute('aria-expanded') === 'true';
+          transcriptToggle.setAttribute('aria-expanded', String(!expanded));
+          transcriptPanel.hidden = expanded;
+          var label = transcriptToggle.querySelector('span');
+          if (label) label.textContent = expanded ? 'Show Transcript' : 'Hide Transcript';
+        });
+      }
+
+      if (transcriptSegmentsEl) {
+        Array.prototype.forEach.call(transcriptSegmentsEl.querySelectorAll('.video-transcript-segment'), function(btn) {
+          btn.addEventListener('click', function() {
+            var time = Number(btn.getAttribute('data-time'));
+            if (Number.isFinite(time)) { transcriptUserScrolled = false; seekTo(time); }
+          });
+        });
+        transcriptPanel && transcriptPanel.addEventListener('scroll', function() {
+          if (programmaticScroll) return;
+          transcriptUserScrolled = true;
+        });
+      }
+
+      if (transcriptSearch) {
+        transcriptSearch.addEventListener('input', function() {
+          var query = transcriptSearch.value.trim();
+          var elements = transcriptSegmentsEl ? transcriptSegmentsEl.querySelectorAll('.video-transcript-segment') : [];
+          var matches = 0;
+          Array.prototype.forEach.call(elements, function(el, i) {
+            var segment = SEGMENTS[i];
+            var isMatch = !query || segment.text.toLowerCase().indexOf(query.toLowerCase()) !== -1
+              || (segment.speaker && segment.speaker.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+            el.hidden = !isMatch;
+            var textSpan = el.querySelector('.video-segment-text');
+            if (textSpan) vidRenderSegmentText(textSpan, segment.text, query);
+            if (isMatch) matches++;
+          });
+          if (transcriptNoResults) transcriptNoResults.hidden = !(query && matches === 0);
+          if (transcriptSearchStatus) {
+            transcriptSearchStatus.textContent = query
+              ? (matches + ' matching line' + (matches === 1 ? '' : 's') + ' found.')
+              : '';
+          }
+        });
+      }
+
+      function updateActiveSegment() {
+        if (!SEGMENTS.length || !transcriptSegmentsEl) return;
+        var activeIdx = -1;
+        for (var i = 0; i < SEGMENTS.length; i++) {
+          if (SEGMENTS[i].timestamp <= video.currentTime) activeIdx = i; else break;
+        }
+        if (activeIdx === lastActiveSegmentIdx) return;
+        lastActiveSegmentIdx = activeIdx;
+        var elements = transcriptSegmentsEl.querySelectorAll('.video-transcript-segment');
+        Array.prototype.forEach.call(elements, function(el, i) { el.classList.toggle('video-segment-active', i === activeIdx); });
+        if (activeIdx !== -1 && !transcriptUserScrolled && transcriptPanel && !transcriptPanel.hidden) {
+          var el = elements[activeIdx];
+          if (el) {
+            var panelRect = transcriptPanel.getBoundingClientRect();
+            var elRect = el.getBoundingClientRect();
+            var inView = elRect.top >= panelRect.top && elRect.bottom <= panelRect.bottom;
+            if (!inView) {
+              programmaticScroll = true;
+              el.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+              setTimeout(function() { programmaticScroll = false; }, 400);
+            }
+          }
+        }
+      }
+
+      // --- Resume prompt ---
+      function showResumePrompt(position) {
+        if (!resumePrompt || resumeHandled) return;
+        resumeHandled = true;
+        if (resumeText) resumeText.textContent = 'Resume from ' + vidFormatTime(position);
+        resumePrompt.hidden = false;
+      }
+      if (resumeBtn) resumeBtn.addEventListener('click', function() {
+        if (resumePrompt) resumePrompt.hidden = true;
+        var stored = vidReadProgress(progressKey);
+        if (stored && Number.isFinite(stored.position)) video.currentTime = stored.position;
+        video.play().catch(function() {});
+      });
+      if (restartChoiceBtn) restartChoiceBtn.addEventListener('click', function() {
+        if (resumePrompt) resumePrompt.hidden = true;
+        video.currentTime = 0;
       });
 
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      if (reviewOnlyBtn) reviewOnlyBtn.addEventListener('click', function() {
-        var pressed = reviewOnlyBtn.getAttribute('aria-pressed') === 'true';
-        reviewOnlyBtn.setAttribute('aria-pressed', String(!pressed));
-        applyFlipFilters();
+      // --- Metadata / timeupdate / ended wiring ---
+      video.addEventListener('seeking', function() { hasEngaged = true; });
+
+      video.addEventListener('loadedmetadata', function() {
+        if (skipBackBtn) skipBackBtn.disabled = false;
+        if (skipForwardBtn) skipForwardBtn.disabled = false;
+        if (timerEl) timerEl.textContent = vidFormatTime(video.currentTime) + ' / ' + vidFormatTime(video.duration);
+        renderChapterMarkers();
+        if (PROGRESS_PERSISTENCE) {
+          var stored = vidReadProgress(progressKey);
+          if (stored) {
+            furthestPosition = Number.isFinite(stored.furthest) ? stored.furthest : 0;
+            completed = Boolean(stored.completed);
+            updateProgressStatusText();
+            var withinTail = Number.isFinite(video.duration) && (video.duration - stored.position) <= VID_COMPLETION_TAIL_SECONDS;
+            if (!completed && stored.position >= VID_RESUME_MIN_SECONDS && !withinTail) showResumePrompt(stored.position);
+            if (completed && TAKEAWAYS_VISIBILITY === 'afterCompletion' && takeawaysList) {
+              takeawaysList.hidden = false;
+              if (takeawaysLocked) takeawaysLocked.hidden = true;
+            }
+          }
+          progressHydrated = true;
+        }
       });
 
-      document.querySelectorAll('.flip-reset-btn, .flip-summary-reset-btn').forEach(function(btn) {
-        btn.addEventListener('click', resetFlipStudy);
+      video.addEventListener('timeupdate', function() {
+        if (!video.duration) return;
+        var value = Math.max(0, Math.min(100, (video.currentTime / video.duration) * 100));
+        scrubBar.setAttribute('aria-valuenow', String(Math.round(value)));
+        scrubBar.setAttribute('aria-valuetext', vidFormatTime(video.currentTime) + ' of ' + vidFormatTime(video.duration));
+        scrubFill.style.width = value + '%';
+        if (timerEl) timerEl.textContent = vidFormatTime(video.currentTime) + ' / ' + vidFormatTime(video.duration);
+        if (video.currentTime > furthestPosition) furthestPosition = video.currentTime;
+        updateCurrentChapter();
+        updateActiveSegment();
+        updateProgressStatusText();
+        saveProgress(false);
+        checkCompletion();
       });
 
-      if (flipStudyMode) updateFlipCounts();
+      video.addEventListener('ended', function() {
+        // markCompleted() itself calls viewedItems.add(0)/updateProgress() — the shared
+        // completion tracker every component wires into.
+        furthestPosition = video.duration || furthestPosition;
+        markCompleted();
+      });
+
+      window.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') saveProgress(true); });
+      window.addEventListener('beforeunload', function() { saveProgress(true); });
     }
+
+    function initComponent() { initVideoPlayer(); }
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initComponent);

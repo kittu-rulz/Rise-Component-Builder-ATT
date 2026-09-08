@@ -61,6 +61,10 @@ export function generateCSS() {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
     }
+    .menu-drawer-item.active {
+      border-color: var(--att-blue, var(--primary));
+      border-left: 4px solid var(--att-blue, var(--primary));
+    }
     .menu-item-summary {
       padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
       display: flex;

@@ -53,10 +53,10 @@
       --bg-card: #FFFFFF;
       --text-main: #000000;
       --text-muted: #4B5563;
-      --border-color: #DCDFE3;
+      --border-color: transparent;
       --border-radius: 12px;
       --button-radius: 20px;
-      --border-style: 1px solid var(--border-color);
+      --border-style: none;
       --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
       --font-family: 'ATT Aleck Sans', sans-serif;
       --heading-font-family: 'ATT Aleck Sans', sans-serif;
@@ -343,198 +343,196 @@
       object-fit: contain;
     }
 
-    .flip-cards-block {
+    .accordion-group {
       display: flex;
       flex-direction: column;
-      gap: var(--att-space-4, 16px);
+      gap: var(--att-space-3, 12px);
     }
 
-    .flip-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: var(--att-space-5, 20px);
+    .accordion-item {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
+      box-shadow: var(--shadow-style);
+      overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, border-left 0.2s ease;
     }
 
-    .flip-card {
-      background-color: transparent;
-      height: 180px;
-      perspective: 1000px;
+    .accordion-item[hidden] {
+      display: none;
+    }
+
+    .accordion-trigger {
+      width: 100%;
+      min-height: 44px;
+      background: transparent;
+      border: none;
+      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-family);
+      font-size: var(--att-fs-body, 16px);
+      font-weight: 600;
+      text-align: left;
       cursor: pointer;
+      color: var(--text-main);
     }
 
-    .flip-card:focus-visible {
-      outline: none;
-    }
-
-    .flip-card:focus-visible .flip-card-front,
-    .flip-card:focus-visible .flip-card-back {
-      outline: 3px solid var(--att-cobalt, var(--primary));
-      outline-offset: 2px;
-    }
-
-    .flip-card:active:not(.flipped) .flip-card-inner {
+    .accordion-trigger:active:not([aria-disabled="true"]) {
       transform: scale(0.98);
     }
 
-    .flip-card.flipped:active .flip-card-inner {
-      transform: rotateY(180deg) scale(0.98);
+    .accordion-trigger:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary)) !important;
+      outline-offset: 2px !important;
+      box-shadow: none;
     }
 
-    .flip-card-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      text-align: center;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      transform-style: preserve-3d;
+    .accordion-trigger[aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.65;
     }
 
-    .flip-card.flipped .flip-card-inner {
-      transform: rotateY(180deg);
-    }
-
-    .flip-card-front, .flip-card-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
-      border: var(--border-style);
-      box-shadow: var(--shadow-style);
-      padding: var(--att-space-5, 24px);
+    .accordion-trigger-text {
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
-      gap: var(--att-space-2, 8px);
+      gap: 8px;
     }
 
-    /* backface-visibility:hidden only hides a rotated-away face visually — it does not
-       reliably stop it from receiving clicks in every rendering engine, which silently
-       blocked the Know/Review buttons underneath once a card was flipped. The JS already
-       toggles aria-hidden on whichever face isn't showing, so keying pointer-events off
-       that (rather than adding separate state) can't drift out of sync with it. */
-    .flip-card-front[aria-hidden="true"], .flip-card-back[aria-hidden="true"] {
-      pointer-events: none;
-    }
-
-    .flip-card-front {
-      background-color: var(--bg-card);
-      color: var(--text-main);
-      position: absolute;
-    }
-
-    .card-icon-badge {
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-
-    .card-icon-badge .custom-item-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--att-radius-sm, 8px);
-    }
-
-    .flip-card-front h3, .flip-card-back h3 {
-      font-size: var(--att-fs-body-lg, 18px);
-      font-weight: 600;
-      text-wrap: pretty;
-    }
-
-    .flip-card-front p, .flip-card-back p {
-      font-size: var(--att-fs-body, 16px);
+    .accordion-lock-icon-slot {
+      display: inline-flex;
       color: var(--text-muted);
-      line-height: var(--att-lh-body, 1.5);
-      max-width: 70ch;
+      flex-shrink: 0;
     }
 
-    .flip-card-back {
-      background-color: var(--primary);
-      color: var(--on-primary);
-      transform: rotateY(180deg);
+    .accordion-lock-note {
+      margin: -8px 20px 12px;
+      font-size: var(--att-fs-body-sm, 14px);
+      font-style: italic;
+      color: var(--text-muted);
     }
 
-    .flip-card-back h3 {
-      color: var(--on-primary);
-    }
-
-    .flip-card-back p {
-      color: var(--on-primary);
-    }
-
-    .flip-status-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
+    .accordion-visited-badge {
       font-size: var(--att-fs-eyebrow, 12px);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
       padding: 2px 10px;
       border-radius: var(--att-radius-pill, 999px);
-      background-color: var(--border-color);
-      color: var(--text-main);
-    }
-
-    .flip-status-badge.flip-status-know {
       background-color: var(--att-grey-2, var(--border-color));
       color: var(--text-main);
     }
 
-    .flip-status-badge.flip-status-review {
-      background-color: var(--att-grey-2, var(--border-color));
+    .acc-arrow {
+      transition: transform 0.25s ease;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .accordion-item.active {
+      border-color: var(--att-blue, var(--primary));
+      border-left: 4px solid var(--att-blue, var(--primary));
+    }
+
+    .accordion-item.active .acc-arrow {
+      transform: rotate(180deg);
+      color: var(--att-blue, var(--primary));
+    }
+
+    .acc-plus-minus {
+      position: relative;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .acc-plus-minus::before,
+    .acc-plus-minus::after {
+      content: '';
+      position: absolute;
+      background-color: var(--primary);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    .acc-plus-minus::before {
+      top: 6px;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .acc-plus-minus::after {
+      top: 0;
+      bottom: 0;
+      left: 6px;
+      width: 2px;
+    }
+
+    .accordion-item.active .acc-plus-minus::before,
+    .accordion-item.active .acc-plus-minus::after {
+      background-color: var(--att-blue, var(--primary));
+    }
+
+    .accordion-item.active .acc-plus-minus::after {
+      transform: rotate(90deg);
+      opacity: 0;
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .accordion-body {
+      padding: 0 var(--att-space-5, 24px) var(--att-space-5, 24px) var(--att-space-5, 24px);
+      font-size: var(--att-fs-body, 16px);
+      line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
+      max-width: 70ch;
     }
 
-    .flip-classify-row {
-      display: flex;
-      gap: var(--att-space-2, 8px);
-      margin-top: 6px;
-    }
-
-    .flip-classify-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background-color: var(--bg-card);
-      color: var(--text-main);
-      border: 1px solid var(--bg-card);
-      border-radius: var(--button-radius, var(--att-radius-md, 12px));
-      padding: 8px 14px;
-      font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
-      cursor: pointer;
-      min-height: 44px;
-      transition: all 0.2s;
-    }
-
-    .flip-classify-btn:hover {
-      border-color: var(--primary);
-    }
-
-    .flip-classify-btn.active {
-      background-color: var(--bg-card);
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px var(--primary) inset;
-    }
-
-    .flip-study-toolbar {
+    .accordion-toolbar {
       display: flex;
       flex-direction: column;
-      gap: var(--att-space-3, 12px);
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
-    .flip-category-filters, .flip-study-controls {
+    .accordion-search-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: var(--att-space-2, 8px);
+      gap: 8px;
+      align-items: center;
     }
 
-    .flip-filter-chip, .flip-review-filter-btn, .flip-reset-btn, .flip-summary-reset-btn {
+    .accordion-search-input {
+      flex: 1;
       background-color: var(--bg-card);
       border: var(--border-style);
-      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
+      border-radius: var(--att-radius-md, var(--button-radius, 12px));
+      padding: 8px 14px;
+      font-size: var(--att-fs-body-sm, 14px);
+      color: var(--text-main);
+      min-height: 44px;
+    }
+
+    .accordion-search-input:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary)) !important;
+      outline-offset: 2px !important;
+    }
+
+    .accordion-toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .accordion-toolbar-btn, .accordion-search-clear {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--att-radius-md, var(--button-radius, 12px));
       padding: 8px 16px;
       font-size: var(--att-fs-body-sm, 14px);
       font-weight: 600;
@@ -544,52 +542,62 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
     }
 
-    .flip-filter-chip.active, .flip-review-filter-btn[aria-pressed="true"] {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 1px var(--primary) inset;
+    .accordion-toolbar-btn:focus-visible, .accordion-search-clear:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary)) !important;
+      outline-offset: 2px !important;
     }
 
-    .flip-classify-btn:active, .flip-filter-chip:active, .flip-review-filter-btn:active, .flip-reset-btn:active, .flip-summary-reset-btn:active {
-      transform: scale(0.98);
-    }
-
-    .flip-classify-btn:focus-visible, .flip-filter-chip:focus-visible, .flip-review-filter-btn:focus-visible, .flip-reset-btn:focus-visible, .flip-summary-reset-btn:focus-visible {
-      outline: 3px solid var(--att-cobalt, var(--primary));
-      outline-offset: 2px;
-    }
-
-    .flip-study-counts {
+    .accordion-progress, .accordion-search-status {
       font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
       color: var(--text-muted);
     }
 
-    .flip-summary-panel {
-      background-color: var(--bg-card);
-      border: var(--border-style);
-      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
-      box-shadow: var(--shadow-style);
-      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--att-space-3, 12px);
-      font-size: var(--att-fs-body, 16px);
+    /* Density variants */
+    .rise-block-wrapper.density-compact .accordion-group {
+      gap: 8px;
+    }
+    .rise-block-wrapper.density-compact .accordion-trigger {
+      padding: 10px 16px;
+      min-height: 44px;
+    }
+    .rise-block-wrapper.density-compact .accordion-body {
+      padding: 0 16px 14px 16px;
     }
 
-    .flip-card[hidden] {
-      display: none;
+    .rise-block-wrapper.density-standard .accordion-group {
+      gap: 12px;
+    }
+    .rise-block-wrapper.density-standard .accordion-trigger {
+      padding: 16px 20px;
+      min-height: 48px;
+    }
+    .rise-block-wrapper.density-standard .accordion-body {
+      padding: 0 20px 20px 20px;
+    }
+
+    .rise-block-wrapper.density-spacious .accordion-group {
+      gap: 18px;
+    }
+    .rise-block-wrapper.density-spacious .accordion-trigger {
+      padding: 22px 24px;
+      min-height: 56px;
+    }
+    .rise-block-wrapper.density-spacious .accordion-body {
+      padding: 0 24px 26px 24px;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .flip-card-inner { transform: none !important; }
-      .flip-card-front, .flip-card-back { transition: none !important; }
-      .flip-card.flipped .flip-card-front { display: none; }
-      .flip-card:not(.flipped) .flip-card-back { display: none; }
+      .accordion-item,
+      .acc-arrow,
+      .acc-plus-minus,
+      .acc-plus-minus::before,
+      .acc-plus-minus::after,
+      .accordion-content {
+        transition: none !important;
+        animation: none !important;
+      }
     }
 
     [hidden] { display: none !important; }
@@ -665,66 +673,61 @@
 </head>
 <body>
 
-  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-flip-cards-block-headline">
-    <div class="block-header header-minimal">
-      <div class="block-label">SAMPLE EXPORT</div>
-      <h2 class="block-headline" id="rcb-fixture-flip-cards-block-headline">Representative export fixture</h2>
-      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
-    </div>
+  <main class="rise-block-wrapper" aria-labelledby="rcb-snap-accordion-block-headline">
 
     <div class="block-content">
-      <div class="flip-cards-block">
-    
-    <div class="flip-cards-grid" id="rcb-fixture-flip-cards-flip-grid">
-      <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-0" aria-label="Reveal Back of Front Side A" data-idx="0" >
-        <div class="flip-card-inner">
-        <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-0" aria-hidden="false">
+      <div class="accordion-group" id="rcb-snap-accordion-accordion-group">
+    <div class="accordion-item" id="rcb-snap-accordion-item-0" data-idx="0">
+      <h3><button class="accordion-trigger" id="rcb-snap-accordion-accordion-trigger-0" data-idx="0" aria-expanded="false" aria-controls="rcb-snap-accordion-accordion-panel-0"  >
+        <span class="accordion-trigger-text">
           
-          <div class="card-icon-badge"><svg viewBox="0 0 32 32" fill="currentColor" width="20" height="20" aria-hidden="true"><g><path d="M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1ZM16 29C8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29Z"/><rect x="15" y="22" width="2" height="2"/><path d="M16.5 9C14.4 9 12.8 10.1 11.9 11L13.2 12.5C13.9 11.8 15.1 11.1 16.5 11.1 17.1 11.1 18.9 11.2 18.9 12.9 18.9 13.9 18.3 14.5 17.6 15L17.4 15.2C16 16.3 15 17.2 15 19.4L15 20 17 20 17 19.3C17 18 17.4 17.7 18.7 16.7L18.9 16.5C19.5 16 20.9 14.9 20.9 12.9 20.9 10.5 19.1 9 16.5 9Z"/></svg></div><h3>Front Side A</h3><p>Hover to reveal definition.</p>
-        </div>
-        <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-0" aria-hidden="true">
-          <h3>Back Side A</h3><p>Definitions should be concise.</p>
+          <span>Understanding User Intent</span>
           
-        </div>
-      </div></div>
-      <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-1" aria-label="Reveal Back of Front Side B" data-idx="1" >
-        <div class="flip-card-inner">
-        <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-1" aria-hidden="false">
+        </span>
+        <svg viewBox="0 0 32 32" fill="currentColor" width="18" height="18" class="acc-arrow" aria-hidden="true"><g><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>
+      </button></h3>
+      
+      <div class="accordion-content" id="rcb-snap-accordion-accordion-panel-0" role="region" aria-labelledby="rcb-snap-accordion-accordion-trigger-0" aria-hidden="true"><div class="accordion-body"><p>Instructional design begins by identifying the core learning objectives and alignment with business outcomes.</p></div></div>
+    </div>
+    <div class="accordion-item" id="rcb-snap-accordion-item-1" data-idx="1">
+      <h3><button class="accordion-trigger" id="rcb-snap-accordion-accordion-trigger-1" data-idx="1" aria-expanded="false" aria-controls="rcb-snap-accordion-accordion-panel-1"  >
+        <span class="accordion-trigger-text">
           
-          <div class="card-icon-badge"><svg viewBox="0 0 32 32" fill="currentColor" width="20" height="20" aria-hidden="true"><g><path d="M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1ZM16 29C8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29Z"/><rect x="15" y="22" width="2" height="2"/><path d="M16.5 9C14.4 9 12.8 10.1 11.9 11L13.2 12.5C13.9 11.8 15.1 11.1 16.5 11.1 17.1 11.1 18.9 11.2 18.9 12.9 18.9 13.9 18.3 14.5 17.6 15L17.4 15.2C16 16.3 15 17.2 15 19.4L15 20 17 20 17 19.3C17 18 17.4 17.7 18.7 16.7L18.9 16.5C19.5 16 20.9 14.9 20.9 12.9 20.9 10.5 19.1 9 16.5 9Z"/></svg></div><h3>Front Side B</h3><p>Mobile compatibility check.</p>
-        </div>
-        <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-1" aria-hidden="true">
-          <h3>Back Side B</h3><p>Rise blocks fit full width.</p>
+          <span>Designing for Engagement</span>
           
-        </div>
-      </div></div></div>
-    
-  </div>
+        </span>
+        <svg viewBox="0 0 32 32" fill="currentColor" width="18" height="18" class="acc-arrow" aria-hidden="true"><g><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>
+      </button></h3>
+      
+      <div class="accordion-content" id="rcb-snap-accordion-accordion-panel-1" role="region" aria-labelledby="rcb-snap-accordion-accordion-trigger-1" aria-hidden="true"><div class="accordion-body"><p>Modern eLearning relies on micro-interactions, clean visual layouts, and bite-sized chunks of information.</p></div></div>
+    </div>
+    <div class="accordion-item" id="rcb-snap-accordion-item-2" data-idx="2">
+      <h3><button class="accordion-trigger" id="rcb-snap-accordion-accordion-trigger-2" data-idx="2" aria-expanded="false" aria-controls="rcb-snap-accordion-accordion-panel-2"  >
+        <span class="accordion-trigger-text">
+          
+          <span>SCORM and Tracking Analytics</span>
+          
+        </span>
+        <svg viewBox="0 0 32 32" fill="currentColor" width="18" height="18" class="acc-arrow" aria-hidden="true"><g><path d="M16 21.99 5.29 11.28 6.71 9.87 16 19.16 25.29 9.87 26.71 11.28Z"/></svg>
+      </button></h3>
+      
+      <div class="accordion-content" id="rcb-snap-accordion-accordion-panel-2" role="region" aria-labelledby="rcb-snap-accordion-accordion-trigger-2" aria-hidden="true"><div class="accordion-body"><p>Export clean standard elements to trace course completion, custom interaction states, and score cards.</p></div></div>
+    </div></div>
     </div>
 
     
-    <div class="completion-tracker" aria-labelledby="rcb-fixture-flip-cards-completion-label">
-        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
-          <span id="rcb-fixture-flip-cards-completion-label">Progress Completion</span>
-          <span id="rcb-fixture-flip-cards-completion-text" aria-hidden="true">0%</span>
-        </div>
-        <div class="progress-bar-container" id="rcb-fixture-flip-cards-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-flip-cards-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
-          <div class="progress-fill" id="rcb-fixture-flip-cards-progress-fill"></div>
-        </div>
-        <p id="rcb-fixture-flip-cards-completion-message" class="completion-success-message" hidden></p>
-      </div>
-    <div id="rcb-fixture-flip-cards-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="rcb-snap-accordion-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   </main>
 
   <script>
     (function() {
 
     var viewedItems = new Set();
-    var totalItems = 2;
+    var totalItems = 3;
     var completionMessage = "Activity complete!";
 
     function announce(message) {
-      var status = document.getElementById('rcb-fixture-flip-cards-interaction-status');
+      var status = document.getElementById('rcb-snap-accordion-interaction-status');
       if (!status) return;
       status.textContent = '';
       window.setTimeout(function() { status.textContent = message; }, 20);
@@ -733,7 +736,7 @@
     // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
     // completion decision here).
     function setProgressAccessibility(percent) {
-      var progress = document.getElementById('rcb-fixture-flip-cards-progress-bar');
+      var progress = document.getElementById('rcb-snap-accordion-progress-bar');
       if (progress) {
         progress.setAttribute('aria-valuenow', String(percent));
         progress.setAttribute('aria-valuetext', percent + ' percent complete');
@@ -746,7 +749,7 @@
       if (percent < 100) return;
       if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
       announce(completionMessage);
-      var messageEl = document.getElementById('rcb-fixture-flip-cards-completion-message');
+      var messageEl = document.getElementById('rcb-snap-accordion-completion-message');
       if (messageEl) {
         messageEl.textContent = completionMessage;
         messageEl.hidden = false;
@@ -755,10 +758,10 @@
     }
 
     function updateProgress() {
-      if (!true) return;
+      if (!false) return;
       var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
-      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
-      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      var txt = document.getElementById('rcb-snap-accordion-completion-text');
+      var bar = document.getElementById('rcb-snap-accordion-progress-fill');
       if (txt && bar) {
         txt.textContent = percent + '%';
         bar.style.width = percent + '%';
@@ -768,9 +771,9 @@
     }
 
     function updateTrackerComplete() {
-      if (!true) return;
-      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
-      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      if (!false) return;
+      var txt = document.getElementById('rcb-snap-accordion-completion-text');
+      var bar = document.getElementById('rcb-snap-accordion-progress-fill');
       if (txt && bar) {
         txt.textContent = '100%';
         bar.style.width = '100%';
@@ -779,206 +782,170 @@
       evaluateComponentCompletion(100);
     }
 
-    var RiseComponentCompletion = (function() {
-      var allowedOrigin = null;
-      var hasCompletedFlag = false;
 
-      function targetOrigin() { return allowedOrigin || '*'; }
+    var multiOpen = true;
+    var allowAnimation = true;
+    var sequentialMode = false;
+    var showVisitedBadge = false;
+    var showProgress = false;
+    var accordionTotal = 3;
 
-      function isEmbedded() {
-        try { return Boolean(window.parent) && window.parent !== window; }
-        catch (error) { return false; }
-      }
-
-      function selectAdapterName() {
-        if (!isEmbedded()) return 'standalone';
-        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
-        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
-        return 'noop';
-      }
-
-      var adapterName = selectAdapterName();
-
-      function notifyComplete() {
-        if (hasCompletedFlag) return; // prevent duplicate completion events
-        hasCompletedFlag = true;
-        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
-        try { window.parent.postMessage({ type: 'complete' }, targetOrigin()); }
-        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
-      }
-
-      function hasCompleted() { return hasCompletedFlag; }
-
-      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
-    })();
-
-    var flipStudyMode = false;
-    var flipCardStates = {};
-
-    function shuffleFlipCards(grid) {
-      var cards = Array.prototype.slice.call(grid.children);
-      for (var i = cards.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = cards[i];
-        cards[i] = cards[j];
-        cards[j] = temp;
-      }
-      cards.forEach(function(card) { grid.appendChild(card); });
+    function isPanelLocked(index) {
+      return sequentialMode && index > 0 && !viewedItems.has(index - 1);
     }
 
-    function setCardStatusBadge(card, state) {
-      var badge = card.querySelector('.flip-status-badge');
-      if (!badge) return;
-      if (!state) {
-        badge.hidden = true;
-        badge.textContent = '';
-        badge.className = 'flip-status-badge';
+    function refreshLockState() {
+      if (!sequentialMode) return;
+      document.querySelectorAll('.accordion-item').forEach(function(itemEl) {
+        var idx = parseInt(itemEl.getAttribute('data-idx'), 10);
+        var locked = isPanelLocked(idx);
+        var trigger = itemEl.querySelector('.accordion-trigger');
+        var lockIconSlot = itemEl.querySelector('.accordion-lock-icon-slot');
+        var lockNote = itemEl.querySelector('.accordion-lock-note');
+        itemEl.classList.toggle('locked', locked);
+        if (trigger) {
+          if (locked) trigger.setAttribute('aria-disabled', 'true');
+          else trigger.removeAttribute('aria-disabled');
+        }
+        if (lockIconSlot) lockIconSlot.hidden = !locked;
+        if (lockNote) lockNote.hidden = !locked;
+      });
+    }
+
+    function updateVisitedBadge(index) {
+      if (!showVisitedBadge) return;
+      var item = document.getElementById('rcb-snap-accordion-item-' + index);
+      var badge = item && item.querySelector('.accordion-visited-badge');
+      if (badge) badge.hidden = !viewedItems.has(index);
+    }
+
+    function updateProgressText() {
+      if (!showProgress) return;
+      var progress = document.getElementById('rcb-snap-accordion-accordion-progress');
+      if (progress) progress.textContent = viewedItems.size + ' of ' + accordionTotal + ' explored';
+    }
+
+    function toggleAccordion(index) {
+      if (isPanelLocked(index)) {
+        announce('This section is locked. Open the previous section first.');
         return;
       }
-      badge.hidden = false;
-      badge.textContent = state === 'know' ? 'Known' : 'Review';
-      badge.className = 'flip-status-badge flip-status-' + state;
-    }
 
-    function updateFlipCounts() {
-      var counts = document.getElementById('rcb-fixture-flip-cards-flip-counts');
-      var cards = document.querySelectorAll('.flip-card');
-      var know = 0, review = 0;
-      cards.forEach(function(card) {
-        var state = flipCardStates[card.getAttribute('data-idx')];
-        if (state === 'know') know++;
-        else if (state === 'review') review++;
-      });
-      var notViewed = cards.length - know - review;
-      if (counts) counts.textContent = 'Not viewed: ' + notViewed + ' \u00b7 Know: ' + know + ' \u00b7 Review: ' + review;
-      maybeShowSummary(cards.length, know, review);
-    }
+      var item = document.getElementById('rcb-snap-accordion-item-' + index);
+      var isCurrentlyActive = item.classList.contains('active');
 
-    function maybeShowSummary(total, know, review) {
-      var summary = document.getElementById('rcb-fixture-flip-cards-flip-summary');
-      if (!summary) return;
-      if (total > 0 && know + review >= total) {
-        summary.hidden = false;
-        var text = summary.querySelector('.flip-summary-text');
-        if (text) text.textContent = 'Study set complete: ' + know + ' of ' + total + ' known, ' + review + ' flagged for review.';
-        announce('All cards classified. ' + know + ' known, ' + review + ' need review.');
+      if (!multiOpen) {
+        document.querySelectorAll('.accordion-item').forEach(function(el) {
+          el.classList.remove('active');
+          var panel = el.querySelector('.accordion-content');
+          var trigger = el.querySelector('.accordion-trigger');
+          if (panel) {
+            panel.style.maxHeight = null;
+            panel.setAttribute('aria-hidden', 'true');
+          }
+          if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        });
+      }
+
+      var contentPanel = item.querySelector('.accordion-content');
+
+      if (isCurrentlyActive) {
+        item.classList.remove('active');
+        contentPanel.style.maxHeight = null;
+        contentPanel.setAttribute('aria-hidden', 'true');
+        item.querySelector('.accordion-trigger').setAttribute('aria-expanded', 'false');
       } else {
-        summary.hidden = true;
+        item.classList.add('active');
+        contentPanel.style.maxHeight = contentPanel.scrollHeight + 'px';
+        contentPanel.setAttribute('aria-hidden', 'false');
+        item.querySelector('.accordion-trigger').setAttribute('aria-expanded', 'true');
+        viewedItems.add(index);
+        updateProgress();
+        updateVisitedBadge(index);
+        updateProgressText();
+        refreshLockState();
       }
     }
 
-    function classifyFlipCard(card, state) {
-      var idx = card.getAttribute('data-idx');
-      flipCardStates[idx] = state;
-      setCardStatusBadge(card, state);
-      card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-        var isActive = btn.getAttribute('data-classify') === state;
-        btn.setAttribute('aria-pressed', String(isActive));
-        btn.classList.toggle('active', isActive);
+    function expandAllPanels() {
+      document.querySelectorAll('.accordion-item').forEach(function(itemEl) {
+        var idx = parseInt(itemEl.getAttribute('data-idx'), 10);
+        if (!itemEl.classList.contains('active') && !isPanelLocked(idx)) toggleAccordion(idx);
       });
-      var titleEl = card.querySelector('.flip-card-front h3');
-      announce((state === 'know' ? 'Marked known: ' : 'Marked for review: ') + (titleEl ? titleEl.textContent : ''));
-      updateFlipCounts();
     }
 
-    function applyFlipFilters() {
-      var activeChip = document.querySelector('.flip-filter-chip.active');
-      var categoryValue = activeChip ? activeChip.getAttribute('data-filter-category') : '';
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      var reviewOnly = !!reviewOnlyBtn && reviewOnlyBtn.getAttribute('aria-pressed') === 'true';
-      var visibleCount = 0;
-      document.querySelectorAll('.flip-card').forEach(function(card) {
-        var matchesCategory = !categoryValue || card.getAttribute('data-category') === categoryValue;
-        var matchesReview = !reviewOnly || flipCardStates[card.getAttribute('data-idx')] === 'review';
-        var visible = matchesCategory && matchesReview;
-        card.hidden = !visible;
-        if (visible) visibleCount++;
+    function collapseAllPanels() {
+      document.querySelectorAll('.accordion-item.active').forEach(function(itemEl) {
+        toggleAccordion(parseInt(itemEl.getAttribute('data-idx'), 10));
       });
-      announce(visibleCount + ' card' + (visibleCount === 1 ? '' : 's') + ' shown.');
     }
 
-    function resetFlipStudy() {
-      flipCardStates = {};
-      document.querySelectorAll('.flip-card').forEach(function(card) {
-        card.classList.remove('flipped');
-        card.setAttribute('aria-expanded', 'false');
-        var front = card.querySelector('.flip-card-front');
-        var back = card.querySelector('.flip-card-back');
-        if (front) front.setAttribute('aria-hidden', 'false');
-        if (back) back.setAttribute('aria-hidden', 'true');
-        card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-          btn.setAttribute('aria-pressed', 'false');
-          btn.setAttribute('tabindex', '-1');
-          btn.classList.remove('active');
-        });
-        setCardStatusBadge(card, null);
-        card.hidden = false;
+    function applyAccordionSearch(query) {
+      var q = query.trim().toLowerCase();
+      var matchCount = 0;
+      var total = 0;
+      document.querySelectorAll('.accordion-item').forEach(function(itemEl) {
+        total++;
+        if (!q) { itemEl.hidden = false; matchCount++; return; }
+        var visible = itemEl.textContent.toLowerCase().indexOf(q) !== -1;
+        itemEl.hidden = !visible;
+        if (visible) matchCount++;
       });
-      document.querySelectorAll('.flip-filter-chip').forEach(function(chip) {
-        chip.classList.toggle('active', chip.getAttribute('data-filter-category') === '');
-      });
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      if (reviewOnlyBtn) reviewOnlyBtn.setAttribute('aria-pressed', 'false');
+      var clearBtn = document.querySelector('.accordion-search-clear');
+      if (clearBtn) clearBtn.hidden = !q;
+      var status = document.getElementById('rcb-snap-accordion-accordion-search-status');
+      if (status) status.textContent = q ? (matchCount + ' of ' + total + ' sections match.') : '';
+    }
+
+    function resetAccordion() {
       viewedItems.clear();
+      document.querySelectorAll('.accordion-item').forEach(function(itemEl) {
+        itemEl.classList.remove('active');
+        itemEl.hidden = false;
+        var panel = itemEl.querySelector('.accordion-content');
+        var trigger = itemEl.querySelector('.accordion-trigger');
+        if (panel) { panel.style.maxHeight = null; panel.setAttribute('aria-hidden', 'true'); }
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        updateVisitedBadge(parseInt(itemEl.getAttribute('data-idx'), 10));
+      });
+      refreshLockState();
+      updateProgressText();
       updateProgress();
-      updateFlipCounts();
-      announce('Study set restarted.');
+      var searchInput = document.getElementById('rcb-snap-accordion-accordion-search');
+      if (searchInput) { searchInput.value = ''; applyAccordionSearch(''); }
+      var firstTrigger = document.querySelector('.accordion-trigger');
+      if (firstTrigger) firstTrigger.focus();
+      announce('Accordion reset.');
     }
 
     function initComponent() {
-      var grid = document.getElementById('rcb-fixture-flip-cards-flip-grid');
-      if (grid && false) shuffleFlipCards(grid);
-
-      document.querySelectorAll('.flip-card').forEach(function(card, idx) {
-        card.addEventListener('click', function(event) {
-          if (event.target.closest('.flip-classify-btn')) return;
-          var flipped = card.classList.toggle('flipped');
-          card.setAttribute('aria-expanded', String(flipped));
-          var titleEl = card.querySelector('.flip-card-front h3');
-          var titleText = titleEl ? titleEl.textContent : '';
-          card.setAttribute('aria-label', (flipped ? 'Show ' + "Front" : 'Reveal ' + "Back") + ' of ' + titleText);
-          card.querySelector('.flip-card-front').setAttribute('aria-hidden', String(flipped));
-          card.querySelector('.flip-card-back').setAttribute('aria-hidden', String(!flipped));
-          card.querySelectorAll('.flip-classify-btn').forEach(function(btn) { btn.setAttribute('tabindex', flipped ? '0' : '-1'); });
-          announce((flipped ? "Back" : "Front") + ' shown');
-          viewedItems.add(idx);
-          updateProgress();
-        });
-        card.addEventListener('keydown', function(event) {
-          if (event.target.closest('.flip-classify-btn')) return;
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            card.click();
-          }
-        });
-        card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-          btn.addEventListener('click', function(event) {
-            event.stopPropagation();
-            classifyFlipCard(card, btn.getAttribute('data-classify'));
-          });
+      document.querySelectorAll('.accordion-trigger').forEach(function(trigger) {
+        trigger.addEventListener('click', function() {
+          toggleAccordion(parseInt(trigger.getAttribute('data-idx'), 10));
         });
       });
 
-      document.querySelectorAll('.flip-filter-chip').forEach(function(chip) {
-        chip.addEventListener('click', function() {
-          document.querySelectorAll('.flip-filter-chip').forEach(function(c) { c.classList.remove('active'); });
-          chip.classList.add('active');
-          applyFlipFilters();
+      refreshLockState();
+      updateProgressText();
+
+      var expandAllBtn = document.querySelector('.accordion-expand-all-btn');
+      if (expandAllBtn) expandAllBtn.addEventListener('click', expandAllPanels);
+      var collapseAllBtn = document.querySelector('.accordion-collapse-all-btn');
+      if (collapseAllBtn) collapseAllBtn.addEventListener('click', collapseAllPanels);
+
+      var resetBtn = document.querySelector('.accordion-reset-btn');
+      if (resetBtn) resetBtn.addEventListener('click', resetAccordion);
+
+      var searchInput = document.getElementById('rcb-snap-accordion-accordion-search');
+      if (searchInput) {
+        searchInput.addEventListener('input', function(event) { applyAccordionSearch(event.target.value); });
+        var clearBtn = document.querySelector('.accordion-search-clear');
+        if (clearBtn) clearBtn.addEventListener('click', function() {
+          searchInput.value = '';
+          applyAccordionSearch('');
+          searchInput.focus();
         });
-      });
-
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      if (reviewOnlyBtn) reviewOnlyBtn.addEventListener('click', function() {
-        var pressed = reviewOnlyBtn.getAttribute('aria-pressed') === 'true';
-        reviewOnlyBtn.setAttribute('aria-pressed', String(!pressed));
-        applyFlipFilters();
-      });
-
-      document.querySelectorAll('.flip-reset-btn, .flip-summary-reset-btn').forEach(function(btn) {
-        btn.addEventListener('click', resetFlipStudy);
-      });
-
-      if (flipStudyMode) updateFlipCounts();
+      }
     }
 
     if (document.readyState === 'loading') {

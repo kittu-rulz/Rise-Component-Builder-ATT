@@ -239,12 +239,14 @@ export function generateCSS() {
       color: var(--text-main);
     }
 
-    .flip-status-badge.flip-status-know::before {
-      content: '\\2713 ';
+    .flip-status-badge.flip-status-know {
+      background-color: var(--att-grey-2, var(--border-color));
+      color: var(--text-main);
     }
 
-    .flip-status-badge.flip-status-review::before {
-      content: '\\21BB ';
+    .flip-status-badge.flip-status-review {
+      background-color: var(--att-grey-2, var(--border-color));
+      color: var(--text-main);
     }
 
     .flip-classify-row {

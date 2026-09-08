@@ -53,10 +53,10 @@
       --bg-card: #FFFFFF;
       --text-main: #000000;
       --text-muted: #4B5563;
-      --border-color: #DCDFE3;
+      --border-color: transparent;
       --border-radius: 12px;
       --button-radius: 20px;
-      --border-style: 1px solid var(--border-color);
+      --border-style: none;
       --shadow-style: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
       --font-family: 'ATT Aleck Sans', sans-serif;
       --heading-font-family: 'ATT Aleck Sans', sans-serif;
@@ -343,253 +343,156 @@
       object-fit: contain;
     }
 
-    .flip-cards-block {
-      display: flex;
-      flex-direction: column;
-      gap: var(--att-space-4, 16px);
+    .hotspots-container {
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
+      box-shadow: var(--shadow-style);
+      padding: var(--att-space-4, 16px);
     }
-
-    .flip-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: var(--att-space-5, 20px);
-    }
-
-    .flip-card {
-      background-color: transparent;
-      height: 180px;
-      perspective: 1000px;
-      cursor: pointer;
-    }
-
-    .flip-card:focus-visible {
-      outline: none;
-    }
-
-    .flip-card:focus-visible .flip-card-front,
-    .flip-card:focus-visible .flip-card-back {
-      outline: 3px solid var(--att-cobalt, var(--primary));
-      outline-offset: 2px;
-    }
-
-    .flip-card:active:not(.flipped) .flip-card-inner {
-      transform: scale(0.98);
-    }
-
-    .flip-card.flipped:active .flip-card-inner {
-      transform: rotateY(180deg) scale(0.98);
-    }
-
-    .flip-card-inner {
+    .hotspot-img-wrapper {
       position: relative;
       width: 100%;
-      height: 100%;
-      text-align: center;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      transform-style: preserve-3d;
+      border-radius: var(--att-radius-lg, 20px);
+      overflow: hidden;
     }
-
-    .flip-card.flipped .flip-card-inner {
-      transform: rotateY(180deg);
-    }
-
-    .flip-card-front, .flip-card-back {
-      position: absolute;
+    .hotspot-schematic-svg {
       width: 100%;
-      height: 100%;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
-      border: var(--border-style);
-      box-shadow: var(--shadow-style);
-      padding: var(--att-space-5, 24px);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: var(--att-space-2, 8px);
+      height: auto;
+      display: block;
     }
-
-    /* backface-visibility:hidden only hides a rotated-away face visually — it does not
-       reliably stop it from receiving clicks in every rendering engine, which silently
-       blocked the Know/Review buttons underneath once a card was flipped. The JS already
-       toggles aria-hidden on whichever face isn't showing, so keying pointer-events off
-       that (rather than adding separate state) can't drift out of sync with it. */
-    .flip-card-front[aria-hidden="true"], .flip-card-back[aria-hidden="true"] {
-      pointer-events: none;
+    .hotspot-schematic-bg { fill: var(--bg-body); }
+    .hotspot-schematic-ring, .hotspot-schematic-line { stroke: var(--border-color); }
+    .hotspot-schematic-label { fill: var(--text-muted); }
+    .hotspot-background-image {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      display: block;
+      background: var(--bg-body);
     }
-
-    .flip-card-front {
-      background-color: var(--bg-card);
-      color: var(--text-main);
+    .hotspot-point {
       position: absolute;
-    }
-
-    .card-icon-badge {
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-
-    .card-icon-badge .custom-item-icon {
       width: 32px;
       height: 32px;
-      border-radius: var(--att-radius-sm, 8px);
+      transform: translate(-50%, -50%);
+      z-index: 10;
     }
-
-    .flip-card-front h3, .flip-card-back h3 {
-      font-size: var(--att-fs-body-lg, 18px);
-      font-weight: 600;
-      text-wrap: pretty;
-    }
-
-    .flip-card-front p, .flip-card-back p {
-      font-size: var(--att-fs-body, 16px);
-      color: var(--text-muted);
-      line-height: var(--att-lh-body, 1.5);
-      max-width: 70ch;
-    }
-
-    .flip-card-back {
+    .hotspot-pin {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      /* Cobalt (--primary), not AT&T Blue (--accent): this pin is a clickable
+         control, and clickable elements must use the Cobalt-on-white or
+         white-on-Cobalt treatment, not the accent color. Cobalt's 10.7:1
+         contrast against white also clears the white-text pairing at any size,
+         unlike --accent (3.01:1, restricted to >=19px text). */
       background-color: var(--primary);
+      border: 2px solid var(--bg-card);
       color: var(--on-primary);
-      transform: rotateY(180deg);
-    }
-
-    .flip-card-back h3 {
-      color: var(--on-primary);
-    }
-
-    .flip-card-back p {
-      color: var(--on-primary);
-    }
-
-    .flip-status-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: var(--att-fs-eyebrow, 12px);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      padding: 2px 10px;
-      border-radius: var(--att-radius-pill, 999px);
-      background-color: var(--border-color);
-      color: var(--text-main);
-    }
-
-    .flip-status-badge.flip-status-know {
-      background-color: var(--att-grey-2, var(--border-color));
-      color: var(--text-main);
-    }
-
-    .flip-status-badge.flip-status-review {
-      background-color: var(--att-grey-2, var(--border-color));
-      color: var(--text-main);
-    }
-
-    .flip-classify-row {
+      border-radius: 50%;
       display: flex;
-      gap: var(--att-space-2, 8px);
-      margin-top: 6px;
-    }
-
-    .flip-classify-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background-color: var(--bg-card);
-      color: var(--text-main);
-      border: 1px solid var(--bg-card);
-      border-radius: var(--button-radius, var(--att-radius-md, 12px));
-      padding: 8px 14px;
-      font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
-      cursor: pointer;
-      min-height: 44px;
-      transition: all 0.2s;
-    }
-
-    .flip-classify-btn:hover {
-      border-color: var(--primary);
-    }
-
-    .flip-classify-btn.active {
-      background-color: var(--bg-card);
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px var(--primary) inset;
-    }
-
-    .flip-study-toolbar {
-      display: flex;
-      flex-direction: column;
-      gap: var(--att-space-3, 12px);
-    }
-
-    .flip-category-filters, .flip-study-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--att-space-2, 8px);
-    }
-
-    .flip-filter-chip, .flip-review-filter-btn, .flip-reset-btn, .flip-summary-reset-btn {
-      background-color: var(--bg-card);
-      border: var(--border-style);
-      border-radius: var(--button-radius, var(--att-radius-pill, 999px));
-      padding: 8px 16px;
-      font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
-      color: var(--text-main);
-      cursor: pointer;
-      min-height: 44px;
-      display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
+      cursor: pointer;
+      box-shadow: var(--att-shadow-1, 0 4px 6px rgba(0,0,0,0.15));
+      z-index: 1;
+      padding: 0;
+      position: absolute;
     }
-
-    .flip-filter-chip.active, .flip-review-filter-btn[aria-pressed="true"] {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 1px var(--primary) inset;
+    .hotspot-pin::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      right: -6px;
+      bottom: -6px;
+      min-width: 44px;
+      min-height: 44px;
     }
-
-    .flip-classify-btn:active, .flip-filter-chip:active, .flip-review-filter-btn:active, .flip-reset-btn:active, .flip-summary-reset-btn:active {
-      transform: scale(0.98);
+    .hotspot-pin:hover {
+      background-color: var(--primary-hover);
     }
-
-    .flip-classify-btn:focus-visible, .flip-filter-chip:focus-visible, .flip-review-filter-btn:focus-visible, .flip-reset-btn:focus-visible, .flip-summary-reset-btn:focus-visible {
+    .hotspot-pin:active {
+      transform: translate(-50%, -50%) scale(0.98);
+    }
+    .hotspot-pin:focus-visible {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
     }
-
-    .flip-study-counts {
-      font-size: var(--att-fs-body-sm, 14px);
-      font-weight: 600;
-      color: var(--text-muted);
+    .hotspot-pin .pulse {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: var(--primary);
+      animation: pinPulse 2s infinite;
+      z-index: -1;
     }
-
-    .flip-summary-panel {
-      background-color: var(--bg-card);
-      border: var(--border-style);
-      border-radius: var(--att-radius-lg, var(--border-radius, 20px));
-      box-shadow: var(--shadow-style);
-      padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--att-space-3, 12px);
-      font-size: var(--att-fs-body, 16px);
-    }
-
-    .flip-card[hidden] {
+    .hotspot-tooltip {
+      position: absolute;
+      bottom: 42px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      width: 260px;
+      max-width: 70ch;
+      /* This popup is passive content (no interactive control inside it), so it
+         must not use Cobalt as its surface color. Built from the theme's own
+         text/surface tokens (inverted) rather than an invented dark-gray hex. */
+      background-color: var(--text-main);
+      color: var(--bg-card);
+      padding: var(--att-space-4, 16px);
+      border-radius: var(--att-radius-md, var(--border-radius, 12px));
+      box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0, 0, 0, 0.2));
       display: none;
+      z-index: 20;
+      pointer-events: none;
+      text-align: left;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
     }
-
+    .hotspot-pin.active + .hotspot-tooltip {
+      display: block;
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .hotspot-tooltip h5 {
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      margin-bottom: 6px;
+      color: var(--bg-card);
+    }
+    .hotspot-tooltip-title {
+      display: block;
+      font-size: var(--att-fs-body, 1rem);
+      font-weight: var(--att-fw-bold, 700);
+      line-height: var(--att-lh-heading, 1.25);
+      margin-bottom: 6px;
+      color: var(--bg-card);
+    }
+    .hotspot-tooltip p {
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      line-height: var(--att-lh-body, 1.5);
+      font-weight: 400;
+      color: var(--bg-card);
+      margin: 0;
+    }
+    .hotspot-tooltip-content {
+      display: block;
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      line-height: var(--att-lh-body, 1.5);
+      font-weight: 400;
+      color: var(--bg-card);
+    }
+    @keyframes pinPulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
     @media (prefers-reduced-motion: reduce) {
-      .flip-card-inner { transform: none !important; }
-      .flip-card-front, .flip-card-back { transition: none !important; }
-      .flip-card.flipped .flip-card-front { display: none; }
-      .flip-card:not(.flipped) .flip-card-back { display: none; }
+      .hotspot-pin .pulse { display: none; }
     }
 
     [hidden] { display: none !important; }
@@ -665,66 +568,71 @@
 </head>
 <body>
 
-  <main class="rise-block-wrapper" aria-labelledby="rcb-fixture-flip-cards-block-headline">
-    <div class="block-header header-minimal">
-      <div class="block-label">SAMPLE EXPORT</div>
-      <h2 class="block-headline" id="rcb-fixture-flip-cards-block-headline">Representative export fixture</h2>
-      <div class="block-desc">Generated by scripts/generate-export-fixtures.mjs — see docs/RISE-COMPATIBILITY-MATRIX.md.</div>
-    </div>
+  <main class="rise-block-wrapper" aria-labelledby="rcb-snap-hotspots-block-headline">
 
     <div class="block-content">
-      <div class="flip-cards-block">
-    
-    <div class="flip-cards-grid" id="rcb-fixture-flip-cards-flip-grid">
-      <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-0" aria-label="Reveal Back of Front Side A" data-idx="0" >
-        <div class="flip-card-inner">
-        <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-0" aria-hidden="false">
-          
-          <div class="card-icon-badge"><svg viewBox="0 0 32 32" fill="currentColor" width="20" height="20" aria-hidden="true"><g><path d="M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1ZM16 29C8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29Z"/><rect x="15" y="22" width="2" height="2"/><path d="M16.5 9C14.4 9 12.8 10.1 11.9 11L13.2 12.5C13.9 11.8 15.1 11.1 16.5 11.1 17.1 11.1 18.9 11.2 18.9 12.9 18.9 13.9 18.3 14.5 17.6 15L17.4 15.2C16 16.3 15 17.2 15 19.4L15 20 17 20 17 19.3C17 18 17.4 17.7 18.7 16.7L18.9 16.5C19.5 16 20.9 14.9 20.9 12.9 20.9 10.5 19.1 9 16.5 9Z"/></svg></div><h3>Front Side A</h3><p>Hover to reveal definition.</p>
-        </div>
-        <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-0" aria-hidden="true">
-          <h3>Back Side A</h3><p>Definitions should be concise.</p>
-          
-        </div>
-      </div></div>
-      <div class="flip-card" role="button" tabindex="0" aria-expanded="false" aria-controls="rcb-fixture-flip-cards-flip-card-back-1" aria-label="Reveal Back of Front Side B" data-idx="1" >
-        <div class="flip-card-inner">
-        <div class="flip-card-front" id="rcb-fixture-flip-cards-flip-card-front-1" aria-hidden="false">
-          
-          <div class="card-icon-badge"><svg viewBox="0 0 32 32" fill="currentColor" width="20" height="20" aria-hidden="true"><g><path d="M16 1C7.7 1 1 7.7 1 16 1 24.3 7.7 31 16 31 24.3 31 31 24.3 31 16 31 7.7 24.3 1 16 1ZM16 29C8.8 29 3 23.2 3 16 3 8.8 8.8 3 16 3 23.2 3 29 8.8 29 16 29 23.2 23.2 29 16 29Z"/><rect x="15" y="22" width="2" height="2"/><path d="M16.5 9C14.4 9 12.8 10.1 11.9 11L13.2 12.5C13.9 11.8 15.1 11.1 16.5 11.1 17.1 11.1 18.9 11.2 18.9 12.9 18.9 13.9 18.3 14.5 17.6 15L17.4 15.2C16 16.3 15 17.2 15 19.4L15 20 17 20 17 19.3C17 18 17.4 17.7 18.7 16.7L18.9 16.5C19.5 16 20.9 14.9 20.9 12.9 20.9 10.5 19.1 9 16.5 9Z"/></svg></div><h3>Front Side B</h3><p>Mobile compatibility check.</p>
-        </div>
-        <div class="flip-card-back" id="rcb-fixture-flip-cards-flip-card-back-1" aria-hidden="true">
-          <h3>Back Side B</h3><p>Rise blocks fit full width.</p>
-          
-        </div>
-      </div></div></div>
-    
-  </div>
+      
+    <div class="hotspots-container">
+      <div class="hotspot-img-wrapper">
+        <svg viewBox="0 0 800 450" class="hotspot-schematic-svg" role="img" aria-label="Schematic pathway map">
+          <rect width="100%" height="100%" class="hotspot-schematic-bg" rx="12"></rect>
+          <circle cx="400" cy="225" r="100" fill="none" class="hotspot-schematic-ring" stroke-width="4" stroke-dasharray="10 10"></circle>
+          <line x1="100" y1="225" x2="700" y2="225" class="hotspot-schematic-line" stroke-width="2"></line>
+          <line x1="400" y1="50" x2="400" y2="400" class="hotspot-schematic-line" stroke-width="2"></line>
+          <text x="400" y="230" text-anchor="middle" class="hotspot-schematic-label" font-size="16" font-weight="600">Schematic Pathway Map</text>
+        </svg>
+        
+          <span class="hotspot-point" style="left: 25%; top: 40%;">
+            <button type="button" class="hotspot-pin" data-idx="0" aria-expanded="false" aria-controls="rcb-snap-hotspots-hotspot-tooltip-0" aria-label="Hotspot 1: Engine Valve">
+              <span class="pulse" aria-hidden="true"></span>
+              <span class="pin-dot" aria-hidden="true">1</span>
+            </button>
+            <span class="hotspot-tooltip" id="rcb-snap-hotspots-hotspot-tooltip-0" role="region" aria-label="Hotspot details" aria-hidden="true">
+              <span class="hotspot-tooltip-title">Engine Valve</span>
+              <span class="hotspot-tooltip-content">Manages the fuel-air mixture entry.</span>
+            </span>
+          </span>
+        
+          <span class="hotspot-point" style="left: 50%; top: 25%;">
+            <button type="button" class="hotspot-pin" data-idx="1" aria-expanded="false" aria-controls="rcb-snap-hotspots-hotspot-tooltip-1" aria-label="Hotspot 2: Spark Plug">
+              <span class="pulse" aria-hidden="true"></span>
+              <span class="pin-dot" aria-hidden="true">2</span>
+            </button>
+            <span class="hotspot-tooltip" id="rcb-snap-hotspots-hotspot-tooltip-1" role="region" aria-label="Hotspot details" aria-hidden="true">
+              <span class="hotspot-tooltip-title">Spark Plug</span>
+              <span class="hotspot-tooltip-content">Triggers the combustion spark.</span>
+            </span>
+          </span>
+        
+          <span class="hotspot-point" style="left: 75%; top: 65%;">
+            <button type="button" class="hotspot-pin" data-idx="2" aria-expanded="false" aria-controls="rcb-snap-hotspots-hotspot-tooltip-2" aria-label="Hotspot 3: Piston Rod">
+              <span class="pulse" aria-hidden="true"></span>
+              <span class="pin-dot" aria-hidden="true">3</span>
+            </button>
+            <span class="hotspot-tooltip" id="rcb-snap-hotspots-hotspot-tooltip-2" role="region" aria-label="Hotspot details" aria-hidden="true">
+              <span class="hotspot-tooltip-title">Piston Rod</span>
+              <span class="hotspot-tooltip-content">Transmits linear force to rotational crankshaft torque.</span>
+            </span>
+          </span>
+        
+      </div>
+    </div>
+  
     </div>
 
     
-    <div class="completion-tracker" aria-labelledby="rcb-fixture-flip-cards-completion-label">
-        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600;">
-          <span id="rcb-fixture-flip-cards-completion-label">Progress Completion</span>
-          <span id="rcb-fixture-flip-cards-completion-text" aria-hidden="true">0%</span>
-        </div>
-        <div class="progress-bar-container" id="rcb-fixture-flip-cards-progress-bar" role="progressbar" aria-labelledby="rcb-fixture-flip-cards-completion-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 percent complete">
-          <div class="progress-fill" id="rcb-fixture-flip-cards-progress-fill"></div>
-        </div>
-        <p id="rcb-fixture-flip-cards-completion-message" class="completion-success-message" hidden></p>
-      </div>
-    <div id="rcb-fixture-flip-cards-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="rcb-snap-hotspots-interaction-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   </main>
 
   <script>
     (function() {
 
     var viewedItems = new Set();
-    var totalItems = 2;
+    var totalItems = 3;
     var completionMessage = "Activity complete!";
 
     function announce(message) {
-      var status = document.getElementById('rcb-fixture-flip-cards-interaction-status');
+      var status = document.getElementById('rcb-snap-hotspots-interaction-status');
       if (!status) return;
       status.textContent = '';
       window.setTimeout(function() { status.textContent = message; }, 20);
@@ -733,7 +641,7 @@
     // Concept #1: internal interaction progress (ARIA valuenow/valuetext only — no
     // completion decision here).
     function setProgressAccessibility(percent) {
-      var progress = document.getElementById('rcb-fixture-flip-cards-progress-bar');
+      var progress = document.getElementById('rcb-snap-hotspots-progress-bar');
       if (progress) {
         progress.setAttribute('aria-valuenow', String(percent));
         progress.setAttribute('aria-valuetext', percent + ' percent complete');
@@ -746,7 +654,7 @@
       if (percent < 100) return;
       if (typeof RiseComponentCompletion === 'undefined' || RiseComponentCompletion.hasCompleted()) return;
       announce(completionMessage);
-      var messageEl = document.getElementById('rcb-fixture-flip-cards-completion-message');
+      var messageEl = document.getElementById('rcb-snap-hotspots-completion-message');
       if (messageEl) {
         messageEl.textContent = completionMessage;
         messageEl.hidden = false;
@@ -755,10 +663,10 @@
     }
 
     function updateProgress() {
-      if (!true) return;
+      if (!false) return;
       var percent = Math.min(Math.round((viewedItems.size / totalItems) * 100), 100);
-      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
-      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      var txt = document.getElementById('rcb-snap-hotspots-completion-text');
+      var bar = document.getElementById('rcb-snap-hotspots-progress-fill');
       if (txt && bar) {
         txt.textContent = percent + '%';
         bar.style.width = percent + '%';
@@ -768,9 +676,9 @@
     }
 
     function updateTrackerComplete() {
-      if (!true) return;
-      var txt = document.getElementById('rcb-fixture-flip-cards-completion-text');
-      var bar = document.getElementById('rcb-fixture-flip-cards-progress-fill');
+      if (!false) return;
+      var txt = document.getElementById('rcb-snap-hotspots-completion-text');
+      var bar = document.getElementById('rcb-snap-hotspots-progress-fill');
       if (txt && bar) {
         txt.textContent = '100%';
         bar.style.width = '100%';
@@ -779,206 +687,58 @@
       evaluateComponentCompletion(100);
     }
 
-    var RiseComponentCompletion = (function() {
-      var allowedOrigin = null;
-      var hasCompletedFlag = false;
 
-      function targetOrigin() { return allowedOrigin || '*'; }
-
-      function isEmbedded() {
-        try { return Boolean(window.parent) && window.parent !== window; }
-        catch (error) { return false; }
-      }
-
-      function selectAdapterName() {
-        if (!isEmbedded()) return 'standalone';
-        try { if (typeof window.parent.postMessage === 'function') return 'parent-message'; }
-        catch (error) { /* accessing window.parent.postMessage itself threw — treat as unsupported */ }
-        return 'noop';
-      }
-
-      var adapterName = selectAdapterName();
-
-      function notifyComplete() {
-        if (hasCompletedFlag) return; // prevent duplicate completion events
-        hasCompletedFlag = true;
-        if (adapterName !== 'parent-message') return; // standalone/noop: nothing to send
-        try { window.parent.postMessage({ type: 'complete' }, targetOrigin()); }
-        catch (error) { /* a host that rejects the postMessage call should not break the component */ }
-      }
-
-      function hasCompleted() { return hasCompletedFlag; }
-
-      return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
-    })();
-
-    var flipStudyMode = false;
-    var flipCardStates = {};
-
-    function shuffleFlipCards(grid) {
-      var cards = Array.prototype.slice.call(grid.children);
-      for (var i = cards.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = cards[i];
-        cards[i] = cards[j];
-        cards[j] = temp;
-      }
-      cards.forEach(function(card) { grid.appendChild(card); });
-    }
-
-    function setCardStatusBadge(card, state) {
-      var badge = card.querySelector('.flip-status-badge');
-      if (!badge) return;
-      if (!state) {
-        badge.hidden = true;
-        badge.textContent = '';
-        badge.className = 'flip-status-badge';
-        return;
-      }
-      badge.hidden = false;
-      badge.textContent = state === 'know' ? 'Known' : 'Review';
-      badge.className = 'flip-status-badge flip-status-' + state;
-    }
-
-    function updateFlipCounts() {
-      var counts = document.getElementById('rcb-fixture-flip-cards-flip-counts');
-      var cards = document.querySelectorAll('.flip-card');
-      var know = 0, review = 0;
-      cards.forEach(function(card) {
-        var state = flipCardStates[card.getAttribute('data-idx')];
-        if (state === 'know') know++;
-        else if (state === 'review') review++;
+    function toggleHotspot(index, pin) {
+      var isCurrentlyActive = pin.classList.contains('active');
+      document.querySelectorAll('.hotspot-pin').forEach(function(p) {
+        p.classList.remove('active');
+        p.setAttribute('aria-expanded', 'false');
+        var tooltip = p.parentElement.querySelector('.hotspot-tooltip');
+        if (tooltip) tooltip.setAttribute('aria-hidden', 'true');
       });
-      var notViewed = cards.length - know - review;
-      if (counts) counts.textContent = 'Not viewed: ' + notViewed + ' \u00b7 Know: ' + know + ' \u00b7 Review: ' + review;
-      maybeShowSummary(cards.length, know, review);
-    }
 
-    function maybeShowSummary(total, know, review) {
-      var summary = document.getElementById('rcb-fixture-flip-cards-flip-summary');
-      if (!summary) return;
-      if (total > 0 && know + review >= total) {
-        summary.hidden = false;
-        var text = summary.querySelector('.flip-summary-text');
-        if (text) text.textContent = 'Study set complete: ' + know + ' of ' + total + ' known, ' + review + ' flagged for review.';
-        announce('All cards classified. ' + know + ' known, ' + review + ' need review.');
-      } else {
-        summary.hidden = true;
+      if (!isCurrentlyActive) {
+        pin.classList.add('active');
+        pin.setAttribute('aria-expanded', 'true');
+        var tooltip = pin.parentElement.querySelector('.hotspot-tooltip');
+        if (tooltip) tooltip.setAttribute('aria-hidden', 'false');
+        if (tooltip) announce(tooltip.textContent.trim());
+        viewedItems.add(index);
+        updateProgress();
       }
-    }
-
-    function classifyFlipCard(card, state) {
-      var idx = card.getAttribute('data-idx');
-      flipCardStates[idx] = state;
-      setCardStatusBadge(card, state);
-      card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-        var isActive = btn.getAttribute('data-classify') === state;
-        btn.setAttribute('aria-pressed', String(isActive));
-        btn.classList.toggle('active', isActive);
-      });
-      var titleEl = card.querySelector('.flip-card-front h3');
-      announce((state === 'know' ? 'Marked known: ' : 'Marked for review: ') + (titleEl ? titleEl.textContent : ''));
-      updateFlipCounts();
-    }
-
-    function applyFlipFilters() {
-      var activeChip = document.querySelector('.flip-filter-chip.active');
-      var categoryValue = activeChip ? activeChip.getAttribute('data-filter-category') : '';
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      var reviewOnly = !!reviewOnlyBtn && reviewOnlyBtn.getAttribute('aria-pressed') === 'true';
-      var visibleCount = 0;
-      document.querySelectorAll('.flip-card').forEach(function(card) {
-        var matchesCategory = !categoryValue || card.getAttribute('data-category') === categoryValue;
-        var matchesReview = !reviewOnly || flipCardStates[card.getAttribute('data-idx')] === 'review';
-        var visible = matchesCategory && matchesReview;
-        card.hidden = !visible;
-        if (visible) visibleCount++;
-      });
-      announce(visibleCount + ' card' + (visibleCount === 1 ? '' : 's') + ' shown.');
-    }
-
-    function resetFlipStudy() {
-      flipCardStates = {};
-      document.querySelectorAll('.flip-card').forEach(function(card) {
-        card.classList.remove('flipped');
-        card.setAttribute('aria-expanded', 'false');
-        var front = card.querySelector('.flip-card-front');
-        var back = card.querySelector('.flip-card-back');
-        if (front) front.setAttribute('aria-hidden', 'false');
-        if (back) back.setAttribute('aria-hidden', 'true');
-        card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-          btn.setAttribute('aria-pressed', 'false');
-          btn.setAttribute('tabindex', '-1');
-          btn.classList.remove('active');
-        });
-        setCardStatusBadge(card, null);
-        card.hidden = false;
-      });
-      document.querySelectorAll('.flip-filter-chip').forEach(function(chip) {
-        chip.classList.toggle('active', chip.getAttribute('data-filter-category') === '');
-      });
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      if (reviewOnlyBtn) reviewOnlyBtn.setAttribute('aria-pressed', 'false');
-      viewedItems.clear();
-      updateProgress();
-      updateFlipCounts();
-      announce('Study set restarted.');
     }
 
     function initComponent() {
-      var grid = document.getElementById('rcb-fixture-flip-cards-flip-grid');
-      if (grid && false) shuffleFlipCards(grid);
-
-      document.querySelectorAll('.flip-card').forEach(function(card, idx) {
-        card.addEventListener('click', function(event) {
-          if (event.target.closest('.flip-classify-btn')) return;
-          var flipped = card.classList.toggle('flipped');
-          card.setAttribute('aria-expanded', String(flipped));
-          var titleEl = card.querySelector('.flip-card-front h3');
-          var titleText = titleEl ? titleEl.textContent : '';
-          card.setAttribute('aria-label', (flipped ? 'Show ' + "Front" : 'Reveal ' + "Back") + ' of ' + titleText);
-          card.querySelector('.flip-card-front').setAttribute('aria-hidden', String(flipped));
-          card.querySelector('.flip-card-back').setAttribute('aria-hidden', String(!flipped));
-          card.querySelectorAll('.flip-classify-btn').forEach(function(btn) { btn.setAttribute('tabindex', flipped ? '0' : '-1'); });
-          announce((flipped ? "Back" : "Front") + ' shown');
-          viewedItems.add(idx);
-          updateProgress();
+      document.querySelectorAll('.hotspot-pin').forEach(function(pin) {
+        pin.addEventListener('click', function(event) {
+          event.stopPropagation();
+          toggleHotspot(parseInt(pin.getAttribute('data-idx'), 10), pin);
         });
-        card.addEventListener('keydown', function(event) {
-          if (event.target.closest('.flip-classify-btn')) return;
-          if (event.key === 'Enter' || event.key === ' ') {
+        pin.addEventListener('keydown', function(event) {
+          if (event.key === 'Escape' && pin.classList.contains('active')) {
             event.preventDefault();
-            card.click();
+            toggleHotspot(parseInt(pin.getAttribute('data-idx'), 10), pin);
           }
         });
-        card.querySelectorAll('.flip-classify-btn').forEach(function(btn) {
-          btn.addEventListener('click', function(event) {
-            event.stopPropagation();
-            classifyFlipCard(card, btn.getAttribute('data-classify'));
+        // Close this pin's tooltip when keyboard focus moves away from it (e.g. via
+        // Tab), rather than leaving it visibly open while an unrelated pin is focused.
+        pin.addEventListener('blur', function() {
+          if (pin.classList.contains('active')) {
+            toggleHotspot(parseInt(pin.getAttribute('data-idx'), 10), pin);
+          }
+        });
+      });
+
+      document.addEventListener('click', function(event) {
+        if (!event.target.closest('.hotspot-pin')) {
+          document.querySelectorAll('.hotspot-pin').forEach(function(pin) {
+            pin.classList.remove('active');
+            pin.setAttribute('aria-expanded', 'false');
+            var tooltip = pin.parentElement.querySelector('.hotspot-tooltip');
+            if (tooltip) tooltip.setAttribute('aria-hidden', 'true');
           });
-        });
+        }
       });
-
-      document.querySelectorAll('.flip-filter-chip').forEach(function(chip) {
-        chip.addEventListener('click', function() {
-          document.querySelectorAll('.flip-filter-chip').forEach(function(c) { c.classList.remove('active'); });
-          chip.classList.add('active');
-          applyFlipFilters();
-        });
-      });
-
-      var reviewOnlyBtn = document.querySelector('.flip-review-filter-btn');
-      if (reviewOnlyBtn) reviewOnlyBtn.addEventListener('click', function() {
-        var pressed = reviewOnlyBtn.getAttribute('aria-pressed') === 'true';
-        reviewOnlyBtn.setAttribute('aria-pressed', String(!pressed));
-        applyFlipFilters();
-      });
-
-      document.querySelectorAll('.flip-reset-btn, .flip-summary-reset-btn').forEach(function(btn) {
-        btn.addEventListener('click', resetFlipStudy);
-      });
-
-      if (flipStudyMode) updateFlipCounts();
     }
 
     if (document.readyState === 'loading') {
