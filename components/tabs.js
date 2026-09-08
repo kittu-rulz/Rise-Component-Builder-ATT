@@ -187,7 +187,7 @@ export function generateCSS() {
       cursor: not-allowed;
       background: var(--att-grey-2, #DCDFE3);
       border-color: var(--att-grey-2, #DCDFE3);
-      color: var(--att-grey-3, #707377);
+      color: var(--att-grey-3, #BDC2C7);
       opacity: 0.7;
     }
     .tab-icon-img {

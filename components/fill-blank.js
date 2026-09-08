@@ -132,7 +132,7 @@ export function generateCSS() {
     }
     .quiz-submit-btn:disabled {
       background-color: var(--att-grey-2, #DCDFE3);
-      color: var(--att-grey-3, #707377);
+      color: var(--att-grey-3, #BDC2C7);
       cursor: not-allowed;
       opacity: 0.6;
     }

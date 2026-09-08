@@ -165,7 +165,18 @@ Scoped to the `interactive-video` component. Unlike every other section here, th
 | `interactive-video-non-direct-video-url` | Blocking | (Phase 7) `videoSourceType: 'url'` and `videoUrl`'s hostname is a known video-hosting page (YouTube, `youtube-nocookie.com`, `youtu.be`, Vimeo including `player.vimeo.com`) rather than a direct media file. A native `<video>` element cannot play a hosting-page URL at all — the export would show no video whatsoever, meeting this file's own Blocking bar ("the output would be broken, empty, or fundamentally unusable"). Deliberately a short, explicit host list rather than an attempt to enumerate every video-hosting service that exists — see "Rules requiring manual judgment" below. Skipped entirely for `videoSourceType: 'upload'` and for a URL that fails to parse at all (`general-invalid-url` already covers a malformed URL for this same field). |
 | `interactive-video-uploaded-media-export-format` | Warning | (Phase 7) An uploaded video (`videoSourceType: 'upload'`) and/or an uploaded captions file are present. `prepareMediaExport()` (`js/export.js`) never inlines video/audio/captions, so the Iframe Snippet and HTML Block Fragment export formats produce a dangling `assets/<filename>` reference that 404s once pasted into Rise (`docs/INTERACTIVE-VIDEO.md` "Media-storage and export behavior") — this rule surfaces that pre-existing limitation proactively, recommending Web Package ZIP, rather than leaving the author to discover it only after publishing. |
 
-The first four are timestamp/marker-shape checks (`checkInteractiveVideoTimestampRules`) requiring `config.videoDurationSeconds` — a runtime fact captured by the Builder's own authoring-timeline widget (`app.js`), not something an author types in; see `docs/INTERACTIVE-VIDEO.md` "Marker Timeline widget — how duration is known" for the "unmeasured, not failed" convention this implies. The last two are separate, independently registered rules (`interactive-video-external-url-rules`, `interactive-video-uploaded-media-export-format-rule`) since each checks different fields and needs no duration data.
+## AT&T Brand compliance rules (Prompt 8)
+
+Enforces AT&T Design Standards across all generated component exports and prevents visual, typographical, or accessibility regressions.
+
+| Rule ID | Severity | Trigger |
+| --- | --- | --- |
+| `brand-color-literal` | Blocking | Custom color overrides or config fields contain color hexes or color literals outside the official `att-tokens.css` design system palette. |
+| `brand-font-family` | Blocking | Learner-facing copy is configured or styled with a font family other than AT&T Aleck (`var(--att-font-sans)`, `ATT Aleck Sans`, etc.). |
+| `brand-font-size-floor` | Blocking | Learner-facing body copy or prose font size is configured below the 16px (`1rem`) brand floor. |
+| `brand-icon-source` | Blocking | Text or header fields contain emoji characters or unapproved unicode glyphs instead of official AT&T SVG functional icons. |
+| `brand-contrast-ratio` | Warning | Text/surface contrast ratio falls below WCAG AA thresholds, specifically flagging AT&T Blue (`#009FDB`) used for text under 24px on light surfaces. |
+| `brand-focus-visible` | Warning | Interactive elements remove `:focus-visible` styling (`outline: none` without replacement) instead of the required 3px Cobalt (`#00388F`) focus ring. |
 
 ## P06: the first production rule set — request-by-request disposition
 

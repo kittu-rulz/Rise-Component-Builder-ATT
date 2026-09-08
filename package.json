@@ -13,6 +13,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
+    "lint:brand": "node scripts/lint-att-brand.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
@@ -20,7 +21,8 @@
     "stamp:check": "node scripts/stamp-cache-busting.mjs --check",
     "build": "node scripts/stamp-cache-busting.mjs && node build.mjs",
     "fixtures:exports": "node scripts/generate-export-fixtures.mjs",
-    "validate": "npm run lint && npm run typecheck && npm run test:coverage && npm run build"
+    "snapshots:brand": "node scripts/capture-brand-snapshots.mjs",
+    "validate": "npm run lint && npm run lint:brand && npm run typecheck && npm run test:coverage && npm run build"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

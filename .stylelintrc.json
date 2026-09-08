@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "color-named": "never",
+    "declaration-property-value-disallowed-list": {
+      "font-family": ["/Roboto/", "/Inter/", "/Arial/", "/Helvetica/", "/sans-serif$/"],
+      "outline": ["none", "0"]
+    },
+    "custom-property-pattern": "^att-",
+    "font-family-name-quotes": "always-where-recommended"
+  }
+}

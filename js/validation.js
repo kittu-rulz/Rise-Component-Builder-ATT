@@ -56,7 +56,8 @@ const CATEGORY = Object.freeze({
   HOTSPOTS: 'hotspots',
   INTERACTIVE_VIDEO: 'interactive-video',
   AUDIO_PLAYER: 'audio-player',
-  VIDEO_FRAME: 'video-frame'
+  VIDEO_FRAME: 'video-frame',
+  BRAND: 'brand'
 });
 
 // Short, static, human-readable label for each rule — the "title" half of the result
@@ -111,7 +112,13 @@ const RULE_TITLES = Object.freeze({
   'audio-player-invalid-transcript-segment': 'Synchronized transcript row has an invalid timestamp',
   'video-frame-invalid-chapter-line': 'Chapter row has an invalid timestamp or missing title',
   'video-frame-duplicate-chapter-timestamps': 'Two chapters share the same timestamp',
-  'video-frame-invalid-transcript-segment': 'Synchronized transcript row has an invalid timestamp'
+  'video-frame-invalid-transcript-segment': 'Synchronized transcript row has an invalid timestamp',
+  'brand-color-literal': 'Color literal is not an approved AT&T brand token',
+  'brand-font-family': 'Font family is not AT&T Aleck',
+  'brand-font-size-floor': 'Learner-facing body text is below 16px floor',
+  'brand-icon-source': 'Non-library icon or emoji character used',
+  'brand-contrast-ratio': 'Color contrast below WCAG AA standards',
+  'brand-focus-visible': 'Missing focus-visible outline on interactive element'
 });
 
 function issue(ruleId, severity, category, explanation, extra = {}) {
@@ -796,6 +803,12 @@ registerValidationRule({
   appliesTo: ({ componentId }) => componentId === 'video-frame',
   check: ({ componentId, config }) => checkMediaChapterAndTranscriptRules(componentId, config)
 });
+registerValidationRule({ id: 'brand-color-literals', check: ({ componentOverrides, config }) => checkBrandColorLiterals(componentOverrides, config) });
+registerValidationRule({ id: 'brand-font-family', check: ({ componentOverrides, config }) => checkBrandFontFamily(componentOverrides, config) });
+registerValidationRule({ id: 'brand-font-size-floor', check: ({ config }) => checkBrandFontSizeFloor(config) });
+registerValidationRule({ id: 'brand-icon-source', check: ({ schema, config }) => checkBrandIconSource(schema, config) });
+registerValidationRule({ id: 'brand-contrast-ratio', check: ({ theme, componentOverrides }) => checkBrandContrastRatio(theme, componentOverrides) });
+registerValidationRule({ id: 'brand-focus-visible', check: ({ componentOverrides }) => checkBrandFocusVisible(componentOverrides) });
 
 // Timestamps within this many seconds of each other are flagged as "hard to trigger
 // independently" — during real playback (Phase 3/4) two markers this close together risk
@@ -987,6 +1000,161 @@ function checkMediaChapterAndTranscriptRules(componentId, config) {
     }
   });
 
+  return issues;
+}
+
+// ---------------------------------------------------------------------------
+// AT&T Brand Compliance Rules (Prompt 8)
+// ---------------------------------------------------------------------------
+
+// Official AT&T token hex palette (from design/att-tokens.css and themes.js)
+const ATT_BRAND_HEX_VALUES = new Set([
+  '#009FDB', // --att-blue (Primary AT&T Blue)
+  '#00388F', // --att-cobalt (CTA / Secondary Cobalt)
+  '#49EEDC', // --att-mint (Secondary Mint)
+  '#91DC00', // --att-lime (Secondary Lime accent)
+  '#F3F4F5', // --att-grey-1 (Sunken surface neutral)
+  '#DCDFE3', // --att-grey-2 (Border neutral)
+  '#BDC2C7', // --att-grey-3 (Border strong neutral)
+  '#000000', // --att-black (Text neutral)
+  '#FFFFFF', // --att-white (Surface neutral)
+  '#0079B1', // --att-blue-dark (Gradient stop)
+  '#00C9FF', // --att-blue-light (Gradient stop)
+  '#002A6B', // --att-cta-bg-hover (Cobalt hover state)
+  '#4B5563'  // Muted text high-contrast neutral
+]);
+
+function normalizeBrandHex(hex) {
+  const clean = String(hex || '').trim().toUpperCase();
+  if (clean.length === 4 && clean.startsWith('#')) {
+    return `#${clean[1]}${clean[1]}${clean[2]}${clean[2]}${clean[3]}${clean[3]}`;
+  }
+  return clean;
+}
+
+// 1. Color literal rule (BLOCKING) — flags hardcoded colors outside token palette
+function checkBrandColorLiterals(componentOverrides = {}, config = {}) {
+  const issues = [];
+  const colorKeys = [
+    { key: 'primary', label: 'Primary color override' },
+    { key: 'accent', label: 'Accent color override' },
+    { key: 'background', label: 'Background color override' },
+    { key: 'text', label: 'Text color override' },
+    { key: 'primaryColor', label: 'Primary color' },
+    { key: 'accentColor', label: 'Accent color' },
+    { key: 'backgroundColor', label: 'Background color' },
+    { key: 'textColor', label: 'Text color' },
+    { key: 'colorPrimary', label: 'Primary color' },
+    { key: 'colorAccent', label: 'Accent color' },
+    { key: 'colorBg', label: 'Background color' },
+    { key: 'colorText', label: 'Text color' }
+  ];
+
+  colorKeys.forEach(({ key, label }) => {
+    const val = componentOverrides?.[key] ?? config?.[key];
+    if (val && typeof val === 'string' && val.startsWith('#')) {
+      const hex = normalizeBrandHex(val);
+      if (!ATT_BRAND_HEX_VALUES.has(hex)) {
+        issues.push(issue('brand-color-literal', SEVERITY.BLOCKING, CATEGORY.BRAND,
+          `${label} ("${val}") is not an approved AT&T brand color token. Use AT&T Blue (#009FDB), Cobalt (#00388F), Neutrals, or standard design tokens.`,
+          { fieldId: key }));
+      }
+    }
+  });
+
+  return issues;
+}
+
+// 2. Font family rule (BLOCKING) — ensures learner-facing text uses AT&T Aleck
+function checkBrandFontFamily(componentOverrides = {}, config = {}) {
+  const issues = [];
+  const fontVal = componentOverrides?.fontFamily ?? config?.fontFamily ?? config?.headingFontFamily;
+  if (fontVal && typeof fontVal === 'string') {
+    const lower = fontVal.toLowerCase();
+    const isApproved = lower.includes('att aleck') || lower.includes('var(--att-font') || lower.includes('var(--font-family');
+    if (!isApproved) {
+      issues.push(issue('brand-font-family', SEVERITY.BLOCKING, CATEGORY.BRAND,
+        `Font family "${fontVal}" is not AT&T Aleck. All learner-facing components must use the AT&T Aleck font family.`,
+        { fieldId: 'fontFamily' }));
+    }
+  }
+  return issues;
+}
+
+// 3. Font size floor rule (BLOCKING) — enforces 16px floor for body text
+function checkBrandFontSizeFloor(config = {}) {
+  const issues = [];
+  const sizeVal = config?.bodyFontSize ?? config?.fontSize;
+  if (sizeVal !== undefined && sizeVal !== null && sizeVal !== '') {
+    const num = Number(sizeVal);
+    if (Number.isFinite(num) && num < 16) {
+      issues.push(issue('brand-font-size-floor', SEVERITY.BLOCKING, CATEGORY.BRAND,
+        `Learner-facing body font size (${num}px) is below the required 16px floor for AT&T learning experiences.`,
+        { fieldId: 'bodyFontSize' }));
+    }
+  }
+  return issues;
+}
+
+// 4. Non-library icon or emoji character (BLOCKING)
+const EMOJI_AND_UNAPPROVED_ICONS_REGEX = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F1E6}-\u{1F1FF}\u{1FA70}-\u{1FAFF}→➔➜▶▼▲◀✓✔✕✖★☆]/u;
+
+function checkBrandIconSource(schema = {}, config = {}) {
+  const issues = [];
+  const checkText = (value, fieldId, itemIndex, fieldLabel) => {
+    if (typeof value !== 'string' || !value) return;
+    const match = value.match(EMOJI_AND_UNAPPROVED_ICONS_REGEX);
+    if (match) {
+      issues.push(issue('brand-icon-source', SEVERITY.BLOCKING, CATEGORY.BRAND,
+        `${fieldLabel || 'Field'} contains a non-library icon or emoji character ("${match[0]}"). Use official AT&T SVG functional icons instead of emoji or ad-hoc glyphs.`,
+        { fieldId, itemIndex }));
+    }
+  };
+
+  (schema.componentFields || []).forEach(field => {
+    if (['text', 'textarea', 'richtext'].includes(field.type)) {
+      checkText(config[field.id], field.id, null, field.label);
+    }
+  });
+
+  const items = Array.isArray(config.items) ? config.items : [];
+  items.forEach((item, itemIndex) => {
+    (schema.itemFields || []).forEach(field => {
+      if (['text', 'textarea', 'richtext'].includes(field.type)) {
+        checkText(item[field.id], field.id, itemIndex, `${field.label} (Item ${itemIndex + 1})`);
+      }
+    });
+  });
+
+  return issues;
+}
+
+// 5. Contrast ratio with #009FDB under 24px check (WARNING)
+function checkBrandContrastRatio(theme, componentOverrides) {
+  const tokens = resolveThemeTokens(theme, componentOverrides);
+  const issues = [];
+  const textHex = normalizeBrandHex(tokens.text);
+  const surfaceHex = normalizeBrandHex(tokens.surface);
+
+  // Specifically check AT&T Blue (#009FDB) used as text color against white/light surface for small text
+  if (textHex === '#009FDB' && (surfaceHex === '#FFFFFF' || surfaceHex === '#F3F4F5')) {
+    const ratio = contrastRatio('#009FDB', surfaceHex);
+    issues.push(issue('brand-contrast-ratio', SEVERITY.WARNING, CATEGORY.BRAND,
+      `AT&T Blue (#009FDB) has a ${ratio.toFixed(1)}:1 contrast ratio on ${surfaceHex} and passes WCAG AA only for large text (≥24px or ≥18.66px bold). Use Black (#000000) or Cobalt (#00388F) for copy under 24px.`,
+      { fieldId: 'textColor' }));
+  }
+
+  return issues;
+}
+
+// 6. Focus visible styling rule (WARNING)
+function checkBrandFocusVisible(componentOverrides = {}) {
+  const issues = [];
+  if (componentOverrides?.focusOutline === 'none' || componentOverrides?.disableFocusRing === true) {
+    issues.push(issue('brand-focus-visible', SEVERITY.WARNING, CATEGORY.BRAND,
+      'Focus outlines must not be removed on interactive elements. AT&T standards require a 3px Cobalt (#00388F) focus ring with 2px offset for keyboard accessibility.',
+      { fieldId: 'focusRing' }));
+  }
   return issues;
 }
 

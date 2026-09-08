@@ -976,3 +976,92 @@ describe.each(['audio-player', 'video-frame'])('%s: chapters/transcript Prefligh
     expect(issues.some(item => item.ruleId.startsWith(`${componentId}-invalid-chapter`) || item.ruleId.startsWith(`${componentId}-duplicate-chapter`) || item.ruleId.startsWith(`${componentId}-invalid-transcript`))).toBe(false);
   });
 });
+
+describe('Prompt 8: AT&T Brand Compliance Preflight Rules', () => {
+  test('brand-color-literal: non-brand color override is a Blocking error', () => {
+    const issues = issuesFor('accordion', buildConfig('accordion'), {
+      componentOverrides: { primary: '#FF0000' }
+    });
+    const found = issues.find(item => item.ruleId === 'brand-color-literal');
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.BLOCKING);
+    expect(found.explanation).toContain('#FF0000');
+  });
+
+  test('brand-color-literal: approved AT&T brand tokens pass with zero errors', () => {
+    const issues = issuesFor('accordion', buildConfig('accordion'), {
+      componentOverrides: { primary: '#00388F', accent: '#009FDB' }
+    });
+    expect(issues.some(item => item.ruleId === 'brand-color-literal')).toBe(false);
+  });
+
+  test('brand-font-family: non-Aleck font family is a Blocking error', () => {
+    const issues = issuesFor('accordion', buildConfig('accordion'), {
+      componentOverrides: { fontFamily: 'Comic Sans MS' }
+    });
+    const found = issues.find(item => item.ruleId === 'brand-font-family');
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.BLOCKING);
+    expect(found.explanation).toContain('Comic Sans MS');
+  });
+
+  test('brand-font-family: ATT Aleck Sans passes cleanly', () => {
+    const issues = issuesFor('accordion', buildConfig('accordion'), {
+      componentOverrides: { fontFamily: 'ATT Aleck Sans' }
+    });
+    expect(issues.some(item => item.ruleId === 'brand-font-family')).toBe(false);
+  });
+
+  test('brand-font-size-floor: body font size below 16px is a Blocking error', () => {
+    const config = buildConfig('accordion', { bodyFontSize: 14 });
+    const issues = issuesFor('accordion', config);
+    const found = issues.find(item => item.ruleId === 'brand-font-size-floor');
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.BLOCKING);
+    expect(found.explanation).toContain('14px');
+  });
+
+  test('brand-font-size-floor: 16px body copy passes cleanly', () => {
+    const config = buildConfig('accordion', { bodyFontSize: 16 });
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(item => item.ruleId === 'brand-font-size-floor')).toBe(false);
+  });
+
+  test('brand-icon-source: emoji character in title or content is a Blocking error', () => {
+    const config = buildConfig('accordion');
+    config.items[0].title = '🌟 Feature Overview';
+    const issues = issuesFor('accordion', config);
+    const found = issues.find(item => item.ruleId === 'brand-icon-source');
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.BLOCKING);
+    expect(found.explanation).toContain('🌟');
+  });
+
+  test('brand-icon-source: clean text with no emoji passes cleanly', () => {
+    const config = buildConfig('accordion');
+    const issues = issuesFor('accordion', config);
+    expect(issues.some(item => item.ruleId === 'brand-icon-source')).toBe(false);
+  });
+
+  test('brand-contrast-ratio: AT&T Blue (#009FDB) text on white is flagged as a Warning', () => {
+    const issues = issuesFor('accordion', buildConfig('accordion'), {
+      componentOverrides: { text: '#009FDB' }
+    });
+    const found = issues.find(item => item.ruleId === 'brand-contrast-ratio');
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.WARNING);
+    expect(found.explanation).toContain('#009FDB');
+    expect(found.explanation).toContain('24px');
+  });
+
+  test('brand-focus-visible: removing focus outline is a Warning', () => {
+    const issues = issuesFor('accordion', buildConfig('accordion'), {
+      componentOverrides: { focusOutline: 'none' }
+    });
+    const found = issues.find(item => item.ruleId === 'brand-focus-visible');
+    expect(found).toBeDefined();
+    expect(found.severity).toBe(SEVERITY.WARNING);
+    expect(found.explanation).toContain('Cobalt');
+  });
+});
+
