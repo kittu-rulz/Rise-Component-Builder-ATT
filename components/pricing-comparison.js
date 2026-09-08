@@ -63,7 +63,7 @@ export function generateCSS() {
     }
     .pricing-card-item.selected {
       border-color: var(--accent);
-      transform: translateY(-2px);
+      box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
     }
     .popular-ribbon {
       position: absolute;
@@ -139,12 +139,24 @@ export function generateCSS() {
       border-color: var(--primary);
       color: var(--on-primary);
     }
+    .pricing-card-item:hover {
+      box-shadow: var(--att-shadow-2, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+    }
     .pricing-action-btn:hover {
       border-color: var(--primary-hover);
       color: var(--primary-hover);
     }
     .pricing-card-item.premium-highlight .pricing-action-btn:hover {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
       color: var(--on-primary);
+    }
+    .pricing-action-btn:active {
+      transform: scale(0.98);
+    }
+    .pricing-action-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }`;
 }
 

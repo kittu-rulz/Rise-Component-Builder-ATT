@@ -51,6 +51,16 @@ export function generateCSS() {
       cursor: pointer;
       transition: all 0.2s;
     }
+    .menu-drawer-item:hover {
+      box-shadow: var(--att-shadow-2, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    }
+    .menu-drawer-item:active {
+      transform: scale(0.98);
+    }
+    .menu-drawer-item:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
     .menu-item-summary {
       padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
       display: flex;

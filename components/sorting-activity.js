@@ -129,6 +129,13 @@ export function generateCSS() {
       border-color: var(--primary-hover);
       color: var(--primary-hover);
     }
+    .target-btn:active {
+      transform: scale(0.98);
+    }
+    .target-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
     .target-btn.active {
       /* Cobalt (--primary) background + white text: the brand's clickable
          treatment. --accent was previously used here with black text purely to
@@ -204,6 +211,19 @@ export function generateCSS() {
     }
     .quiz-submit-btn:hover {
       background-color: var(--primary-hover);
+    }
+    .quiz-submit-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .quiz-submit-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+    .quiz-submit-btn:disabled {
+      background-color: var(--att-grey-2, #DCDFE3);
+      color: var(--att-grey-3, #707377);
+      opacity: 0.7;
+      cursor: not-allowed;
     }
     .quiz-feedback {
       margin-top: var(--att-space-4, 16px);

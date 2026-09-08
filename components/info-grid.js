@@ -58,9 +58,16 @@ export function generateCSS() {
       transition: all 0.2s;
     }
     .info-grid-item:hover {
-      transform: translateY(-2px);
       /* Cobalt (--primary), not AT&T Blue: this card is clickable. */
       border-color: var(--primary);
+      box-shadow: var(--att-shadow-2, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    }
+    .info-grid-item:active {
+      transform: scale(0.98);
+    }
+    .info-grid-item:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }
     .info-grid-item.active {
       /* Cobalt border, not an AT&T-Blue tint background: the selected state of a

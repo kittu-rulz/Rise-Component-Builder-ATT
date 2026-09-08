@@ -52,15 +52,21 @@ export function generateCSS() {
       font: inherit;
       background: var(--bg-card);
       color: inherit;
+      min-height: 44px;
+      min-width: 44px;
+      transition: transform var(--att-dur-base, 0.2s) ease;
+    }
+    .gallery-item-card:active {
+      transform: scale(0.98);
+    }
+    .gallery-item-card:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }
     .gallery-item-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.3s ease;
-    }
-    .gallery-item-card:hover img {
-      transform: scale(1.05);
     }
     .gallery-caption-overlay {
       position: absolute;
@@ -123,6 +129,14 @@ export function generateCSS() {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      transition: transform var(--att-dur-base, 0.2s) ease;
+    }
+    .lightbox-close:active {
+      transform: scale(0.98);
+    }
+    .lightbox-close:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }`;
 }
 

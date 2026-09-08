@@ -200,7 +200,7 @@ export const SHARED_A11Y_CSS = `
       border: 0 !important;
     }
 
-    :where(button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    :where(button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [role="button"], [role="tab"], [role="radio"]):focus-visible {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
       box-shadow: 0 0 0 2px var(--bg-card);

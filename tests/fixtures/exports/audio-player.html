@@ -452,10 +452,17 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: background-color 0.2s, transform 0.2s;
       flex-shrink: 0;
     }
-    .aud-play-btn:hover { transform: scale(1.05); }
+    .aud-play-btn:hover { background-color: var(--primary-hover); }
+    .aud-play-btn:active, .aud-skip-btn:active, .aud-vol-btn:active, .aud-rate-btn:active {
+      transform: scale(0.98);
+    }
+    .aud-play-btn:focus-visible, .aud-skip-btn:focus-visible, .aud-vol-btn:focus-visible, .aud-rate-btn:focus-visible, .aud-resume-btn:focus-visible, .aud-restart-choice-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
     /* Replay/Forward are secondary to the main play button — smaller, outlined rather than
        filled, so the play control stays visually dominant (still ~40px, a real touch
        target). Cobalt-outlined at rest like sorting-activity's .target-btn, since these
@@ -765,7 +772,7 @@
       border: 0 !important;
     }
 
-    :where(button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    :where(button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), [role="button"], [role="tab"], [role="radio"]):focus-visible {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
       box-shadow: 0 0 0 2px var(--bg-card);

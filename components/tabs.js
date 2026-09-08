@@ -176,9 +176,19 @@ export function generateCSS() {
       border-color: var(--primary);
       color: var(--on-primary);
     }
+    .tab-btn:active:not([aria-disabled="true"]) {
+      transform: scale(0.98);
+    }
+    .tab-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
     .tab-btn[aria-disabled="true"] {
       cursor: not-allowed;
-      opacity: 0.6;
+      background: var(--att-grey-2, #DCDFE3);
+      border-color: var(--att-grey-2, #DCDFE3);
+      color: var(--att-grey-3, #707377);
+      opacity: 0.7;
     }
     .tab-icon-img {
       width: 18px;

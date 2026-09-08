@@ -83,6 +83,16 @@ export function generateCSS() {
       min-height: 44px;
       justify-content: flex-start;
     }
+    .timeline-node:focus-visible {
+      outline: none;
+    }
+    .timeline-node:focus-visible .node-marker {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+    .timeline-node:active .node-marker {
+      transform: scale(0.98);
+    }
     .node-marker {
       width: 24px;
       height: 24px;
@@ -112,7 +122,6 @@ export function generateCSS() {
       /* border-color already var(--primary) at rest above; filling it solid
          Cobalt with white text is the selected state's own treatment. */
       background-color: var(--primary);
-      transform: scale(1.1);
     }
     .timeline-node.active .node-marker-label {
       color: var(--on-primary);

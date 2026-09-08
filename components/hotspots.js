@@ -116,6 +116,27 @@ export function generateCSS() {
       box-shadow: var(--att-shadow-1, 0 4px 6px rgba(0,0,0,0.15));
       z-index: 1;
       padding: 0;
+      position: absolute;
+    }
+    .hotspot-pin::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      right: -6px;
+      bottom: -6px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    .hotspot-pin:hover {
+      background-color: var(--primary-hover);
+    }
+    .hotspot-pin:active {
+      transform: translate(-50%, -50%) scale(0.98);
+    }
+    .hotspot-pin:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }
     .hotspot-pin .pulse {
       position: absolute;

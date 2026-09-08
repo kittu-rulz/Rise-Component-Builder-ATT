@@ -283,6 +283,11 @@ export function generateCSS() {
       color: var(--text-muted);
     }
 
+    .timeline-step:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+
     .step-toggle-btn {
       width: 100%;
       background: transparent;
@@ -295,6 +300,10 @@ export function generateCSS() {
       cursor: pointer;
       font: inherit;
       color: inherit;
+    }
+
+    .step-toggle-btn:active:not([aria-disabled="true"]) {
+      transform: scale(0.98);
     }
 
     .step-toggle-btn:focus-visible {

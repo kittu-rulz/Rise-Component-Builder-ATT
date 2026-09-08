@@ -124,6 +124,24 @@ export function generateCSS() {
       cursor: pointer;
     }
 
+    .flip-card:focus-visible {
+      outline: none;
+    }
+
+    .flip-card:focus-visible .flip-card-front,
+    .flip-card:focus-visible .flip-card-back {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+
+    .flip-card:active:not(.flipped) .flip-card-inner {
+      transform: scale(0.98);
+    }
+
+    .flip-card.flipped:active .flip-card-inner {
+      transform: rotateY(180deg) scale(0.98);
+    }
+
     .flip-card-inner {
       position: relative;
       width: 100%;
@@ -292,6 +310,15 @@ export function generateCSS() {
     .flip-filter-chip.active, .flip-review-filter-btn[aria-pressed="true"] {
       border-color: var(--primary);
       box-shadow: 0 0 0 1px var(--primary) inset;
+    }
+
+    .flip-classify-btn:active, .flip-filter-chip:active, .flip-review-filter-btn:active, .flip-reset-btn:active, .flip-summary-reset-btn:active {
+      transform: scale(0.98);
+    }
+
+    .flip-classify-btn:focus-visible, .flip-filter-chip:focus-visible, .flip-review-filter-btn:focus-visible, .flip-reset-btn:focus-visible, .flip-summary-reset-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }
 
     .flip-study-counts {

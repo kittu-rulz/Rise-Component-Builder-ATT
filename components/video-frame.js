@@ -357,6 +357,16 @@ export function generateCSS() {
       flex-shrink: 0;
       padding: 0;
     }
+    .video-overlay-play:active {
+      transform: translate(-50%, -50%) scale(0.98);
+    }
+    .video-overlay-play:focus-visible, .video-skip-btn:focus-visible, .video-mini-play:focus-visible, .video-control-btn:focus-visible, .video-rate-btn:focus-visible, .video-resume-btn:focus-visible, .video-restart-choice-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+    .video-skip-btn:active, .video-mini-play:active, .video-control-btn:active, .video-rate-btn:active, .video-resume-btn:active, .video-restart-choice-btn:active {
+      transform: scale(0.98);
+    }
     .video-skip-btn:hover { border-color: var(--primary-hover); color: var(--primary-hover); }
     .video-skip-btn:disabled { opacity: 0.5; cursor: default; }
     .video-mini-play {

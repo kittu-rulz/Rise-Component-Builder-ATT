@@ -137,7 +137,10 @@ export function generateCSS() {
       text-align: left;
       cursor: pointer;
       color: var(--text-main);
-      outline: none;
+    }
+
+    .accordion-trigger:active:not([aria-disabled="true"]) {
+      transform: scale(0.98);
     }
 
     .accordion-trigger:focus-visible {

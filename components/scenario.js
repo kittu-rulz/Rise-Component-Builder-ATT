@@ -153,6 +153,13 @@ export function generateCSS() {
       border-color: var(--primary-hover);
       color: var(--primary-hover);
     }
+    .scenario-choice-btn:active {
+      transform: scale(0.98);
+    }
+    .scenario-choice-btn:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
     .scenario-feedback-balloon {
       background-color: var(--att-grey-1, #F3F4F5);
       border: 1px solid var(--border-color);

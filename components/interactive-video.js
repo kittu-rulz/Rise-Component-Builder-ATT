@@ -218,7 +218,10 @@ export function generateCSS() {
       display: flex;
       flex-direction: column;
       gap: var(--att-space-3, 12px);
-      outline: none;
+    }
+    .iv-interaction-panel:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }
     .iv-interaction-panel[hidden] {
       display: none;

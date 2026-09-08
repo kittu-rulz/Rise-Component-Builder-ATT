@@ -53,10 +53,18 @@ export function generateCSS() {
     .profile-card-item:hover {
       /* Cobalt (--primary), not AT&T Blue: this card is clickable. */
       border-color: var(--primary);
+      box-shadow: var(--att-shadow-2, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    }
+    .profile-card-item:active {
+      transform: scale(0.98);
+    }
+    .profile-card-item:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }
     .profile-card-item.active {
       border-color: var(--primary);
-      transform: translateY(-2px);
+      box-shadow: var(--att-shadow-2, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     }
     .profile-avatar-circle {
       width: 50px;

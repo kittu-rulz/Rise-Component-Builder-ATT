@@ -180,12 +180,18 @@ export function generateCSS() {
       color: var(--primary);
     }
     .process-controls-row .btn:disabled {
-      opacity: 0.5;
+      background-color: var(--att-grey-2, #DCDFE3);
+      color: var(--att-grey-3, #707377);
+      border-color: var(--att-grey-2, #DCDFE3);
       cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .process-controls-row .btn:active:not(:disabled) {
+      transform: scale(0.98);
     }
     .process-controls-row .btn:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 3px var(--focus-ring);
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }`;
 }
 

@@ -52,8 +52,15 @@ export function generateCSS() {
       border: var(--border-style);
     }
     .link-button-item:hover {
-      transform: translateY(-2px);
       background-color: var(--primary-hover);
+      box-shadow: var(--att-shadow-2);
+    }
+    .link-button-item:active {
+      transform: scale(0.98);
+    }
+    .link-button-item:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
     }`;
 }
 
