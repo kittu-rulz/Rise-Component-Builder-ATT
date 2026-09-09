@@ -1054,11 +1054,11 @@ a {
 
 .component-details-layout {
   display: grid;
-  grid-template-columns: 1.42fr 1fr;
+  grid-template-columns: 1.45fr 1fr;
   gap: 28px;
   overflow-y: auto;
   padding: 24px 28px;
-  max-height: calc(92vh - 160px);
+  max-height: calc(90vh - 140px);
 }
 
 @media (max-width: 980px) {
@@ -1069,7 +1069,7 @@ a {
   }
 
   .details-preview-container {
-    height: 360px;
+    height: 460px;
   }
 }
 
@@ -1089,10 +1089,10 @@ a {
 
 .details-preview-container {
   width: 100%;
-  height: 440px;
+  height: 560px;
   background-color: #FFFFFF;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
@@ -1102,6 +1102,12 @@ a {
   height: 100%;
   border: none;
   background-color: #FFFFFF;
+}
+
+.details-capabilities-section {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
 }
 
 .details-subheading {
