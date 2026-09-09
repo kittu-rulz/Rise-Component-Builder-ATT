@@ -2368,8 +2368,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (region) region.textContent = summarizePreflightForAnnouncement(issues);
   }
 
+  function computeCompliancePillars(issues) {
+    const brandIssues = issues.filter(i => i.rule?.includes('brand') || i.title?.toLowerCase().includes('brand') || i.title?.toLowerCase().includes('color') || i.title?.toLowerCase().includes('typography'));
+    const a11yIssues = issues.filter(i => i.rule?.includes('a11y') || i.title?.toLowerCase().includes('contrast') || i.title?.toLowerCase().includes('accessibility') || i.title?.toLowerCase().includes('alt'));
+    const riseIssues = issues.filter(i => i.rule?.includes('rise') || i.title?.toLowerCase().includes('rise') || i.title?.toLowerCase().includes('overflow') || i.title?.toLowerCase().includes('height') || i.title?.toLowerCase().includes('completion'));
+    const mediaIssues = issues.filter(i => i.rule?.includes('media') || i.title?.toLowerCase().includes('media') || i.title?.toLowerCase().includes('image') || i.title?.toLowerCase().includes('video') || i.title?.toLowerCase().includes('audio'));
+
+    const getPillarState = (pillIssues) => {
+      if (pillIssues.some(i => i.severity === 'blocking')) return 'blocking';
+      if (pillIssues.some(i => i.severity === 'warning')) return 'warning';
+      return 'pass';
+    };
+
+    return [
+      { id: 'brand', name: 'Brand & Typography', state: getPillarState(brandIssues), count: brandIssues.length },
+      { id: 'a11y', name: 'WCAG 2.1 AA Accessibility', state: getPillarState(a11yIssues), count: a11yIssues.length },
+      { id: 'rise', name: 'Rise 360 Compatibility', state: getPillarState(riseIssues), count: riseIssues.length },
+      { id: 'media', name: 'Media & Asset Budgets', state: getPillarState(mediaIssues), count: mediaIssues.length }
+    ];
+  }
+
   function renderPreflightResults(container, issues) {
     const summary = summarizePreflight(issues);
+    const pillars = computeCompliancePillars(issues);
+    const passingCount = pillars.filter(p => p.state === 'pass').length;
+
+    const pillarsHTML = `
+      <div class="compliance-pillars-grid">
+        ${pillars.map(p => {
+          const icon = p.state === 'pass' ? '✓' : p.state === 'warning' ? '!' : '×';
+          const metaText = p.state === 'pass' ? '100% Compliant' : `${p.count} ${p.state === 'blocking' ? 'blocking issue' : 'warning'}${p.count === 1 ? '' : 's'}`;
+          return `
+            <div class="compliance-pillar-card">
+              <span class="compliance-pillar-status is-${p.state}">${icon}</span>
+              <div class="compliance-pillar-info">
+                <span class="compliance-pillar-name">${escapeHTML(p.name)}</span>
+                <span class="compliance-pillar-meta">${escapeHTML(metaText)}</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
     const sections = [['blocking', summary.blocking], ['warning', summary.warnings], ['recommendation', summary.recommendations]];
     const sectionsHTML = sections.filter(([, list]) => list.length).map(([severity, list]) => `
       <div class="preflight-section">
@@ -2385,7 +2426,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             </li>`).join('')}
         </ul>
       </div>`).join('');
-    container.innerHTML = sectionsHTML || '<div class="preflight-empty">No issues found — this component is clean.</div>';
+
+    const statusBanner = `<div class="preflight-summary-line" style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: ${summary.blocking.length ? 'var(--danger)' : 'var(--text-main)'};">AT&T Compliance Status: ${passingCount}/4 Pillars Verified${summary.blocking.length ? ' · Fix blocking errors before export' : ''}</div>`;
+
+    container.innerHTML = statusBanner + pillarsHTML + (sectionsHTML || '<div class="preflight-empty">No issues found — this component is clean and ready for Rise.</div>');
     container.querySelectorAll('.preflight-issue-jump').forEach(button => {
       button.addEventListener('click', () => jumpToPreflightField(button.dataset.fieldId, button.dataset.itemIndex));
     });
