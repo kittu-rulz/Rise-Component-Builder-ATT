@@ -407,6 +407,20 @@ export const editorSchemas = {
       field('buttonLabel', 'Action Button Label (Optional)', 'text', { required: false, default: '', maxLength: 30 }),
       field('buttonUrl', 'Action Button URL (Optional)', 'url', { required: false, default: '' })
     ]
+  },
+  'confidence-matrix': {
+    itemLabel: 'Skill Competency', minItems: 1, maxItems: 12,
+    componentLabel: 'Self-Assessment Settings',
+    componentFields: [
+      field('title', 'Header Title', 'text', { required: false, default: 'Engineering & Cloud Architecture Self-Assessment' }),
+      field('content', 'Description / Instructions', 'richtext', { required: false, default: 'Evaluate your technical proficiency and execution confidence across core enterprise domains to identify strengths and personalized growth pathways.' }),
+      field('showBreakdown', 'Show Diagnostic Strengths & Growth Panel', 'checkbox', { default: true })
+    ],
+    itemFields: [
+      field('title', 'Competency Title', 'text', { required: true, default: 'New Competency Title', maxLength: 100 }),
+      field('category', 'Domain Category (Optional)', 'text', { required: false, default: 'General', maxLength: 40 }),
+      field('content', 'Competency Criteria & Expectations', 'richtext', { required: true, default: 'Add detailed competency expectations and execution criteria here.' })
+    ]
   }
 };
 

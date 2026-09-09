@@ -51,7 +51,7 @@ describe('component registry integrity', () => {
       const expected = COMPONENT_REGISTRY.filter(entry => entry.categoryId === category.id).length;
       expect(counts.find(entry => entry.id === category.id).count).toBe(expected);
     });
-    expect(counts.find(entry => entry.id === 'knowledge').count).toBe(4);
+    expect(counts.find(entry => entry.id === 'knowledge').count).toBe(5);
   });
 
   test('every production component has an editor, renderer, and exporter', () => {
@@ -90,9 +90,9 @@ describe('component registry integrity', () => {
   });
 
   test('Knowledge Checks displays the correct number of components', () => {
-    expect(componentCatalog.filter(item => item.category === 'knowledge').length).toBe(4);
+    expect(componentCatalog.filter(item => item.category === 'knowledge').length).toBe(5);
     const filtered = filterCatalog(componentCatalog, { activeCategory: 'knowledge', searchQuery: '', favorites: new Set() });
-    expect(filtered.length).toBe(4);
+    expect(filtered.length).toBe(5);
   });
 
   test('the recent category is ordered by recency, not catalog order, and drops unknown ids', () => {
@@ -140,7 +140,7 @@ describe('catalog-positioning metadata (classification + differentiator)', () =>
       'sorting-activity', 'tab-blocks', 'vertical-timeline'
     ].sort());
     expect(custom).toEqual([
-      'audio-player', 'callout-box', 'card-carousel', 'comparison-slider', 'dial-gauge', 'horizontal-timeline', 'interactive-video', 'menu-list',
+      'audio-player', 'callout-box', 'card-carousel', 'comparison-slider', 'confidence-matrix', 'dial-gauge', 'horizontal-timeline', 'interactive-video', 'menu-list',
       'pricing-comparison', 'profile-cards', 'video-frame'
     ].sort());
   });

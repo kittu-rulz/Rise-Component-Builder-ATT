@@ -24,6 +24,7 @@ import * as comparisonSlider from '../../components/comparison-slider.js';
 import * as dialGauge from '../../components/dial-gauge.js';
 import * as calloutBox from '../../components/callout-box.js';
 import * as cardCarousel from '../../components/card-carousel.js';
+import * as confidenceMatrix from '../../components/confidence-matrix.js';
 import { invalidUrls, longText, multilingualText, rtlText, unsafeText } from '../fixtures/index.js';
 import { sanitizePreviewConfig } from '../../js/utilities.js';
 
@@ -31,7 +32,7 @@ const generators = [
   accordion, tabs, flipCards, hotspots, buttonList, menuList, verticalTimeline,
   multipleChoice, multipleSelect, sortingActivity, fillBlank, horizontalTimeline,
   processFlow, scenario, profileCards, infoGrid, pricingComparison, audioPlayer,
-  videoFrame, imageGallery, comparisonSlider, dialGauge, calloutBox, cardCarousel
+  videoFrame, imageGallery, comparisonSlider, dialGauge, calloutBox, cardCarousel, confidenceMatrix
 ];
 const answerOptionComponents = ['multiple-choice', 'multiple-select'];
 const INSTANCE_ID = 'rcb-test-instance';

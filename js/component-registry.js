@@ -25,6 +25,7 @@ import * as comparisonSlider from '../components/comparison-slider.js';
 import * as dialGauge from '../components/dial-gauge.js';
 import * as calloutBox from '../components/callout-box.js';
 import * as cardCarousel from '../components/card-carousel.js';
+import * as confidenceMatrix from '../components/confidence-matrix.js';
 
 export const CATEGORIES = [
   { id: 'interactive', name: 'Interactive' },
@@ -282,6 +283,13 @@ export const COMPONENT_REGISTRY = [
     icon: getAttIconSvg('multi-screen', { width: 24, height: 24, ariaHidden: true }),
     classification: 'custom',
     differentiator: 'Horizontal fluid card carousel with category tags, swipe support, and dot navigation.'
+  }),
+  fromModule(confidenceMatrix, {
+    description: 'Interactive multi-domain skills and confidence self-assessment matrix with real-time competency scoring and diagnostic feedback.',
+    keywords: ['confidence', 'skills', 'assessment', 'matrix', 'competency', 'diagnostic', 'survey', 'self-assessment', 'scoring'],
+    icon: getAttIconSvg('check-shield', { width: 24, height: 24, ariaHidden: true }),
+    classification: 'custom',
+    differentiator: 'Diagnostic skills matrix with interactive 4-level competency rating, overall score tracking, and strengths/growth analysis.'
   })
 ];
 
