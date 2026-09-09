@@ -145,10 +145,17 @@ export function generateHTML(config, instanceId) {
               <ul class="confidence-pill-list" id="${instanceId}-growth-list"></ul>
             </div>
           </div>
+          <div class="confidence-reflection-box">
+            <label class="confidence-reflection-label" for="${instanceId}-reflection-notes">Learner Action Commitment & Coaching Notes (Optional)</label>
+            <textarea class="confidence-reflection-input" id="${instanceId}-reflection-notes" rows="3" placeholder="Document your key growth priorities, questions for your mentor, or 90-day action plan..."></textarea>
+          </div>
         </div>
       ` : ''}
 
       <div class="confidence-actions-bar">
+        <button type="button" class="confidence-print-btn" id="${instanceId}-print-btn" aria-label="Print or save diagnostic action plan as PDF" disabled>
+          <span>Print / Save Action Plan</span>
+        </button>
         <button type="button" class="confidence-reset-btn" id="${instanceId}-reset-btn" aria-label="Reset self-assessment">
           <span>Reset Assessment</span>
         </button>
@@ -467,10 +474,74 @@ export function generateCSS() {
       font-size: var(--att-fs-xs, 0.8125rem);
       color: var(--primary, #00388F);
     }
+    .confidence-reflection-box {
+      display: flex;
+      flex-direction: column;
+      gap: var(--att-space-2, 8px);
+      margin-top: var(--att-space-3, 12px);
+      padding-top: var(--att-space-4, 16px);
+      border-top: 1px solid var(--border-color, #DCDFE3);
+    }
+    .confidence-reflection-label {
+      font-size: var(--att-fs-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
+      color: var(--text-color, #000000);
+    }
+    .confidence-reflection-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: var(--att-space-3, 12px);
+      font-family: var(--att-font-sans, sans-serif);
+      font-size: var(--att-fs-sm, 0.875rem);
+      line-height: var(--att-lh-body, 1.5);
+      border: 1px solid var(--border-color, #DCDFE3);
+      border-radius: var(--att-radius-md, 12px);
+      background-color: var(--bg-card, #FFFFFF);
+      color: var(--text-color, #000000);
+      resize: vertical;
+      min-height: 72px;
+    }
+    .confidence-reflection-input:focus-visible {
+      outline: 3px solid var(--primary, #00388F);
+      outline-offset: 2px;
+    }
     .confidence-actions-bar {
       display: flex;
       justify-content: flex-end;
+      align-items: center;
+      gap: var(--att-space-3, 12px);
       width: 100%;
+      flex-wrap: wrap;
+    }
+    .confidence-print-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: var(--att-space-2, 8px) var(--att-space-5, 20px);
+      border: 1px solid var(--primary, #00388F);
+      border-radius: 9999px;
+      background-color: var(--primary, #00388F);
+      color: #FFFFFF;
+      font-family: var(--att-font-sans, sans-serif);
+      font-size: var(--att-fs-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
+      cursor: pointer;
+      transition: all 150ms ease;
+      box-shadow: 0 2px 6px rgba(0, 56, 143, 0.2);
+    }
+    .confidence-print-btn:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+    .confidence-print-btn:focus-visible {
+      outline: 3px solid var(--primary, #00388F);
+      outline-offset: 2px;
+    }
+    .confidence-print-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
     }
     .confidence-reset-btn {
       display: inline-flex;
@@ -497,6 +568,26 @@ export function generateCSS() {
       outline: 3px solid var(--primary, #00388F);
       outline-offset: 2px;
     }
+    @media print {
+      .confidence-actions-bar,
+      .confidence-summary-bar {
+        display: none !important;
+      }
+      .confidence-matrix-card {
+        box-shadow: none !important;
+        border: 1px solid var(--border-color, #DCDFE3) !important;
+        padding: var(--att-space-4, 16px) !important;
+        page-break-inside: avoid;
+      }
+      .confidence-diagnostic-panel {
+        display: flex !important;
+        border: 1px solid var(--border-color, #DCDFE3) !important;
+        background-color: var(--bg-body, #F3F4F5) !important;
+      }
+      .confidence-item-row {
+        page-break-inside: avoid;
+      }
+    }
   `;
 }
 
@@ -515,6 +606,8 @@ export function generateJS(config, instanceId) {
       var tierDesc = document.getElementById('${instanceId}-tier-desc');
       var strengthsList = document.getElementById('${instanceId}-strengths-list');
       var growthList = document.getElementById('${instanceId}-growth-list');
+      var reflectionNotes = document.getElementById('${instanceId}-reflection-notes');
+      var printBtn = document.getElementById('${instanceId}-print-btn');
       var resetBtn = document.getElementById('${instanceId}-reset-btn');
 
       if (!root) return;
@@ -533,6 +626,10 @@ export function generateJS(config, instanceId) {
         }
         if (evaluatedCountEl) {
           evaluatedCountEl.textContent = ratedCount + ' of ' + totalItems + ' evaluated';
+        }
+
+        if (printBtn) {
+          printBtn.disabled = ratedCount === 0;
         }
 
         if (ratedCount === 0) {
@@ -696,9 +793,18 @@ export function generateJS(config, instanceId) {
         }
       });
 
+      if (printBtn) {
+        printBtn.addEventListener('click', function() {
+          window.print();
+        });
+      }
+
       if (resetBtn) {
         resetBtn.addEventListener('click', function() {
           ratings = {};
+          if (reflectionNotes) {
+            reflectionNotes.value = '';
+          }
           var rows = root.querySelectorAll('.confidence-item-row');
           rows.forEach(function(row) {
             row.classList.remove('is-rated');

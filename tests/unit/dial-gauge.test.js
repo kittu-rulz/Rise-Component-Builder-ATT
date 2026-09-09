@@ -30,6 +30,15 @@ describe('interactive metric dial / gauge component', () => {
     expect(slider.getAttribute('aria-valuenow')).toBe('450');
     expect(slider.getAttribute('aria-valuetext')).toContain('450 Mbps');
 
+    const numberInput = document.querySelector('.dial-number-input');
+    expect(numberInput).not.toBeNull();
+    expect(numberInput.getAttribute('min')).toBe('0');
+    expect(numberInput.getAttribute('max')).toBe('1000');
+    expect(numberInput.getAttribute('value')).toBe('450');
+
+    const resetBtn = document.querySelector('.dial-reset-btn');
+    expect(resetBtn).not.toBeNull();
+
     const svg = document.querySelector('.dial-gauge-svg');
     expect(svg).not.toBeNull();
     expect(svg.getAttribute('aria-hidden')).toBe('true');

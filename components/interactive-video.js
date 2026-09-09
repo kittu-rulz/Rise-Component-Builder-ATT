@@ -135,6 +135,25 @@ export function generateHTML(config, instanceId) {
       </ol>` : ''}
     </div>` : '';
 
+  const checkpointRibbonBlock = orderedMarkers.length ? `
+    <div class="iv-checkpoint-ribbon" id="${instanceId}-checkpoint-ribbon" role="region" aria-label="Interactive Checkpoints">
+      <span class="iv-ribbon-label">Checkpoints:</span>
+      <div class="iv-ribbon-chips">
+        ${orderedMarkers.map(({ item, originalIndex }) => {
+          const type = item.type === 'multipleChoice' ? 'multipleChoice' : 'information';
+          const typeLabel = type === 'multipleChoice' ? 'MC' : 'Info';
+          const title = String((item.type === 'multipleChoice' ? (item.question || item.title) : item.title) || 'Marker').replace(/<[^>]*>/g, '');
+          return `
+            <button type="button" class="iv-checkpoint-chip" data-idx="${originalIndex}" data-type="${type}" aria-label="Jump to checkpoint ${formatTimestamp(item.timestamp)}: ${escapeAttribute(title)}">
+              <span class="iv-chip-time">${escapeHTML(formatTimestamp(item.timestamp))}</span>
+              <span class="iv-chip-type">${typeLabel}</span>
+              <span class="iv-chip-status-dot" aria-hidden="true"></span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>` : '';
+
   const restartBlock = config.allowRestart && videoSrc
     ? `<button type="button" class="iv-restart-btn" id="${instanceId}-restart-btn">Restart Video</button>` : '';
 
@@ -153,6 +172,7 @@ export function generateHTML(config, instanceId) {
           Your browser does not support the video element.
         </video>` : `<div class="iv-missing-video-notice" role="status">No video source is configured yet. Add an uploaded video or an external direct video URL in the editor.</div>`}
       </div>
+      ${checkpointRibbonBlock}
       <div class="iv-interaction-panel" id="${instanceId}-interaction-panel" role="region" tabindex="-1" hidden></div>
       ${restartBlock}
       ${navBlock}
@@ -208,6 +228,94 @@ export function generateCSS() {
       background-color: var(--text-main);
       font-size: var(--att-fs-body-sm, 0.875rem);
       line-height: var(--att-lh-body, 1.5);
+    }
+    .iv-checkpoint-ribbon {
+      display: flex;
+      align-items: center;
+      gap: var(--att-space-3, 10px);
+      padding: var(--att-space-3, 12px) var(--att-space-4, 16px);
+      background-color: var(--bg-card);
+      border: var(--border-style);
+      border-radius: var(--att-radius-md, 12px);
+      box-shadow: var(--shadow-style);
+      overflow-x: auto;
+    }
+    .iv-ribbon-label {
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .iv-ribbon-chips {
+      display: flex;
+      align-items: center;
+      gap: var(--att-space-2, 8px);
+      flex-wrap: wrap;
+    }
+    .iv-checkpoint-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--att-radius-pill, 999px);
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      font-family: var(--att-font-sans, sans-serif);
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-semibold, 600);
+      cursor: pointer;
+      min-height: 36px;
+      transition: all 180ms ease;
+    }
+    .iv-checkpoint-chip:hover {
+      border-color: var(--primary);
+      background-color: var(--bg-card);
+    }
+    .iv-checkpoint-chip:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+    .iv-checkpoint-chip.iv-chip-active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary);
+      background-color: var(--bg-card);
+    }
+    .iv-chip-time {
+      font-variant-numeric: tabular-nums;
+      font-weight: var(--att-fw-bold, 700);
+      color: var(--text-main);
+    }
+    .iv-chip-type {
+      font-size: var(--att-fs-eyebrow, 0.75rem);
+      font-weight: var(--att-fw-bold, 700);
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background-color: var(--border-color);
+      color: var(--text-main);
+    }
+    .iv-chip-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+      flex-shrink: 0;
+      transition: background-color 150ms ease;
+    }
+    .iv-checkpoint-chip.iv-state-visited .iv-chip-status-dot {
+      background-color: var(--accent, #009FDB);
+    }
+    .iv-checkpoint-chip.iv-state-completed .iv-chip-status-dot {
+      background-color: var(--border-color);
+    }
+    .iv-checkpoint-chip.iv-state-correct .iv-chip-status-dot {
+      background-color: var(--success);
+    }
+    .iv-checkpoint-chip.iv-state-incorrect .iv-chip-status-dot {
+      background-color: var(--danger);
     }
     .iv-interaction-panel {
       background-color: var(--bg-card);
@@ -695,6 +803,23 @@ export function generateJS(config, instanceId) {
       badge.hidden = false;
       badge.textContent = label;
       badge.className = 'iv-marker-state-badge ' + stateClass;
+
+      var chip = document.querySelector('.iv-checkpoint-chip[data-idx="' + idx + '"]');
+      if (chip) {
+        chip.classList.toggle('iv-chip-active', isActive);
+        chip.classList.remove('iv-state-visited', 'iv-state-completed', 'iv-state-correct', 'iv-state-incorrect');
+        if (isActive) chip.setAttribute('aria-current', 'true');
+        else chip.removeAttribute('aria-current');
+        if (status) {
+          var chipState = 'iv-state-visited';
+          if (status === 'completed') {
+            if (outcome === 'correct') chipState = 'iv-state-correct';
+            else if (outcome === 'incorrect') chipState = 'iv-state-incorrect';
+            else chipState = 'iv-state-completed';
+          }
+          chip.classList.add(chipState);
+        }
+      }
     }
 
     // Distinct from the shared, project-level "Progress Completion" bar (which reflects
@@ -1076,6 +1201,11 @@ export function generateJS(config, instanceId) {
       Array.prototype.forEach.call(document.querySelectorAll('.iv-marker-item-btn'), function(btn) {
         btn.addEventListener('click', function() {
           ivJumpToMarker(parseInt(btn.getAttribute('data-idx'), 10));
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('.iv-checkpoint-chip'), function(chip) {
+        chip.addEventListener('click', function() {
+          ivJumpToMarker(parseInt(chip.getAttribute('data-idx'), 10));
         });
       });
       var restartBtn = document.getElementById('${instanceId}-restart-btn');

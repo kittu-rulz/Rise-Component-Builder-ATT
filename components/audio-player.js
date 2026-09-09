@@ -692,7 +692,7 @@ export function generateJS(config, instanceId) {
     var AUD_COMPLETION_THRESHOLD = ${AUDIO_COMPLETION_THRESHOLD};
     var AUD_COMPLETION_TAIL_SECONDS = ${AUDIO_COMPLETION_TAIL_SECONDS};
     var AUD_RESUME_MIN_SECONDS = ${AUDIO_RESUME_MIN_SECONDS};
-    var AUD_SPEEDS = [1, 1.25, 1.5, 2];
+    var AUD_SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
     function audFormatTime(seconds) {
       if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -930,12 +930,14 @@ export function generateJS(config, instanceId) {
       if (speedBtn) speedBtn.addEventListener('click', function() {
         var current = audio.playbackRate || 1;
         var idx = AUD_SPEEDS.indexOf(current);
+        if (idx === -1) idx = AUD_SPEEDS.indexOf(1);
         if (idx === -1) idx = 0;
         var next = AUD_SPEEDS[(idx + 1) % AUD_SPEEDS.length];
         audio.playbackRate = next;
         var label = next + 'x';
         speedBtn.textContent = label;
         speedBtn.setAttribute('aria-label', 'Playback speed: ' + label);
+        announce('Playback speed ' + label);
       });
 
       if (muteBtn) muteBtn.addEventListener('click', function() {

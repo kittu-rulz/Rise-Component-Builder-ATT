@@ -70,12 +70,17 @@ describe('interactive-video generator contract', () => {
     expect(() => assertSafeOutput(baseConfig({ videoUrl: 'https://example.com/video.mp4', videoSourceType: 'url' }))).not.toThrow();
   });
 
-  test('compiles safely with a mix of information and multiple-choice markers', () => {
+  test('compiles safely with a mix of information and multiple-choice markers and renders checkpoint ribbon', () => {
     const html = assertSafeOutput(baseConfig({
       videoUrl: 'https://example.com/video.mp4', videoSourceType: 'url',
       items: [informationMarker({ timestamp: 5, title: 'Intro' }), mcMarker({ timestamp: 20, title: 'Check' })]
     }));
     expect(html).toContain('Interactions (2)');
+    expect(html).toContain('iv-checkpoint-ribbon');
+    expect(html).toContain('iv-checkpoint-chip');
+    const dom = new JSDOM(html);
+    const chips = dom.window.document.querySelectorAll('.iv-checkpoint-chip');
+    expect(chips.length).toBe(2);
   });
 
   test('ids are namespaced by instanceId so multiple instances never collide', () => {

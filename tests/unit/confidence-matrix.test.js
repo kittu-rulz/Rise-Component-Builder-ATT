@@ -38,7 +38,7 @@ describe('confidence & skills self-assessment component', () => {
     });
   });
 
-  test('generates diagnostic panel when showBreakdown is true', () => {
+  test('generates diagnostic panel with reflection notes and print action when showBreakdown is true', () => {
     const html = confidenceMatrix.generateHTML({ showBreakdown: true }, INSTANCE_ID);
     const dom = new JSDOM(html);
     const document = dom.window.document;
@@ -47,6 +47,14 @@ describe('confidence & skills self-assessment component', () => {
     expect(panel).toBeTruthy();
     expect(panel.querySelector('.strengths-col')).toBeTruthy();
     expect(panel.querySelector('.growth-col')).toBeTruthy();
+
+    const notesTextarea = document.querySelector('.confidence-reflection-input');
+    expect(notesTextarea).toBeTruthy();
+    expect(notesTextarea.getAttribute('id')).toBe(`${INSTANCE_ID}-reflection-notes`);
+
+    const printBtn = document.querySelector('.confidence-print-btn');
+    expect(printBtn).toBeTruthy();
+    expect(printBtn.getAttribute('id')).toBe(`${INSTANCE_ID}-print-btn`);
   });
 
   test('omits diagnostic panel when showBreakdown is false', () => {
@@ -58,16 +66,19 @@ describe('confidence & skills self-assessment component', () => {
     expect(panel).toBeNull();
   });
 
-  test('generates valid CSS and JS without syntax errors', () => {
+  test('generates valid CSS and JS with print rules and print handlers', () => {
     const css = confidenceMatrix.generateCSS(confidenceMatrix.defaultConfig);
     expect(typeof css).toBe('string');
     expect(css).toContain('.confidence-matrix-card');
     expect(css).toContain('.confidence-rating-btn');
+    expect(css).toContain('@media print');
+    expect(css).toContain('.confidence-print-btn');
 
     const js = confidenceMatrix.generateJS(confidenceMatrix.defaultConfig, INSTANCE_ID);
     expect(typeof js).toBe('string');
     expect(js).toContain('updateMatrixState');
     expect(js).toContain('handleRatingSelect');
+    expect(js).toContain('window.print');
     expect(js).toContain('viewedItems.add');
     expect(() => new Function(js)).not.toThrow();
   });

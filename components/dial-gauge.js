@@ -134,23 +134,38 @@ export function generateHTML(config, instanceId) {
             <span class="dial-readout-unit">${escapeHTML(unit)}</span>
           </div>
 
-          <div class="dial-slider-wrapper">
-            <input type="range" class="dial-slider-input" id="${instanceId}-slider"
-              role="slider"
-              aria-orientation="horizontal"
-              min="${minVal}"
-              max="${maxVal}"
-              step="${step}"
-              value="${initialVal}"
-              aria-valuenow="${initialVal}"
-              aria-valuemin="${minVal}"
-              aria-valuemax="${maxVal}"
-              aria-valuetext="${initialVal} ${escapeAttribute(unit)}, ${escapeAttribute(activeItem.title || '')}"
-              aria-label="Metric dial value slider">
+          <div class="dial-controls-group">
+            <div class="dial-slider-wrapper">
+              <input type="range" class="dial-slider-input" id="${instanceId}-slider"
+                role="slider"
+                aria-orientation="horizontal"
+                min="${minVal}"
+                max="${maxVal}"
+                step="${step}"
+                value="${initialVal}"
+                aria-valuenow="${initialVal}"
+                aria-valuemin="${minVal}"
+                aria-valuemax="${maxVal}"
+                aria-valuetext="${initialVal} ${escapeAttribute(unit)}, ${escapeAttribute(activeItem.title || '')}"
+                aria-label="Metric dial value slider">
+            </div>
+            <div class="dial-direct-input-wrap">
+              <label for="${instanceId}-number-input" class="sr-only">Direct numeric value input</label>
+              <input type="number" class="dial-number-input" id="${instanceId}-number-input"
+                min="${minVal}" max="${maxVal}" step="${step}" value="${initialVal}"
+                aria-label="Direct numeric input for metric dial">
+              <span class="dial-number-unit">${escapeHTML(unit)}</span>
+            </div>
           </div>
 
           <div class="dial-presets-row" id="${instanceId}-presets">
             ${presetsHtml}
+          </div>
+
+          <div class="dial-actions-bar">
+            <button type="button" class="dial-reset-btn" id="${instanceId}-reset-btn" aria-label="Reset dial to baseline value (${initialVal} ${escapeAttribute(unit)})">
+              <span>Reset to Baseline</span>
+            </button>
           </div>
         </div>
 
@@ -271,6 +286,17 @@ export function generateCSS() {
       font-weight: var(--att-fw-medium, 500);
       color: var(--text-muted, #4B5563);
     }
+    .dial-controls-group {
+      display: flex;
+      align-items: center;
+      gap: var(--att-space-3, 12px);
+      width: 100%;
+    }
+    .dial-slider-wrapper {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+    }
     .dial-slider-input {
       width: 100%;
       height: 8px;
@@ -280,6 +306,76 @@ export function generateCSS() {
       cursor: pointer;
     }
     .dial-slider-input:focus-visible {
+      outline: 3px solid var(--primary, #00388F);
+      outline-offset: 2px;
+    }
+    .dial-direct-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background-color: var(--bg-card, #FFFFFF);
+      border: 1px solid var(--border-color, #DCDFE3);
+      border-radius: var(--att-radius-sm, 8px);
+      padding: 4px 8px;
+      flex-shrink: 0;
+    }
+    .dial-direct-input-wrap:focus-within {
+      border-color: var(--primary, #00388F);
+      outline: 2px solid var(--primary, #00388F);
+    }
+    .dial-number-input {
+      width: 60px;
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      font-family: var(--att-font-sans, sans-serif);
+      font-size: var(--att-fs-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      padding: 2px 0;
+      -moz-appearance: textfield;
+    }
+    .dial-number-input::-webkit-outer-spin-button,
+    .dial-number-input::-webkit-inner-spin-button {
+      margin: 0;
+    }
+    .dial-number-input:focus-visible {
+      outline: 3px solid var(--primary, #00388F);
+      outline-offset: 2px;
+    }
+    .dial-number-unit {
+      font-size: var(--att-fs-xs, 0.8125rem);
+      font-weight: var(--att-fw-medium, 500);
+      color: var(--text-muted, #4B5563);
+    }
+    .dial-actions-bar {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+    .dial-reset-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 4px var(--att-space-3, 12px);
+      border: 1px solid var(--border-color, #DCDFE3);
+      border-radius: 9999px;
+      background-color: transparent;
+      color: var(--text-muted, #4B5563);
+      font-family: var(--att-font-sans, sans-serif);
+      font-size: var(--att-fs-xs, 0.8125rem);
+      font-weight: var(--att-fw-semibold, 600);
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    .dial-reset-btn:hover {
+      border-color: var(--primary, #00388F);
+      color: var(--primary, #00388F);
+      background-color: var(--bg-card, #FFFFFF);
+    }
+    .dial-reset-btn:focus-visible {
       outline: 3px solid var(--primary, #00388F);
       outline-offset: 2px;
     }
@@ -376,6 +472,8 @@ export function generateJS(config, instanceId) {
     (function() {
       var root = document.getElementById('${instanceId}-gauge-card');
       var slider = document.getElementById('${instanceId}-slider');
+      var numberInput = document.getElementById('${instanceId}-number-input');
+      var resetBtn = document.getElementById('${instanceId}-reset-btn');
       var valDisplay = document.getElementById('${instanceId}-val-display');
       var needle = document.getElementById('${instanceId}-needle');
       var activeArc = document.getElementById('${instanceId}-active-arc');
@@ -388,6 +486,7 @@ export function generateJS(config, instanceId) {
 
       var minVal = Number(root.dataset.min) || 0;
       var maxVal = Number(root.dataset.max) || 1000;
+      var initialBaseline = Number(root.dataset.value) || minVal;
       var unit = root.dataset.unit || '';
       var items = ${itemsJson};
       var arcTotalLength = 377; // semi-circle arc length for r=120 (pi * 120 ≈ 377)
@@ -409,8 +508,12 @@ export function generateJS(config, instanceId) {
           activeArc.setAttribute('stroke-dashoffset', String(offset));
         }
 
-        // Value text
+        // Value text & direct number input
         valDisplay.textContent = String(clamped);
+        slider.value = String(clamped);
+        if (numberInput && document.activeElement !== numberInput) {
+          numberInput.value = String(clamped);
+        }
 
         // Find active tier
         var activeIndex = items.findIndex(function(item) {
@@ -457,13 +560,27 @@ export function generateJS(config, instanceId) {
         updateDial(e.target.value);
       });
 
+      if (numberInput) {
+        numberInput.addEventListener('input', function(e) {
+          var num = Number(e.target.value);
+          if (Number.isFinite(num)) {
+            updateDial(num);
+          }
+        });
+      }
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+          updateDial(initialBaseline);
+        });
+      }
+
       if (presetsContainer) {
         presetsContainer.addEventListener('click', function(e) {
           var btn = e.target.closest('.dial-preset-btn');
           if (!btn) return;
           var targetVal = Number(btn.dataset.targetValue);
           if (Number.isFinite(targetVal)) {
-            slider.value = String(targetVal);
             updateDial(targetVal);
           }
         });
