@@ -577,13 +577,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     activeComponentTitle.innerText = component.title;
     activeComponentCategory.innerText = component.category.toUpperCase();
-    updateAccordionBehaviorVisibility(component.id);
-    updateFlipCardsBehaviorVisibility(component.id);
-    updateMcBehaviorVisibility(component.id);
-    updateTabsBehaviorVisibility(component.id);
-    updateTimelineBehaviorVisibility(component.id);
-    updateIvBehaviorVisibility(component.id);
-    updateIvTimelineAuthoringVisibility(component.id);
+    updateComponentSpecificOptions(component.id);
     syncIvAuthoringVideoSource();
     renderIvMarkerTimeline();
 
@@ -930,10 +924,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateAddItemButtonState(schema);
   }
 
-  // Some components (audio-player, video-frame) only ever render their first item —
-  // maxItems stops the author from adding a 2nd/3rd entry that would be accepted and
-  // saved but never appear anywhere. See js/editor-schemas.js for which schemas set it.
   function updateAddItemButtonState(schema) {
+    const itemsCountBadge = document.getElementById('items-count-badge');
+    if (itemsCountBadge) {
+      const count = appState.config.items?.length || 0;
+      const label = schema.itemLabel ? schema.itemLabel.toLowerCase() : 'item';
+      let rangeText = '';
+      if (schema.minItems && schema.maxItems) {
+        rangeText = ` (min ${schema.minItems}, max ${schema.maxItems})`;
+      } else if (schema.minItems) {
+        rangeText = ` (min ${schema.minItems})`;
+      } else if (schema.maxItems) {
+        rangeText = ` (max ${schema.maxItems})`;
+      }
+      itemsCountBadge.textContent = `${count} ${label}${count === 1 ? '' : 's'}${rangeText}`;
+    }
+
     const atMaxItems = Number.isInteger(schema.maxItems) && appState.config.items.length >= schema.maxItems;
     btnAddItem.disabled = atMaxItems;
     const title = atMaxItems
@@ -1216,50 +1222,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('settings-completion-origin').value = appState.settings.completionParentOrigin;
   }
 
-  // accordionMulti/accordionAnimation/iconStyle only affect the Accordion (components/accordion.js);
-  // every other component ignores them, so hide the controls rather than show inert options.
   function updateAccordionBehaviorVisibility(componentId) {
     accordionBehaviorGroup.hidden = componentId !== 'accordion';
   }
 
-  // Same pattern as updateAccordionBehaviorVisibility — flipCards* config keys only affect
-  // Flip Cards (components/flip-cards.js). No conditional-field-visibility mechanism exists
-  // in the schema-driven editor yet, so Study-mode-only sub-options (shuffle/categories/
-  // summary/reset) stay visible even in Explore mode rather than being truly hidden — their
-  // hints say so explicitly. See docs/COMPONENT-SCHEMA.md "Recommended schema improvements."
   function updateFlipCardsBehaviorVisibility(componentId) {
     flipCardsBehaviorGroup.hidden = componentId !== 'flip-cards';
   }
 
-  // Same pattern again — mc* config keys only affect Multiple Choice Check
-  // (components/multiple-choice.js). Confidence-mode-only sub-options (require
-  // confidence, labels, result summary) stay visible even with Confidence mode off,
-  // same documented trade-off as Flip Cards' Study-mode-only controls.
   function updateMcBehaviorVisibility(componentId) {
     mcBehaviorGroup.hidden = componentId !== 'multiple-choice';
   }
 
-  // Same pattern again — tabsX config keys only affect Horizontal Tabs
-  // (components/tabs.js, registry id "tab-blocks").
   function updateTabsBehaviorVisibility(componentId) {
     tabsBehaviorGroup.hidden = componentId !== 'tab-blocks';
   }
 
-  // Same pattern again — timelineX config keys only affect the Vertical Step Timeline
-  // (components/vertical-timeline.js, registry id "vertical-timeline"). The horizontal
-  // timeline component is untouched by this feature.
   function updateTimelineBehaviorVisibility(componentId) {
     timelineBehaviorGroup.hidden = componentId !== 'vertical-timeline';
   }
 
-  // Same pattern again — ivX config keys only affect Interactive Video
-  // (components/interactive-video.js, registry id "interactive-video").
   function updateIvBehaviorVisibility(componentId) {
     ivBehaviorGroup.hidden = componentId !== 'interactive-video';
   }
 
   function updateIvTimelineAuthoringVisibility(componentId) {
     ivTimelineAuthoringGroup.hidden = componentId !== 'interactive-video';
+  }
+
+  function updateComponentSpecificOptions(componentId) {
+    updateAccordionBehaviorVisibility(componentId);
+    updateFlipCardsBehaviorVisibility(componentId);
+    updateMcBehaviorVisibility(componentId);
+    updateTabsBehaviorVisibility(componentId);
+    updateTimelineBehaviorVisibility(componentId);
+    updateIvBehaviorVisibility(componentId);
+    updateIvTimelineAuthoringVisibility(componentId);
+
+    // Interaction default guidance note
+    const interactionGuidance = document.getElementById('interaction-default-guidance');
+    const hasCustomBehavior = ['accordion', 'flip-cards', 'multiple-choice', 'tab-blocks', 'vertical-timeline', 'interactive-video'].includes(componentId);
+    if (interactionGuidance) interactionGuidance.style.display = hasCustomBehavior ? 'none' : 'flex';
+
+    // Appearance component card
+    const appearanceAccordionIcon = document.getElementById('appearance-accordion-icon-wrapper');
+    const appearanceTabs = document.getElementById('appearance-tabs-wrapper');
+    const componentAppearanceCard = document.getElementById('component-appearance-card');
+    if (appearanceAccordionIcon) appearanceAccordionIcon.style.display = componentId === 'accordion' ? 'flex' : 'none';
+    if (appearanceTabs) appearanceTabs.style.display = componentId === 'tab-blocks' ? 'block' : 'none';
+    if (componentAppearanceCard) componentAppearanceCard.style.display = (componentId === 'accordion' || componentId === 'tab-blocks') ? 'flex' : 'none';
+
+    // Completion tab items & guidance
+    const ivCompletionRuleWrapper = document.getElementById('iv-completion-rule-wrapper');
+    if (ivCompletionRuleWrapper) ivCompletionRuleWrapper.style.display = componentId === 'interactive-video' ? 'flex' : 'none';
+
+    const completionTierBadge = document.getElementById('completion-tier-badge');
+    const completionTrackingType = document.getElementById('completion-tracking-type');
+    const completionGuidanceText = document.getElementById('completion-guidance-text');
+    const compMeta = componentCatalog.find(c => c.id === componentId) || appState.selectedComponent;
+    if (compMeta && completionTierBadge && completionTrackingType && completionGuidanceText) {
+      completionTierBadge.textContent = compMeta.tierLabel || compMeta.tier || 'Enhanced Rise';
+      completionTierBadge.className = `completion-tier-badge card-tier-${compMeta.tier || 'enhanced-rise'}`;
+      completionTrackingType.textContent = compMeta.completionTracking || 'View / Interaction';
+      completionGuidanceText.textContent = compMeta.completionTracking
+        ? `When exported via Rise Code Block, this component reports completion through Rise iframe message events (${compMeta.completionTracking}).`
+        : 'Rise tracks completion for this block via standard learner scroll visibility when embedded.';
+    }
   }
 
   function syncEditorControls() {
@@ -1287,7 +1315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputAccordionExpandCollapseAll.checked = config.accordionExpandCollapseAll === true;
     inputAccordionSearch.checked = config.accordionSearch === true;
     inputAccordionAllowReset.checked = config.accordionAllowReset === true;
-    updateAccordionBehaviorVisibility(appState.selectedComponent.id);
+    
     // Defensive fallbacks (not just `= config.flipCardsX`): a project saved before this
     // feature existed has no flipCards* keys at all, and an unmatched <select> value would
     // otherwise render as blank rather than the actual effective default.
@@ -1298,7 +1326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputFlipCardsReset.checked = config.flipCardsReset === true;
     inputFlipCardsFrontLabel.value = config.flipCardsFrontLabel || 'Front';
     inputFlipCardsBackLabel.value = config.flipCardsBackLabel || 'Back';
-    updateFlipCardsBehaviorVisibility(appState.selectedComponent.id);
+    
     inputMcConfidenceMode.checked = config.mcConfidenceMode === true;
     inputMcRequireConfidence.checked = config.mcRequireConfidence === true;
     inputMcConfidenceLowLabel.value = config.mcConfidenceLowLabel || 'Not sure';
@@ -1310,7 +1338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputMcShowCorrectAfterFinal.checked = config.mcShowCorrectAfterFinal === true;
     inputMcFinalExplanation.value = config.mcFinalExplanation || '';
     inputMcAllowReset.checked = config.mcAllowReset === true;
-    updateMcBehaviorVisibility(appState.selectedComponent.id);
+    
     selectTabsOrientation.value = config.tabsOrientation || 'horizontal';
     inputTabsNumbered.checked = config.tabsNumbered === true;
     inputTabsSequential.checked = config.tabsSequential === true;
@@ -1318,21 +1346,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputTabsShowVisitedBadge.checked = config.tabsShowVisitedBadge === true;
     inputTabsCompareMode.checked = config.tabsCompareMode === true;
     inputTabsAllowReset.checked = config.tabsAllowReset === true;
-    updateTabsBehaviorVisibility(appState.selectedComponent.id);
+    
     inputTimelineCategories.checked = config.timelineCategoriesEnabled === true;
     inputTimelineCompareMode.checked = config.timelineCompareMode === true;
     inputTimelineCollapsible.checked = config.timelineCollapsibleDetails === true;
     inputTimelineChronological.checked = config.timelineChronologicalReveal === true;
     inputTimelineShowProgress.checked = config.timelineShowProgress === true;
     inputTimelineAllowReset.checked = config.timelineAllowReset === true;
-    updateTimelineBehaviorVisibility(appState.selectedComponent.id);
+    
     selectIvResumeBehaviour.value = config.resumeBehaviour || 'manual';
     selectIvCompletionRule.value = config.completionRule || 'videoEnded';
     inputIvShowMarkerNav.checked = config.showMarkerNavigation !== false;
     inputIvShowProgress.checked = config.showVideoProgress !== false;
     inputIvAllowRestart.checked = config.allowRestart === true;
-    updateIvBehaviorVisibility(appState.selectedComponent.id);
-    updateIvTimelineAuthoringVisibility(appState.selectedComponent.id);
+    
+    updateComponentSpecificOptions(appState.selectedComponent.id);
     syncIvAuthoringVideoSource();
     renderIvMarkerTimeline();
     inputTrackCompletion.checked = config.trackCompletion;

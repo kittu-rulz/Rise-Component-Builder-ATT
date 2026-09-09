@@ -324,16 +324,16 @@
 
           <div class="editor-scroll-container">
             <!-- Form Sections -->
-            <form id="config-form" onsubmit="event.preventDefault();">
-              
-              <!-- Tab Navigation in Editor -->
-              <div class="editor-tabs">
-                <button type="button" class="editor-tab active" data-tab="content">Content</button>
-                <button type="button" class="editor-tab" data-tab="settings">Behavior</button>
+            <form id="config-form" onsubmit="event.preventDefault();">              <!-- Tab Navigation in Editor -->
+              <div class="editor-tabs" role="tablist" aria-label="Editor sections">
+                <button type="button" class="editor-tab active" data-tab="content" role="tab" aria-selected="true" aria-controls="tab-content" id="tab-btn-content">Content</button>
+                <button type="button" class="editor-tab" data-tab="interaction" role="tab" aria-selected="false" aria-controls="tab-interaction" id="tab-btn-interaction">Interaction</button>
+                <button type="button" class="editor-tab" data-tab="appearance" role="tab" aria-selected="false" aria-controls="tab-appearance" id="tab-btn-appearance">Appearance</button>
+                <button type="button" class="editor-tab" data-tab="completion" role="tab" aria-selected="false" aria-controls="tab-completion" id="tab-btn-completion">Completion</button>
               </div>
 
-              <!-- Tab Content: Content -->
-              <div class="tab-pane active" id="tab-content">
+              <!-- Tab 1: Content -->
+              <div class="tab-pane active" id="tab-content" role="tabpanel" aria-labelledby="tab-btn-content">
                 <!-- Group: General Details -->
                 <div class="form-group-card">
                   <h3 class="group-title">Header Details</h3>
@@ -351,63 +351,6 @@
                   <div class="input-wrapper">
                     <label for="input-block-desc">Instructional Subtext</label>
                     <textarea id="input-block-desc" placeholder="Brief instructions for the learner...">Click on the headers below to discover detailed insights.</textarea>
-                  </div>
-
-                  <div class="input-wrapper">
-                    <label for="select-heading-level">Headline Heading Level</label>
-                    <select id="select-heading-level" data-field-id="blockHeadingLevel">
-                      <option value="h1">Heading 1 (h1)</option>
-                      <option value="h2" selected>Heading 2 (h2)</option>
-                      <option value="h3">Heading 3 (h3)</option>
-                      <option value="h4">Heading 4 (h4)</option>
-                      <option value="h5">Heading 5 (h5)</option>
-                      <option value="h6">Heading 6 (h6)</option>
-                    </select>
-                    <p class="field-hint">Sets the HTML tag used for the Main Headline above. Choose a level that fits where this block sits in the host page's own heading outline — Rise lesson pages already have their own h1, so h2 is a safe default.</p>
-                  </div>
-
-                  <div class="input-wrapper">
-                    <label for="select-header-style">Header Presentation</label>
-                    <select id="select-header-style" data-field-id="headerStyle">
-                      <option value="minimal" selected>Minimal (Standard)</option>
-                      <option value="editorial">AT&amp;T Editorial (Large Headline + Eyebrow)</option>
-                    </select>
-                    <p class="field-hint">Choose between clean minimal header or the bold AT&amp;T Editorial layout with optional cyan accent rule.</p>
-                  </div>
-
-                  <div class="checkbox-wrapper" id="header-cyan-rule-wrapper">
-                    <input type="checkbox" id="input-header-cyan-rule">
-                    <label for="input-header-cyan-rule">Show short cyan accent underline under headline (Editorial mode)</label>
-                  </div>
-
-                  <div class="input-wrapper">
-                    <label for="select-spacing-density">Spacing Density</label>
-                    <select id="select-spacing-density" data-field-id="spacingDensity">
-                      <option value="compact">Compact (Tighter padding &amp; gaps)</option>
-                      <option value="standard" selected>Standard (Balanced)</option>
-                      <option value="spacious">Spacious (Generous whitespace)</option>
-                    </select>
-                    <p class="field-hint">Adjusts component padding and element gaps while maintaining accessible 44px touch targets.</p>
-                  </div>
-
-                  <div class="checkbox-wrapper">
-                    <input type="checkbox" id="input-context-band-enabled">
-                    <label for="input-context-band-enabled">Show introductory context band</label>
-                  </div>
-
-                  <div id="context-band-fields" style="display: none;">
-                    <div class="input-wrapper">
-                      <label for="input-context-band-text">Context Band Content</label>
-                      <textarea id="input-context-band-text" rows="2" placeholder="One or two concise sentences setting context for this interaction..."></textarea>
-                    </div>
-
-                    <div class="input-wrapper">
-                      <label for="select-context-band-alignment">Context Band Alignment</label>
-                      <select id="select-context-band-alignment" data-field-id="contextBandAlignment">
-                        <option value="left" selected>Left-aligned</option>
-                        <option value="center">Centered</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
 
@@ -428,9 +371,12 @@
 
                 <div class="form-group-card">
                   <div class="group-header-with-action">
-                    <h3 class="group-title">Interactive Items</h3>
+                    <div class="group-title-with-badge">
+                      <h3 class="group-title">Interactive Items</h3>
+                      <span id="items-count-badge" class="item-count-badge"></span>
+                    </div>
                     <button type="button" id="btn-add-item" class="btn btn-text btn-small">
-                      <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor"><path d="M17 9 15 9 15 15 9 15 9 17 15 17 15 23 17 23 17 17 23 17 23 15 17 15Z"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor"><path d="M17 9 15 9 15 15 9 15 9 17 15 17 15 23 17 23 17 23 17 17 23 17 23 15 17 15Z"/></svg>
                       Add Item
                     </button>
                   </div>
@@ -446,10 +392,20 @@
                 </div>
               </div>
 
-              <!-- Tab Content: Behavior Settings -->
-              <div class="tab-pane" id="tab-settings">
+              <!-- Tab 2: Interaction -->
+              <div class="tab-pane" id="tab-interaction" role="tabpanel" aria-labelledby="tab-btn-interaction">
+                <div class="editor-tab-guidance" id="interaction-default-guidance" style="display: none;">
+                  <div class="guidance-icon-box">
+                    <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor"><path d="M16 3C8.8 3 3 8.8 3 16s5.8 13 13 13 13-5.8 13-13S23.2 3 16 3zm1 19h-2v-6h2v6zm0-8h-2v-2h2v2z"/></svg>
+                  </div>
+                  <div>
+                    <strong>Standard Interaction</strong>
+                    <p class="field-hint">This component provides standard responsive touch and click interactions with full keyboard accessibility out of the box. No custom branching or behavioral locks are needed.</p>
+                  </div>
+                </div>
+
                 <div class="form-group-card" id="accordion-behavior-group">
-                  <h3 class="group-title">Interaction Behaviors</h3>
+                  <h3 class="group-title">Accordion Interaction Behaviors</h3>
                   
                   <div class="checkbox-wrapper">
                     <input type="checkbox" id="input-behavior-accordion-multi" checked>
@@ -459,16 +415,6 @@
                   <div class="checkbox-wrapper">
                     <input type="checkbox" id="input-behavior-accordion-animation" checked>
                     <label for="input-behavior-accordion-animation">Enable smooth slide transitions</label>
-                  </div>
-
-                  <div class="input-wrapper">
-                    <label for="select-icon-style">Expand/Collapse Icon</label>
-                    <select id="select-icon-style">
-                      <option value="plus-minus">Plus / Minus (+ / -)</option>
-                      <option value="chevron" selected>Chevron Up / Down (∨)</option>
-                      <option value="arrow">Arrow Right / Down (→)</option>
-                    </select>
-                    <p class="field-hint">Controls the icon shown on each accordion header.</p>
                   </div>
 
                   <div class="checkbox-wrapper">
@@ -547,21 +493,7 @@
                 </div>
 
                 <div class="form-group-card" id="tabs-behavior-group">
-                  <h3 class="group-title">Guided &amp; Layout Options (Tabs)</h3>
-
-                  <div class="input-wrapper">
-                    <label for="select-tabs-orientation">Orientation</label>
-                    <select id="select-tabs-orientation">
-                      <option value="horizontal" selected>Horizontal</option>
-                      <option value="vertical">Vertical</option>
-                    </select>
-                    <p class="field-hint">Vertical automatically falls back to a horizontal strip below 480px wide.</p>
-                  </div>
-
-                  <div class="checkbox-wrapper">
-                    <input type="checkbox" id="input-tabs-numbered">
-                    <label for="input-tabs-numbered">Show step numbers on each tab</label>
-                  </div>
+                  <h3 class="group-title">Guided &amp; Progression Options (Tabs)</h3>
 
                   <div class="checkbox-wrapper">
                     <input type="checkbox" id="input-tabs-sequential">
@@ -624,7 +556,7 @@
                 </div>
 
                 <div class="form-group-card" id="iv-behavior-group">
-                  <h3 class="group-title">Playback &amp; Completion (Interactive Video)</h3>
+                  <h3 class="group-title">Playback &amp; Navigation (Interactive Video)</h3>
 
                   <div class="input-wrapper">
                     <label for="select-iv-resume-behaviour">Resume Behaviour</label>
@@ -634,16 +566,6 @@
                       <option value="automaticAfterCorrectAnswer">Automatic after a correct answer</option>
                     </select>
                     <p class="field-hint">Multiple Choice markers always require an explicit Submit; this only controls what happens after that.</p>
-                  </div>
-
-                  <div class="input-wrapper">
-                    <label for="select-iv-completion-rule">Completion Rule</label>
-                    <select id="select-iv-completion-rule">
-                      <option value="videoEnded" selected>Video watched to the end</option>
-                      <option value="allRequiredInteractionsCompleted">All required interactions completed</option>
-                      <option value="videoEndedAndRequiredInteractionsCompleted">Video ended AND all required interactions completed</option>
-                    </select>
-                    <p class="field-hint">Internal to this component only — not Rise, LMS, or SCORM completion. See docs/COMPLETION-INTEGRATION.md.</p>
                   </div>
 
                   <div class="checkbox-wrapper">
@@ -719,19 +641,143 @@
                     <label for="input-mc-allow-reset">Show a "Try Again" action once the question concludes</label>
                   </div>
                 </div>
+              </div>
 
+              <!-- Tab 3: Appearance -->
+              <div class="tab-pane" id="tab-appearance" role="tabpanel" aria-labelledby="tab-btn-appearance">
+                <div class="form-group-card">
+                  <h3 class="group-title">Header Presentation &amp; Density</h3>
+
+                  <div class="input-wrapper">
+                    <label for="select-heading-level">Headline Heading Level</label>
+                    <select id="select-heading-level" data-field-id="blockHeadingLevel">
+                      <option value="h1">Heading 1 (h1)</option>
+                      <option value="h2" selected>Heading 2 (h2)</option>
+                      <option value="h3">Heading 3 (h3)</option>
+                      <option value="h4">Heading 4 (h4)</option>
+                      <option value="h5">Heading 5 (h5)</option>
+                      <option value="h6">Heading 6 (h6)</option>
+                    </select>
+                    <p class="field-hint">Sets the HTML tag used for the Main Headline. Choose a level that fits your host page's heading hierarchy.</p>
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="select-header-style">Header Presentation</label>
+                    <select id="select-header-style" data-field-id="headerStyle">
+                      <option value="minimal" selected>Minimal (Standard)</option>
+                      <option value="editorial">AT&amp;T Editorial (Large Headline + Eyebrow)</option>
+                    </select>
+                    <p class="field-hint">Choose between clean minimal header or the bold AT&amp;T Editorial layout with optional cyan accent rule.</p>
+                  </div>
+
+                  <div class="checkbox-wrapper" id="header-cyan-rule-wrapper">
+                    <input type="checkbox" id="input-header-cyan-rule">
+                    <label for="input-header-cyan-rule">Show short cyan accent underline under headline (Editorial mode)</label>
+                  </div>
+
+                  <div class="input-wrapper">
+                    <label for="select-spacing-density">Spacing Density</label>
+                    <select id="select-spacing-density" data-field-id="spacingDensity">
+                      <option value="compact">Compact (Tighter padding &amp; gaps)</option>
+                      <option value="standard" selected>Standard (Balanced)</option>
+                      <option value="spacious">Spacious (Generous whitespace)</option>
+                    </select>
+                    <p class="field-hint">Adjusts component padding and element gaps while maintaining accessible 44px touch targets.</p>
+                  </div>
+                </div>
+
+                <div class="form-group-card">
+                  <h3 class="group-title">Introductory Context Band</h3>
+
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" id="input-context-band-enabled">
+                    <label for="input-context-band-enabled">Show introductory context band</label>
+                  </div>
+
+                  <div id="context-band-fields" style="display: none;">
+                    <div class="input-wrapper">
+                      <label for="input-context-band-text">Context Band Content</label>
+                      <textarea id="input-context-band-text" rows="2" placeholder="One or two concise sentences setting context for this interaction..."></textarea>
+                    </div>
+
+                    <div class="input-wrapper">
+                      <label for="select-context-band-alignment">Context Band Alignment</label>
+                      <select id="select-context-band-alignment" data-field-id="contextBandAlignment">
+                        <option value="left" selected>Left-aligned</option>
+                        <option value="center">Centered</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group-card" id="component-appearance-card">
+                  <h3 class="group-title">Component Layout &amp; Styling</h3>
+
+                  <div class="input-wrapper" id="appearance-accordion-icon-wrapper">
+                    <label for="select-icon-style">Expand/Collapse Icon</label>
+                    <select id="select-icon-style">
+                      <option value="plus-minus">Plus / Minus (+ / -)</option>
+                      <option value="chevron" selected>Chevron Up / Down (∨)</option>
+                      <option value="arrow">Arrow Right / Down (→)</option>
+                    </select>
+                    <p class="field-hint">Controls the icon shown on each accordion header.</p>
+                  </div>
+
+                  <div id="appearance-tabs-wrapper" style="display: none;">
+                    <div class="input-wrapper">
+                      <label for="select-tabs-orientation">Tab Orientation</label>
+                      <select id="select-tabs-orientation">
+                        <option value="horizontal" selected>Horizontal</option>
+                        <option value="vertical">Vertical</option>
+                      </select>
+                      <p class="field-hint">Vertical automatically falls back to a horizontal strip below 480px wide.</p>
+                    </div>
+
+                    <div class="checkbox-wrapper">
+                      <input type="checkbox" id="input-tabs-numbered">
+                      <label for="input-tabs-numbered">Show step numbers on each tab</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab 4: Completion -->
+              <div class="tab-pane" id="tab-completion" role="tabpanel" aria-labelledby="tab-btn-completion">
                 <div class="form-group-card">
                   <h3 class="group-title">Completion Tracking</h3>
 
                   <div class="checkbox-wrapper">
                     <input type="checkbox" id="input-track-completion">
-                    <label for="input-track-completion">Required: learner must view every item to complete this block</label>
+                    <label for="input-track-completion">Required: learner must interact with all items to complete this block</label>
                   </div>
                   <p class="field-hint field-hint-inset">Turn this on to show a progress bar and require learners to view every item before this component reports completion. Rise course completion support requires the Rise Code Block export and a compatible host configuration. Leave it off if you don't need progress tracking.</p>
+
+                  <div class="input-wrapper" id="iv-completion-rule-wrapper" style="display: none;">
+                    <label for="select-iv-completion-rule">Video Completion Rule</label>
+                    <select id="select-iv-completion-rule">
+                      <option value="videoEnded" selected>Video watched to the end</option>
+                      <option value="allRequiredInteractionsCompleted">All required interactions completed</option>
+                      <option value="videoEndedAndRequiredInteractionsCompleted">Video ended AND all required interactions completed</option>
+                    </select>
+                    <p class="field-hint">Defines the specific condition needed to trigger completion for Interactive Video.</p>
+                  </div>
 
                   <div class="input-wrapper">
                     <label for="input-completion-msg">Completion Success Message</label>
                     <input type="text" id="input-completion-msg" value="Activity Complete!" placeholder="e.g. Block completed">
+                  </div>
+                </div>
+
+                <div class="form-group-card completion-guidance-card" id="completion-guidance-card">
+                  <h3 class="group-title">Rise &amp; SCORM Integration Guidance</h3>
+                  <div class="completion-guidance-body">
+                    <div class="completion-guidance-meta">
+                      <span class="completion-tier-badge" id="completion-tier-badge">Enhanced Rise</span>
+                      <span class="completion-tracking-type" id="completion-tracking-type">Item Exploration</span>
+                    </div>
+                    <p class="completion-guidance-text" id="completion-guidance-text">
+                      When embedded via Rise Code Block, this component reports completion through Rise iframe message events once all required items have been visited.
+                    </p>
                   </div>
                 </div>
               </div>

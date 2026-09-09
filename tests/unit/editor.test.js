@@ -127,3 +127,76 @@ describe('createSchemaItemEditor focus preservation (P11 Requirement 8)', () => 
     expect(document.activeElement).toBe(cards[1].querySelector('.item-collapse-btn'));
   });
 });
+
+describe('createSchemaItemEditor keyboard shortcuts (Prompt Section 4.3)', () => {
+  test('Alt+ArrowDown moves item down and maintains focus', () => {
+    const items = [{ title: 'Item 1' }, { title: 'Item 2' }, { title: 'Item 3' }];
+    const { container } = setup(items);
+    const card0 = container.querySelectorAll('.dynamic-item-card')[0];
+    card0.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }));
+    const newCards = container.querySelectorAll('.dynamic-item-card');
+    expect(items[0].title).toBe('Item 2');
+    expect(items[1].title).toBe('Item 1');
+    expect(document.activeElement).toBe(newCards[1].querySelector('.item-action-btn[title="Move item down"]'));
+  });
+
+  test('Alt+ArrowUp moves item up and maintains focus', () => {
+    const items = [{ title: 'Item 1' }, { title: 'Item 2' }, { title: 'Item 3' }];
+    const { container } = setup(items);
+    const card1 = container.querySelectorAll('.dynamic-item-card')[1];
+    card1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }));
+    expect(items[0].title).toBe('Item 2');
+    expect(items[1].title).toBe('Item 1');
+  });
+
+  test('Alt+d duplicates the focused item', () => {
+    const items = [{ title: 'Original Item' }];
+    const { container } = setup(items);
+    const card0 = container.querySelectorAll('.dynamic-item-card')[0];
+    card0.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', altKey: true, bubbles: true }));
+    expect(items.length).toBe(2);
+    expect(items[1].title).toBe('Original Item');
+  });
+
+  test('Alt+Delete deletes the focused item', () => {
+    const items = [{ title: 'Keep' }, { title: 'Delete Me' }];
+    const { container } = setup(items);
+    const card1 = container.querySelectorAll('.dynamic-item-card')[1];
+    card1.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', altKey: true, bubbles: true }));
+    expect(items.length).toBe(1);
+    expect(items[0].title).toBe('Keep');
+  });
+});
+
+describe('switchEditorTab standard 4-tab model & legacy aliases (Prompt Section 4.1)', () => {
+  test('switches active state and aria-selected across 4 standard tabs', async () => {
+    const { switchEditorTab } = await import('../../js/editor.js');
+    document.body.innerHTML = `
+      <div class="editor-tabs">
+        <button type="button" class="editor-tab active" data-tab="content" aria-selected="true">Content</button>
+        <button type="button" class="editor-tab" data-tab="interaction" aria-selected="false">Interaction</button>
+        <button type="button" class="editor-tab" data-tab="appearance" aria-selected="false">Appearance</button>
+        <button type="button" class="editor-tab" data-tab="completion" aria-selected="false">Completion</button>
+      </div>
+      <div class="tab-pane active" id="tab-content"></div>
+      <div class="tab-pane" id="tab-interaction"></div>
+      <div class="tab-pane" id="tab-appearance"></div>
+      <div class="tab-pane" id="tab-completion"></div>
+    `;
+
+    switchEditorTab('appearance');
+    expect(document.querySelector('.editor-tab[data-tab="appearance"]').classList.contains('active')).toBe(true);
+    expect(document.querySelector('.editor-tab[data-tab="appearance"]').getAttribute('aria-selected')).toBe('true');
+    expect(document.getElementById('tab-appearance').classList.contains('active')).toBe(true);
+    expect(document.getElementById('tab-content').classList.contains('active')).toBe(false);
+
+    switchEditorTab('completion');
+    expect(document.querySelector('.editor-tab[data-tab="completion"]').classList.contains('active')).toBe(true);
+    expect(document.getElementById('tab-completion').classList.contains('active')).toBe(true);
+
+    // Legacy 'settings' or 'behavior' alias routes cleanly to 'interaction'
+    switchEditorTab('settings');
+    expect(document.querySelector('.editor-tab[data-tab="interaction"]').classList.contains('active')).toBe(true);
+    expect(document.getElementById('tab-interaction').classList.contains('active')).toBe(true);
+  });
+});

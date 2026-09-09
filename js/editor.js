@@ -12,10 +12,21 @@ export const supportedEditorFieldTypes = [
 ];
 
 export function switchEditorTab(tabId, tabs, panes) {
-  tabs.forEach(tab => tab.classList.remove('active'));
-  panes.forEach(pane => pane.classList.remove('active'));
-  document.querySelector(`.editor-tab[data-tab="${tabId}"]`)?.classList.add('active');
-  document.getElementById(`tab-${tabId}`)?.classList.add('active');
+  const targetTabId = (tabId === 'settings' || tabId === 'behavior') ? 'interaction' : tabId;
+
+  const tabList = tabs && tabs.length ? tabs : document.querySelectorAll('.editor-tab');
+  const paneList = panes && panes.length ? panes : document.querySelectorAll('.tab-pane');
+
+  tabList.forEach(tab => {
+    const isMatch = tab.getAttribute('data-tab') === targetTabId || tab.getAttribute('data-tab') === tabId;
+    tab.classList.toggle('active', isMatch);
+    tab.setAttribute('aria-selected', String(isMatch));
+  });
+
+  paneList.forEach(pane => {
+    const isMatch = pane.id === `tab-${targetTabId}` || pane.id === `tab-${tabId}`;
+    pane.classList.toggle('active', isMatch);
+  });
 }
 
 export function addEditorItem(state, schema) {
@@ -365,6 +376,40 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
         if (draggedIndex !== null && draggedIndex !== index) move(draggedIndex, index);
       });
       card.addEventListener('dragend', () => { draggedIndex = null; card.classList.remove('dragging'); card.draggable = false; });
+
+      // Keyboard shortcuts for item reordering, duplicating, and deleting
+      card.addEventListener('keydown', event => {
+        if (event.altKey && (event.key === 'ArrowUp' || event.key === 'Up')) {
+          event.preventDefault();
+          if (index > 0) {
+            pendingFocus = { index: index - 1, part: 'Move item up' };
+            move(index, index - 1);
+          }
+        } else if (event.altKey && (event.key === 'ArrowDown' || event.key === 'Down')) {
+          event.preventDefault();
+          if (index < items.length - 1) {
+            pendingFocus = { index: index + 1, part: 'Move item down' };
+            move(index, index + 1);
+          }
+        } else if (event.altKey && (event.key === 'd' || event.key === 'D')) {
+          event.preventDefault();
+          if (!atMaxItems) {
+            const duplicate = structuredClone(item);
+            schema.itemFields.filter(field => field.groupAcrossItems).forEach(field => { duplicate[field.id] = false; });
+            items.splice(index + 1, 0, duplicate);
+            pendingFocus = { index: index + 1, part: 'heading' };
+            onChange();
+            render(lastRender);
+          }
+        } else if (event.altKey && (event.key === 'Delete' || event.key === 'Backspace')) {
+          event.preventDefault();
+          items.splice(index, 1);
+          pendingFocus = items.length ? { index: Math.min(index, items.length - 1), part: 'heading' } : { part: 'fallback' };
+          onChange();
+          render(lastRender);
+        }
+      });
+
       container.appendChild(card);
     });
 
