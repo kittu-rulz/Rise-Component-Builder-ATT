@@ -1357,6 +1357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const completionTierBadge = document.getElementById('completion-tier-badge');
     const completionTrackingType = document.getElementById('completion-tracking-type');
     const completionGuidanceText = document.getElementById('completion-guidance-text');
+    const statusBanner = document.getElementById('completion-status-banner');
     const compMeta = componentCatalog.find(c => c.id === componentId) || appState.selectedComponent;
     if (compMeta && completionTierBadge && completionTrackingType && completionGuidanceText) {
       completionTierBadge.textContent = compMeta.tierLabel || compMeta.tier || 'Enhanced Rise';
@@ -1365,6 +1366,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       completionGuidanceText.textContent = compMeta.completionTracking
         ? `When exported via Rise Code Block, this component reports completion through Rise iframe message events (${compMeta.completionTracking}).`
         : 'Rise tracks completion for this block via standard learner scroll visibility when embedded.';
+      if (statusBanner) {
+        const isCustomLms = Boolean(compMeta.completionTracking);
+        statusBanner.innerHTML = isCustomLms
+          ? `<span class="completion-status-icon">✓</span><span class="completion-status-msg">Rise Code Block Compatible: dispatches iframe completion message on ${escapeHTML(compMeta.completionTracking.toLowerCase())}</span>`
+          : `<span class="completion-status-icon">ℹ</span><span class="completion-status-msg">Standard Rise Scroll Tracking: Rise marks this block complete when scrolled into view</span>`;
+      }
     }
   }
 

@@ -765,7 +765,7 @@
                     <input type="checkbox" id="input-track-completion">
                     <label for="input-track-completion">Required: learner must interact with all items to complete this block</label>
                   </div>
-                  <p class="field-hint field-hint-inset">Turn this on to show a progress bar and require learners to view every item before this component reports completion. Rise course completion support requires the Rise Code Block export and a compatible host configuration. Leave it off if you don't need progress tracking.</p>
+                  <p class="field-hint field-hint-inset">When enabled, learners must visit every item before this component displays completion state and dispatches the Rise completion message event.</p>
 
                   <div class="input-wrapper" id="iv-completion-rule-wrapper" style="display: none;">
                     <label for="select-iv-completion-rule">Video Completion Rule</label>
@@ -784,15 +784,22 @@
                 </div>
 
                 <div class="form-group-card completion-guidance-card" id="completion-guidance-card">
-                  <h3 class="group-title">Rise &amp; SCORM Integration Guidance</h3>
+                  <h3 class="group-title">Rise 360 &amp; LMS Compatibility</h3>
                   <div class="completion-guidance-body">
                     <div class="completion-guidance-meta">
                       <span class="completion-tier-badge" id="completion-tier-badge">Enhanced Rise</span>
                       <span class="completion-tracking-type" id="completion-tracking-type">Item Exploration</span>
                     </div>
+                    <div class="completion-status-banner" id="completion-status-banner">
+                      <span class="completion-status-icon">✓</span>
+                      <span class="completion-status-msg">Rise Code Block Compatible: dispatches postMessage event on completion</span>
+                    </div>
                     <p class="completion-guidance-text" id="completion-guidance-text">
                       When embedded via Rise Code Block, this component reports completion through Rise iframe message events once all required items have been visited.
                     </p>
+                    <div class="completion-tip-box">
+                      <strong>Host Note:</strong> Internal progress tracking operates inside the component iframe. To gate subsequent Rise lesson blocks, use the <strong>Rise Code Block (Ready for Rise)</strong> export format with Rise block continue dividers.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -807,7 +814,10 @@
       <section class="preview-panel" aria-label="Live preview">
         <div class="preview-toolbar">
           <div class="preview-title-group">
-            <div class="preview-title">Live Interactive Preview</div>
+            <div class="preview-title">
+              <span class="preview-title-text">Rise Canvas</span>
+              <span class="preview-title-badge">Simulated Block</span>
+            </div>
             <span class="preview-width-label" id="preview-width-label"></span>
           </div>
 
