@@ -50,7 +50,8 @@ const GROUPS = {
   // in this cross-check list.
   'interactive-video': { components: ['interactive-video'], markers: ['iv-block', 'iv-video-wrapper', 'iv-title'] },
   'comparison-slider': { components: ['comparison-slider'], markers: ['comparison-slider-card', 'comparison-stage', 'comparison-handle'] },
-  'dial-gauge': { components: ['dial-gauge'], markers: ['dial-gauge-card', 'dial-svg-stage', 'dial-slider-input'] }
+  'dial-gauge': { components: ['dial-gauge'], markers: ['dial-gauge-card', 'dial-svg-stage', 'dial-slider-input'] },
+  'callout-box': { components: ['callout-box'], markers: ['callout-matrix-card', 'callout-item-card', 'callout-item-icon'] }
 };
 
 const groupFor = componentId => Object.values(GROUPS).find(group => group.components.includes(componentId));

@@ -140,7 +140,7 @@ describe('catalog-positioning metadata (classification + differentiator)', () =>
       'sorting-activity', 'tab-blocks', 'vertical-timeline'
     ].sort());
     expect(custom).toEqual([
-      'audio-player', 'comparison-slider', 'dial-gauge', 'horizontal-timeline', 'interactive-video', 'menu-list',
+      'audio-player', 'callout-box', 'comparison-slider', 'dial-gauge', 'horizontal-timeline', 'interactive-video', 'menu-list',
       'pricing-comparison', 'profile-cards', 'video-frame'
     ].sort());
   });

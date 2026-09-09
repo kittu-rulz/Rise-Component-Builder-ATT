@@ -23,6 +23,7 @@ import * as imageGallery from '../components/image-gallery.js';
 import * as interactiveVideo from '../components/interactive-video.js';
 import * as comparisonSlider from '../components/comparison-slider.js';
 import * as dialGauge from '../components/dial-gauge.js';
+import * as calloutBox from '../components/callout-box.js';
 
 export const CATEGORIES = [
   { id: 'interactive', name: 'Interactive' },
@@ -266,6 +267,13 @@ export const COMPONENT_REGISTRY = [
     icon: getAttIconSvg('high-meter', { width: 24, height: 24, ariaHidden: true }),
     classification: 'custom',
     differentiator: 'Interactive metric simulation with vector gauge arc, tier presets, real-time insights, and keyboard accessibility.'
+  }),
+  fromModule(calloutBox, {
+    description: 'Elevated multi-tone callout and alert matrix supporting Information, Policy Directives, Safety Warnings, and interactive compliance acknowledgment.',
+    keywords: ['callout', 'alert', 'notice', 'warning', 'tip', 'compliance', 'security', 'note', 'matrix', 'policy'],
+    icon: getAttIconSvg('information-circle-filled', { width: 24, height: 24, ariaHidden: true }),
+    classification: 'custom',
+    differentiator: 'Multi-card alert matrix with AT&T brand tones, responsive grid layouts, and interactive learner acknowledgment.'
   })
 ];
 

@@ -356,6 +356,38 @@ export const editorSchemas = {
       field('badgeLabel', 'Badge Label', 'text', { required: false, default: 'Standard Tier', maxLength: 30 }),
       field('content', 'Tier Insight & Impact Details', 'richtext', { required: true, default: 'Add tier performance and operational insights here.' })
     ]
+  },
+  'callout-box': {
+    itemLabel: 'Callout Notice', minItems: 1, maxItems: 8,
+    componentLabel: 'Matrix Layout & Options',
+    componentFields: [
+      field('title', 'Header Title', 'text', { required: false, default: 'Security & Operational Directives' }),
+      field('content', 'Description / Instructions', 'richtext', { required: false, default: 'Review the critical operational standards and security compliance guidelines before initiating network maintenance.' }),
+      field('layout', 'Matrix Layout', 'select', {
+        default: 'grid-2',
+        options: [
+          { value: 'grid-2', label: '2-Column Grid' },
+          { value: 'grid-3', label: '3-Column Grid' },
+          { value: 'stacked', label: 'Stacked Banners' }
+        ]
+      }),
+      field('requireAcknowledgment', 'Require Learner Acknowledgment', 'checkbox', { default: true })
+    ],
+    itemFields: [
+      field('title', 'Notice Title', 'text', { required: true, default: 'New Callout Title', maxLength: 100 }),
+      field('tone', 'Callout Tone / Icon Style', 'select', {
+        default: 'info',
+        options: [
+          { value: 'info', label: 'Information (AT&T Blue)' },
+          { value: 'primary', label: 'Brand Directive (Cobalt)' },
+          { value: 'warning', label: 'Safety / Caution (Warning)' },
+          { value: 'tip', label: 'Pro Tip (AT&T Green)' },
+          { value: 'security', label: 'Security / Compliance (Shield)' }
+        ]
+      }),
+      field('badgeLabel', 'Badge Tag (Optional)', 'text', { required: false, default: '', maxLength: 30 }),
+      field('content', 'Notice Description', 'richtext', { required: true, default: 'Add callout notice details here.' })
+    ]
   }
 };
 
