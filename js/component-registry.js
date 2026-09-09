@@ -24,6 +24,7 @@ import * as interactiveVideo from '../components/interactive-video.js';
 import * as comparisonSlider from '../components/comparison-slider.js';
 import * as dialGauge from '../components/dial-gauge.js';
 import * as calloutBox from '../components/callout-box.js';
+import * as cardCarousel from '../components/card-carousel.js';
 
 export const CATEGORIES = [
   { id: 'interactive', name: 'Interactive' },
@@ -274,6 +275,13 @@ export const COMPONENT_REGISTRY = [
     icon: getAttIconSvg('information-circle-filled', { width: 24, height: 24, ariaHidden: true }),
     classification: 'custom',
     differentiator: 'Multi-card alert matrix with AT&T brand tones, responsive grid layouts, and interactive learner acknowledgment.'
+  }),
+  fromModule(cardCarousel, {
+    description: 'Fluid card stack and carousel showcase with category badges, rich media, touch swipe, keyboard navigation, and completion tracking.',
+    keywords: ['carousel', 'cards', 'slider', 'stack', 'gallery', 'showcase', 'swipe'],
+    icon: getAttIconSvg('multi-screen', { width: 24, height: 24, ariaHidden: true }),
+    classification: 'custom',
+    differentiator: 'Horizontal fluid card carousel with category tags, swipe support, and dot navigation.'
   })
 ];
 

@@ -51,7 +51,8 @@ const GROUPS = {
   'interactive-video': { components: ['interactive-video'], markers: ['iv-block', 'iv-video-wrapper', 'iv-title'] },
   'comparison-slider': { components: ['comparison-slider'], markers: ['comparison-slider-card', 'comparison-stage', 'comparison-handle'] },
   'dial-gauge': { components: ['dial-gauge'], markers: ['dial-gauge-card', 'dial-svg-stage', 'dial-slider-input'] },
-  'callout-box': { components: ['callout-box'], markers: ['callout-matrix-card', 'callout-item-card', 'callout-item-icon'] }
+  'callout-box': { components: ['callout-box'], markers: ['callout-matrix-card', 'callout-item-card', 'callout-item-icon'] },
+  'card-carousel': { components: ['card-carousel'], markers: ['carousel-card-block', 'carousel-track-wrapper', 'carousel-slide-item'] }
 };
 
 const groupFor = componentId => Object.values(GROUPS).find(group => group.components.includes(componentId));

@@ -388,6 +388,25 @@ export const editorSchemas = {
       field('badgeLabel', 'Badge Tag (Optional)', 'text', { required: false, default: '', maxLength: 30 }),
       field('content', 'Notice Description', 'richtext', { required: true, default: 'Add callout notice details here.' })
     ]
+  },
+  'card-carousel': {
+    itemLabel: 'Carousel Card', minItems: 1, maxItems: 10,
+    componentLabel: 'Carousel Settings & Controls',
+    componentFields: [
+      field('title', 'Header Title', 'text', { required: false, default: '5G Enterprise Solutions Portfolio' }),
+      field('content', 'Description / Instructions', 'richtext', { required: false, default: 'Explore how AT&T 5G and dedicated cellular infrastructure empower modern enterprise operations.' }),
+      field('showPaginationDots', 'Show Pagination Dot Pills', 'checkbox', { default: true }),
+      field('loop', 'Loop Carousel Continuously', 'checkbox', { default: false })
+    ],
+    itemFields: [
+      field('title', 'Card Title', 'text', { required: true, default: 'New Card Title', maxLength: 100 }),
+      field('category', 'Category Tag (Optional)', 'text', { required: false, default: '', maxLength: 40 }),
+      field('image', 'Featured Image (Optional)', 'image', { required: false, default: '', preferredDimensions: '800 × 450 px (16:9)' }),
+      field('altText', 'Image Alternative Text', 'textarea', { default: '' }),
+      field('content', 'Card Content & Details', 'richtext', { required: true, default: 'Add card content here.' }),
+      field('buttonLabel', 'Action Button Label (Optional)', 'text', { required: false, default: '', maxLength: 30 }),
+      field('buttonUrl', 'Action Button URL (Optional)', 'url', { required: false, default: '' })
+    ]
   }
 };
 
