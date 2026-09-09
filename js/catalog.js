@@ -19,7 +19,22 @@ export const componentCatalog = COMPONENT_REGISTRY.map(entry => ({
   status: entry.status,
   classification: entry.classification,
   classificationLabel: classificationNameById.get(entry.classification) || entry.classification,
-  differentiator: entry.differentiator
+  differentiator: entry.differentiator,
+  // Next-Level metadata
+  tier: entry.tier,
+  learningPurposes: entry.learningPurposes || [],
+  riseRecommendation: entry.riseRecommendation,
+  riseRecommendationSummary: entry.riseRecommendationSummary,
+  riseEquivalent: entry.riseEquivalent,
+  bestWhen: entry.bestWhen,
+  nativeRiseWhen: entry.nativeRiseWhen,
+  keyCapabilities: entry.keyCapabilities || [],
+  complexity: entry.complexity,
+  mediaRequirements: entry.mediaRequirements,
+  accessibilitySummary: entry.accessibilitySummary,
+  completionTracking: entry.completionTracking,
+  readiness: entry.readiness,
+  aliases: entry.aliases || []
 }));
 
 // 'all' (or omitted) matches every classification — see filterCatalog's own comment for

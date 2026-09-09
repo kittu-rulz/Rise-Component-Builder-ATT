@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import {
-  CATEGORIES, CLASSIFICATIONS, COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById,
-  getDefaultConfig, searchComponents, validateRegistry
+  CATEGORIES, CLASSIFICATIONS, TIERS, LEARNING_PURPOSES, RISE_RECOMMENDATIONS,
+  COMPONENT_REGISTRY, getCategoriesWithCounts, getTiersWithCounts, getLearningPurposesWithCounts,
+  getComponentById, getDefaultConfig, searchComponents, validateRegistry
 } from '../../js/component-registry.js';
 import { componentCatalog, filterCatalog } from '../../js/catalog.js';
 import { createDefaultItem, getEditorSchema } from '../../js/editor-schemas.js';
@@ -28,6 +29,29 @@ function baseEntry(overrides = {}) {
     status: 'production',
     classification: 'enhanced',
     differentiator: 'A helpful, concrete reason to pick this over the native Rise block.',
+    tier: 'enhanced-rise',
+    learningPurposes: ['Explore'],
+    riseRecommendation: 'conditional',
+    riseRecommendationSummary: 'Use custom when advanced behavior is needed',
+    riseEquivalent: 'Rise Equivalent Block',
+    bestWhen: 'Best when custom features are needed.',
+    nativeRiseWhen: 'Native Rise is sufficient for basic use.',
+    keyCapabilities: ['Capability 1', 'Capability 2'],
+    complexity: 'Basic',
+    accessibilitySummary: 'Full keyboard and screen reader support.',
+    completionTracking: 'Exploration tracking',
+    readiness: {
+      score: 5,
+      max: 5,
+      status: 'Production',
+      dimensions: {
+        accessibility: true,
+        responsive: true,
+        riseTested: true,
+        completionTested: true,
+        mediaOptimized: true
+      }
+    },
     ...overrides
   };
 }
@@ -201,9 +225,89 @@ describe('component registry validation', () => {
     ['classification', { classification: undefined }, /unknown classification/i],
     ['differentiator', { differentiator: '' }, /missing a differentiator/i],
     ['differentiator', { differentiator: '   ' }, /missing a differentiator/i],
-    ['differentiator', { differentiator: undefined }, /missing a differentiator/i]
+    ['differentiator', { differentiator: undefined }, /missing a differentiator/i],
+    ['tier', { tier: 'not-a-tier' }, /invalid tier/i],
+    ['tier', { tier: undefined }, /invalid tier/i],
+    ['learningPurposes', { learningPurposes: [] }, /invalid learning purposes/i],
+    ['learningPurposes', { learningPurposes: ['FakePurpose'] }, /invalid learning purposes/i],
+    ['riseRecommendation', { riseRecommendation: 'invalid-rec' }, /invalid riseRecommendation/i],
+    ['riseRecommendationSummary', { riseRecommendationSummary: '' }, /missing a riseRecommendationSummary/i],
+    ['riseEquivalent', { riseEquivalent: '' }, /missing riseEquivalent/i],
+    ['bestWhen', { bestWhen: '' }, /missing bestWhen/i],
+    ['nativeRiseWhen', { nativeRiseWhen: '' }, /missing nativeRiseWhen/i],
+    ['keyCapabilities', { keyCapabilities: ['Only one'] }, /at least 2 key capabilities/i],
+    ['complexity', { complexity: 'SuperHard' }, /invalid complexity/i],
+    ['accessibilitySummary', { accessibilitySummary: '' }, /missing an accessibilitySummary/i],
+    ['completionTracking', { completionTracking: '' }, /missing completionTracking/i],
+    ['readiness', { readiness: null }, /missing a valid readiness score/i]
   ])('rejects an entry with an invalid %s', (_label, overrides, expectedMessage) => {
     expect(() => validateRegistry([baseEntry(overrides)])).toThrow(expectedMessage);
+  });
+});
+
+describe('strategic component tiers & learning purposes (Prompt Section 1-3)', () => {
+  test('TIERS contains exactly the 5 defined tiers', () => {
+    expect(TIERS.map(t => t.id)).toEqual(['flagship', 'signature', 'strong-custom', 'enhanced-rise', 'rise-first']);
+  });
+
+  test('every component has a valid tier and tier counts match strategic distribution', () => {
+    const tierCounts = getTiersWithCounts(COMPONENT_REGISTRY);
+    expect(tierCounts.find(t => t.id === 'flagship').count).toBe(3);
+    expect(tierCounts.find(t => t.id === 'signature').count).toBe(4);
+    expect(tierCounts.find(t => t.id === 'strong-custom').count).toBe(5);
+    expect(tierCounts.find(t => t.id === 'enhanced-rise').count).toBe(7);
+    expect(tierCounts.find(t => t.id === 'rise-first').count).toBe(7);
+  });
+
+  test('LEARNING_PURPOSES contains the 8 controlled taxonomy values', () => {
+    expect(LEARNING_PURPOSES).toEqual([
+      'Explore', 'Compare', 'Practice', 'Reflect', 'Assess', 'Explain', 'Navigate', 'Media'
+    ]);
+  });
+
+  test('every component has at least one learning purpose and all purposes have matching components', () => {
+    const purposeCounts = getLearningPurposesWithCounts(COMPONENT_REGISTRY);
+    purposeCounts.forEach(pc => {
+      expect(pc.count).toBeGreaterThan(0);
+    });
+  });
+
+  test('RISE_RECOMMENDATIONS defines the 3 structured decision values', () => {
+    expect(RISE_RECOMMENDATIONS.map(r => r.id)).toEqual(['native-first', 'conditional', 'custom-recommended']);
+  });
+
+  test('every component has structured Rise decision guidance and readiness scores', () => {
+    COMPONENT_REGISTRY.forEach(entry => {
+      expect(entry.riseRecommendation).toBeTruthy();
+      expect(entry.riseRecommendationSummary.length).toBeGreaterThan(5);
+      expect(entry.riseEquivalent.length).toBeGreaterThan(2);
+      expect(entry.bestWhen.length).toBeGreaterThan(5);
+      expect(entry.nativeRiseWhen.length).toBeGreaterThan(5);
+      expect(entry.keyCapabilities.length).toBeGreaterThanOrEqual(2);
+      expect(entry.readiness.score).toBeGreaterThanOrEqual(4);
+      expect(entry.readiness.max).toBe(5);
+      expect(entry.readiness.dimensions.accessibility).toBe(true);
+      expect(entry.readiness.dimensions.responsive).toBe(true);
+    });
+  });
+
+  test('getComponentById resolves by canonical ID, display name, and legacy aliases', () => {
+    // Canonical IDs
+    expect(getComponentById(COMPONENT_REGISTRY, 'pricing-comparison')?.name).toBe('Comparison Matrix');
+    expect(getComponentById(COMPONENT_REGISTRY, 'dial-gauge')?.name).toBe('Interactive Gauge');
+    expect(getComponentById(COMPONENT_REGISTRY, 'callout-box')?.name).toBe('Policy & Alert Cards');
+    expect(getComponentById(COMPONENT_REGISTRY, 'flip-cards')?.name).toBe('Study Cards');
+    expect(getComponentById(COMPONENT_REGISTRY, 'menu-list')?.name).toBe('Reference Explorer');
+
+    // Display names
+    expect(getComponentById(COMPONENT_REGISTRY, 'Comparison Matrix')?.id).toBe('pricing-comparison');
+    expect(getComponentById(COMPONENT_REGISTRY, 'Interactive Gauge')?.id).toBe('dial-gauge');
+    expect(getComponentById(COMPONENT_REGISTRY, 'Study Cards')?.id).toBe('flip-cards');
+
+    // Legacy Aliases
+    expect(getComponentById(COMPONENT_REGISTRY, 'flashcards')?.id).toBe('flip-cards');
+    expect(getComponentById(COMPONENT_REGISTRY, 'metric explorer')?.id).toBe('dial-gauge');
+    expect(getComponentById(COMPONENT_REGISTRY, 'policy and alert cards')?.id).toBe('callout-box');
   });
 });
 
