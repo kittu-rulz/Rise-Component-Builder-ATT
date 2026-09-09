@@ -18,8 +18,10 @@ import { writePreview, openPreview, generateIframeContent as compilePreview, COM
 import { getDeviceWidthLabel } from './js/device-preview.js';
 import { measureRenderedDimensions } from './js/dom-measurement.js';
 import {
-  buildExportPayload, buildLargePasteWarning, buildRiseProjectZip, downloadHtml, downloadProjectJson,
-  downloadZipFile, formatExportedFileSize, getExportedFileSize, prepareMediaExport
+  buildCoursePackZip, buildExportPayload, buildLargePasteWarning, buildRiseEmbedSnippet,
+  buildRiseProjectZip, buildStorylineWebObjectZip, downloadCoursePackZip, downloadHtml,
+  downloadProjectJson, downloadStorylineWebObjectZip, downloadZipFile, formatExportedFileSize,
+  getExportedFileSize, prepareMediaExport
 } from './js/export.js';
 import { copyTextToClipboard, describeStorageUsage, escapeHTML, formatItemLabel, formatReadableDate, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
 import { showToast } from './js/toast.js';
@@ -1620,9 +1622,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  const selectedProjectsForCoursePack = new Set();
+
+  function updateCoursePackControls() {
+    const btn = document.getElementById('btn-export-course-pack');
+    const countSpan = document.getElementById('course-pack-selected-count');
+    const selectAllCheck = document.getElementById('check-select-all-projects');
+    const projects = loadProjects();
+    const count = selectedProjectsForCoursePack.size;
+    if (countSpan) countSpan.textContent = String(count);
+    if (btn) {
+      btn.disabled = count === 0;
+      btn.title = count === 0 ? 'Select at least one saved project to export a course pack' : `Export ${count} project(s) as Course Pack ZIP`;
+    }
+    if (selectAllCheck) {
+      selectAllCheck.checked = projects.length > 0 && count === projects.length;
+      selectAllCheck.indeterminate = count > 0 && count < projects.length;
+    }
+  }
+
   function renderStoredProjects() {
     savedComponentsList.innerHTML = '';
     const projects = loadProjects();
+    // Prune selections of projects that were deleted
+    const currentProjectIds = new Set(projects.map(p => p.id));
+    for (const id of selectedProjectsForCoursePack) {
+      if (!currentProjectIds.has(id)) selectedProjectsForCoursePack.delete(id);
+    }
+    updateCoursePackControls();
+
     if (!projects.length) {
       const empty = document.createElement('div');
       empty.className = 'saved-components-empty';
@@ -1634,6 +1662,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     projects.forEach(project => {
       const card = document.createElement('div');
       card.className = `saved-component-card${project.id === appState.currentProjectId ? ' active-card' : ''}`;
+      
+      const leftCol = document.createElement('div');
+      leftCol.className = 'sc-card-left';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'sc-checkbox';
+      checkbox.checked = selectedProjectsForCoursePack.has(project.id);
+      checkbox.title = `Select “${project.name}” for course pack export`;
+      checkbox.setAttribute('aria-label', `Select ${project.name} for course pack`);
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) selectedProjectsForCoursePack.add(project.id);
+        else selectedProjectsForCoursePack.delete(project.id);
+        updateCoursePackControls();
+      });
+
       const details = document.createElement('div');
       details.className = 'sc-details';
       const name = document.createElement('div');
@@ -1645,6 +1688,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const component = componentCatalog.find(item => item.id === project.componentId);
       meta.textContent = `Modified: ${formatReadableDate(project.updatedAt)} • ${component?.title || project.componentId}`;
       details.append(name, meta);
+      leftCol.append(checkbox, details);
 
       const actions = document.createElement('div');
       actions.className = 'sc-actions';
@@ -1687,14 +1731,77 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!confirmed) return;
         try {
           deleteProject(project.id);
+          selectedProjectsForCoursePack.delete(project.id);
           if (appState.currentProjectId === project.id) appState.currentProjectId = null;
           renderStoredProjects();
           showToast(`Deleted “${project.name}”.`, 'success');
           updateStorageMeter();
         } catch (error) { showToast(error.message, 'error'); }
       });
-      card.append(details, actions);
+      card.append(leftCol, actions);
       savedComponentsList.appendChild(card);
+    });
+  }
+
+  const selectAllProjectsCheck = document.getElementById('check-select-all-projects');
+  if (selectAllProjectsCheck) {
+    selectAllProjectsCheck.addEventListener('change', () => {
+      const projects = loadProjects();
+      if (selectAllProjectsCheck.checked) {
+        projects.forEach(p => selectedProjectsForCoursePack.add(p.id));
+      } else {
+        selectedProjectsForCoursePack.clear();
+      }
+      renderStoredProjects();
+    });
+  }
+
+  const btnExportCoursePack = document.getElementById('btn-export-course-pack');
+  if (btnExportCoursePack) {
+    btnExportCoursePack.addEventListener('click', async () => {
+      const projects = loadProjects().filter(p => selectedProjectsForCoursePack.has(p.id));
+      if (!projects.length) return showToast('Select at least one project for the course pack.', 'warning');
+      const titleInput = document.getElementById('course-pack-title-input');
+      const courseTitle = titleInput?.value.trim() || 'Course Package';
+
+      btnExportCoursePack.disabled = true;
+      const originalText = btnExportCoursePack.innerHTML;
+      btnExportCoursePack.innerHTML = '<span>Building Course Pack…</span>';
+
+      try {
+        const componentsData = [];
+        for (const project of projects) {
+          const compDef = componentCatalog.find(item => item.id === project.componentId) || { id: project.componentId, title: project.name, category: 'interactive' };
+          const prepared = await prepareMediaExport(project.config, { mode: 'package' });
+          const projectTheme = project.theme || BUILT_IN_THEMES.find(t => t.id === DEFAULT_THEME_ID);
+          const exportState = {
+            selectedComponent: compDef,
+            config: prepared.config,
+            activeTheme: projectTheme,
+            activeThemeId: projectTheme.id,
+            componentOverrides: project.componentOverrides || {},
+            settings: project.settings || {}
+          };
+          const html = compilePreview(exportState, componentRegistry, colorToRgba);
+          componentsData.push({
+            name: project.name,
+            componentId: project.componentId,
+            title: project.name,
+            html,
+            assets: prepared.assets,
+            manifest: prepared.manifest
+          });
+        }
+
+        const pack = await buildCoursePackZip({ courseTitle, components: componentsData });
+        downloadCoursePackZip(courseTitle, pack.blob);
+        showToast(`Course Pack ZIP downloaded with ${componentsData.length} block(s) (${formatExportedFileSize(pack.size)}).`, 'success');
+      } catch (error) {
+        showToast(`Course pack export failed: ${error.message}`, 'error', 6000);
+      } finally {
+        btnExportCoursePack.innerHTML = originalText;
+        updateCoursePackControls();
+      }
     });
   }
 
@@ -1726,6 +1833,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderStoredProjects();
     openModal('modal-open');
   });
+
+  const btnDuplicate = document.getElementById('btn-duplicate');
+  if (btnDuplicate) {
+    btnDuplicate.addEventListener('click', () => {
+      if (!appState.selectedComponent) {
+        showToast('Select or open a component block to duplicate.', 'warning');
+        return;
+      }
+      try {
+        const baseName = appState.currentProjectName || appState.selectedComponent.title || 'Component Block';
+        const duplicateName = `${baseName} (Copy)`;
+        const duplicatedProject = buildCurrentProject(duplicateName, true);
+        const saved = saveProject(duplicatedProject);
+        appState.currentProjectId = saved.id;
+        appState.currentProjectName = saved.name;
+        appState.isDirty = false;
+        saveDraft(saved);
+        updateProjectStatusDisplay();
+        showToast(`Duplicated block as “${saved.name}”.`, 'success');
+      } catch (error) {
+        showToast(`Duplicate failed: ${error.message}`, 'error', 5000);
+      }
+    });
+  }
 
   document.getElementById('btn-save').addEventListener('click', () => {
     const validationErrors = collectValidationErrors();
@@ -1952,6 +2083,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Code Copy Buttons
   setupCopyBtn('btn-copy-iframe', 'export-iframe-code');
+  setupCopyBtn('btn-copy-rise-embed', 'export-rise-embed-code');
   setupCopyBtn('btn-copy-html', 'export-html-code');
 
   function setupCopyBtn(btnId, targetId) {
@@ -1985,6 +2117,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentExportBundle = null;
   let currentRiseZipBundle = null;
+  let currentStorylineZipBundle = null;
+
   async function prepareCurrentExport() {
     const prepared = await prepareMediaExport(appState.config);
     const exportState = { ...appState, config: prepared.config };
@@ -2010,36 +2144,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
+  async function prepareStorylineZipBundle() {
+    const prepared = await prepareMediaExport(appState.config, { mode: 'package' });
+    const exportState = { ...appState, config: prepared.config };
+    const html = compilePreview(exportState, componentRegistry, colorToRgba);
+    if (prepared.missing.length) {
+      return { html, manifest: prepared.manifest, warnings: prepared.warnings, missing: prepared.missing, blob: null, size: 0 };
+    }
+    const title = appState.selectedComponent?.title || 'Storyline Web Object';
+    const packaged = await buildStorylineWebObjectZip({ html, assets: prepared.assets, manifest: prepared.manifest, title });
+    return {
+      html, manifest: prepared.manifest, missing: prepared.missing,
+      warnings: [...prepared.warnings, ...packaged.warnings], blob: packaged.blob, size: packaged.size
+    };
+  }
+
   // Tracked so applyCompletionExportGate() (a second, independent gate layered on top —
   // see below) never re-enables a button the general preflight gate already disabled.
   let lastExportGateEnabled = true;
 
   function setExportActionsEnabled(enabled) {
     lastExportGateEnabled = enabled;
-    ['btn-copy-iframe', 'btn-copy-html', 'btn-download-html'].forEach(id => {
+    ['btn-copy-iframe', 'btn-copy-rise-embed', 'btn-copy-html', 'btn-download-html'].forEach(id => {
       const button = document.getElementById(id);
       if (!button) return;
       button.disabled = !enabled;
       button.title = enabled ? '' : 'Fix the blocking errors listed above before exporting.';
     });
-    // The Rise Project ZIP button has its own independent, narrower block condition
-    // (a genuinely missing asset) layered on top of this preflight gate — see
-    // setRiseZipActionEnabled() below, called from setupExportModalContent().
-    const zipButton = document.getElementById('btn-download-rise-zip');
-    if (zipButton && enabled === false) {
-      zipButton.disabled = true;
-      zipButton.title = 'Fix the blocking errors listed above before exporting.';
-    }
+    // The Rise Project ZIP and Storyline ZIP buttons have their own independent, narrower block condition
+    // (a genuinely missing asset) layered on top of this preflight gate.
+    ['btn-download-rise-zip', 'btn-download-storyline-zip'].forEach(id => {
+      const zipButton = document.getElementById(id);
+      if (zipButton && enabled === false) {
+        zipButton.disabled = true;
+        zipButton.title = 'Fix the blocking errors listed above before exporting.';
+      }
+    });
   }
 
   // A second, independent Blocking gate (Requirement 4, P02) layered on top of the general
-  // preflight gate above: when completion tracking is on, the Iframe Snippet and Web
+  // preflight gate above: when completion tracking is on, the Iframe Snippet, Rise Embed, and Web
   // Package ZIP formats can't report completion to Rise (js/compatibility.js's single
   // source of truth), so their actions are disabled with a direct fix — use "Copy for
   // Rise" in the primary panel instead — regardless of whether the rest of the component
   // is otherwise clean. Only relaxes a button when the general gate also allows it.
   function applyCompletionExportGate() {
-    [['iframe', 'btn-copy-iframe'], ['rise-zip', 'btn-download-rise-zip']].forEach(([formatKey, buttonId]) => {
+    [['iframe', 'btn-copy-iframe'], ['rise-embed', 'btn-copy-rise-embed'], ['rise-zip', 'btn-download-rise-zip'], ['storyline', 'btn-download-storyline-zip']].forEach(([formatKey, buttonId]) => {
       const gateIssue = checkCompletionExportFormatIssue(appState.config, formatKey);
       const button = document.getElementById(buttonId);
       const pane = document.getElementById(`pane-export-${formatKey}`);
@@ -2146,6 +2296,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const iframeSizeLabel = document.getElementById('export-iframe-size');
     if (iframeSizeLabel) iframeSizeLabel.textContent = formatExportedFileSize(getExportedFileSize(payload.iframe));
 
+    // Rise Multimedia Embed snippet
+    const riseEmbedUrlInput = document.getElementById('export-rise-embed-url');
+    const riseEmbedCode = document.getElementById('export-rise-embed-code');
+    const riseEmbedSizeLabel = document.getElementById('export-rise-embed-size');
+    const updateRiseEmbedSnippet = () => {
+      const url = riseEmbedUrlInput?.value.trim() || 'https://your-server.example.com/components/my-block/index.html';
+      const snippet = buildRiseEmbedSnippet({
+        url,
+        title: appState.selectedComponent?.title || 'AT&T Interactive Block'
+      });
+      if (riseEmbedCode) riseEmbedCode.textContent = snippet;
+      if (riseEmbedSizeLabel) riseEmbedSizeLabel.textContent = formatExportedFileSize(getExportedFileSize(snippet));
+    };
+    updateRiseEmbedSnippet();
+    if (riseEmbedUrlInput && !riseEmbedUrlInput.dataset.listenerAttached) {
+      riseEmbedUrlInput.dataset.listenerAttached = 'true';
+      riseEmbedUrlInput.addEventListener('input', updateRiseEmbedSnippet);
+    }
+
     // Paste-friendly HTML fragment for custom HTML blocks
     const htmlCode = document.getElementById('export-html-code');
     htmlCode.textContent = payload.fragment;
@@ -2170,10 +2339,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (fileSizeLabel) fileSizeLabel.textContent = `Standalone HTML file size: ${formatExportedFileSize(getExportedFileSize(payload.html))}`;
 
     await setupRiseZipPane(canExport);
-    // setupRiseZipPane() sets the ZIP button's disabled/title state purely from the
-    // general gate + missing-asset check, with no knowledge of the completion gate above —
-    // re-apply last so it always has the final word (mirrors the completion gate also
-    // running after setExportActionsEnabled() for the same reason).
+    await setupStorylineZipPane(canExport);
+    // setupRiseZipPane() and setupStorylineZipPane() set buttons disabled/title state purely from
+    // general gate + missing-asset check. Re-apply completion export gate last so it has final word.
     applyCompletionExportGate();
   }
 
@@ -2206,6 +2374,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         : '';
     }
     if (zipSizeLabel) zipSizeLabel.textContent = blocked ? '' : `Web Package ZIP size: ${formatExportedFileSize(bundle.size)}`;
+    if (zipButton) {
+      const enabled = canExport && !blocked;
+      zipButton.disabled = !enabled;
+      zipButton.title = blocked ? 'Re-upload the missing asset(s) before exporting.' : enabled ? '' : 'Fix the blocking errors listed above before exporting.';
+    }
+  }
+
+  async function setupStorylineZipPane(canExport) {
+    const zipWarningBox = document.getElementById('storyline-zip-warning');
+    const zipBlockingBox = document.getElementById('storyline-zip-blocking');
+    const zipSizeLabel = document.getElementById('storyline-zip-file-size');
+    const zipButton = document.getElementById('btn-download-storyline-zip');
+    if (zipWarningBox) { zipWarningBox.hidden = false; zipWarningBox.classList.add('is-loading'); zipWarningBox.textContent = 'Preparing Storyline Web Object ZIP…'; }
+    try {
+      currentStorylineZipBundle = await prepareStorylineZipBundle();
+    } catch (error) {
+      currentStorylineZipBundle = null;
+      if (zipWarningBox) { zipWarningBox.classList.remove('is-loading'); zipWarningBox.textContent = `Storyline ZIP preparation failed: ${error.message}`; }
+      return;
+    }
+    const bundle = currentStorylineZipBundle;
+    if (zipWarningBox) {
+      zipWarningBox.classList.remove('is-loading');
+      zipWarningBox.hidden = bundle.warnings.length === 0;
+      zipWarningBox.textContent = bundle.warnings.join(' ');
+    }
+    const blocked = bundle.missing.length > 0;
+    if (zipBlockingBox) {
+      zipBlockingBox.hidden = !blocked;
+      zipBlockingBox.textContent = blocked
+        ? `Export blocked: ${bundle.missing.length} required asset${bundle.missing.length === 1 ? ' is' : 's are'} missing from local storage (${bundle.missing.join(', ')}). Re-upload the missing file(s) before exporting.`
+        : '';
+    }
+    if (zipSizeLabel) zipSizeLabel.textContent = blocked ? '' : `Storyline Web Object ZIP size: ${formatExportedFileSize(bundle.size)}`;
     if (zipButton) {
       const enabled = canExport && !blocked;
       zipButton.disabled = !enabled;
@@ -2250,6 +2452,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       downloadZipFile(title, bundle.blob);
       showToast(`Web Package ZIP downloaded (${formatExportedFileSize(bundle.size)}).`, 'success');
+    });
+  }
+
+  const btnDownloadStorylineZip = document.getElementById('btn-download-storyline-zip');
+  if (btnDownloadStorylineZip) {
+    btnDownloadStorylineZip.addEventListener('click', async () => {
+      const title = appState.selectedComponent?.title || 'rise-component';
+      let bundle = currentStorylineZipBundle;
+      try {
+        if (!bundle) bundle = await prepareStorylineZipBundle();
+      } catch (error) {
+        showToast(`Export failed: ${error.message}`, 'error', 6000);
+        return;
+      }
+      if (bundle.missing.length) {
+        showToast(`Export blocked: ${bundle.missing.length} required asset${bundle.missing.length === 1 ? ' is' : 's are'} missing from local storage. Re-upload the missing file(s).`, 'error', 7000);
+        return;
+      }
+      downloadStorylineWebObjectZip(title, bundle.blob);
+      showToast(`Storyline Web Object ZIP downloaded (${formatExportedFileSize(bundle.size)}).`, 'success');
     });
   }
 

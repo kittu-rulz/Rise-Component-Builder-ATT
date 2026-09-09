@@ -125,6 +125,91 @@ describe('buildRiseProjectZip', () => {
   });
 });
 
+describe('buildRiseEmbedSnippet', () => {
+  test('generates a compliant responsive iframe snippet for Rise Multimedia Embed', async () => {
+    const { buildRiseEmbedSnippet } = await import('../../js/export.js');
+    const snippet = buildRiseEmbedSnippet({
+      url: 'https://example.com/courses/onboarding/accordion.html',
+      title: 'Customer Service Policy Accordion',
+      height: '620px'
+    });
+    expect(snippet).toContain('<iframe src="https://example.com/courses/onboarding/accordion.html"');
+    expect(snippet).toContain('title="Customer Service Policy Accordion"');
+    expect(snippet).toContain('height="620px"');
+    expect(snippet).toContain('width="100%"');
+    expect(snippet).toContain('allowfullscreen');
+    expect(snippet).toContain('allow="autoplay"');
+  });
+
+  test('falls back safely when optional parameters are omitted', async () => {
+    const { buildRiseEmbedSnippet } = await import('../../js/export.js');
+    const snippet = buildRiseEmbedSnippet({ url: 'https://example.com/block.html' });
+    expect(snippet).toContain('src="https://example.com/block.html"');
+    expect(snippet).toContain('height="560px"');
+    expect(snippet).toContain('title="AT&amp;T Interactive Block"');
+  });
+});
+
+describe('buildStorylineWebObjectZip', () => {
+  test('packages a valid Storyline 360 web object archive with manifest and assets', async () => {
+    const { buildStorylineWebObjectZip } = await import('../../js/export.js');
+    const asset = { relativePath: 'assets/badge.png', blob: pngBlob(), filename: 'badge.png', sourceMediaId: 'm1', mimeType: 'image/png' };
+    const { blob, size } = await buildStorylineWebObjectZip({
+      html: '<!DOCTYPE html><html><body><h1>Storyline Web Object</h1></body></html>',
+      assets: [asset],
+      manifest: [{ filename: 'badge.png', relativePath: 'assets/badge.png' }],
+      title: 'Safety Procedure Simulation'
+    });
+    expect(size).toBe(blob.size);
+    const entries = await readZip(blob);
+    expect(entries.some(e => e.path === 'index.html')).toBe(true);
+    expect(entries.some(e => e.path === 'assets/badge.png')).toBe(true);
+    expect(entries.some(e => e.path === 'assets/storyline-manifest.json')).toBe(true);
+    const manifestEntry = entries.find(e => e.path === 'assets/storyline-manifest.json');
+    const manifestJson = JSON.parse(new TextDecoder().decode(manifestEntry.data));
+    expect(manifestJson.format).toBe('articulate-storyline-web-object');
+    expect(manifestJson.title).toBe('Safety Procedure Simulation');
+  });
+});
+
+describe('buildCoursePackZip', () => {
+  test('packages multiple components into a course pack with master catalog course-index.html', async () => {
+    const { buildCoursePackZip } = await import('../../js/export.js');
+    const comp1 = {
+      name: 'Network Ops Hierarchy',
+      componentId: 'accordion',
+      title: 'Network Ops Hierarchy',
+      html: '<html><body>Accordion Content</body></html>',
+      assets: []
+    };
+    const comp2 = {
+      name: 'Field Safety Check',
+      componentId: 'checklist',
+      title: 'Field Safety Check',
+      html: '<html><body>Checklist Content</body></html>',
+      assets: [{ relativePath: 'assets/icon.png', blob: pngBlob(), filename: 'icon.png' }]
+    };
+
+    const { blob, size } = await buildCoursePackZip({
+      courseTitle: 'Fiber Operations 101',
+      components: [comp1, comp2]
+    });
+    expect(size).toBe(blob.size);
+    const entries = await readZip(blob);
+    expect(entries.some(e => e.path === 'course-index.html')).toBe(true);
+    expect(entries.some(e => e.path === 'course-manifest.json')).toBe(true);
+    expect(entries.some(e => e.path === 'components/network-ops-hierarchy/index.html')).toBe(true);
+    expect(entries.some(e => e.path === 'components/field-safety-check/index.html')).toBe(true);
+    expect(entries.some(e => e.path === 'components/field-safety-check/assets/icon.png')).toBe(true);
+
+    const indexEntry = entries.find(e => e.path === 'course-index.html');
+    const indexHtml = new TextDecoder().decode(indexEntry.data);
+    expect(indexHtml).toContain('Fiber Operations 101');
+    expect(indexHtml).toContain('components/network-ops-hierarchy/index.html');
+    expect(indexHtml).toContain('components/field-safety-check/index.html');
+  });
+});
+
 describe('download helpers', () => {
   const originalCreateObjectURL = globalThis.URL?.createObjectURL;
   const originalRevokeObjectURL = globalThis.URL?.revokeObjectURL;
@@ -156,6 +241,24 @@ describe('download helpers', () => {
     const { downloadZipFile } = await import('../../js/export.js');
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function capture() { this.__downloadName = this.download; });
     downloadZipFile('Flip Cards', new Blob(['zip-bytes']));
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    clickSpy.mockRestore();
+  });
+
+  test('downloadStorylineWebObjectZip downloads storyline-web-object zip', async () => {
+    stubObjectURL();
+    const { downloadStorylineWebObjectZip } = await import('../../js/export.js');
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    downloadStorylineWebObjectZip('Scenario Simulation', new Blob(['zip']));
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    clickSpy.mockRestore();
+  });
+
+  test('downloadCoursePackZip downloads course-pack zip', async () => {
+    stubObjectURL();
+    const { downloadCoursePackZip } = await import('../../js/export.js');
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    downloadCoursePackZip('Field Operations', new Blob(['zip']));
     expect(clickSpy).toHaveBeenCalledTimes(1);
     clickSpy.mockRestore();
   });

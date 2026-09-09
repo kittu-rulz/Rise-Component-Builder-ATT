@@ -1,4 +1,4 @@
-import { escapeSrcdoc, generateHtmlFragment, registerLocalBlobURL, revokeLocalBlobURL, slugify } from './utilities.js';
+import { escapeAttribute, escapeHTML, escapeSrcdoc, generateHtmlFragment, registerLocalBlobURL, revokeLocalBlobURL, slugify } from './utilities.js';
 import { blobToDataURL, isMediaReference, sanitizeAssetFilename, SMALL_IMAGE_INLINE_LIMIT } from './media.js';
 import { getMediaRecord, mediaStore } from './media-storage.js';
 import { createZip } from './zip.js';
@@ -38,6 +38,13 @@ export function buildLargePasteWarning(bytes) {
   return `This code is large (${formatExportedFileSize(bytes)}). Pasting very large blocks into Rise's code editor can be slow to work with. If this component includes uploaded audio, video, or a large image, consider Web Package ZIP instead.`;
 }
 
+export function buildRiseEmbedSnippet(options = {}) {
+  const src = options.url || 'https://your-server.com/path-to-component/index.html';
+  const title = options.title || 'AT&T Interactive Block';
+  const height = options.height || '560px';
+  return `<iframe src="${escapeAttribute(src)}" title="${escapeAttribute(title)}" width="100%" height="${height}" style="border:none; border-radius:12px; width:100%; min-height:${height};" allow="autoplay" allowfullscreen sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-same-origin"></iframe>`;
+}
+
 export function buildExportPayload(fullHtml, options = {}) {
   return {
     iframe: `<iframe srcdoc="${escapeSrcdoc(fullHtml)}" width="100%" height="500px" style="border:none;" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms"></iframe>`,
@@ -50,16 +57,6 @@ export function buildExportPayload(fullHtml, options = {}) {
 /**
  * @param {object} config
  * @param {{ store?: any, inlineImageLimit?: number, mode?: 'inline'|'package' }} options
- *   `mode: 'inline'` (default) is the existing behavior used by the iframe snippet, HTML
- *   fragment, and single-file HTML download: small images embed as base64 data URLs,
- *   everything else gets a relative-path reference plus a warning that it "requires an
- *   external asset file" (since those formats have no way to actually deliver one).
- *   `mode: 'package'` is used by the Rise Project ZIP export (js/export.js#buildRiseProjectZip):
- *   every local media reference always becomes a relative-path asset — nothing is inlined,
- *   and no "requires an external file" warning is produced, because packaging the file
- *   alongside index.html *is* the point. A missing/deleted media record is still reported
- *   in both modes (via `warnings` and the dedicated `missing` list, the latter is what
- *   callers should actually gate export on rather than string-matching `warnings`).
  */
 export async function prepareMediaExport(config, options = {}) {
   const store = options.store || mediaStore;
@@ -123,21 +120,9 @@ export async function prepareMediaExport(config, options = {}) {
 }
 
 /**
- * Packages a compiled export into a real, standalone ZIP: `index.html` at the ZIP root
- * (never inside a wrapper directory — Rise's own import, and just opening the file
- * directly, both expect this), every locally uploaded asset the component actually
- * references under `assets/`, and an optional `assets/manifest.json` for diagnostics.
- * The exported HTML must work without the Builder — it's the exact same compiled output
- * every other export format uses (docs/EXPORT-CONTRACT.md's single-compiler guarantee),
- * just with its media references pointing at packaged relative paths instead of a data
- * URL or an unreachable placeholder.
+ * Packages a compiled export into a real, standalone ZIP: `index.html` at the ZIP root.
  *
  * @param {{ html: string, assets: { relativePath: string, blob: Blob }[], manifest: any[], includeManifest?: boolean }} bundle
- *   `html`/`assets`/`manifest` are exactly the shape `prepareMediaExport(config, { mode: 'package' })`
- *   already produces (plus the compiled HTML) — this function does no media resolution of
- *   its own, only archive assembly, so there is exactly one place that decides how a media
- *   reference becomes a path (`prepareMediaExport`) and exactly one place that decides how
- *   bytes become a ZIP (`js/zip.js`).
  * @returns {Promise<{ blob: Blob, size: number, warnings: string[] }>}
  */
 export async function buildRiseProjectZip({ html, assets, manifest, includeManifest = true }) {
@@ -157,11 +142,222 @@ export async function buildRiseProjectZip({ html, assets, manifest, includeManif
   return { blob, size: blob.size, warnings };
 }
 
+export async function buildStorylineWebObjectZip({ html, assets = [], manifest = [], title = 'Interactive Interaction' }) {
+  const entries = [{ path: 'index.html', data: html }];
+  for (const asset of assets) {
+    if (asset?.blob) {
+      entries.push({ path: asset.relativePath, data: await asset.blob.arrayBuffer() });
+    }
+  }
+  const manifestData = JSON.stringify({
+    schemaVersion: 1,
+    format: 'articulate-storyline-web-object',
+    title,
+    exportedAt: new Date().toISOString(),
+    assets: manifest
+  }, null, 2);
+  entries.push({ path: 'storyline-manifest.json', data: manifestData });
+  entries.push({ path: 'assets/storyline-manifest.json', data: manifestData });
+  const blob = createZip(entries);
+  return { blob, size: blob.size };
+}
+
+export async function buildCoursePackZip({ courseTitle = 'AT&T Course Interactions Pack', components = [] }) {
+  const entries = [];
+  const manifestItems = [];
+
+  for (const item of components) {
+    const slug = slugify(item.name || item.id || 'component');
+    entries.push({ path: `components/${slug}/index.html`, data: item.html });
+    if (Array.isArray(item.assets)) {
+      for (const asset of item.assets) {
+        if (asset?.blob) {
+          entries.push({ path: `components/${slug}/${asset.relativePath}`, data: await asset.blob.arrayBuffer() });
+        }
+      }
+    }
+    manifestItems.push({
+      id: item.id,
+      name: item.name,
+      category: item.category || 'Interactive',
+      path: `components/${slug}/index.html`
+    });
+  }
+
+  const catalogHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHTML(courseTitle)} — Interactive Component Pack</title>
+  <style>
+    :root {
+      --primary: #00388F;
+      --att-blue: #009FDB;
+      --bg: #F3F4F5;
+      --card-bg: #FFFFFF;
+      --text: #000000;
+      --text-muted: #4B5563;
+      --border: #DCDFE3;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--att-font-sans, sans-serif);
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 40px 20px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .header {
+      background: var(--card-bg);
+      padding: 32px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background-color: var(--att-blue);
+      color: #FFFFFF;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    p.desc {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      transition: all 180ms ease;
+    }
+    .card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px rgba(0, 56, 143, 0.12);
+      transform: translateY(-2px);
+    }
+    .card-cat {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .btn-launch {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background-color: var(--primary);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 700;
+      transition: background-color 150ms ease;
+    }
+    .btn-launch:hover {
+      background-color: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">Course Component Pack</span>
+      <h1>${escapeHTML(courseTitle)}</h1>
+      <p class="desc">Interactive eLearning interaction package generated by the AT&amp;T Rise Component Builder. Select any component below to launch or preview.</p>
+    </div>
+    <div class="grid">
+      ${manifestItems.map(item => `
+        <div class="card">
+          <div>
+            <span class="card-cat">${escapeHTML(item.category)}</span>
+            <h2 class="card-title">${escapeHTML(item.name)}</h2>
+          </div>
+          <a class="btn-launch" href="${escapeAttribute(item.path)}" target="_blank" rel="noopener">Launch Interaction &rarr;</a>
+        </div>
+      `).join('')}
+    </div>
+  </div>
+</body>
+</html>`;
+
+  entries.push({ path: 'course-index.html', data: catalogHtml });
+  entries.push({
+    path: 'course-manifest.json',
+    data: JSON.stringify({
+      title: courseTitle,
+      exportedAt: new Date().toISOString(),
+      components: manifestItems
+    }, null, 2)
+  });
+
+  const blob = createZip(entries);
+  return { blob, size: blob.size, count: components.length };
+}
+
 export function downloadZipFile(title, blob) {
   const url = registerLocalBlobURL(URL.createObjectURL(blob));
   const link = document.createElement('a');
   link.href = url;
   link.download = `${slugify(title || 'rise-component')}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  revokeLocalBlobURL(url);
+}
+
+export function downloadStorylineWebObjectZip(title, blob) {
+  const url = registerLocalBlobURL(URL.createObjectURL(blob));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${slugify(title || 'storyline-web-object')}.storyline.zip`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  revokeLocalBlobURL(url);
+}
+
+export function downloadCoursePackZip(courseTitle, blob) {
+  const url = registerLocalBlobURL(URL.createObjectURL(blob));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${slugify(courseTitle || 'course-pack')}.course-pack.zip`;
   document.body.appendChild(link);
   link.click();
   link.remove();

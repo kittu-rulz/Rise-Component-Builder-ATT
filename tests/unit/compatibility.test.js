@@ -22,7 +22,7 @@ describe('compatibility tier classification', () => {
   });
 
   test('getExportFormatCompatibility resolves each known format key', () => {
-    ['iframe', 'code', 'rise-zip', 'standaloneDownload'].forEach(key => {
+    ['iframe', 'code', 'rise-zip', 'rise-embed', 'storyline', 'standaloneDownload'].forEach(key => {
       expect(getExportFormatCompatibility(key)).toBe(EXPORT_FORMAT_COMPATIBILITY[key]);
     });
   });
@@ -34,7 +34,7 @@ describe('compatibility tier classification', () => {
 
   test('every export format is confirmed', () => {
     const confirmed = Object.entries(EXPORT_FORMAT_COMPATIBILITY).filter(([, entry]) => entry.tier === 'confirmed');
-    expect(confirmed.map(([key]) => key).sort()).toEqual(['code', 'iframe', 'rise-zip', 'standaloneDownload']);
+    expect(confirmed.map(([key]) => key).sort()).toEqual(['code', 'iframe', 'rise-embed', 'rise-zip', 'standaloneDownload', 'storyline']);
   });
 });
 
@@ -45,6 +45,8 @@ describe('completion-compatibility rule (single source of truth for P02)', () =>
 
   test('iframe and rise-zip are not completion-compatible', () => {
     expect(isExportFormatCompletionCompatible('iframe')).toBe(false);
+    expect(isExportFormatCompletionCompatible('rise-embed')).toBe(false);
+    expect(isExportFormatCompletionCompatible('storyline')).toBe(false);
     expect(isExportFormatCompletionCompatible('rise-zip')).toBe(false);
   });
 

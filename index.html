@@ -127,6 +127,10 @@
           <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M23.4 3 3 3 3 26C3 27.7 4.3 29 6 29L26 29C27.7 29 29 27.7 29 26L29 8.5 23.4 3ZM11 5 21 5 21 8C21 8.6 20.6 9 20 9L12 9C11.4 9 11 8.6 11 8L11 5ZM11 27 11 18 21 18 21 27 11 27ZM27 26C27 26.6 26.6 27 26 27L23 27 23 16 9 16 9 27 6 27C5.4 27 5 26.6 5 26L5 5 9 5 9 8C9 9.7 10.3 11 12 11L20 11C21.7 11 23 9.7 23 8L23 5.4 27 9.4 27 26Z"/></svg>
           <span>Save</span>
         </button>
+        <button id="btn-duplicate" class="btn btn-secondary" title="Duplicate Block" aria-label="Duplicate Block">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M28 10V28H10V10H28ZM28 8H10C8.9 8 8 8.9 8 10V28C8 29.1 8.9 30 10 30H28C29.1 30 30 29.1 30 28V10C30 8.9 29.1 8 28 8ZM22 4H4C2.9 4 2 4.9 2 6V24H4V6H22V4Z"/></svg>
+          <span>Duplicate</span>
+        </button>
         <div class="divider"></div>
         <button id="btn-undo" class="btn btn-secondary btn-icon" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
           <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M12.4 12 17.7 6.7 16.3 5.3 8.6 13 16.3 20.7 17.7 19.3 12.4 14C17.7 14 22 18.3 22 23.6L22 26 24 26 24 23.6C24 17.2 18.8 12 12.4 12Z"/></svg>
@@ -914,6 +918,23 @@
       <div class="modal-body">
         <p class="modal-desc">Select a saved component project from your local workspace storage, or import a project file — a plain <strong>.rise.json</strong> (metadata only; any uploaded media must already exist in this browser) or a portable <strong>project package (.zip)</strong>, which carries its uploaded media along with it.</p>
 
+        <div class="saved-projects-toolbar">
+          <div class="course-pack-bar">
+            <label for="course-pack-title-input" class="course-pack-label">Course Title:</label>
+            <input type="text" id="course-pack-title-input" class="course-pack-input" placeholder="e.g. Technical Operations Onboarding" value="Course Package">
+            <button id="btn-export-course-pack" class="btn btn-secondary btn-small" type="button" disabled title="Select at least one saved project to export a course pack">
+              <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor"><path d="M26 6H6C4.9 6 4 6.9 4 8v16c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 18H6V8h20v16zM14 10h4v2h-4zm0 4h4v2h-4zm0 4h4v2h-4z"/></svg>
+              <span>Export Course Pack (<span id="course-pack-selected-count">0</span>)</span>
+            </button>
+          </div>
+          <div class="course-pack-select-all">
+            <label class="checkbox-inline">
+              <input type="checkbox" id="check-select-all-projects">
+              <span>Select All</span>
+            </label>
+          </div>
+        </div>
+
         <div id="saved-components-list" class="saved-components-list"></div>
       </div>
       <div class="modal-footer">
@@ -1022,6 +1043,8 @@
 
           <div class="export-tabs-container">
             <button class="export-tab active" data-export-type="iframe">Iframe Snippet (srcdoc)</button>
+            <button class="export-tab" data-export-type="rise-embed">Rise Multimedia Embed</button>
+            <button class="export-tab" data-export-type="storyline">Storyline 360 Web Object</button>
             <button class="export-tab" data-export-type="rise-zip" id="export-tab-rise-zip">Web Package ZIP</button>
           </div>
 
@@ -1041,6 +1064,47 @@
                   <pre><code id="export-iframe-code">&lt;iframe src="https://rise-builder.cloud.app/preview/accordion-abc123xyz" width="100%" height="450px" style="border:none;"&gt;&lt;/iframe&gt;</code></pre>
                 </div>
               </details>
+            </div>
+          </div>
+
+          <!-- Tab Content: Rise Multimedia Embed -->
+          <div class="export-pane" id="pane-export-rise-embed">
+            <p class="modal-desc">Embed this component in Rise via <strong>Multimedia &gt; Embed</strong> using a hosted URL. Enter your hosting URL below to generate a standards-compliant iframe snippet with responsive scaling and safe iframe permissions.</p>
+
+            <div class="input-wrapper">
+              <label for="export-rise-embed-url">Component Hosted URL</label>
+              <input type="text" id="export-rise-embed-url" placeholder="https://your-server.example.com/components/my-block/index.html" value="">
+              <p class="field-hint">Enter the web address where your extracted Web Package ZIP is hosted.</p>
+            </div>
+
+            <div class="code-export-box">
+              <div class="code-export-summary">
+                <span class="code-export-size" id="export-rise-embed-size">—</span>
+                <span class="code-export-desc">Rise Multimedia &gt; Embed snippet</span>
+              </div>
+              <button id="btn-copy-rise-embed" class="btn btn-secondary btn-small copy-btn">Copy Embed Code</button>
+              <details class="code-technical-preview" open>
+                <summary>Embed Snippet</summary>
+                <div class="code-scroll-area">
+                  <pre><code id="export-rise-embed-code">&lt;iframe src="https://your-server.example.com/components/my-block/index.html" width="100%" height="560px" style="border:none; overflow:hidden;" allow="autoplay" allowfullscreen&gt;&lt;/iframe&gt;</code></pre>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Tab Content: Storyline 360 Web Object -->
+          <div class="export-pane" id="pane-export-storyline">
+            <p class="modal-desc">Export as a complete Articulate Storyline 360 Web Object package. In Storyline 360, select <strong>Insert &gt; Web Object</strong>, choose <em>Web Address or Local Folder</em>, and browse to the extracted folder containing <code>index.html</code>.</p>
+
+            <div id="storyline-zip-warning" class="instructions-alert export-media-warning" role="status" hidden></div>
+            <div id="storyline-zip-blocking" class="field-error" role="alert" hidden></div>
+
+            <p class="export-file-size-label" id="storyline-zip-file-size"></p>
+            <div class="action-buttons-row">
+              <button id="btn-download-storyline-zip" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><g><rect x="3" y="27" width="26" height="2"/><path d="M21.66 17.35 20.24 15.94 17 19.18 17 3 15 3 15 19.18 11.76 15.94 10.34 17.35 16 23.01Z"/></g></svg>
+                <span>Download Storyline Web Object ZIP</span>
+              </button>
             </div>
           </div>
 

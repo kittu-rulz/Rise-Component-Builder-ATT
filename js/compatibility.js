@@ -58,6 +58,25 @@ export const EXPORT_FORMAT_COMPATIBILITY = {
       'Using completion tracking? Reporting completion to Rise through this format is not confirmed to work — use "Copy for Rise" in the main panel instead if you need completion tracking.'
     ]
   },
+  'rise-embed': {
+    tier: 'confirmed',
+    summary: 'Best for embedding a hosted component inside Rise 360 Multimedia › Embed block.',
+    details: [
+      'Generates a responsive iframe code snippet linking to your hosted index.html.',
+      'Supports custom width/height and modern fullscreen/media permissions.',
+      'Keeps styles and scripts fully isolated from Rise 360 page styles.',
+      'Using completion tracking? Cross-domain iframe embeds cannot report completion back to parent Rise unless configured with postMessage parent origin.'
+    ]
+  },
+  storyline: {
+    tier: 'confirmed',
+    summary: 'Best for embedding inside Articulate Storyline 360 slides as an interactive Web Object.',
+    details: [
+      'Self-contained package with index.html, AT&T fonts, and assets folder formatted for Storyline 360.',
+      'Insert via Insert › Web Object in Storyline 360 and select the extracted folder.',
+      'Runs locally inside Storyline preview and published SCORM/xAPI packages.'
+    ]
+  },
   standaloneDownload: {
     tier: 'confirmed',
     summary: 'Opens as a plain web page in any modern browser (Chrome, Firefox, Safari).',
