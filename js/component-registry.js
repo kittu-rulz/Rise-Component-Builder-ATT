@@ -21,6 +21,7 @@ import * as audioPlayer from '../components/audio-player.js';
 import * as videoFrame from '../components/video-frame.js';
 import * as imageGallery from '../components/image-gallery.js';
 import * as interactiveVideo from '../components/interactive-video.js';
+import * as comparisonSlider from '../components/comparison-slider.js';
 
 export const CATEGORIES = [
   { id: 'interactive', name: 'Interactive' },
@@ -250,6 +251,13 @@ export const COMPONENT_REGISTRY = [
     icon: getAttIconSvg('information-circle-filled', { width: 24, height: 24, ariaHidden: true }),
     classification: 'custom',
     differentiator: 'Adds timestamp-based information and question markers with progress persistence.'
+  }),
+  fromModule(comparisonSlider, {
+    description: 'Interactive before-and-after visual split-view slider with keyboard support, smooth touch drag, and responsive badges.',
+    keywords: ['comparison', 'slider', 'before and after', 'split view', 'difference', 'visual comparison'],
+    icon: getAttIconSvg('arrows-horizontal', { width: 24, height: 24, ariaHidden: true }),
+    classification: 'custom',
+    differentiator: 'Interactive split-view comparison with touch drag, keyboard accessibility, and completion tracking.'
   })
 ];
 

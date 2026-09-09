@@ -48,7 +48,8 @@ const GROUPS = {
   // one authored marker, and this test compiles each component's bare defaultConfig
   // (zero markers for a fresh Interactive Video), so only always-present markers belong
   // in this cross-check list.
-  'interactive-video': { components: ['interactive-video'], markers: ['iv-block', 'iv-video-wrapper', 'iv-title'] }
+  'interactive-video': { components: ['interactive-video'], markers: ['iv-block', 'iv-video-wrapper', 'iv-title'] },
+  'comparison-slider': { components: ['comparison-slider'], markers: ['comparison-slider-card', 'comparison-stage', 'comparison-handle'] }
 };
 
 const groupFor = componentId => Object.values(GROUPS).find(group => group.components.includes(componentId));

@@ -318,6 +318,24 @@ export const editorSchemas = {
       field('maxAttempts', 'Maximum Attempts (Multiple Choice type only)', 'number', { required: false, default: 1, min: 1, max: 5, step: 1 }),
       field('showCorrectAfterFinal', 'Reveal Correct Answer After Final Attempt (Multiple Choice type only)', 'checkbox', { default: false })
     ]
+  },
+  'comparison-slider': {
+    itemLabel: 'Comparison Slide', minItems: 1, maxItems: 1,
+    componentLabel: 'Presentation & Instructions',
+    componentFields: [
+      field('title', 'Header Title', 'text', { required: false, default: '5G Infrastructure Modernization' }),
+      field('content', 'Description / Instructions', 'richtext', { required: false, default: 'Drag the slider handle or use the arrow keys to compare network capabilities before and after fiber modernization.' }),
+      field('initialPosition', 'Initial Slider Position (%)', 'range', { default: 50, min: 0, max: 100, step: 1, suffix: '%' }),
+      field('showLabels', 'Show Floating Before/After Badges', 'checkbox', { default: true })
+    ],
+    itemFields: [
+      field('beforeLabel', 'Before Label', 'text', { required: true, default: 'Before (Legacy Copper)' }),
+      field('afterLabel', 'After Label', 'text', { required: true, default: 'After (Fiber Optic 5G)' }),
+      field('beforeImage', 'Before Image', 'image', { required: false, default: '', preferredDimensions: '1600 × 900 px (16:9)' }),
+      field('beforeAltText', 'Before Image Alternative Text', 'textarea', { default: '' }),
+      field('afterImage', 'After Image', 'image', { required: false, default: '', preferredDimensions: '1600 × 900 px (16:9)' }),
+      field('afterAltText', 'After Image Alternative Text', 'textarea', { default: '' })
+    ]
   }
 };
 

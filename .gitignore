@@ -64,6 +64,7 @@ Thumbs.db
 # Playwright artifacts
 playwright-report/
 test-results/
+screenshots/.temp/
 
 # Client design-source files (large binaries, not versioned — see README/PROJECT.md)
 ATT Design System/

@@ -20,6 +20,7 @@ import * as pricingComparison from '../../components/pricing-comparison.js';
 import * as audioPlayer from '../../components/audio-player.js';
 import * as videoFrame from '../../components/video-frame.js';
 import * as imageGallery from '../../components/image-gallery.js';
+import * as comparisonSlider from '../../components/comparison-slider.js';
 import { invalidUrls, longText, multilingualText, rtlText, unsafeText } from '../fixtures/index.js';
 import { sanitizePreviewConfig } from '../../js/utilities.js';
 
@@ -27,7 +28,7 @@ const generators = [
   accordion, tabs, flipCards, hotspots, buttonList, menuList, verticalTimeline,
   multipleChoice, multipleSelect, sortingActivity, fillBlank, horizontalTimeline,
   processFlow, scenario, profileCards, infoGrid, pricingComparison, audioPlayer,
-  videoFrame, imageGallery
+  videoFrame, imageGallery, comparisonSlider
 ];
 const answerOptionComponents = ['multiple-choice', 'multiple-select'];
 const INSTANCE_ID = 'rcb-test-instance';
