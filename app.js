@@ -31,6 +31,8 @@ import { resolveMediaLimits, validateMediaAccessibility } from './js/media.js';
 import { downloadProjectPackage, exportProjectPackage, importProjectPackage, isProjectPackageFile } from './js/project-package.js';
 import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, resolveMediaReference, restoreMediaReferences } from './js/media-storage.js';
 import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, getBuiltInTheme, normalizeComponentOverrides } from './js/themes.js';
+import { createHistoryManager } from './js/history.js';
+import { getPresetsForComponent } from './js/presets.js';
 // app.js is the composition root and is explicitly allowed to depend on any module,
 // including one specific component's own file (docs/ARCHITECTURE.md "Important
 // dependencies") — reused here only for its MM:SS/H:MM:SS formatter, so the builder's own
@@ -212,12 +214,54 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saveNameInput = document.getElementById('save-component-name');
   const btnConfirmSaveAs = document.getElementById('btn-confirm-save-as');
   const importProjectFile = document.getElementById('import-project-file');
+  const btnUndo = document.getElementById('btn-undo');
+  const btnRedo = document.getElementById('btn-redo');
+
+  const history = createHistoryManager({
+    maxDepth: 50,
+    onStateChange: ({ canUndo, canRedo }) => {
+      if (btnUndo) {
+        btnUndo.disabled = !canUndo;
+        btnUndo.title = canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo';
+      }
+      if (btnRedo) {
+        btnRedo.disabled = !canRedo;
+        btnRedo.title = canRedo ? 'Redo (Ctrl+Shift+Z / Ctrl+Y)' : 'Nothing to redo';
+      }
+    }
+  });
+
+  function performUndo() {
+    if (!history.canUndo()) return;
+    const previousConfig = history.undo(appState.config);
+    if (previousConfig) {
+      appState.config = structuredClone(previousConfig);
+      syncEditorControls();
+      updateLivePreview();
+      showToast('Undone.', 'info', 2000);
+    }
+  }
+
+  function performRedo() {
+    if (!history.canRedo()) return;
+    const nextConfig = history.redo(appState.config);
+    if (nextConfig) {
+      appState.config = structuredClone(nextConfig);
+      syncEditorControls();
+      updateLivePreview();
+      showToast('Redone.', 'info', 2000);
+    }
+  }
+
+  if (btnUndo) btnUndo.addEventListener('click', performUndo);
+  if (btnRedo) btnRedo.addEventListener('click', performRedo);
 
   // Modals elements
   const modalTriggers = {
     'btn-export': 'modal-export',
     'btn-settings': 'modal-settings',
-    'btn-preflight': 'modal-preflight'
+    'btn-preflight': 'modal-preflight',
+    'btn-open-presets': 'modal-presets'
   };
   const modalOverlays = document.querySelectorAll('.modal-overlay');
   modalOverlays.forEach(overlay => overlay.setAttribute('aria-hidden', 'true'));
@@ -612,6 +656,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Force live preview frame refresh
     updateLivePreview();
+    history.clear(appState.config);
     // P08: an unmodified component's own schema defaults are not "meaningful project data
     // changes" (Requirement 2) — nothing has actually been authored yet, so there's
     // nothing to guard against losing. Same load-vs-edit reset updateLivePreview()'s own
@@ -757,6 +802,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const syncText = (elem, stateKey) => {
       elem.addEventListener('input', (e) => {
         appState.config[stateKey] = e.target.value;
+        history.pushDebouncedState(appState.config);
         updateLivePreview();
       });
     };
@@ -767,12 +813,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncText(inputCompletionMsg, 'completionMsg');
 
     selectHeadingLevel.addEventListener('change', (e) => {
+      history.pushState(appState.config);
       appState.config.blockHeadingLevel = e.target.value;
       updateLivePreview();
     });
 
     if (selectHeaderStyle) {
       selectHeaderStyle.addEventListener('change', (e) => {
+        history.pushState(appState.config);
         appState.config.headerStyle = e.target.value;
         if (headerCyanRuleWrapper) headerCyanRuleWrapper.style.display = e.target.value === 'editorial' ? 'flex' : 'none';
         updateLivePreview();
@@ -781,6 +829,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (inputHeaderCyanRule) {
       inputHeaderCyanRule.addEventListener('change', (e) => {
+        history.pushState(appState.config);
         appState.config.headerCyanRule = e.target.checked;
         updateLivePreview();
       });
@@ -788,6 +837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (selectSpacingDensity) {
       selectSpacingDensity.addEventListener('change', (e) => {
+        history.pushState(appState.config);
         appState.config.spacingDensity = e.target.value;
         updateLivePreview();
       });
@@ -795,6 +845,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (inputContextBandEnabled) {
       inputContextBandEnabled.addEventListener('change', (e) => {
+        history.pushState(appState.config);
         appState.config.contextBandEnabled = e.target.checked;
         if (contextBandFields) contextBandFields.style.display = e.target.checked ? 'block' : 'none';
         updateLivePreview();
@@ -807,6 +858,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (selectContextBandAlignment) {
       selectContextBandAlignment.addEventListener('change', (e) => {
+        history.pushState(appState.config);
         appState.config.contextBandAlignment = e.target.value;
         updateLivePreview();
       });
@@ -816,6 +868,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // theme (js/themes.js) — no per-component override UI exists in this build.
 
     selectIconStyle.addEventListener('change', (e) => {
+      history.pushState(appState.config);
       appState.config.iconStyle = e.target.value;
       updateLivePreview();
     });
@@ -823,6 +876,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 5. Checkboxes
     const syncCheckbox = (checkbox, stateKey) => {
       checkbox.addEventListener('change', (e) => {
+        history.pushState(appState.config);
         appState.config[stateKey] = e.target.checked;
         updateLivePreview();
       });
@@ -839,6 +893,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputTrackCompletion, 'trackCompletion');
 
     selectFlipCardsMode.addEventListener('change', (e) => {
+      history.pushState(appState.config);
       appState.config.flipCardsMode = e.target.value;
       updateLivePreview();
     });
@@ -863,10 +918,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputMcMaxAttempts.addEventListener('input', (e) => {
       const parsed = parseInt(e.target.value, 10);
       appState.config.mcMaxAttempts = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+      history.pushDebouncedState(appState.config);
       updateLivePreview();
     });
 
     selectTabsOrientation.addEventListener('change', (e) => {
+      history.pushState(appState.config);
       appState.config.tabsOrientation = e.target.value;
       updateLivePreview();
     });
@@ -885,10 +942,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputTimelineAllowReset, 'timelineAllowReset');
 
     selectIvResumeBehaviour.addEventListener('change', (e) => {
+      history.pushState(appState.config);
       appState.config.resumeBehaviour = e.target.value;
       updateLivePreview();
     });
     selectIvCompletionRule.addEventListener('change', (e) => {
+      history.pushState(appState.config);
       appState.config.completionRule = e.target.value;
       updateLivePreview();
     });
@@ -902,7 +961,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   const schemaItemEditor = createSchemaItemEditor({
     container: dynamicItemsContainer,
-    onChange: updateLivePreview,
+    onChange: () => {
+      history.pushDebouncedState(appState.config);
+      updateLivePreview();
+    },
     focusFallback: btnAddItem
   });
 
@@ -955,6 +1017,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   btnAddItem.addEventListener('click', () => {
+    history.pushState(appState.config);
     const schema = appState.selectedComponent?.editorSchema || componentCatalog[0].editorSchema;
     addEditorItem(appState, schema);
     renderDynamicItems();
@@ -1185,29 +1248,44 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.addEventListener('keydown', event => {
-    if (!modalStack.length) return;
-    const topId = modalStack[modalStack.length - 1];
-    const modal = document.getElementById(topId);
-    if (!modal) return;
-    const card = modal.querySelector('.modal-card');
+    if (modalStack.length) {
+      const topId = modalStack[modalStack.length - 1];
+      const modal = document.getElementById(topId);
+      if (!modal) return;
+      const card = modal.querySelector('.modal-card');
 
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeModal(topId);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal(topId);
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusable = getFocusableElements(card);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !card.contains(document.activeElement))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !card.contains(document.activeElement))) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
       return;
     }
 
-    if (event.key === 'Tab') {
-      const focusable = getFocusableElements(card);
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && (document.activeElement === first || !card.contains(document.activeElement))) {
+    // Global Undo / Redo Shortcuts (when not in modal)
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+      if (history.canUndo()) {
         event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (document.activeElement === last || !card.contains(document.activeElement))) {
+        performUndo();
+      }
+    } else if ((event.ctrlKey || event.metaKey) && ((event.key.toLowerCase() === 'z' && event.shiftKey) || event.key.toLowerCase() === 'y')) {
+      if (history.canRedo()) {
         event.preventDefault();
-        first.focus();
+        performRedo();
       }
     }
   });
@@ -1648,6 +1726,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  function renderPresetsModal() {
+    const list = document.getElementById('presets-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const compId = appState.selectedComponent?.id || 'accordion';
+    const presets = getPresetsForComponent(compId);
+
+    if (!presets.length) {
+      list.innerHTML = `
+        <div class="sc-empty" style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--text-muted);">
+          <p>No starter presets are currently available for this component archetype.</p>
+        </div>
+      `;
+      return;
+    }
+
+    presets.forEach(preset => {
+      const card = document.createElement('div');
+      card.className = 'preset-card';
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.innerHTML = `
+        <span class="preset-card-domain">${escapeHTML(preset.domain)}</span>
+        <div class="preset-card-title">${escapeHTML(preset.title)}</div>
+        <div class="preset-card-desc">${escapeHTML(preset.description)}</div>
+        <div class="preset-card-action">Apply Preset →</div>
+      `;
+      const apply = () => {
+        history.pushState(appState.config);
+        appState.config = { ...appState.config, ...structuredClone(preset.config), items: structuredClone(preset.config.items) };
+        if (appState.selectedComponent) {
+          applyMissingSchemaDefaults(appState.selectedComponent);
+        }
+        syncEditorControls();
+        updateLivePreview();
+        closeModal('modal-presets');
+        showToast(`Applied preset “${preset.title}”.`, 'success');
+      };
+      card.addEventListener('click', apply);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          apply();
+        }
+      });
+      list.appendChild(card);
+    });
+  }
+
   // Setup modal clicks
   Object.keys(modalTriggers).forEach(btnId => {
     const triggerBtn = document.getElementById(btnId);
@@ -1657,12 +1784,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (triggerBtn && modalElem) {
       triggerBtn.addEventListener('click', () => {
         
-        // Dynamic loading setup for Export modal
+        // Dynamic loading setup for modals
         if (modalId === 'modal-export') {
           setupExportModalContent();
         }
         if (modalId === 'modal-settings') syncSettingsControls();
         if (modalId === 'modal-preflight') renderPreflightModal();
+        if (modalId === 'modal-presets') renderPresetsModal();
 
         openModal(modalId);
       });
