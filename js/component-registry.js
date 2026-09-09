@@ -22,6 +22,7 @@ import * as videoFrame from '../components/video-frame.js';
 import * as imageGallery from '../components/image-gallery.js';
 import * as interactiveVideo from '../components/interactive-video.js';
 import * as comparisonSlider from '../components/comparison-slider.js';
+import * as dialGauge from '../components/dial-gauge.js';
 
 export const CATEGORIES = [
   { id: 'interactive', name: 'Interactive' },
@@ -258,6 +259,13 @@ export const COMPONENT_REGISTRY = [
     icon: getAttIconSvg('arrows-horizontal', { width: 24, height: 24, ariaHidden: true }),
     classification: 'custom',
     differentiator: 'Interactive split-view comparison with touch drag, keyboard accessibility, and completion tracking.'
+  }),
+  fromModule(dialGauge, {
+    description: 'Dynamic interactive metric dial and gauge with animated vector arc, needle indicator, operational tier presets, and real-time contextual feedback.',
+    keywords: ['dial', 'gauge', 'metric', 'speedometer', 'meter', 'performance', 'slider', 'kpi', 'interactive gauge'],
+    icon: getAttIconSvg('high-meter', { width: 24, height: 24, ariaHidden: true }),
+    classification: 'custom',
+    differentiator: 'Interactive metric simulation with vector gauge arc, tier presets, real-time insights, and keyboard accessibility.'
   })
 ];
 

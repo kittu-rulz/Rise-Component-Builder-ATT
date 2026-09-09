@@ -336,6 +336,26 @@ export const editorSchemas = {
       field('afterImage', 'After Image', 'image', { required: false, default: '', preferredDimensions: '1600 × 900 px (16:9)' }),
       field('afterAltText', 'After Image Alternative Text', 'textarea', { default: '' })
     ]
+  },
+  'dial-gauge': {
+    itemLabel: 'Operating Tier', minItems: 1, maxItems: 6,
+    componentLabel: 'Gauge Settings & Scale',
+    componentFields: [
+      field('title', 'Header Title', 'text', { required: false, default: '5G Network Throughput & Latency Explorer' }),
+      field('content', 'Description / Instructions', 'richtext', { required: false, default: 'Adjust the metric dial or select a scenario below to explore operational characteristics across network operating tiers.' }),
+      field('unit', 'Metric Unit', 'text', { required: false, default: 'Mbps', maxLength: 15 }),
+      field('minValue', 'Minimum Scale Value', 'number', { required: true, default: 0, step: 1 }),
+      field('maxValue', 'Maximum Scale Value', 'number', { required: true, default: 1000, step: 1 }),
+      field('initialValue', 'Initial Value', 'number', { required: true, default: 450, step: 1 }),
+      field('step', 'Step Increment', 'number', { required: false, default: 10, min: 1, step: 1 })
+    ],
+    itemFields: [
+      field('title', 'Tier Title', 'text', { required: true, default: 'New Operating Tier', maxLength: 80 }),
+      field('rangeMin', 'Range Minimum', 'number', { required: true, default: 0, step: 1 }),
+      field('rangeMax', 'Range Maximum', 'number', { required: true, default: 100, step: 1 }),
+      field('badgeLabel', 'Badge Label', 'text', { required: false, default: 'Standard Tier', maxLength: 30 }),
+      field('content', 'Tier Insight & Impact Details', 'richtext', { required: true, default: 'Add tier performance and operational insights here.' })
+    ]
   }
 };
 
