@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { collectSyncIssues, summarizePreflight, SEVERITY } from '../../js/validation.js';
+import { collectSyncIssues, summarizePreflight } from '../../js/validation.js';
 import { COMPONENT_REGISTRY, getComponentById, getDefaultConfig } from '../../js/component-registry.js';
 import { applyThemeToConfig, getBuiltInTheme, DEFAULT_THEME_ID } from '../../js/themes.js';
 

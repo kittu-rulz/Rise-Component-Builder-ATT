@@ -47,4 +47,19 @@ describe('Workplace Starter Presets', () => {
       expect(comp).toBeDefined();
     });
   });
+
+  test('all 26 registered components have at least one workplace starter preset', () => {
+    expect(COMPONENT_REGISTRY.length).toBe(26);
+    COMPONENT_REGISTRY.forEach(comp => {
+      const presets = getPresetsForComponent(comp.id);
+      expect(presets.length, `Expected component "${comp.id}" (${comp.name}) to have at least one workplace preset`).toBeGreaterThan(0);
+      presets.forEach(p => {
+        expect(p.id).toBeTruthy();
+        expect(p.title).toBeTruthy();
+        expect(p.domain).toBeTruthy();
+        expect(p.description).toBeTruthy();
+        expect(p.config).toBeTypeOf('object');
+      });
+    });
+  });
 });
