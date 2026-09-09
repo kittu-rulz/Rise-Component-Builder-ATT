@@ -89,6 +89,9 @@ export function generateHTML(config, instanceId) {
     `;
   }).join('');
 
+  const initFraction = (initialVal - minVal) / (maxVal - minVal || 1);
+  const initNeedleAngle = -90 + (initFraction * 180);
+
   return `
     <div class="dial-gauge-card" id="${instanceId}-gauge-card"
       data-min="${minVal}"
@@ -112,11 +115,13 @@ export function generateHTML(config, instanceId) {
               <path class="dial-track-bg" d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="var(--border-color, #DCDFE3)" stroke-width="20" stroke-linecap="round"/>
               <!-- Active Progress Arc -->
               <path class="dial-track-active" id="${instanceId}-active-arc" d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="var(--primary, #00388F)" stroke-width="20" stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="188"/>
-              <!-- Needle Indicator -->
-              <g class="dial-needle-group" id="${instanceId}-needle" transform="rotate(0, 150, 150)">
-                <polygon points="146,140 150,42 154,140" fill="var(--primary, #00388F)"/>
-                <circle cx="150" cy="150" r="16" fill="var(--primary, #00388F)"/>
-                <circle cx="150" cy="150" r="7" fill="var(--bg-card, #FFFFFF)"/>
+              <!-- Needle Indicator centered at (150, 150) -->
+              <g transform="translate(150, 150)">
+                <g class="dial-needle-group" id="${instanceId}-needle" style="transform: rotate(${initNeedleAngle}deg);" transform="rotate(${initNeedleAngle})">
+                  <polygon points="-4,-10 0,-108 4,-10" fill="var(--primary, #00388F)"/>
+                  <circle cx="0" cy="0" r="16" fill="var(--primary, #00388F)"/>
+                  <circle cx="0" cy="0" r="7" fill="var(--bg-card, #FFFFFF)"/>
+                </g>
               </g>
               <!-- Min/Max Labels -->
               <text x="30" y="174" class="dial-scale-label" text-anchor="middle">${minVal}</text>
@@ -230,7 +235,7 @@ export function generateCSS() {
       position: relative;
     }
     .dial-needle-group {
-      transform-origin: 150px 150px;
+      transform-origin: 0 0;
       transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
     }
     @media (prefers-reduced-motion: reduce) {
@@ -395,7 +400,8 @@ export function generateJS(config, instanceId) {
 
         // Needle rotation: -90deg at min (pointing left), +90deg at max (pointing right)
         var needleAngle = -90 + (fraction * 180);
-        needle.setAttribute('transform', 'rotate(' + needleAngle + ', 150, 150)');
+        needle.style.transform = 'rotate(' + needleAngle + 'deg)';
+        needle.setAttribute('transform', 'rotate(' + needleAngle + ')');
 
         // Active arc stroke offset
         if (activeArc) {
