@@ -200,6 +200,12 @@ export function generateCSS() {
       background-color: var(--bg-body, #F3F4F5);
       padding: var(--att-space-3, 12px);
       touch-action: pan-y;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .carousel-track-wrapper.is-dragging {
+      cursor: grabbing;
     }
     .carousel-track {
       display: flex;
@@ -385,8 +391,8 @@ export function generateJS(config, instanceId) {
       var total = Number(root.dataset.total) || 1;
       var isLoop = root.dataset.loop === 'true';
       var currentIndex = 0;
-      var touchStartX = 0;
-      var touchEndX = 0;
+      var startX = 0;
+      var isDragging = false;
 
       function updateSlide(index) {
         if (index < 0) {
@@ -422,6 +428,26 @@ export function generateJS(config, instanceId) {
 
         viewedItems.add(currentIndex);
         updateProgress();
+      }
+
+      function handleDragStart(clientX) {
+        isDragging = true;
+        startX = clientX;
+        if (trackWrapper) trackWrapper.classList.add('is-dragging');
+      }
+
+      function handleDragEnd(clientX) {
+        if (!isDragging) return;
+        isDragging = false;
+        if (trackWrapper) trackWrapper.classList.remove('is-dragging');
+        var diff = startX - clientX;
+        if (Math.abs(diff) > 40) {
+          if (diff > 0) {
+            updateSlide(currentIndex + 1);
+          } else {
+            updateSlide(currentIndex - 1);
+          }
+        }
       }
 
       if (btnPrev) {
@@ -465,21 +491,30 @@ export function generateJS(config, instanceId) {
           }
         });
 
+        // Touch swipe support (mobile / tablet)
         trackWrapper.addEventListener('touchstart', function(e) {
-          touchStartX = e.changedTouches[0].clientX;
+          if (e.touches && e.touches.length) {
+            handleDragStart(e.touches[0].clientX);
+          }
         }, { passive: true });
 
         trackWrapper.addEventListener('touchend', function(e) {
-          touchEndX = e.changedTouches[0].clientX;
-          var diff = touchStartX - touchEndX;
-          if (Math.abs(diff) > 40) {
-            if (diff > 0) {
-              updateSlide(currentIndex + 1);
-            } else {
-              updateSlide(currentIndex - 1);
-            }
+          if (e.changedTouches && e.changedTouches.length) {
+            handleDragEnd(e.changedTouches[0].clientX);
           }
         }, { passive: true });
+
+        // Cursor mouse drag swipe support (desktop)
+        trackWrapper.addEventListener('mousedown', function(e) {
+          if (e.target.closest('a, button, input, textarea, select')) return;
+          handleDragStart(e.clientX);
+        });
+
+        window.addEventListener('mouseup', function(e) {
+          if (isDragging) {
+            handleDragEnd(e.clientX);
+          }
+        });
       }
 
       // Initial tracking
