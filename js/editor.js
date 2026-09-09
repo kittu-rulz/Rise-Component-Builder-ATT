@@ -21,12 +21,107 @@ export function switchEditorTab(tabId, tabs, panes) {
     const isMatch = tab.getAttribute('data-tab') === targetTabId || tab.getAttribute('data-tab') === tabId;
     tab.classList.toggle('active', isMatch);
     tab.setAttribute('aria-selected', String(isMatch));
+    tab.setAttribute('tabindex', isMatch ? '0' : '-1');
   });
 
   paneList.forEach(pane => {
     const isMatch = pane.id === `tab-${targetTabId}` || pane.id === `tab-${tabId}`;
     pane.classList.toggle('active', isMatch);
   });
+}
+
+export function getFieldTabLocation(fieldId) {
+  if (!fieldId) return 'content';
+  const interactionFields = new Set([
+    'accordionMulti', 'accordionAnimation', 'accordionSequential', 'accordionShowProgress',
+    'accordionShowVisitedBadge', 'accordionExpandCollapseAll', 'accordionSearch', 'accordionAllowReset',
+    'flipCardsMode', 'flipCardsShuffle', 'flipCardsCategories', 'flipCardsSummary', 'flipCardsReset',
+    'flipCardsFrontLabel', 'flipCardsBackLabel', 'tabsSequential', 'tabsShowProgress', 'tabsShowVisitedBadge',
+    'tabsCompareMode', 'tabsAllowReset', 'timelineCategories', 'timelineCompareMode', 'timelineCollapsible',
+    'timelineChronological', 'timelineShowProgress', 'timelineAllowReset', 'ivResumeBehaviour', 'ivShowMarkerNav',
+    'ivShowProgress', 'ivAllowRestart', 'mcConfidenceMode', 'mcRequireConfidence', 'mcConfidenceLowLabel',
+    'mcConfidenceMidLabel', 'mcConfidenceHighLabel', 'mcShowResultSummary', 'mcMaxAttempts', 'mcHintText',
+    'mcShowCorrectAfterFinal', 'mcFinalExplanation', 'mcAllowReset', 'pauseVideo', 'required'
+  ]);
+  const appearanceFields = new Set([
+    'blockHeadingLevel', 'headerStyle', 'headerCyanRule', 'spacingDensity', 'contextBandEnabled',
+    'contextBandText', 'contextBandAlignment', 'iconStyle', 'tabsOrientation', 'tabsNumbered',
+    'textColor', 'focusRing', 'theme'
+  ]);
+  const completionFields = new Set([
+    'trackCompletion', 'completionMode', 'completionMsg', 'ivCompletionRule', 'allowReset'
+  ]);
+
+  if (completionFields.has(fieldId)) return 'completion';
+  if (appearanceFields.has(fieldId)) return 'appearance';
+  if (interactionFields.has(fieldId)) return 'interaction';
+  return 'content';
+}
+
+export function setupEditorTabKeyboardNavigation(tabList, paneList, onTabChange) {
+  if (!tabList || !tabList.length) return;
+  const tabs = Array.from(tabList);
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('keydown', (e) => {
+      let targetIndex = null;
+      if (e.key === 'ArrowRight') targetIndex = (index + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') targetIndex = (index - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') targetIndex = 0;
+      else if (e.key === 'End') targetIndex = tabs.length - 1;
+
+      if (targetIndex !== null) {
+        e.preventDefault();
+        const targetTab = tabs[targetIndex];
+        const tabId = targetTab.getAttribute('data-tab');
+        targetTab.focus();
+        switchEditorTab(tabId, tabList, paneList);
+        if (typeof onTabChange === 'function') onTabChange(tabId);
+      }
+    });
+  });
+}
+
+export function jumpToEditorField(fieldId, itemIndex, _options = {}) {
+  const targetTabId = getFieldTabLocation(fieldId);
+  switchEditorTab(targetTabId);
+
+  // If there's an itemIndex and target is in dynamic items, expand the item card if collapsed
+  if (itemIndex !== undefined && itemIndex !== null && itemIndex >= 0) {
+    const card = document.querySelector(`.dynamic-item-card[data-index="${itemIndex}"]`);
+    if (card && (card.classList.contains('is-collapsed') || card.classList.contains('collapsed'))) {
+      const toggleBtn = card.querySelector('.item-collapse-btn');
+      if (toggleBtn instanceof HTMLElement) toggleBtn.click();
+    }
+  }
+
+  // Find target element
+  /** @type {HTMLElement|null} */
+  let targetElem = null;
+  if (fieldId) {
+    if (itemIndex !== undefined && itemIndex !== null && itemIndex >= 0) {
+      targetElem = document.querySelector(`[data-field-id="${fieldId}"][data-item-index="${itemIndex}"]`)
+        || document.getElementById(`schema-${itemIndex}-${fieldId}`)
+        || document.getElementById(`schema-item-${itemIndex}-${fieldId}`);
+    }
+    if (!targetElem) {
+      const kebabField = fieldId.replace(/([A-Z])/g, '-$1').toLowerCase();
+      targetElem = document.querySelector(`[data-field-id="${fieldId}"]`)
+        || document.getElementById(`input-${fieldId}`)
+        || document.getElementById(`select-${fieldId}`)
+        || document.getElementById(`input-${kebabField}`)
+        || document.getElementById(`select-${kebabField}`)
+        || document.getElementById(fieldId);
+    }
+  }
+
+  if (targetElem) {
+    targetElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof targetElem.focus === 'function') targetElem.focus();
+    targetElem.classList.add('field-jump-highlight');
+    window.setTimeout(() => {
+      targetElem?.classList.remove('field-jump-highlight');
+    }, 2000);
+  }
 }
 
 export function addEditorItem(state, schema) {

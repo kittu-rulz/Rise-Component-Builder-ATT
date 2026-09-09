@@ -13,7 +13,7 @@ import {
 } from './js/storage.js';
 import { componentCatalog, filterCatalog, createCatalogCard, showComponentDetailsModal, closeComponentDetailsModal } from './js/catalog.js';
 import { COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById, getDefaultConfig } from './js/component-registry.js';
-import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField } from './js/editor.js';
+import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField, setupEditorTabKeyboardNavigation, jumpToEditorField } from './js/editor.js';
 import { writePreview, openPreview, generateIframeContent as compilePreview, COMPONENT_MAX_WIDTH } from './js/preview.js';
 import { getDeviceWidthLabel } from './js/device-preview.js';
 import { measureRenderedDimensions } from './js/dom-measurement.js';
@@ -820,6 +820,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  setupEditorTabKeyboardNavigation(editorTabs, tabPanes, (tabId) => {
+    switchEditorTab(tabId);
+  });
+
   function switchEditorTab(tabId) {
     activateEditorTab(tabId, editorTabs, tabPanes);
   }
@@ -921,6 +925,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputAccordionSearch, 'accordionSearch');
     syncCheckbox(inputAccordionAllowReset, 'accordionAllowReset');
     syncCheckbox(inputTrackCompletion, 'trackCompletion');
+
+    const completionModeRadios = document.querySelectorAll('input[name="completion-mode"]');
+    completionModeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        if (!e.target.checked) return;
+        history.pushState(appState.config);
+        const mode = e.target.value;
+        appState.config.completionMode = mode;
+        appState.config.trackCompletion = mode !== 'none';
+        if (inputTrackCompletion) inputTrackCompletion.checked = appState.config.trackCompletion;
+        updateLivePreview();
+      });
+    });
+
+    const inputAllowReset = document.getElementById('input-allow-reset');
+    if (inputAllowReset) {
+      inputAllowReset.addEventListener('change', (e) => {
+        history.pushState(appState.config);
+        appState.config.allowReset = e.target.checked;
+        updateLivePreview();
+      });
+    }
 
     selectFlipCardsMode.addEventListener('change', (e) => {
       history.pushState(appState.config);
@@ -1479,7 +1505,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncIvAuthoringVideoSource();
     renderIvMarkerTimeline();
     inputTrackCompletion.checked = config.trackCompletion;
-    inputCompletionMsg.value = config.completionMsg;
+    inputCompletionMsg.value = config.completionMsg || '';
+
+    // Sync completion tracking mode radio cards & allow-reset checkbox
+    const currentCompletionMode = config.completionMode || (config.trackCompletion ? 'all-items' : 'none');
+    const targetModeRadio = document.querySelector(`input[name="completion-mode"][value="${currentCompletionMode}"]`);
+    if (targetModeRadio) targetModeRadio.checked = true;
+    const inputAllowReset = document.getElementById('input-allow-reset');
+    if (inputAllowReset) inputAllowReset.checked = config.allowReset === true;
+
     activeComponentTitle.innerText = appState.selectedComponent.title;
     activeComponentCategory.innerText = appState.selectedComponent.category.toUpperCase();
     btnFavoriteToggle.classList.toggle('favorited', appState.favorites.has(appState.selectedComponent.id));
@@ -2585,25 +2619,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function jumpToPreflightField(fieldId, itemIndexRaw) {
     const itemIndex = itemIndexRaw === '' || itemIndexRaw === undefined ? null : Number(itemIndexRaw);
     closeModal('modal-preflight');
+    closeModal('modal-export');
     window.setTimeout(() => {
-      let target = null;
-      if (Number.isInteger(itemIndex)) {
-        let card = dynamicItemsContainer.querySelector(`.dynamic-item-card[data-index="${itemIndex}"]`);
-        if (card?.classList.contains('collapsed')) {
-          card.querySelector('.item-collapse-btn')?.click();
-          // Expanding an item re-renders the whole items container (js/editor.js) — the
-          // pre-click `card` reference is now a detached node, so re-query for the live one
-          // or focus() below silently lands on nothing.
-          card = dynamicItemsContainer.querySelector(`.dynamic-item-card[data-index="${itemIndex}"]`);
-        }
-        target = card?.querySelector(`[data-field-id="${fieldId}"]`) || card;
-      } else if (fieldId === 'blockHeadline') {
-        target = inputBlockHeadline;
-      } else if (fieldId) {
-        target = document.querySelector(`#config-form [data-field-id="${fieldId}"]`);
-      }
-      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      target?.focus?.();
+      jumpToEditorField(fieldId, itemIndex);
     }, 60);
   }
 

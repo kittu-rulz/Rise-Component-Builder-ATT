@@ -763,13 +763,37 @@
               <!-- Tab 4: Completion -->
               <div class="tab-pane" id="tab-completion" role="tabpanel" aria-labelledby="tab-btn-completion">
                 <div class="form-group-card">
-                  <h3 class="group-title">Completion Tracking</h3>
+                  <h3 class="group-title">Completion Tracking Mode</h3>
+                  <p class="field-hint">Control whether and how learner completion is tracked inside this interaction and communicated to the host platform.</p>
 
-                  <div class="checkbox-wrapper">
-                    <input type="checkbox" id="input-track-completion">
-                    <label for="input-track-completion">Required: learner must interact with all items to complete this block</label>
+                  <div class="completion-mode-grid" role="radiogroup" aria-label="Completion Tracking Mode">
+                    <label class="completion-mode-card" for="completion-mode-none">
+                      <input type="radio" name="completion-mode" id="completion-mode-none" value="none" checked>
+                      <div class="mode-card-content">
+                        <span class="mode-card-title">No Tracking</span>
+                        <span class="mode-card-desc">Learners explore freely. Standard Rise scroll tracking marks block as viewed.</span>
+                      </div>
+                    </label>
+
+                    <label class="completion-mode-card" for="completion-mode-all-items">
+                      <input type="radio" name="completion-mode" id="completion-mode-all-items" value="all-items">
+                      <div class="mode-card-content">
+                        <span class="mode-card-title">Require All Items</span>
+                        <span class="mode-card-desc">Learners must click or open every interactive item before completion is signaled.</span>
+                      </div>
+                    </label>
+
+                    <label class="completion-mode-card" for="completion-mode-interaction-success">
+                      <input type="radio" name="completion-mode" id="completion-mode-interaction-success" value="interaction-success">
+                      <div class="mode-card-content">
+                        <span class="mode-card-title">Require Successful Interaction</span>
+                        <span class="mode-card-desc">Learners must complete the interaction successfully (e.g. correct answers or self-assessment).</span>
+                      </div>
+                    </label>
                   </div>
-                  <p class="field-hint field-hint-inset">When enabled, learners must visit every item before this component displays completion state and dispatches the Rise completion message event.</p>
+
+                  <!-- Legacy hidden checkbox for backward-compatible state syncing -->
+                  <input type="checkbox" id="input-track-completion" hidden>
 
                   <div class="input-wrapper" id="iv-completion-rule-wrapper" style="display: none;">
                     <label for="select-iv-completion-rule">Video Completion Rule</label>
@@ -781,9 +805,15 @@
                     <p class="field-hint">Defines the specific condition needed to trigger completion for Interactive Video.</p>
                   </div>
 
-                  <div class="input-wrapper">
+                  <div class="input-wrapper" id="completion-msg-wrapper">
                     <label for="input-completion-msg">Completion Success Message</label>
                     <input type="text" id="input-completion-msg" value="Activity Complete!" placeholder="e.g. Block completed">
+                    <p class="field-hint">Displayed to the learner once completion criteria are satisfied.</p>
+                  </div>
+
+                  <div class="checkbox-wrapper" id="completion-reset-wrapper">
+                    <input type="checkbox" id="input-allow-reset">
+                    <label for="input-allow-reset">Allow learner to reset / restart after completion</label>
                   </div>
                 </div>
 

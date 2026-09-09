@@ -1628,6 +1628,103 @@ a {
   padding-bottom: 8px;
 }
 
+/* Completion Mode Grid & Radio Cards */
+.completion-mode-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.completion-mode-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: var(--bg-app);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.completion-mode-card:hover {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.completion-mode-card:has(input:checked),
+.completion-mode-card.is-selected {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.completion-mode-card input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.mode-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.mode-card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Completion Guidance Card & Status */
+.completion-guidance-card {
+  border-left: 4px solid var(--primary);
+}
+
+.completion-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background-color: var(--primary-light);
+  color: var(--primary-text);
+  margin-bottom: 8px;
+  width: fit-content;
+}
+
+/* Direct Jump Target Highlight */
+@keyframes fieldJumpPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 87, 184, 0.7);
+    outline: 2px solid var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(0, 87, 184, 0);
+    outline: 2px solid var(--primary);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 87, 184, 0);
+    outline: 2px solid transparent;
+  }
+}
+
+.field-jump-highlight {
+  animation: fieldJumpPulse 1s ease-in-out 2;
+  border-color: var(--primary) !important;
+}
+
+
 .group-header-with-action {
   display: flex;
   justify-content: space-between;
