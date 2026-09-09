@@ -594,10 +594,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         onSelect: loadComponentToEditor,
         onOpenDetails: (component) => {
           showComponentDetailsModal(component, loadComponentToEditor, (c) => {
+            const registryEntry = getComponentById(COMPONENT_REGISTRY, c.id) || c;
+            const presets = getPresetsForComponent(c.id);
+            const preset = presets.length ? presets[0] : null;
+            const baseConfig = getDefaultConfig(registryEntry);
+            const sampleConfig = preset?.config
+              ? {
+                  blockTitle: preset.config.blockTitle || (c.title || registryEntry.name || '').toUpperCase(),
+                  blockHeadline: preset.config.blockHeadline || `Explore ${c.title || registryEntry.name}`,
+                  blockDesc: preset.config.blockDesc || c.desc || registryEntry.description || '',
+                  borderRadius: '12',
+                  shadowDepth: 'soft',
+                  borderOutline: true,
+                  trackCompletion: false,
+                  completionMsg: 'Complete!',
+                  ...baseConfig,
+                  ...preset.config
+                }
+              : {
+                  blockTitle: (c.title || registryEntry.name || '').toUpperCase(),
+                  blockHeadline: `Explore details about ${c.title || registryEntry.name}`,
+                  blockDesc: c.desc || registryEntry.description || '',
+                  borderRadius: '12',
+                  shadowDepth: 'soft',
+                  borderOutline: true,
+                  trackCompletion: false,
+                  completionMsg: 'Complete!',
+                  ...baseConfig
+                };
             const sampleState = {
-              selectedComponent: c,
-              config: getDefaultConfig(c),
-              activeTheme: appState.activeTheme,
+              selectedComponent: registryEntry,
+              config: sampleConfig,
+              activeTheme: appState.activeTheme || getBuiltInTheme(),
               componentOverrides: {}
             };
             return compilePreview(sampleState, componentRegistry, colorToRgba);
