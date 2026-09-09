@@ -11,7 +11,7 @@ import {
   saveFavorites, savePreviewDevice, saveProject, saveRecentlyUsed, saveSettings, saveUiTheme,
   withRecentlyUsedEntry
 } from './js/storage.js';
-import { componentCatalog, filterCatalog, createCatalogCard } from './js/catalog.js';
+import { componentCatalog, filterCatalog, createCatalogCard, showComponentDetailsModal, closeComponentDetailsModal } from './js/catalog.js';
 import { COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById, getDefaultConfig } from './js/component-registry.js';
 import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField } from './js/editor.js';
 import { writePreview, openPreview, generateIframeContent as compilePreview, COMPONENT_MAX_WIDTH } from './js/preview.js';
@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const navItems = document.querySelectorAll('.nav-item');
   const componentsGrid = document.getElementById('components-grid');
   const classificationFilterButtons = document.querySelectorAll('.classification-filter-btn');
+  const purposeChips = document.querySelectorAll('.purpose-chip');
   
   const catalogState = document.getElementById('catalog-state');
   const editorState = document.getElementById('editor-state');
@@ -355,6 +356,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  purposeChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      purposeChips.forEach(c => {
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
+      });
+      chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
+      appState.activePurpose = chip.getAttribute('data-purpose');
+      renderCatalog();
+    });
+  });
+
   function showState(state) {
     if (state === 'catalog') {
       catalogState.style.display = 'flex';
@@ -524,7 +538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="catalog-empty-state">
             <div class="catalog-empty-icon" aria-hidden="true">🔍</div>
             <h4>No Components Found</h4>
-            <p>Select another category from the sidebar.</p>
+            <p>Try changing your category or learning purpose filter.</p>
           </div>
         `;
       }
@@ -532,7 +546,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     filtered.forEach(comp => {
-      componentsGrid.appendChild(createCatalogCard(comp, loadComponentToEditor));
+      componentsGrid.appendChild(createCatalogCard(comp, {
+        onSelect: loadComponentToEditor,
+        onOpenDetails: (component) => {
+          showComponentDetailsModal(component, loadComponentToEditor, (c) => {
+            const sampleState = {
+              selectedComponent: c,
+              config: getDefaultConfig(c),
+              activeTheme: appState.activeTheme,
+              componentOverrides: {}
+            };
+            return compilePreview(sampleState, componentRegistry, colorToRgba);
+          });
+        }
+      }));
     });
   }
 
@@ -1620,13 +1647,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
-        closeModal(overlay.id);
+        if (overlay.id === 'modal-component-details') closeComponentDetailsModal();
+        else closeModal(overlay.id);
       }
     });
 
     closeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        closeModal(overlay.id);
+        if (overlay.id === 'modal-component-details') closeComponentDetailsModal();
+        else closeModal(overlay.id);
       });
     });
   });

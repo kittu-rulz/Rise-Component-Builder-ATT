@@ -268,8 +268,29 @@
         <!-- Welcome / Catalog Screen (Default state) -->
         <div id="catalog-state" class="panel-state">
           <div class="catalog-header">
-            <h2>Select a Component Template</h2>
-            <p>Choose a component archetype to customize, style, and generate code for Articulate Rise.</p>
+            <div class="catalog-header-text">
+              <h2>AT&amp;T Learning Interaction Builder</h2>
+              <p class="catalog-subtitle">Build branded, accessible learning interactions that go beyond standard Rise blocks—without coding.</p>
+            </div>
+
+            <!-- Learning Purpose Discovery (Prompt Section 3) -->
+            <div class="purpose-filter-container">
+              <div class="purpose-filter-header">
+                <span class="purpose-filter-label" id="purpose-filter-heading">What do you want learners to do?</span>
+              </div>
+              <div class="purpose-filter-chips" role="group" aria-labelledby="purpose-filter-heading">
+                <button type="button" class="purpose-chip active" data-purpose="all" aria-pressed="true">All</button>
+                <button type="button" class="purpose-chip" data-purpose="Explore" aria-pressed="false">Explore</button>
+                <button type="button" class="purpose-chip" data-purpose="Compare" aria-pressed="false">Compare</button>
+                <button type="button" class="purpose-chip" data-purpose="Practice" aria-pressed="false">Practice</button>
+                <button type="button" class="purpose-chip" data-purpose="Reflect" aria-pressed="false">Reflect</button>
+                <button type="button" class="purpose-chip" data-purpose="Assess" aria-pressed="false">Assess</button>
+                <button type="button" class="purpose-chip" data-purpose="Explain" aria-pressed="false">Explain</button>
+                <button type="button" class="purpose-chip" data-purpose="Navigate" aria-pressed="false">Navigate</button>
+                <button type="button" class="purpose-chip" data-purpose="Media" aria-pressed="false">Media</button>
+              </div>
+            </div>
+
             <div class="classification-filter" id="classification-filter" role="group" aria-label="Filter by classification">
               <button type="button" class="classification-filter-btn active" data-classification="all" aria-pressed="true">All Components</button>
               <button type="button" class="classification-filter-btn" data-classification="enhanced" aria-pressed="false">Enhanced Rise Alternatives</button>
@@ -1069,7 +1090,104 @@
     </div>
   </div>
 
-  <!-- Modal: Generic Prompt -->
+  <!-- Modal: Component Details & Live Preview (Prompt Section 5) -->
+  <div id="modal-component-details" class="modal-overlay" style="display: none;">
+    <div class="modal-card modal-xl" role="dialog" aria-modal="true" aria-labelledby="modal-component-details-title" tabindex="-1">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-title-row">
+            <h3 id="modal-component-details-title">Component Name</h3>
+            <span id="details-tier-badge" class="card-tier-badge card-tier-flagship">Flagship</span>
+            <span id="details-status-badge" class="badge badge-accent" hidden>Beta</span>
+          </div>
+          <p id="details-subtitle" class="modal-subtitle"></p>
+          <div id="details-purposes-container" class="details-purposes-row"></div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-component-details" aria-label="Close component details dialog">&times;</button>
+      </div>
+
+      <div class="modal-body component-details-layout">
+        <!-- Left Side: Interactive Preview & Capabilities -->
+        <div class="details-main-column">
+          <div class="details-section-heading">Representative Live Preview</div>
+          <div class="details-preview-container">
+            <iframe id="details-preview-frame" title="Component Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+          </div>
+          
+          <div class="details-capabilities-section">
+            <h4 class="details-subheading">Key Capabilities</h4>
+            <ul id="details-capabilities-list" class="details-list"></ul>
+          </div>
+        </div>
+
+        <!-- Right Side: Rise Decision Guidance & Technical Specs -->
+        <div class="details-sidebar-column">
+          <div class="details-guidance-card">
+            <h4 class="details-subheading rise-guidance-heading">
+              <span class="rise-logo-icon" aria-hidden="true">⚡</span> Rise Decision Guidance
+            </h4>
+            
+            <div class="guidance-field">
+              <span class="guidance-label">Rise Equivalent:</span>
+              <span id="details-rise-equivalent" class="guidance-value">No direct equivalent</span>
+            </div>
+
+            <div class="guidance-field">
+              <span class="guidance-label">Recommendation:</span>
+              <div id="details-rise-rec-summary" class="guidance-rec-box">Custom recommended</div>
+            </div>
+
+            <div class="guidance-field">
+              <span class="guidance-label">Best When:</span>
+              <p id="details-best-when" class="guidance-text"></p>
+            </div>
+
+            <div class="guidance-field">
+              <span class="guidance-label">When Native Rise is Preferable:</span>
+              <p id="details-native-rise-when" class="guidance-text"></p>
+            </div>
+          </div>
+
+          <div class="details-specs-card">
+            <h4 class="details-subheading">Technical Specifications</h4>
+            
+            <div class="spec-grid">
+              <div class="spec-item">
+                <span class="spec-label">Complexity:</span>
+                <span id="details-complexity" class="spec-value">Intermediate</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">Readiness:</span>
+                <span id="details-readiness" class="spec-value">5/5 (Production)</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">Media Requirements:</span>
+                <span id="details-media-reqs" class="spec-value">None</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">Completion Tracking:</span>
+                <span id="details-completion" class="spec-value">Exploration tracking</span>
+              </div>
+            </div>
+
+            <div class="spec-a11y">
+              <span class="spec-label">Accessibility:</span>
+              <p id="details-a11y-summary" class="spec-a11y-text"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-details-cancel" class="btn btn-secondary modal-cancel-btn">Back to Templates</button>
+        <button id="btn-details-use-component" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"><path d="M17 9 15 9 15 15 9 15 9 17 15 17 15 23 17 23 17 17 23 17 23 15 17 15Z"/></svg>
+          <span>Use This Component</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Application Logic -->
   <script type="module" src="app.js?v=20260909.1222"></script>
 </body>

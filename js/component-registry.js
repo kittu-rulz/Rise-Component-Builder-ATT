@@ -734,7 +734,7 @@ export const COMPONENT_REGISTRY = [
     mediaRequirements: 'None',
     accessibilitySummary: 'Radiogroup semantics, full keyboard arrow navigation, live region score updates.',
     completionTracking: 'Matrix completion & competency rating tracking',
-    aliases: ['confidence-matrix', 'skills matrix', 'confidence self-assessment', 'confidence matrix']
+    aliases: ['confidence-matrix', 'skills matrix', 'confidence self-assessment', 'skills self-assessment', 'confidence matrix']
   })
 ];
 

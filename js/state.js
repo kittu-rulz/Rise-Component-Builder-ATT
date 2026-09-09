@@ -48,6 +48,7 @@ export const appState = {
   // Independent of activeCategory (see js/catalog.js#filterCatalog) — 'all', 'enhanced', or
   // 'custom'. Same transient-UI-filter status as activeCategory/searchQuery above.
   activeClassification: 'all',
+  activePurpose: 'all',
   searchQuery: '',
   selectedComponent: null,
   favorites: new Set(),
