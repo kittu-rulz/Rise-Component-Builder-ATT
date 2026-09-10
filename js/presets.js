@@ -1007,6 +1007,651 @@ export const WORKPLACE_PRESETS = [
         }
       ]
     }
+  },
+
+  // 29. Confidence Matrix Preset 2: Leadership & Strategic Decision-Making
+  {
+    id: 'cm-leadership-strategic-execution',
+    componentId: 'confidence-matrix',
+    title: 'Executive Leadership & Strategic Decision-Making',
+    name: 'Executive Leadership & Strategic Decision-Making',
+    description: 'Self-assess executive leadership capabilities across vision setting, psychological safety, change resilience, and conflict resolution.',
+    domain: 'Leadership Development',
+    config: {
+      title: 'Executive Leadership & Strategic Execution Matrix',
+      content: 'Assess your capability to guide high-performing teams, navigate complex organizational ambiguity, and drive decisive strategic outcomes.',
+      showBreakdown: true,
+      scaleLabel: 'Leadership Mastery Scale',
+      items: [
+        {
+          title: 'Visionary Strategic Clarity',
+          category: 'Strategy & Direction',
+          content: 'Translate high-level corporate objectives into actionable, measurable team roadmaps with clear quarterly OKRs and KPIs.'
+        },
+        {
+          title: 'High-Trust Psychological Safety',
+          category: 'Team Culture',
+          content: 'Foster an environment where team members openly challenge assumptions, report early mistakes without fear, and propose bold innovations.'
+        },
+        {
+          title: 'Agile Change Leadership',
+          category: 'Organizational Agility',
+          content: 'Lead cross-functional stakeholders smoothly through operational pivots, technological shifts, and structural reorganizations.'
+        },
+        {
+          title: 'Decisive Conflict Resolution',
+          category: 'Interpersonal Leadership',
+          content: 'Address interpersonal friction and competing departmental priorities directly with objective, principle-centered mediation.'
+        }
+      ]
+    }
+  },
+
+  // 30. Confidence Matrix Preset 3: Enterprise Generative AI Adoption & Governance
+  {
+    id: 'cm-enterprise-genai-governance',
+    componentId: 'confidence-matrix',
+    title: 'Enterprise Generative AI Adoption & Governance',
+    name: 'Enterprise Generative AI Adoption & Governance',
+    description: 'Evaluate technical team readiness for enterprise AI workflows across prompt engineering, PII boundaries, hallucination checks, and ethical governance.',
+    domain: 'Artificial Intelligence',
+    config: {
+      title: 'Generative AI Practitioner Readiness Assessment',
+      content: 'Measure your proficiency in applying generative AI models responsibly within enterprise environments, maintaining strict data security and compliance.',
+      showBreakdown: true,
+      scaleLabel: 'AI Practitioner Maturity Scale',
+      items: [
+        {
+          title: 'System Prompt Engineering & Context Design',
+          category: 'AI Engineering',
+          content: 'Structure complex few-shot prompts with role framing, markdown output schemas, and strict boundary constraints to minimize hallucinations.'
+        },
+        {
+          title: 'Data Confidentiality & PII Protection',
+          category: 'Security & Privacy',
+          content: 'Ensure sensitive customer records, proprietary source code, and confidential network configurations are never ingested into non-approved external models.'
+        },
+        {
+          title: 'Hallucination Verification & Fact-Checking',
+          category: 'Quality Assurance',
+          content: 'Systematically cross-verify synthetic outputs against authoritative engineering documentation before committing deliverables to production.'
+        },
+        {
+          title: 'Responsible AI & Ethical Bias Governance',
+          category: 'Ethical Governance',
+          content: 'Evaluate model fairness, explainability, accessibility considerations, and adherence to company AI ethics guidelines.'
+        }
+      ]
+    }
+  },
+
+  // 31. Confidence Matrix Preset 4: Customer Operations & SLA De-escalation
+  {
+    id: 'cm-customer-sla-deescalation',
+    componentId: 'confidence-matrix',
+    title: 'Customer Operations & SLA De-escalation Mastery',
+    name: 'Customer Operations & SLA De-escalation Mastery',
+    description: 'Assess frontline and tier-2 support capabilities across executive de-escalation, rapid root-cause diagnosis, and cross-functional handoffs.',
+    domain: 'Customer Operations',
+    config: {
+      title: 'Customer Excellence & Outage De-escalation Matrix',
+      content: 'Evaluate your operational confidence in managing high-stakes client communications during mission-critical network disruptions.',
+      showBreakdown: true,
+      scaleLabel: 'Operational Capability Scale',
+      items: [
+        {
+          title: 'High-Stakes Executive De-escalation',
+          category: 'Customer Engagement',
+          content: 'Calm urgent customer executive escalations using empathetic listening, confirmed factual status, and clear accountability commitments.'
+        },
+        {
+          title: 'First-Contact Diagnostic Precision',
+          category: 'Technical Triage',
+          content: 'Isolate circuit impairments and service faults accurately within the initial 15 minutes of customer ticket submission.'
+        },
+        {
+          title: 'Cross-Functional Technical Handoffs',
+          category: 'Operational Collaboration',
+          content: 'Provide complete, structured diagnostic documentation to Tier-3 NOC and field splice engineers without communication gaps.'
+        },
+        {
+          title: 'Quality & Contractual SLA Compliance',
+          category: 'Compliance & Standards',
+          content: 'Track and enforce contractual Mean Time to Restore (MTTR) milestones and submit required outage credit paperwork accurately.'
+        }
+      ]
+    }
+  },
+
+  // 32. Interactive Gauge Preset 2: Enterprise Cyber Risk Exposure Index
+  {
+    id: 'dg-cyber-risk-index',
+    componentId: 'dial-gauge',
+    title: 'Enterprise Cyber Risk Exposure Index',
+    name: 'Enterprise Cyber Risk Exposure Index',
+    description: 'Interactive risk posture dial evaluating organizational vulnerability from Low Exposure (<25) to Critical Breach Risk (>75).',
+    domain: 'Cybersecurity & Risk',
+    config: {
+      title: 'Enterprise Threat & Vulnerability Exposure Index',
+      content: 'Select a risk threshold or drag the needle to review required containment controls, escalation protocols, and mitigation mandates.',
+      unit: 'Risk Score',
+      minValue: 0,
+      maxValue: 100,
+      initialValue: 35,
+      step: 5,
+      items: [
+        {
+          title: 'Zone 1: Controlled Baseline (<25)',
+          rangeMin: 0,
+          rangeMax: 25,
+          badgeLabel: 'Low Threat Exposure',
+          badgeTone: 'neutral',
+          content: '<strong>Status: Optimal Security Posture</strong><br>All critical security patches deployed within 72 hours. Zero-day vulnerability signatures blocked at edge perimeter. Multi-factor authentication 100% active.'
+        },
+        {
+          title: 'Zone 2: Monitored Exposure (26-55)',
+          rangeMin: 26,
+          rangeMax: 55,
+          badgeLabel: 'Moderate Attention Required',
+          badgeTone: 'info',
+          content: '<strong>Status: Elevated Security Telemetry</strong><br>Moderate unpatched CVEs detected on internal test subnets. Heighten automated SIEM correlation and enforce 48-hour patch compliance for all internet-facing servers.'
+        },
+        {
+          title: 'Zone 3: High Vulnerability Deficit (56-80)',
+          rangeMin: 56,
+          rangeMax: 80,
+          badgeLabel: 'High Risk Warning',
+          badgeTone: 'warning',
+          content: '<strong>Status: High Vulnerability Exposure</strong><br>Multiple critical CVEs active without compensating microsegmentation controls. Initiate emergency maintenance window to patch vulnerable libraries and isolate affected host nodes.'
+        },
+        {
+          title: 'Zone 4: Critical Threat & Active Compromise (81-100)',
+          rangeMin: 81,
+          rangeMax: 100,
+          badgeLabel: 'Critical Threat Level',
+          badgeTone: 'danger',
+          content: '<strong>Status: Emergency Incident Triggered</strong><br>Confirmed command-and-control beaconing or credential dumping detected. Activate Level-1 CSIRT war room immediately and sever compromised subnets from corporate WAN.'
+        }
+      ]
+    }
+  },
+
+  // 33. Interactive Gauge Preset 3: Enterprise Cloud Transformation Maturity Index
+  {
+    id: 'dg-cloud-maturity-index',
+    componentId: 'dial-gauge',
+    title: 'Enterprise Cloud Transformation Maturity Index',
+    name: 'Enterprise Cloud Transformation Maturity Index',
+    description: 'Assess architecture progression from Legacy On-Premises Silos (Level 1) to Autonomous Self-Healing Hybrid Cloud (Level 5).',
+    domain: 'Cloud Architecture',
+    config: {
+      title: 'Cloud Transformation & DevOps Maturity Model',
+      content: 'Explore the architectural milestones, deployment cadences, and observability patterns associated with each cloud maturity stage.',
+      unit: 'Level',
+      minValue: 1,
+      maxValue: 5,
+      initialValue: 3,
+      step: 1,
+      items: [
+        {
+          title: 'Level 1: Legacy Siloed Infrastructure',
+          rangeMin: 1,
+          rangeMax: 1,
+          badgeLabel: 'Traditional On-Prem',
+          badgeTone: 'neutral',
+          content: '<strong>Cadence: Quarterly Releases</strong><br>Manual bare-metal server provisioning, physical datacenter dependency, and monolithic application codebases with significant operational overhead.'
+        },
+        {
+          title: 'Level 2: Cloud-Aware Lift-and-Shift',
+          rangeMin: 2,
+          rangeMax: 2,
+          badgeLabel: 'IaaS Migration',
+          badgeTone: 'info',
+          content: '<strong>Cadence: Monthly Releases</strong><br>Virtual machine rehosting in public cloud VPCs. Basic auto-scaling implemented for compute nodes, but database and storage backends remain tightly coupled.'
+        },
+        {
+          title: 'Level 3: Containerized Microservices',
+          rangeMin: 3,
+          rangeMax: 3,
+          badgeLabel: 'Cloud Native',
+          badgeTone: 'primary',
+          content: '<strong>Cadence: Bi-Weekly Releases</strong><br>Dockerized microservices managed by Kubernetes clusters. Automated CI/CD build pipelines and centralized cloud telemetry logging active.'
+        },
+        {
+          title: 'Level 4: Automated Policy-as-Code',
+          rangeMin: 4,
+          rangeMax: 4,
+          badgeLabel: 'DevSecOps & GitOps',
+          badgeTone: 'primary',
+          content: '<strong>Cadence: Daily Deployments</strong><br>Declarative Infrastructure as Code (Terraform), automated security scanning in PRs, canary deployments, and distributed OpenTelemetry tracing.'
+        },
+        {
+          title: 'Level 5: Autonomous Self-Healing Mesh',
+          rangeMin: 5,
+          rangeMax: 5,
+          badgeLabel: 'Autonomous Mesh',
+          badgeTone: 'success',
+          content: '<strong>Cadence: Continuous On-Demand</strong><br>Multi-cloud service mesh with automated anomaly remediation, predictive autoscaling, zero-trust cryptographic identities, and zero downtime.'
+        }
+      ]
+    }
+  },
+
+  // 34. Interactive Video Preset 2: Fiber Splice Quality & Fusion Splicer Calibration
+  {
+    id: 'iv-fiber-splice-calibration',
+    componentId: 'interactive-video',
+    title: 'Fiber Splice Quality & Fusion Splicer Calibration',
+    name: 'Fiber Splice Quality & Fusion Splicer Calibration',
+    description: 'Field engineering video walkthrough detailing precision optical fiber cleaving, V-groove cleaning, and insertion loss verification.',
+    domain: 'Field Engineering',
+    config: {
+      blockTitle: 'FIELD OPTICAL ENGINEERING',
+      blockHeadline: 'Precision Fiber Splicing & Quality Assurance',
+      blockDesc: 'Watch the optical splicing procedure. Review the timestamped technical callouts to ensure zero-defect optical loss standards.',
+      resumeBehaviour: 'manual',
+      completionRule: 'allRequiredInteractionsCompleted',
+      items: [
+        {
+          type: 'information',
+          timestamp: 15,
+          title: 'Safety & Cleave Angle Verification',
+          content: 'Always wear safety glasses with side shields. Strip the 250µm buffer coating smoothly and inspect the fiber endface with a precision cleaver to ensure a cleave angle under 0.5°.'
+        },
+        {
+          type: 'information',
+          timestamp: 45,
+          title: 'V-Groove Cleaning & Electrode Alignment',
+          content: 'Clean the splicer V-grooves using 99% electronic-grade isopropyl alcohol. Ensure both single-mode fiber cores are aligned within 0.1µm before initiating the arc discharge.'
+        },
+        {
+          type: 'multipleChoice',
+          timestamp: 75,
+          title: 'Quality Gate: Estimated Insertion Loss',
+          prompt: 'The fusion splicer display reports an estimated loss of 0.08 dB on a critical long-haul DWDM link. What is the mandatory standard operating procedure?',
+          options: [
+            { text: 'Accept the splice and apply the protective heat shrink sleeve immediately.', correct: false, feedback: 'Incorrect. For core long-haul DWDM links, insertion loss must not exceed 0.02 dB.' },
+            { text: 'Cut the splice, re-clean the V-grooves, re-cleave both fiber ends, and execute a fresh fusion arc.', correct: true, feedback: 'Correct! Re-cleaving and re-splicing ensures network reliability and prevents premature optical budget depletion.' },
+            { text: 'Increase optical amplifier laser gain downstream to compensate for the loss.', correct: false, feedback: 'Incorrect. Over-amplification introduces non-linear distortion across wavelength channels.' }
+          ]
+        }
+      ]
+    }
+  },
+
+  // 35. Comparison Matrix Preset 2: Zero Trust SASE vs Legacy Perimeter VPN
+  {
+    id: 'pm-zerotrust-vs-vpn',
+    componentId: 'pricing-comparison',
+    title: 'Zero Trust SASE vs Legacy Perimeter VPN Architecture',
+    name: 'Zero Trust SASE vs Legacy Perimeter VPN Architecture',
+    description: 'Architectural comparison matrix evaluating legacy castle-and-moat VPN security against identity-first Zero Trust SASE.',
+    domain: 'Cybersecurity Architecture',
+    config: {
+      blockTitle: 'ARCHITECTURE COMPARISON',
+      blockHeadline: 'Zero Trust SASE vs Legacy Perimeter Security',
+      blockDesc: 'Compare foundational security characteristics, lateral movement risks, and user performance metrics across architectures.',
+      items: [
+        {
+          title: 'Legacy Perimeter VPN',
+          planName: 'Castle-and-Moat VPN',
+          price: 'High Risk',
+          priceSub: 'Implicit Trust Model',
+          isPopular: false,
+          badgeText: 'Legacy Baseline',
+          features: [
+            { text: 'Broad network-layer access upon login', included: true },
+            { text: 'High risk of lateral threat movement', included: true },
+            { text: 'Centralized datacenter traffic backhauling', included: true },
+            { text: 'Continuous context-aware verification', included: false },
+            { text: 'Direct secure cloud SaaS access', included: false },
+            { text: 'Microsegmented application boundaries', included: false }
+          ],
+          buttonText: 'Review Legacy Constraints'
+        },
+        {
+          title: 'Zero Trust SASE Architecture',
+          planName: 'Cloud-Delivered SASE',
+          price: 'Zero Trust',
+          priceSub: 'Least-Privilege Model',
+          isPopular: true,
+          badgeText: 'Recommended Standard',
+          features: [
+            { text: 'Application-level microsegmented access', included: true },
+            { text: 'Lateral movement blocked by default', included: true },
+            { text: 'Distributed local edge cloud breakouts', included: true },
+            { text: 'Continuous context-aware verification', included: true },
+            { text: 'Direct secure cloud SaaS access', included: true },
+            { text: 'Microsegmented application boundaries', included: true }
+          ],
+          buttonText: 'Adopt Zero Trust SASE'
+        }
+      ]
+    }
+  },
+
+  // 36. Learning Audio Player Preset 2: Executive Briefing on 5G Standalone & Slicing
+  {
+    id: 'ap-5g-standalone-slicing',
+    componentId: 'audio-player',
+    title: 'Executive Briefing: 5G Standalone & Dynamic Network Slicing',
+    name: 'Executive Briefing: 5G Standalone & Dynamic Network Slicing',
+    description: 'Chaptered executive audio overview exploring how 5G Standalone Core enables dedicated enterprise virtual network slices with guaranteed QoS.',
+    domain: 'Executive Briefing',
+    config: {
+      audioTitle: '5G Standalone Core & Enterprise Network Slicing',
+      audioSubtitle: 'Strategic Technology Briefing for Enterprise Leaders',
+      audioDescription: 'Listen to this chaptered briefing to understand how 5G Standalone architectures unlock dedicated virtual network slices for public safety, IoT, and ultra-reliable low latency applications.',
+      playerMode: 'learning',
+      items: [
+        {
+          title: 'Chapter 1: The Transition to 5G Standalone Core',
+          timestamp: 0,
+          duration: 75,
+          content: 'Unlike Non-Standalone 5G which relies on 4G LTE control planes, 5G Standalone (SA) introduces a completely cloud-native, microservices-based core network architecture. This eliminates legacy bottlenecks and enables end-to-end multi-gigabit throughput.',
+          takeaway: '5G Standalone is fully decoupled from 4G core, enabling cloud-native orchestration.'
+        },
+        {
+          title: 'Chapter 2: Dynamic Network Slicing Architecture',
+          timestamp: 75,
+          duration: 90,
+          content: 'Network slicing allows physical infrastructure to be partitioned into multiple isolated, independent virtual networks. Each slice can be tailored with specific latency, throughput, jitter, and security profiles guaranteed by SLA.',
+          takeaway: 'Slicing creates isolated virtual networks with dedicated quality of service on shared spectrum.'
+        },
+        {
+          title: 'Chapter 3: Enterprise Use Cases & Public Safety',
+          timestamp: 165,
+          duration: 80,
+          content: 'From FirstNet priority preemption for emergency responders to ultra-low-latency remote robotics in smart manufacturing plants, network slicing provides guaranteed performance regardless of surrounding public network congestion.',
+          takeaway: 'Critical enterprise and emergency traffic remains protected and prioritized during peak events.'
+        }
+      ]
+    }
+  },
+
+  // 37. Comparison Slider Preset 2: Optical Fiber Endface Inspection
+  {
+    id: 'cs-optical-fiber-inspection',
+    componentId: 'comparison-slider',
+    title: 'Optical Fiber Endface Inspection: Contaminated vs Cleaned',
+    name: 'Optical Fiber Endface Inspection: Contaminated vs Cleaned',
+    description: 'Visual before-and-after microscopic inspection comparing contaminated optical fiber ferrule against an IEC 61300-3-35 compliant cleaned endface.',
+    domain: 'Fiber Optics & Quality',
+    config: {
+      blockTitle: 'OPTICAL QUALITY ASSURANCE',
+      blockHeadline: 'Microscopic Fiber Endface Inspection',
+      blockDesc: 'Drag the slider to inspect the optical fiber ferrule under 400x magnification before and after precision dry-cleaning.',
+      beforeLabel: 'Contaminated Fiber Endface (High dB Loss)',
+      afterLabel: 'IEC Compliant Cleaned Endface (Zero Defect)',
+      items: [
+        {
+          beforeLabel: 'Contaminated (High Loss)',
+          afterLabel: 'IEC Cleaned (Zero Defect)',
+          beforeAltText: 'Microscope view of fiber endface with oil and dust particles covering the core',
+          afterAltText: 'Microscope view of pristine fiber core free of all debris and scratches'
+        }
+      ]
+    }
+  },
+
+  // 38. Horizontal Timeline Preset 2: Mobile Telecommunications Generational Evolution
+  {
+    id: 'ht-telecom-evolution',
+    componentId: 'horizontal-timeline',
+    title: 'Generational Mobile Evolution: 1G Analog to 5G Advanced & 6G',
+    name: 'Generational Mobile Evolution: 1G Analog to 5G Advanced & 6G',
+    description: 'Chronological roadmap tracing the revolutionary leaps in wireless networking speed, architecture, and connected ecosystems.',
+    domain: 'Telecommunications History',
+    config: {
+      blockTitle: 'WIRELESS GENERATIONS',
+      blockHeadline: 'The Evolution of Mobile Connectivity',
+      blockDesc: 'Explore how mobile network architectures evolved from early analog voice channels to intelligent 5G and future 6G networks.',
+      items: [
+        {
+          date: '1980s (1G)',
+          title: '1G: Analog Voice Services',
+          content: 'Introduction of cellular analog voice telephony using AMPS standards. Bulky handsets, unencrypted radio links, and basic voice-only calling.',
+          badge: 'Analog Voice',
+          badgeType: 'info'
+        },
+        {
+          date: '1990s (2G)',
+          title: '2G: Digital Voice & SMS',
+          content: 'Transition to digital GSM/CDMA networks introducing text messaging (SMS), digital encryption, and basic circuit-switched data (9.6 kbps).',
+          badge: 'Digital Text',
+          badgeType: 'info'
+        },
+        {
+          date: '2000s (3G)',
+          title: '3G: Mobile Broadband & Web',
+          content: 'Packet-switched mobile internet (HSPA/UMTS) enabling web browsing, email on smartphones, and early streaming media at megabit speeds.',
+          badge: 'Mobile Web',
+          badgeType: 'info'
+        },
+        {
+          date: '2010s (4G LTE)',
+          title: '4G LTE: All-IP & App Ecosystem',
+          content: 'All-IP flat network architecture powering the global app economy, HD mobile video streaming, mobile banking, and high-speed multi-megabit connectivity.',
+          badge: 'All-IP Broadband',
+          badgeType: 'primary'
+        },
+        {
+          date: '2020s (5G & Beyond)',
+          title: '5G & 6G: Intelligent Edge Mesh',
+          content: 'Ultra-low sub-millisecond latency, multi-gigabit throughput, dynamic network slicing, massive IoT scale, and foundation for AI-native 6G networks.',
+          badge: 'Gigabit & Edge AI',
+          badgeType: 'success'
+        }
+      ]
+    }
+  },
+
+  // 39. Interactive Video Preset 3: High-Voltage Substation Field Safety Protocol
+  {
+    id: 'iv-high-voltage-safety',
+    componentId: 'interactive-video',
+    title: 'High-Voltage Substation Field Safety & Lockout/Tagout',
+    name: 'High-Voltage Substation Field Safety & Lockout/Tagout',
+    description: 'Critical safety video with embedded compliance checkpoints for personal protective equipment, voltage testing, and isolation boundaries.',
+    domain: 'Field Safety & EHS',
+    config: {
+      blockTitle: 'FIELD SAFETY PROTOCOLS',
+      blockHeadline: 'Substation High-Voltage Safety & LOTO Verification',
+      blockDesc: 'Follow the field technician through the substation entry protocol. Respond to safety verification prompts before energized work begins.',
+      resumeBehaviour: 'automaticAfterCorrectAnswer',
+      completionRule: 'allRequiredInteractionsCompleted',
+      items: [
+        {
+          type: 'information',
+          timestamp: 20,
+          title: 'Step 1: Arc Flash PPE & Perimeter Boundary',
+          content: 'Verify Category 4 Arc Flash suit, voltage-rated rubber gloves with leather protectors (tested within 6 months), and full-face shield before entering the secondary transformer enclosure.'
+        },
+        {
+          type: 'multipleChoice',
+          timestamp: 50,
+          title: 'Step 2: Live-Dead-Live Voltage Testing Verification',
+          prompt: 'Before applying grounding clamps to an isolated bus bar, what is the mandatory sequence for testing your digital voltage detector?',
+          options: [
+            { text: 'Test the detector on a known live source, verify the de-energized bus bar reads zero, then immediately re-test the detector on the known live source.', correct: true, feedback: 'Correct! The three-point Live-Dead-Live test proves your measurement device did not fail during testing.' },
+            { text: 'Visual inspection of the breaker disconnect switch is sufficient if the red indicator flag is visible.', correct: false, feedback: 'Incorrect. Mechanical indicators can fail; physical voltage testing is non-negotiable.' },
+            { text: 'Touch the back of your gloved hand lightly against the conduit to check for static discharge.', correct: false, feedback: 'Incorrect. Never use personal touch to verify electrical isolation.' }
+          ]
+        },
+        {
+          type: 'information',
+          timestamp: 85,
+          title: 'Step 3: Multi-Lock Hasp & Zero Energy Lockout',
+          content: 'Apply your personal safety padlock and danger tag to the master lockout hasp. Retain your individual key on your person; never share or leave lockout keys unattended.'
+        }
+      ]
+    }
+  },
+
+  // 40. Learning Audio Player Preset 3: Mentorship on Transitioning to Tech Leadership
+  {
+    id: 'ap-mentorship-leadership',
+    componentId: 'audio-player',
+    title: 'Mentorship Dialogue: Transitioning from Engineer to Technical Leader',
+    name: 'Mentorship Dialogue: Transitioning from Engineer to Technical Leader',
+    description: 'In-depth mentor discussion exploring the mindset shift from individual technical delivery to delegation, coaching, and strategic influence.',
+    domain: 'Professional Mentorship',
+    config: {
+      audioTitle: 'Transitioning from Senior Engineer to Technical Leader',
+      audioSubtitle: 'Executive Mentorship & Engineering Career Development',
+      audioDescription: 'Join our Distinguished Network Architect as they unpack key inflection points, common pitfalls, and leverage multipliers when advancing into technical leadership roles.',
+      playerMode: 'podcast',
+      items: [
+        {
+          title: '1. The Multiplier Mindset',
+          timestamp: 0,
+          duration: 90,
+          content: 'As an individual contributor, your output was measured by lines of code, tickets resolved, and architecture documents authored. As a lead, your success is measured by the output, velocity, and psychological safety of the entire engineering team.',
+          takeaway: 'Shift from personal output to team leverage and capability building.'
+        },
+        {
+          title: '2. The Art of Strategic Delegation',
+          timestamp: 90,
+          duration: 85,
+          content: 'Resist the temptation to take on the hardest technical tasks yourself during crunches. Delegating high-visibility challenges with clear guardrails accelerates your team’s technical maturity.',
+          takeaway: 'Delegate problems and boundaries, not just repetitive tasks.'
+        },
+        {
+          title: '3. Communicating with Business Stakeholders',
+          timestamp: 175,
+          duration: 95,
+          content: 'Executive leaders think in terms of risk mitigation, revenue enablement, and customer time-to-market. Frame technical debt and refactoring proposals in terms of business velocity and SLA protection.',
+          takeaway: 'Translate technical architecture into measurable business value.'
+        }
+      ]
+    }
+  },
+
+  // 41. Comparison Slider Preset 3: Brand Guidelines Compliance vs Non-Compliant
+  {
+    id: 'cs-brand-identity-compliance',
+    componentId: 'comparison-slider',
+    title: 'Design System Inspection: Brand Compliant vs Non-Compliant Layout',
+    name: 'Design System Inspection: Brand Compliant vs Non-Compliant Layout',
+    description: 'Interactive QA inspection highlighting compliant AT&T Blue/Aleck Sans typography vs unapproved legacy colors and low-contrast elements.',
+    domain: 'Brand & UX Standards',
+    config: {
+      blockTitle: 'BRAND QUALITY CONTROL',
+      blockHeadline: 'Enterprise Design System Compliance Review',
+      blockDesc: 'Drag the inspection slider to compare an unapproved, low-contrast legacy mockup against an official AT&T Brand Design System certified layout.',
+      beforeLabel: 'Non-Compliant Mockup (Contrast & Color Violations)',
+      afterLabel: 'Certified AT&T Layout (100% Brand & WCAG AA)',
+      items: [
+        {
+          beforeLabel: 'Non-Compliant (Violations)',
+          afterLabel: 'Certified (100% Brand)',
+          beforeAltText: 'UI mockup with unapproved grey colors and failing contrast ratios',
+          afterAltText: 'UI mockup with official AT&T Blue, Aleck Sans typography, and passing WCAG contrast'
+        }
+      ]
+    }
+  },
+
+  // 42. Comparison Matrix Preset 3: Enterprise Learning Pathways
+  {
+    id: 'pm-career-pathways',
+    componentId: 'pricing-comparison',
+    title: 'Enterprise Technical Learning Pathways: Cloud Architect vs DevOps Lead',
+    name: 'Enterprise Technical Learning Pathways: Cloud Architect vs DevOps Lead',
+    description: 'Compare curriculum milestones, lab prerequisites, certification requirements, and career specializations across technical tracks.',
+    domain: 'Workforce Development',
+    config: {
+      blockTitle: 'CAREER ACCELERATION PATHWAYS',
+      blockHeadline: 'Choose Your Advanced Technical Specialization',
+      blockDesc: 'Compare curriculum roadmaps, hands-on lab hours, and industry certifications across our two flagship engineering academies.',
+      items: [
+        {
+          title: 'Cloud Solutions Architect Track',
+          planName: 'Cloud Solutions Architect',
+          price: '120 Hours',
+          priceSub: 'Comprehensive Track',
+          isPopular: false,
+          badgeText: 'Architecture Focus',
+          features: [
+            { text: 'Multi-cloud networking & hybrid VPC design', included: true },
+            { text: 'Zero-trust identity & data governance models', included: true },
+            { text: 'High-availability & disaster recovery planning', included: true },
+            { text: 'Hands-on architectural review board defense', included: true },
+            { text: 'Kubernetes GitOps & CI/CD deployment pipelines', included: false },
+            { text: 'Custom Linux kernel tuning & eBPF tracing', included: false }
+          ],
+          buttonText: 'Enroll in Architecture Track'
+        },
+        {
+          title: 'DevOps & Site Reliability Lead Track',
+          planName: 'DevSecOps & SRE Lead',
+          price: '140 Hours',
+          priceSub: 'Intensive Hands-On Track',
+          isPopular: true,
+          badgeText: 'High Demand',
+          features: [
+            { text: 'Infrastructure as Code (IaC) with Terraform & Ansible', included: true },
+            { text: 'Production Kubernetes cluster automation & mesh', included: true },
+            { text: 'Automated canary rollouts & chaos engineering', included: true },
+            { text: 'OpenTelemetry, Prometheus & Grafana alerting', included: true },
+            { text: '24/7 incident response & blameless post-mortem SLA', included: true },
+            { text: 'Full-stack multi-cloud architecture review', included: true }
+          ],
+          buttonText: 'Enroll in DevOps/SRE Track'
+        }
+      ]
+    }
+  },
+
+  // 43. Vertical Timeline Preset 2: Major Network Incident Triage & Recovery
+  {
+    id: 'vt-outage-recovery-timeline',
+    componentId: 'vertical-timeline',
+    title: 'Critical P1 Outage Incident Triage & Recovery (0 to 180 Minutes)',
+    name: 'Critical P1 Outage Incident Triage & Recovery (0 to 180 Minutes)',
+    description: 'Time-critical operational milestones from automated telemetry alarm, war room creation, splice repair, to customer executive signoff.',
+    domain: 'Incident Operations',
+    config: {
+      blockTitle: 'INCIDENT RESPONSE TIMELINE',
+      blockHeadline: 'P1 Transport Network Fiber Cut Recovery',
+      blockDesc: 'Chronological timeline of operational actions executed by the Global NOC, field splicing crews, and executive incident commanders.',
+      timelineCategoriesEnabled: true,
+      timelineCollapsibleDetails: true,
+      timelineChronologicalReveal: true,
+      timelineShowProgress: true,
+      items: [
+        {
+          date: '00:00 - T+5 min',
+          title: 'Optical Loss Alarm & Automated SIEM Correlation',
+          content: 'DWDM optical transponder loses signal on redundant Metro Fiber Ring Segment B. Real-time telemetry correlates optical loss with a third-party construction utility dig.',
+          category: 'DETECTION'
+        },
+        {
+          date: 'T+15 min',
+          title: 'CSIRT & NOC Level-1 Priority Bridge Activated',
+          content: 'Incident Commander opens the executive bridge. Traffic automatically reroutes over Segment A with zero packet drop while field technicians are dispatched to splice location.',
+          category: 'TRIAGE'
+        },
+        {
+          date: 'T+45 min',
+          title: 'Field Crew On-Site & OTDR Fault Localization',
+          content: 'Field optical engineers pinpoint the physical fiber damage 3.2 miles east of Central Office using Optical Time-Domain Reflectometry (OTDR).',
+          category: 'FIELD REPAIR'
+        },
+        {
+          date: 'T+120 min',
+          title: 'Fusion Splicing & Optical Link Budget Testing',
+          content: 'Engineers complete precision fusion splicing of 48 optical strands with average splice loss under 0.02 dB across all DWDM channels.',
+          category: 'VERIFICATION'
+        },
+        {
+          date: 'T+180 min',
+          title: 'Full Service Restoration & Executive Signoff',
+          content: 'BGP peering routes return to optimal symmetric paths. The Incident Commander issues the final all-clear resolution notice to enterprise stakeholders.',
+          category: 'RESOLUTION'
+        }
+      ]
+    }
   }
 ];
 
@@ -1018,4 +1663,5 @@ export function getPresetsForComponent(componentId) {
 export function getPresetById(presetId) {
   return WORKPLACE_PRESETS.find(preset => preset.id === presetId) || null;
 }
+
 

@@ -62,4 +62,15 @@ describe('Workplace Starter Presets', () => {
       });
     });
   });
+
+  test('flagship and signature interactions contain comprehensive multi-preset libraries (Section 10)', () => {
+    expect(getPresetsForComponent('confidence-matrix').length).toBeGreaterThanOrEqual(4);
+    expect(getPresetsForComponent('dial-gauge').length).toBeGreaterThanOrEqual(3);
+    expect(getPresetsForComponent('interactive-video').length).toBeGreaterThanOrEqual(3);
+    expect(getPresetsForComponent('pricing-comparison').length).toBeGreaterThanOrEqual(2);
+    expect(getPresetsForComponent('audio-player').length).toBeGreaterThanOrEqual(2);
+    expect(getPresetsForComponent('comparison-slider').length).toBeGreaterThanOrEqual(2);
+    expect(getPresetsForComponent('horizontal-timeline').length).toBeGreaterThanOrEqual(2);
+  });
 });
+
