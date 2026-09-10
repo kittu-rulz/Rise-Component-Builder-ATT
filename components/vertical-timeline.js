@@ -12,6 +12,7 @@ import { combineValidationResults } from '../js/validation-utils.js';
  * @property {boolean} [timelineCollapsibleDetails] - Steps start collapsed; click/Enter expands
  * @property {boolean} [timelineShowProgress] - Shows an "N of M explored" indicator, independent of trackCompletion
  * @property {boolean} [timelineChronologicalReveal] - Locks each step until the previous one has been viewed
+ * @property {boolean} [timelineShowVisitedBadge] - Shows a "Visited" check badge on each step the learner has opened
  * @property {boolean} [timelineAllowReset] - Shows a "Reset" action clearing visited/expanded/lock/filter state
  */
 
