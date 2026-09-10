@@ -336,6 +336,37 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
       rangeValue.textContent = `${control.value}${field.suffix || ''}`;
       wrapper.appendChild(rangeValue);
     }
+
+    // Phase 2.E: Live character counter for text / textarea / richtext fields.
+    // Shown when the field has an explicit maxLength (hard cap) or a RECOMMENDED
+    // threshold imported from js/field-validation.js (soft cap). The counter is
+    // purely informational — it does NOT prevent authoring past the soft limit;
+    // the Preflight "excessive-length" Warning already covers that concern.
+    const charCountLimit = field.maxLength ?? field.softLimit ?? null;
+    let charCounter = null;
+    if (charCountLimit && ['text', 'textarea', 'richtext'].includes(field.type)) {
+      charCounter = document.createElement('div');
+      charCounter.className = 'field-char-counter';
+      charCounter.setAttribute('aria-live', 'polite');
+      charCounter.setAttribute('aria-atomic', 'true');
+
+      const updateCharCounter = () => {
+        const raw = field.type === 'richtext'
+          ? (control.textContent ?? '')  // strip HTML tags for count
+          : (control.value ?? '');
+        const len = raw.length;
+        charCounter.textContent = `${len} / ${charCountLimit}`;
+        const pct = charCountLimit > 0 ? len / charCountLimit : 0;
+        charCounter.classList.toggle('is-approaching', pct >= 0.8 && pct < 1);
+        charCounter.classList.toggle('is-over', pct >= 1);
+      };
+
+      updateCharCounter(); // initialise from loaded model value
+      const counterEvent = field.type === 'richtext' ? 'input' : 'input';
+      control.addEventListener(counterEvent, updateCharCounter);
+      wrapper.appendChild(charCounter);
+    }
+
     wrapper.append(error, warning);
     target.appendChild(wrapper);
     updateError(control);

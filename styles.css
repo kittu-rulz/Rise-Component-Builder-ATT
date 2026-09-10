@@ -161,11 +161,13 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0; /* Phase 2.B: allow brand children to shrink at narrow widths */
 }
 
 .logo-icon {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .logo-icon svg {
@@ -230,16 +232,37 @@ a {
 
 [data-theme="dark"] .project-status.is-saved { color: #34D399; }
 
+/* Phase 2.B: project name inline editing — ellipsis on long names */
+.header-project-name {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.project-title-editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .toolbar-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .toolbar-utilities {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .divider {
@@ -247,6 +270,79 @@ a {
   height: 24px;
   background-color: var(--border-color);
   margin: 0 4px;
+}
+
+/* Phase 2.B: Responsive toolbar breakpoints
+   1100px — collapse button labels to icon-only; aria-label on each button provides
+             the accessible name so keyboard/screen-reader users are unaffected.
+   900px  — hide the Duplicate secondary action and the wordmark title text.
+   640px  — 200% zoom approximation; matches 900px rule. */
+
+@media (max-width: 1100px) {
+  .app-toolbar .btn-secondary > span:not(:only-child),
+  .app-toolbar .btn-primary  > span:not(:only-child) {
+    display: none;
+  }
+  .app-toolbar .btn {
+    padding: 8px 10px;
+    gap: 0;
+  }
+  .logo-icon svg {
+    width: 108px;
+    height: 21px;
+  }
+  .header-project-name {
+    max-width: 160px;
+  }
+}
+
+@media (max-width: 900px) {
+  #btn-duplicate  { display: none; }
+  .logo-text h1   { display: none; }
+  .version-tag    { display: none; }
+  .header-project-name { max-width: 120px; }
+  .project-status {
+    margin-left: 8px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  #btn-duplicate { display: none; }
+  .logo-text h1  { display: none; }
+}
+
+/* Phase 2.E: overflow-wrap: anywhere on authored-text display regions.
+   Prevents long URLs, compound words and pasted content from causing
+   unintended horizontal overflow inside the editor or preview pane. */
+.field-hint,
+.preflight-explanation,
+.editor-preview,
+.editor-preview *,
+.preview-pane,
+.preview-pane * {
+  overflow-wrap: anywhere;
+}
+
+/* Phase 2.E: Live character counter — appended after text/textarea fields
+   whose schema defines a softLimit or whose type recommendation is tracked. */
+.field-char-counter {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 2px;
+  line-height: 1.2;
+  transition: color var(--transition-fast);
+}
+
+.field-char-counter.is-approaching {
+  color: var(--warning-dark, #92400e);
+  font-weight: 500;
+}
+
+.field-char-counter.is-over {
+  color: var(--error, #B91C1C);
+  font-weight: 600;
 }
 
 /* Buttons */
