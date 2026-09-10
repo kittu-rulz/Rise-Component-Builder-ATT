@@ -13,7 +13,7 @@ import {
 } from './js/storage.js';
 import { componentCatalog, filterCatalog, createCatalogCard, showComponentDetailsModal, closeComponentDetailsModal } from './js/catalog.js';
 import { COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById, getDefaultConfig } from './js/component-registry.js';
-import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField, setupEditorTabKeyboardNavigation, jumpToEditorField } from './js/editor.js';
+import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField, setupEditorTabKeyboardNavigation, jumpToEditorField, getFieldTabLocation } from './js/editor.js';
 import { writePreview, openPreview, generateIframeContent as compilePreview, COMPONENT_MAX_WIDTH } from './js/preview.js';
 import { getDeviceWidthLabel } from './js/device-preview.js';
 import { measureRenderedDimensions } from './js/dom-measurement.js';
@@ -378,13 +378,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  searchInput.addEventListener('input', (e) => {
-    appState.searchQuery = e.target.value;
+  const btnClearSearch = document.getElementById('btn-clear-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      appState.searchQuery = e.target.value;
+      if (btnClearSearch) btnClearSearch.style.display = searchInput.value.trim() ? 'block' : 'none';
 
-    // Ensure we are on the catalog view when searching
-    showState('catalog');
-    renderCatalog();
-  });
+      // Ensure we are on the catalog view when searching
+      showState('catalog');
+      renderCatalog();
+    });
+  }
+
+  if (btnClearSearch) {
+    btnClearSearch.addEventListener('click', () => {
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+      }
+      appState.searchQuery = '';
+      btnClearSearch.style.display = 'none';
+      renderCatalog();
+    });
+  }
 
   // Independent of the category sidebar — does not reset activeCategory/searchQuery, and
   // applies inside Favorites/Recent the same way search already does (js/catalog.js
@@ -483,23 +499,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (wasHidden && hasSelection) void livePreviewIframe.offsetHeight;
   }
 
-  // P08: header identity/save-status ("Untitled project · Unsaved changes" /
-  // "Project name · Saved") — updateLivePreview() calls this on every meaningful edit, but
-  // the DOM text only actually changes on a dirty-state transition (clean->dirty happens
-  // once per edit session, not per keystroke), so this never becomes noisy chatter despite
-  // being an aria-live region (Requirement 7).
+  // Header identity, inline rename, and save-status display
+  const headerProjectName = document.getElementById('header-project-name');
+  const btnEditProjectName = document.getElementById('btn-edit-project-name');
+  const inputHeaderProjectName = document.getElementById('input-header-project-name');
+  const projectTitleEditor = document.getElementById('project-title-editor');
+
   function updateProjectStatusDisplay() {
     const status = document.getElementById('project-status');
-    if (!status || !appState.selectedComponent) return;
-    status.hidden = false;
-    const name = appState.currentProjectName || 'Untitled project';
-    // A project with no backing save is always "Unsaved changes," regardless of the
-    // isDirty flag's raw value — there is nothing yet to have drifted from.
-    const isSaved = Boolean(appState.currentProjectId) && !appState.isDirty;
-    const label = `${name} · ${isSaved ? 'Saved' : 'Unsaved changes'}`;
-    if (status.textContent !== label) status.textContent = label; // avoid redundant aria-live re-announcement
-    status.classList.toggle('is-saved', isSaved);
-    status.classList.toggle('is-unsaved', !isSaved);
+    const hasComponent = Boolean(appState.selectedComponent);
+
+    if (projectTitleEditor) {
+      projectTitleEditor.style.display = hasComponent ? 'flex' : 'none';
+    }
+
+    if (!hasComponent) {
+      if (status) status.hidden = true;
+      return;
+    }
+
+    const name = appState.currentProjectName || appState.selectedComponent.title || 'Untitled Component';
+    if (headerProjectName && headerProjectName.textContent !== name) {
+      headerProjectName.textContent = name;
+      headerProjectName.title = `Project: ${name} (Click or press F2 to rename)`;
+    }
+
+    if (status) {
+      status.hidden = false;
+      const isSaved = Boolean(appState.currentProjectId) && !appState.isDirty;
+      const statusText = document.getElementById('project-status-text');
+      if (statusText) {
+        statusText.textContent = isSaved ? 'Saved' : 'Unsaved changes';
+      }
+      status.classList.toggle('is-saved', isSaved);
+      status.classList.toggle('is-unsaved', !isSaved);
+    }
+  }
+
+  function startHeaderProjectRename() {
+    if (!appState.selectedComponent || !headerProjectName || !inputHeaderProjectName) return;
+    inputHeaderProjectName.value = appState.currentProjectName || headerProjectName.textContent || '';
+    headerProjectName.style.display = 'none';
+    if (btnEditProjectName) btnEditProjectName.style.display = 'none';
+    inputHeaderProjectName.style.display = 'inline-block';
+    inputHeaderProjectName.focus();
+    inputHeaderProjectName.select();
+  }
+
+  function commitHeaderProjectRename() {
+    if (!inputHeaderProjectName || inputHeaderProjectName.style.display === 'none') return;
+    const newName = inputHeaderProjectName.value.trim();
+    if (newName && newName !== appState.currentProjectName) {
+      appState.currentProjectName = newName;
+      appState.isDirty = true;
+      if (appState.currentProjectId) {
+        try {
+          renameProject(appState.currentProjectId, newName);
+          showToast(`Renamed project to “${newName}”.`, 'success', 2500);
+        } catch (e) {
+          console.warn('Could not persist rename directly to storage:', e);
+        }
+      }
+    }
+    inputHeaderProjectName.style.display = 'none';
+    if (headerProjectName) headerProjectName.style.display = 'inline-block';
+    if (btnEditProjectName) btnEditProjectName.style.display = 'inline-flex';
+    updateProjectStatusDisplay();
+  }
+
+  function cancelHeaderProjectRename() {
+    if (!inputHeaderProjectName || inputHeaderProjectName.style.display === 'none') return;
+    inputHeaderProjectName.style.display = 'none';
+    if (headerProjectName) headerProjectName.style.display = 'inline-block';
+    if (btnEditProjectName) btnEditProjectName.style.display = 'inline-flex';
+  }
+
+  if (headerProjectName) headerProjectName.addEventListener('click', startHeaderProjectRename);
+  if (btnEditProjectName) btnEditProjectName.addEventListener('click', startHeaderProjectRename);
+  if (inputHeaderProjectName) {
+    inputHeaderProjectName.addEventListener('blur', commitHeaderProjectRename);
+    inputHeaderProjectName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitHeaderProjectRename();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelHeaderProjectRename();
+      }
+    });
   }
 
   // Resumes whatever New/Open/Back-to-Templates action the user was attempting once a
@@ -1175,10 +1262,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ==========================================
-  // DEVICE VIEWPORT CONTROLS
+  // DEVICE VIEWPORT & ZOOM CONTROLS
   // ==========================================
   const previewWidthLabel = document.getElementById('preview-width-label');
   const deviceModeClasses = ['desktop', 'tablet', 'mobile-lg', 'mobile'];
+  const btnPreviewOrientation = document.getElementById('btn-preview-orientation');
+  let isLandscapeOrientation = false;
 
   function applyDeviceMode(device) {
     deviceButtons.forEach(b => {
@@ -1189,7 +1278,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     previewViewport.classList.remove(...deviceModeClasses);
     previewViewport.classList.add(device);
     previewWidthLabel.textContent = getDeviceWidthLabel(device, COMPONENT_MAX_WIDTH);
+
+    if (btnPreviewOrientation) {
+      const isMobileOrTablet = device === 'tablet' || device === 'mobile-lg' || device === 'mobile';
+      btnPreviewOrientation.style.display = isMobileOrTablet ? 'inline-flex' : 'none';
+      if (!isMobileOrTablet) {
+        isLandscapeOrientation = false;
+        previewViewport.classList.remove('landscape');
+        btnPreviewOrientation.classList.remove('active');
+      }
+    }
   }
+
+  if (btnPreviewOrientation) {
+    btnPreviewOrientation.addEventListener('click', () => {
+      isLandscapeOrientation = !isLandscapeOrientation;
+      btnPreviewOrientation.classList.toggle('active', isLandscapeOrientation);
+      previewViewport.classList.toggle('landscape', isLandscapeOrientation);
+      showToast(isLandscapeOrientation ? 'Orientation: Landscape' : 'Orientation: Portrait', 'info', 1500);
+      updateLivePreview();
+    });
+  }
+
+  // Live Preview Zoom Controls
+  let previewZoom = 1.0;
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomReset = document.getElementById('btn-zoom-reset');
+
+  function applyPreviewZoom(level) {
+    previewZoom = Math.min(1.5, Math.max(0.5, Math.round(level * 10) / 10));
+    if (livePreviewIframe) {
+      if (previewZoom === 1.0) {
+        livePreviewIframe.style.transform = '';
+        livePreviewIframe.style.width = '100%';
+      } else {
+        livePreviewIframe.style.transform = `scale(${previewZoom})`;
+        livePreviewIframe.style.transformOrigin = 'top center';
+        livePreviewIframe.style.width = `${100 / previewZoom}%`;
+      }
+    }
+    if (btnZoomReset) {
+      btnZoomReset.textContent = `${Math.round(previewZoom * 100)}%`;
+    }
+  }
+
+  if (btnZoomIn) btnZoomIn.addEventListener('click', () => applyPreviewZoom(previewZoom + 0.1));
+  if (btnZoomOut) btnZoomOut.addEventListener('click', () => applyPreviewZoom(previewZoom - 0.1));
+  if (btnZoomReset) btnZoomReset.addEventListener('click', () => applyPreviewZoom(1.0));
 
   deviceButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1202,13 +1338,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   btnPreviewRefresh.addEventListener('click', () => {
     const spinner = btnPreviewRefresh.querySelector('svg');
-    spinner.style.transform = 'rotate(360deg)';
-    spinner.style.transition = 'transform 0.6s ease';
-    
-    setTimeout(() => {
-      spinner.style.transform = 'rotate(0deg)';
-      spinner.style.transition = 'none';
-    }, 600);
+    if (spinner) {
+      spinner.style.transform = 'rotate(360deg)';
+      spinner.style.transition = 'transform 0.6s ease';
+      
+      setTimeout(() => {
+        spinner.style.transform = 'rotate(0deg)';
+        spinner.style.transition = 'none';
+      }, 600);
+    }
     
     updateLivePreview();
   });
@@ -1220,6 +1358,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   // MODALS HANDLING
   // ==========================================
+  const btnShortcuts = document.getElementById('btn-shortcuts');
+  const modalShortcuts = document.getElementById('modal-shortcuts');
+  if (btnShortcuts && modalShortcuts) {
+    btnShortcuts.addEventListener('click', () => openModal('modal-shortcuts'));
+  }
   let saveDialogMode = 'save';
   let renameTargetId = null;
   let modalStack = [];
@@ -1304,6 +1447,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.addEventListener('keydown', event => {
+    const target = event.target;
+    const isEditingText = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
     if (modalStack.length) {
       const topId = modalStack[modalStack.length - 1];
       const modal = document.getElementById(topId);
@@ -1332,17 +1478,128 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Global Undo / Redo Shortcuts (when not in modal)
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
-      if (history.canUndo()) {
+    // Escape outside modals: return from editor to catalog if authoring
+    if (event.key === 'Escape' && !isEditingText) {
+      if (editorState && editorState.style.display !== 'none') {
         event.preventDefault();
-        performUndo();
+        btnBackToCatalog?.click();
+        return;
       }
-    } else if ((event.ctrlKey || event.metaKey) && ((event.key.toLowerCase() === 'z' && event.shiftKey) || event.key.toLowerCase() === 'y')) {
-      if (history.canRedo()) {
+    }
+
+    // '/' jumps to search in catalog view
+    if (event.key === '/' && !isEditingText) {
+      if (searchInput && catalogState && catalogState.style.display !== 'none') {
         event.preventDefault();
-        performRedo();
+        searchInput.focus();
+        searchInput.select();
+        return;
       }
+    }
+
+    // '?' opens shortcuts cheatsheet
+    if (event.key === '?' && !isEditingText) {
+      event.preventDefault();
+      openModal('modal-shortcuts');
+      return;
+    }
+
+    // F2 triggers inline project title editing
+    if (event.key === 'F2' && !isEditingText) {
+      if (appState.selectedComponent) {
+        event.preventDefault();
+        startHeaderProjectRename();
+        return;
+      }
+    }
+
+    const isCmdOrCtrl = event.ctrlKey || event.metaKey;
+
+    if (isCmdOrCtrl) {
+      const key = event.key.toLowerCase();
+
+      // Undo / Redo
+      if (key === 'z' && !event.shiftKey) {
+        if (history.canUndo()) {
+          event.preventDefault();
+          performUndo();
+        }
+        return;
+      }
+      if ((key === 'z' && event.shiftKey) || key === 'y') {
+        if (history.canRedo()) {
+          event.preventDefault();
+          performRedo();
+        }
+        return;
+      }
+
+      // Save
+      if (key === 's') {
+        event.preventDefault();
+        const btnSave = document.getElementById('btn-save');
+        if (btnSave && !btnSave.disabled) btnSave.click();
+        return;
+      }
+
+      // Export
+      if (key === 'e') {
+        event.preventDefault();
+        const btnExport = document.getElementById('btn-export');
+        if (btnExport && !btnExport.disabled) btnExport.click();
+        return;
+      }
+
+      // Open Project
+      if (key === 'o') {
+        event.preventDefault();
+        const btnOpen = document.getElementById('btn-open');
+        if (btnOpen) btnOpen.click();
+        return;
+      }
+
+      // Refresh preview
+      if (key === 'p') {
+        event.preventDefault();
+        btnPreviewRefresh?.click();
+        return;
+      }
+
+      // New Project (Ctrl+Alt+N)
+      if (event.altKey && key === 'n') {
+        event.preventDefault();
+        const btnNew = document.getElementById('btn-new');
+        if (btnNew) btnNew.click();
+        return;
+      }
+
+      // Zoom preview (+ / - / 0)
+      if (event.key === '=' || event.key === '+') {
+        event.preventDefault();
+        applyPreviewZoom(previewZoom + 0.1);
+        return;
+      }
+      if (event.key === '-') {
+        event.preventDefault();
+        applyPreviewZoom(previewZoom - 0.1);
+        return;
+      }
+      if (event.key === '0') {
+        event.preventDefault();
+        applyPreviewZoom(1.0);
+        return;
+      }
+    }
+
+    // Alt combinations for quick tab / viewport switching
+    if (event.altKey && !isCmdOrCtrl && !isEditingText) {
+      if (event.key === '1') { event.preventDefault(); activateEditorTab('content'); }
+      else if (event.key === '2') { event.preventDefault(); activateEditorTab('interaction'); }
+      else if (event.key === '3') { event.preventDefault(); activateEditorTab('appearance'); }
+      else if (event.key === '4') { event.preventDefault(); activateEditorTab('completion'); }
+      else if (event.key.toLowerCase() === 'd') { event.preventDefault(); applyDeviceMode('desktop'); }
+      else if (event.key.toLowerCase() === 't') { event.preventDefault(); applyDeviceMode('tablet'); }
+      else if (event.key.toLowerCase() === 'm') { event.preventDefault(); applyDeviceMode('mobile'); }
     }
   });
 
@@ -2582,10 +2839,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
+  function updateEditorTabBadges(issues) {
+    if (!appState.selectedComponent) {
+      ['content', 'interaction', 'appearance', 'completion'].forEach(tabName => {
+        const badge = document.getElementById(`tab-badge-${tabName}`);
+        if (badge) badge.style.display = 'none';
+      });
+      return;
+    }
+    const context = buildPreflightContext();
+    const issueList = issues || (context ? collectSyncIssues(context) : []);
+    const tabCounts = { content: 0, interaction: 0, appearance: 0, completion: 0 };
+
+    issueList.forEach(issue => {
+      const fieldId = issue.field || issue.key || issue.fieldId || '';
+      const tab = getFieldTabLocation(fieldId) || 'content';
+      if (tabCounts[tab] !== undefined) {
+        tabCounts[tab]++;
+      }
+    });
+
+    ['content', 'interaction', 'appearance', 'completion'].forEach(tabName => {
+      const badge = document.getElementById(`tab-badge-${tabName}`);
+      if (badge) {
+        const count = tabCounts[tabName];
+        if (count > 0) {
+          badge.textContent = count > 9 ? '9+' : String(count);
+          badge.style.display = 'inline-flex';
+          badge.title = `${count} issue${count > 1 ? 's' : ''} in ${tabName}`;
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    });
+  }
+
   function refreshPreflightBadge() {
     const context = buildPreflightContext();
     if (!context) return;
-    updatePreflightBadge(summarizePreflight(collectSyncIssues(context)));
+    const syncIssues = collectSyncIssues(context);
+    updatePreflightBadge(summarizePreflight(syncIssues));
+    updateEditorTabBadges(syncIssues);
   }
 
   // Clipping-risk/mobile-overflow (P07) need a real hidden-iframe render — too expensive
@@ -2614,6 +2908,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const total = summary.blocking.length + summary.warnings.length + summary.recommendations.length;
     preflightBadge.dataset.state = summary.blocking.length ? 'blocking' : total ? 'warning' : 'clean';
     preflightBadge.textContent = total ? `Preflight (${total})` : 'Preflight';
+    updateEditorTabBadges();
   }
 
   function jumpToPreflightField(fieldId, itemIndexRaw) {
