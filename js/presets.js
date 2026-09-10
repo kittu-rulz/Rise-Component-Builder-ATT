@@ -161,9 +161,15 @@ export const WORKPLACE_PRESETS = [
     componentId: 'hotspots',
     title: 'Enterprise Edge Router Hardware Diagnostics',
     name: 'Enterprise Edge Router Hardware Diagnostics',
-    description: 'Explore the physical diagnostic indicators, redundant fiber uplinks, and management ports on enterprise edge hardware.',
+    description: 'Explore physical diagnostic indicators, redundant fiber uplinks, and management ports on enterprise edge hardware with interactive zoom and drawer details.',
     domain: 'Field Engineering',
     config: {
+      title: 'Enterprise Edge Router Hardware Diagnostics',
+      content: 'Select the highlighted markers or use the zoom controls to inspect network components and operational zones.',
+      calloutMode: 'drawer',
+      showProgress: true,
+      enableZoomPan: true,
+      autoplayAudio: false,
       backgroundImage: '',
       backgroundAltText: 'Enterprise Edge Router Front Panel Schematic Diagram',
       backgroundDecorative: false,
@@ -175,25 +181,95 @@ export const WORKPLACE_PRESETS = [
           title: 'Primary 100G Optical SFP+ Uplink',
           content: 'Dual LC connector fiber transceiver port providing core backbone connectivity with active link status and loss-of-signal (LOS) telemetry LED indicators.',
           x: '22',
-          y: '35'
+          y: '35',
+          markerType: 'icon',
+          iconName: 'fiber',
+          audioUrl: '',
+          audioTranscript: ''
         },
         {
           title: 'Out-of-Band (OOB) Console & Management Port',
           content: 'Dedicated RJ-45 serial and Ethernet management interface isolated from customer traffic planes for emergency remote recovery and firmware flashing.',
           x: '48',
-          y: '32'
+          y: '32',
+          markerType: 'icon',
+          iconName: 'ethernet',
+          audioUrl: '',
+          audioTranscript: ''
         },
         {
           title: 'System Health & Alarm Status LEDs',
           content: 'Tri-color status LEDs indicating power supply health, thermal sensor thresholds, fan tray tachometer telemetry, and active environmental alarms.',
           x: '75',
-          y: '28'
+          y: '28',
+          markerType: 'icon',
+          iconName: 'alert',
+          audioUrl: '',
+          audioTranscript: ''
         },
         {
           title: 'Redundant Hot-Swappable Power Supply Unit (PSU)',
           content: 'Dual AC/DC redundant power supply modules supporting zero-downtime field replacement during active customer traffic forwarding.',
           x: '82',
-          y: '70'
+          y: '70',
+          markerType: 'icon',
+          iconName: 'shield',
+          audioUrl: '',
+          audioTranscript: ''
+        }
+      ]
+    }
+  },
+  {
+    id: 'hs-5g-tower-architecture',
+    componentId: 'hotspots',
+    title: '5G Cell Site & Optical Fronthaul Architecture',
+    name: '5G Cell Site & Optical Fronthaul Architecture',
+    description: 'Detailed exploration of 5G macro cell towers, Massive MIMO radio heads, and optical fronthaul distribution with modal callouts.',
+    domain: 'Network Engineering',
+    config: {
+      title: '5G Macro Cell Site Infrastructure Explorer',
+      content: 'Inspect the primary radio frequency, digital baseband, and optical distribution subsystems on a modern 5G tower site.',
+      calloutMode: 'modal',
+      showProgress: true,
+      enableZoomPan: true,
+      autoplayAudio: false,
+      backgroundImage: '',
+      backgroundAltText: '5G Cell Tower Infrastructure Schematic',
+      backgroundDecorative: false,
+      backgroundFit: 'contain',
+      backgroundFocalX: 50,
+      backgroundFocalY: 50,
+      items: [
+        {
+          title: 'Massive MIMO 64T64R Antenna Array',
+          content: 'High-gain beamforming active antenna unit operating in the C-Band (3.7 - 3.98 GHz) delivering multi-gigabit throughput to dense urban user clusters.',
+          x: '30',
+          y: '20',
+          markerType: 'icon',
+          iconName: 'network',
+          audioUrl: '',
+          audioTranscript: ''
+        },
+        {
+          title: 'Remote Radio Unit (RRU) Power & Fiber Junction',
+          content: 'IP67-rated weatherized power distribution and optical CPRI/eCPRI fronthaul interface connecting tower-mounted radios to ground baseband units.',
+          x: '50',
+          y: '45',
+          markerType: 'icon',
+          iconName: 'fiber',
+          audioUrl: '',
+          audioTranscript: ''
+        },
+        {
+          title: 'Ground Baseband Processing Unit (BBU)',
+          content: 'Centralized Open RAN digital signal processor coordinating beamforming weights, carrier aggregation, and core 5G packet forwarding.',
+          x: '70',
+          y: '75',
+          markerType: 'icon',
+          iconName: 'ethernet',
+          audioUrl: '',
+          audioTranscript: ''
         }
       ]
     }

@@ -56,9 +56,23 @@ export const editorSchemas = {
     ]
   },
   hotspots: {
-    itemLabel: 'Hotspot', minItems: 1, componentLabel: 'Hotspot background',
+    itemLabel: 'Hotspot Marker', minItems: 1, maxItems: 16,
+    componentLabel: 'Exploration Settings & Map Background',
     componentFields: [
-      field('backgroundImage', 'Background Image', 'image', { required: false, default: '', preferredDimensions: '1600 × 900 px (16:9)' }),
+      field('title', 'Header Title (Optional)', 'text', { required: false, default: 'Interactive Facility & Infrastructure Explorer' }),
+      field('content', 'Description / Instructions (Optional)', 'richtext', { required: false, default: 'Select the highlighted markers or use the zoom controls to inspect network components and operational zones.' }),
+      field('calloutMode', 'Callout Presentation Mode', 'select', {
+        default: 'tooltip',
+        options: [
+          { value: 'tooltip', label: 'Floating Tooltip (Popover pinned to marker)' },
+          { value: 'drawer', label: 'Docked Side Drawer (Slide-out panel from right)' },
+          { value: 'modal', label: 'Centered Detail Modal (Focused dialog with backdrop)' }
+        ]
+      }),
+      field('showProgress', 'Show Exploration Progress Counter HUD', 'checkbox', { default: true }),
+      field('enableZoomPan', 'Enable Interactive Zoom & Pan Controls', 'checkbox', { default: true }),
+      field('autoplayAudio', 'Auto-play Narration Audio on Marker Click', 'checkbox', { default: false }),
+      field('backgroundImage', 'Background Map / Schematic Image (Optional)', 'image', { required: false, default: '', preferredDimensions: '1600 × 900 px (16:9)' }),
       field('backgroundAltText', 'Background Alternative Text', 'textarea', { required: false, default: '', warningWhen: 'backgroundImage', warningUnless: 'backgroundDecorative', warningMessage: 'Add alternative text or mark the background decorative.' }),
       field('backgroundDecorative', 'Background Image Is Decorative', 'checkbox', { default: false }),
       field('backgroundFit', 'Background Image Fit', 'select', { default: 'contain', options: [{ value: 'contain', label: 'Contain' }, { value: 'cover', label: 'Cover' }] }),
@@ -66,10 +80,47 @@ export const editorSchemas = {
       field('backgroundFocalY', 'Vertical Focal Point', 'range', { default: 50, min: 0, max: 100, step: 1, suffix: '%' })
     ],
     itemFields: [
-      field('title', 'Hotspot Label', 'text', { required: true, default: 'New Hotspot' }),
-      field('content', 'Hotspot Content', 'richtext', { required: true, default: 'Add hotspot content.' }),
-      field('x', 'Horizontal Position', 'range', { required: true, default: 50, min: 0, max: 100, step: 1, suffix: '%' }),
-      field('y', 'Vertical Position', 'range', { required: true, default: 50, min: 0, max: 100, step: 1, suffix: '%' })
+      field('title', 'Hotspot Title', 'text', { required: true, default: 'New Hotspot' }),
+      field('content', 'Hotspot Content & Insights', 'richtext', { required: true, default: 'Add hotspot content and technical specifications here.' }),
+      field('markerType', 'Marker Style', 'select', {
+        default: 'icon',
+        options: [
+          { value: 'number', label: 'Numbered (1, 2, 3...)' },
+          { value: 'letter', label: 'Lettered (A, B, C...)' },
+          { value: 'icon', label: 'AT&T Vector Icon' }
+        ]
+      }),
+      field('iconName', 'Marker Vector Icon (When style is Icon)', 'select', {
+        default: 'info',
+        options: [
+          { value: 'info', label: 'Information (Circle)' },
+          { value: 'help', label: 'Help / Question' },
+          { value: 'alert', label: 'Alert / Warning' },
+          { value: 'search', label: 'Search / Inspect' },
+          { value: 'star', label: 'Star / Featured' },
+          { value: 'fiber', label: 'Fiber / Optical' },
+          { value: 'cloud', label: 'Cloud / Edge' },
+          { value: 'shield', label: 'Shield / Security' },
+          { value: 'ethernet', label: 'Hardware / Ethernet Port' },
+          { value: 'play', label: 'Play / Video' },
+          { value: 'check', label: 'Check / Verified' },
+          { value: 'hotspot', label: 'Hotspot / Sensor' },
+          { value: 'network', label: 'Network / Tower' },
+          { value: 'wifi', label: 'Wireless / WiFi' }
+        ]
+      }),
+      field('audioSourceType', 'Audio Narration Source', 'select', {
+        default: 'url',
+        options: [
+          { value: 'upload', label: 'Uploaded Audio File' },
+          { value: 'url', label: 'External Audio URL' }
+        ]
+      }),
+      field('audioMediaId', 'Upload Audio Clip (Optional)', 'audio', { required: false, default: '' }),
+      field('audioUrl', 'External Audio URL (Optional — direct .mp3 / .wav / .m4a link)', 'url', { required: false, default: '' }),
+      field('audioTranscript', 'Audio Transcript (Optional)', 'textarea', { required: false, default: '' }),
+      field('x', 'Horizontal Position (%)', 'range', { required: true, default: 50, min: 0, max: 100, step: 1, suffix: '%' }),
+      field('y', 'Vertical Position (%)', 'range', { required: true, default: 50, min: 0, max: 100, step: 1, suffix: '%' })
     ]
   },
   'button-list': {
