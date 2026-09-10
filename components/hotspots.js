@@ -186,6 +186,10 @@ export function generateHTML(config, instanceId) {
               const markerLabel = getMarkerLabel(item, idx);
               const isIcon = item.markerType === 'icon';
               const audioSource = item.audioUrl || (item.audioSourceType === 'upload' && item.audioMediaId ? item.audioMediaId : '');
+              const xVal = parseFloat(item.x) || 50;
+              const yVal = parseFloat(item.y) || 50;
+              const placementClass = yVal < 42 ? 'placement-bottom' : 'placement-top';
+              const alignClass = xVal < 25 ? 'align-left' : (xVal > 75 ? 'align-right' : 'align-center');
               return `
                 <div class="hotspot-point" style="left: ${item.x || '50'}%; top: ${item.y || '50'}%;">
                   <button type="button" class="hotspot-pin${isIcon ? ' has-vector-icon' : ''}" data-idx="${idx}" aria-expanded="false" aria-controls="${instanceId}-callout-${idx}" aria-label="Hotspot ${idx + 1}: ${escapeAttribute(item.title || 'Indicator')}">
@@ -197,7 +201,7 @@ export function generateHTML(config, instanceId) {
                   </button>
 
                   ${calloutMode === 'tooltip' ? `
-                    <div class="hotspot-tooltip" id="${instanceId}-callout-${idx}" role="region" aria-label="Hotspot details" aria-hidden="true">
+                    <div class="hotspot-tooltip ${placementClass} ${alignClass}" id="${instanceId}-callout-${idx}" role="region" aria-label="Hotspot details" aria-hidden="true">
                       <div class="hotspot-callout-header">
                         <span class="hotspot-callout-tag">Marker ${idx + 1}</span>
                         <h4 class="hotspot-callout-title">${escapeHTML(item.title || 'Indicator')}</h4>
@@ -407,7 +411,6 @@ export function generateCSS() {
       position: relative;
       width: 100%;
       border-radius: var(--att-radius-lg, 16px);
-      overflow: hidden;
       background: var(--bg-body);
       border: 1px solid var(--border-color);
     }
@@ -415,14 +418,15 @@ export function generateCSS() {
     .hotspot-viewport {
       position: relative;
       width: 100%;
-      overflow: hidden;
       cursor: default;
       outline: 3px solid transparent;
       user-select: none;
       touch-action: pan-x pan-y;
+      border-radius: var(--att-radius-lg, 16px);
     }
 
     .hotspot-viewport.is-zoomed {
+      overflow: hidden;
       cursor: grab;
     }
 
@@ -564,25 +568,75 @@ export function generateCSS() {
       display: flex;
     }
 
+    .hotspot-point:has(.hotspot-pin.active),
+    .hotspot-point.is-active {
+      z-index: 50;
+    }
+
     /* Floating Tooltip Callout */
     .hotspot-tooltip {
       position: absolute;
-      bottom: 44px;
-      left: 50%;
-      transform: translateX(-50%) translateY(8px);
-      width: 280px;
-      max-width: 80vw;
+      width: 290px;
+      max-width: min(320px, 80vw);
       background-color: var(--text-main);
       color: var(--bg-card);
       padding: var(--att-space-4, 16px);
       border-radius: var(--att-radius-md, 12px);
-      box-shadow: var(--att-shadow-2, 0 10px 20px rgba(0, 0, 0, 0.25));
+      box-shadow: var(--att-shadow-2, 0 12px 24px rgba(0, 0, 0, 0.3));
       display: none;
-      z-index: 30;
+      z-index: 50;
       text-align: left;
       opacity: 0;
       pointer-events: auto;
       transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    /* Placement Top (Default for lower pins) */
+    .hotspot-tooltip.placement-top,
+    .hotspot-tooltip:not(.placement-bottom) {
+      bottom: 44px;
+      top: auto;
+    }
+
+    /* Placement Bottom (For pins in upper area) */
+    .hotspot-tooltip.placement-bottom {
+      top: 44px;
+      bottom: auto;
+    }
+
+    /* Align Center (Default) */
+    .hotspot-tooltip.align-center,
+    .hotspot-tooltip:not(.align-left):not(.align-right) {
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%) translateY(8px);
+    }
+
+    .hotspot-tooltip.placement-bottom.align-center,
+    .hotspot-tooltip.placement-bottom:not(.align-left):not(.align-right) {
+      transform: translateX(-50%) translateY(-8px);
+    }
+
+    /* Align Left (For pins near left edge) */
+    .hotspot-tooltip.align-left {
+      left: -8px;
+      right: auto;
+      transform: translateY(8px);
+    }
+
+    .hotspot-tooltip.placement-bottom.align-left {
+      transform: translateY(-8px);
+    }
+
+    /* Align Right (For pins near right edge) */
+    .hotspot-tooltip.align-right {
+      right: -8px;
+      left: auto;
+      transform: translateY(8px);
+    }
+
+    .hotspot-tooltip.placement-bottom.align-right {
+      transform: translateY(-8px);
     }
 
     .hotspot-pin.active + .hotspot-tooltip {
@@ -590,7 +644,16 @@ export function generateCSS() {
       flex-direction: column;
       gap: var(--att-space-2, 8px);
       opacity: 1;
+    }
+
+    .hotspot-pin.active + .hotspot-tooltip.align-center,
+    .hotspot-pin.active + .hotspot-tooltip:not(.align-left):not(.align-right) {
       transform: translateX(-50%) translateY(0);
+    }
+
+    .hotspot-pin.active + .hotspot-tooltip.align-left,
+    .hotspot-pin.active + .hotspot-tooltip.align-right {
+      transform: translateY(0);
     }
 
     .hotspot-callout-header {
@@ -1037,6 +1100,7 @@ export function generateJS() {
         pins.forEach(function(p) {
           p.classList.remove('active');
           p.setAttribute('aria-expanded', 'false');
+          if (p.parentElement) p.parentElement.classList.remove('is-active');
           var tt = p.parentElement.querySelector('.hotspot-tooltip');
           if (tt) tt.setAttribute('aria-hidden', 'true');
         });
@@ -1075,6 +1139,7 @@ export function generateJS() {
           pin.classList.add('active');
           pin.classList.add('is-visited');
           pin.setAttribute('aria-expanded', 'true');
+          if (pin.parentElement) pin.parentElement.classList.add('is-active');
 
           visitedSet.add(index);
           updateHUD();
@@ -1087,6 +1152,32 @@ export function generateJS() {
             var tooltip = pin.parentElement ? pin.parentElement.querySelector('.hotspot-tooltip') : null;
             if (tooltip) {
               tooltip.setAttribute('aria-hidden', 'false');
+
+              // Dynamic collision detection with viewport
+              var vPort = viewport || container;
+              if (vPort) {
+                var vpRect = vPort.getBoundingClientRect();
+                var pRect = pin.getBoundingClientRect();
+
+                // If pin is near top, flip downward
+                if (pRect.top - vpRect.top < 180) {
+                  tooltip.classList.add('placement-bottom');
+                  tooltip.classList.remove('placement-top');
+                } else {
+                  tooltip.classList.add('placement-top');
+                  tooltip.classList.remove('placement-bottom');
+                }
+
+                // If pin is near left or right edge
+                if (pRect.left - vpRect.left < 150) {
+                  tooltip.classList.add('align-left');
+                  tooltip.classList.remove('align-right', 'align-center');
+                } else if (vpRect.right - pRect.right < 150) {
+                  tooltip.classList.add('align-right');
+                  tooltip.classList.remove('align-left', 'align-center');
+                }
+              }
+
               announce(tooltip.textContent.trim());
               var audio = tooltip.querySelector('audio');
               if (audio) { audio.currentTime = 0; audio.play().catch(function() {}); }
