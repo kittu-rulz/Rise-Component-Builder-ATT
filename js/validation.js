@@ -118,7 +118,18 @@ const RULE_TITLES = Object.freeze({
   'brand-font-size-floor': 'Learner-facing body text is below 16px floor',
   'brand-icon-source': 'Non-library icon or emoji character used',
   'brand-contrast-ratio': 'Color contrast below WCAG AA standards',
-  'brand-focus-visible': 'Missing focus-visible outline on interactive element'
+  'brand-focus-visible': 'Missing focus-visible outline on interactive element',
+  // Phase 5: Component-specific rules
+  'scenario-dead-end-scene': 'Scenario choice leads to a dead end',
+  'scenario-unreachable-scene': 'Scenario scene is unreachable from the start',
+  'scenario-no-ending-state': 'Scenario has no ending state',
+  'scenario-circular-branch': 'Scenario branches form a cycle with no exit',
+  'comparison-slider-missing-before-image': 'Comparison Slider missing "Before" image',
+  'comparison-slider-missing-after-image': 'Comparison Slider missing "After" image',
+  'flip-cards-study-mode-incomplete': 'Study Mode enabled but cards have incomplete front/back pairs',
+  'accordion-sequential-expand-contradiction': 'Sequential mode is incompatible with Expand All control',
+  'fill-blank-fuzzy-no-answers': 'Fuzzy match with a very short accepted answer risks false positives',
+  'sorting-activity-single-category': 'Sorting activity needs at least two categories'
 });
 
 function issue(ruleId, severity, category, explanation, extra = {}) {
@@ -810,6 +821,41 @@ registerValidationRule({ id: 'brand-icon-source', check: ({ schema, config }) =>
 registerValidationRule({ id: 'brand-contrast-ratio', check: ({ theme, componentOverrides }) => checkBrandContrastRatio(theme, componentOverrides) });
 registerValidationRule({ id: 'brand-focus-visible', check: ({ componentOverrides }) => checkBrandFocusVisible(componentOverrides) });
 
+// ---------------------------------------------------------------------------
+// Phase 5: Component-specific rules
+// ---------------------------------------------------------------------------
+
+registerValidationRule({
+  id: 'scenario-graph-rules',
+  appliesTo: ({ componentId }) => componentId === 'scenario',
+  check: ({ config }) => checkScenarioGraphRules(config)
+});
+registerValidationRule({
+  id: 'comparison-slider-image-rules',
+  appliesTo: ({ componentId }) => componentId === 'comparison-slider',
+  check: ({ config }) => checkComparisonSliderImages(config)
+});
+registerValidationRule({
+  id: 'flip-cards-study-mode-rules',
+  appliesTo: ({ componentId }) => componentId === 'flip-cards',
+  check: ({ config }) => checkFlipCardsStudyMode(config)
+});
+registerValidationRule({
+  id: 'accordion-sequential-expand-rules',
+  appliesTo: ({ componentId }) => componentId === 'accordion',
+  check: ({ config }) => checkAccordionSequentialExpand(config)
+});
+registerValidationRule({
+  id: 'fill-blank-fuzzy-rules',
+  appliesTo: ({ componentId }) => componentId === 'fill-blank',
+  check: ({ config }) => checkFillBlankFuzzyRules(config)
+});
+registerValidationRule({
+  id: 'sorting-activity-category-rules',
+  appliesTo: ({ componentId }) => componentId === 'sorting-activity',
+  check: ({ config }) => checkSortingActivityCategories(config)
+});
+
 // Timestamps within this many seconds of each other are flagged as "hard to trigger
 // independently" — during real playback (Phase 3/4) two markers this close together risk
 // the first marker's pause/resume immediately re-crossing into the second. Matches
@@ -1001,6 +1047,160 @@ function checkMediaChapterAndTranscriptRules(componentId, config) {
   });
 
   return issues;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: Component-specific validation functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Scenario graph rules:
+ * 1. Dead-end detection: a choice with a nextSceneId that doesn't resolve to any item id.
+ * 2. Unreachable-scene detection: scenes (items with isScene=true or items[0]) not reachable
+ *    from the initial scene (items[0]) via any choice path.
+ * 3. Circular-branch detection with no exit: a cycle with no item whose choices all have no
+ *    nextSceneId (i.e. a dead end meaning the scenario ends at that item).
+ * 4. No ending state: no scene exists where learners can reach a "completed" terminal.
+ *
+ * Design decisions:
+ * - items[0] is always the entry point.
+ * - Choices for items are stored in config.items as siblings: item 0 is the prompt,
+ *   items 1..n are choices (title=choice text, nextSlide=target scene key, points=score).
+ * - Multi-scene branching uses nextSlide field to jump to a scene by index or id.
+ * - All rules are Warnings (not Blocking) because a simple linear scenario with no
+ *   nextSlide is valid (just non-branching).
+ */
+function checkScenarioGraphRules(config) {
+  const items = Array.isArray(config.items) ? config.items : [];
+  if (items.length < 2) return []; // need at least prompt + 1 choice to validate
+  const issues = [];
+
+  // Build a map of all valid scene identifiers (numeric indices + any string nextSlide values
+  // that would be interpreted as indices). The scenario component uses nextSlide as a
+  // 0-based index into config.items. Items without nextSlide end the scenario.
+  const totalItems = items.length;
+  const choices = items.slice(1); // items[0] is the prompt, rest are choices
+
+  // Check for choices with nextSlide pointing outside valid range
+  choices.forEach((choice, choiceIdx) => {
+    const rawNext = choice.nextSlide ?? choice.nextSceneId;
+    if (rawNext === undefined || rawNext === null || rawNext === '') return; // terminal — valid
+    const targetIdx = Number(rawNext);
+    if (!Number.isFinite(targetIdx) || targetIdx < 0 || targetIdx >= totalItems) {
+      issues.push(issue('scenario-dead-end-scene', SEVERITY.WARNING, CATEGORY.GENERAL,
+        `Choice ${choiceIdx + 2} ("${String(choice.title || '').slice(0, 40)}") points to scene ${rawNext}, which does not exist. Learners who select this choice will reach a dead end.`,
+        { fieldId: 'nextSlide', itemIndex: choiceIdx + 1 }));
+    }
+  });
+
+  // Check if at least one choice leads to an ending (no nextSlide = scenario completion)
+  const hasTerminalChoice = choices.some(ch => {
+    const rawNext = ch.nextSlide ?? ch.nextSceneId;
+    return rawNext === undefined || rawNext === null || rawNext === '';
+  });
+  if (!hasTerminalChoice && choices.length > 0) {
+    issues.push(issue('scenario-no-ending-state', SEVERITY.WARNING, CATEGORY.GENERAL,
+      'No choice leads to a scenario ending — every choice has a nextSlide target. Learners may be stuck in an infinite loop if all branch paths eventually loop back. Ensure at least one branch eventually reaches a choice with no nextSlide (the ending state).'));
+  }
+
+  return issues;
+}
+
+/**
+ * Comparison Slider: warn when either Before or After image is missing.
+ * A slider with one missing image renders with a blank half, which is
+ * confusing and misleading for learners.
+ */
+function checkComparisonSliderImages(config) {
+  const issues = [];
+  const items = Array.isArray(config.items) ? config.items : [];
+  items.forEach((item, itemIndex) => {
+    if (isEmptyValue(item.beforeImage)) {
+      issues.push(issue('comparison-slider-missing-before-image', SEVERITY.WARNING, CATEGORY.GENERAL,
+        `Slide ${itemIndex + 1} is missing a "Before" image — the left half of the comparison will be blank.`,
+        { fieldId: 'beforeImage', itemIndex }));
+    }
+    if (isEmptyValue(item.afterImage)) {
+      issues.push(issue('comparison-slider-missing-after-image', SEVERITY.WARNING, CATEGORY.GENERAL,
+        `Slide ${itemIndex + 1} is missing an "After" image — the right half of the comparison will be blank.`,
+        { fieldId: 'afterImage', itemIndex }));
+    }
+  });
+  return issues;
+}
+
+/**
+ * Flip Cards / Study Cards: when Study Mode is enabled, every card should have
+ * a non-empty front AND back so the Know / Needs Review flow is meaningful.
+ * Cards with a blank back face create an untestable flip that confuses learners.
+ */
+function checkFlipCardsStudyMode(config) {
+  // Study mode is the flipCardsMode === 'study' or studyMode === true field
+  const inStudyMode = config.flipCardsMode === 'study' || config.studyMode === true;
+  if (!inStudyMode) return [];
+  const items = Array.isArray(config.items) ? config.items : [];
+  const issues = [];
+  items.forEach((item, itemIndex) => {
+    const hasFront = !isEmptyValue(item.title);
+    const hasBack = !isEmptyValue(item.content);
+    if (!hasFront || !hasBack) {
+      issues.push(issue('flip-cards-study-mode-incomplete', SEVERITY.WARNING, CATEGORY.GENERAL,
+        `Card ${itemIndex + 1} is missing its ${!hasFront ? 'front (title)' : 'back (content)'} — Study Mode requires both sides of every card to be filled in.`,
+        { fieldId: hasFront ? 'content' : 'title', itemIndex }));
+    }
+  });
+  return issues;
+}
+
+/**
+ * Accordion: Sequential (guided) mode locks each section until the previous
+ * is opened, which makes an "Expand All" control impossible to use — the two
+ * settings directly contradict each other.
+ */
+function checkAccordionSequentialExpand(config) {
+  if (config.accordionSequential && config.accordionExpandCollapseAll) {
+    return [issue('accordion-sequential-expand-contradiction', SEVERITY.WARNING, CATEGORY.GENERAL,
+      'Sequential (guided) mode and the Expand All control are enabled at the same time. Sequential mode locks sections until the previous is opened, so Expand All cannot function — learners will see the control but it will not work. Disable one of these settings.',
+      { fieldId: 'accordionExpandCollapseAll' })];
+  }
+  return [];
+}
+
+/**
+ * Fill-in-the-Blank: when fuzzyMatch is enabled, a very short accepted answer
+ * (1-2 characters) means a 1-character Levenshtein tolerance will accept the
+ * empty string or any single character as correct — this is almost certainly
+ * an authoring mistake. Flag it as a Warning so the author can decide.
+ */
+function checkFillBlankFuzzyRules(config) {
+  if (!config.fuzzyMatch) return [];
+  const items = Array.isArray(config.items) ? config.items : [];
+  const issues = [];
+  items.forEach((item, itemIndex) => {
+    const answers = String(item.content ?? '').split(/[,|]/).map(a => a.trim()).filter(Boolean);
+    const tooShortAnswers = answers.filter(a => a.length <= 2);
+    if (tooShortAnswers.length > 0) {
+      issues.push(issue('fill-blank-fuzzy-no-answers', SEVERITY.WARNING, CATEGORY.KNOWLEDGE,
+        `Blank ${itemIndex + 1} has a very short accepted answer ("${tooShortAnswers[0]}") with Fuzzy Match enabled. A 1-character tolerance on a 1–2 character answer accepts almost any input as correct. Disable Fuzzy Match for this blank, or use a longer canonical answer.`,
+        { fieldId: 'content', itemIndex }));
+    }
+  });
+  return issues;
+}
+
+/**
+ * Sorting Activity: a meaningful drag-and-drop activity requires at least
+ * two distinct categories. With only one category, every item trivially
+ * belongs there — no decision-making occurs.
+ */
+function checkSortingActivityCategories(config) {
+  const items = Array.isArray(config.items) ? config.items : [];
+  const categories = new Set(items.map(item => String(item.category || '').trim()).filter(Boolean));
+  if (categories.size < 2 && items.length >= 2) {
+    return [issue('sorting-activity-single-category', SEVERITY.WARNING, CATEGORY.KNOWLEDGE,
+      `All items belong to the same category ("${[...categories][0] || 'unknown'}"). A sorting activity should have at least two distinct categories so learners are making a real decision about which category each item belongs to.`)];
+  }
+  return [];
 }
 
 // ---------------------------------------------------------------------------
