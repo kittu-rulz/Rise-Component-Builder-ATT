@@ -300,7 +300,7 @@ export function generateCSS() {
       margin-top: 2px;
     }
     .matrix-check {
-      color: var(--att-green, #008752);
+      color: var(--att-cta-bg, #00388F);
       font-weight: 800;
       font-size: 16px;
     }

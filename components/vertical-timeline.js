@@ -295,14 +295,16 @@ export function generateCSS() {
       color: var(--text-main);
     }
 
+    /* Visited/complete — check icon (already present) + Cobalt on a neutral grey
+       fill, per the brand's "not colour alone" state rule. */
     .step-visited-badge {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       font-size: var(--att-fs-eyebrow, 12px);
       font-weight: 600;
-      color: var(--att-green, #008752);
-      background-color: rgba(0, 135, 82, 0.1);
+      color: var(--att-cta-bg, #00388F);
+      background-color: var(--att-grey-1, #F3F4F5);
       padding: 2px 8px;
       border-radius: var(--att-radius-pill, 999px);
     }

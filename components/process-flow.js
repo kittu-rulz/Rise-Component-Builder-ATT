@@ -177,8 +177,8 @@ export function generateCSS() {
       transform: scale(1.1);
     }
     .p-dot.completed {
-      background-color: var(--att-green, #008752);
-      color: #fff;
+      background-color: var(--att-cta-bg, #00388F);
+      color: #FFF;
     }
     .p-dot:disabled {
       opacity: 0.5;
@@ -307,8 +307,8 @@ export function generateCSS() {
     .summary-check-icon {
       width: 22px;
       height: 22px;
-      background-color: var(--att-green, #008752);
-      color: #fff;
+      background-color: var(--att-cta-bg, #00388F);
+      color: #FFF;
       border-radius: 50%;
       display: flex;
       align-items: center;

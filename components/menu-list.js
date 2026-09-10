@@ -133,7 +133,7 @@ export function generateCSS() {
       background-color: var(--bg-card);
       color: var(--text-main);
       font-size: var(--att-fs-body-sm, 14px);
-      font-family: inherit;
+      font-family: var(--font-family, inherit);
       min-height: 44px;
       box-sizing: border-box;
       transition: border-color 0.2s;

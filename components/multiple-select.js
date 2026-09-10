@@ -1,6 +1,10 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeHTML, sanitizeRichText, serializeForInlineScript } from '../js/utilities.js';
 import { validateQuizAnswers, combineValidationResults } from '../js/validation-utils.js';
+import { getAttIconSvg } from '../js/att-icons.js';
+
+const CHECK_ICON = getAttIconSvg('check-circle-filled', { width: 14, height: 14, ariaHidden: true });
+const CROSS_ICON = getAttIconSvg('close-circle-filled', { width: 14, height: 14, ariaHidden: true });
 
 /**
  * Multiple Select Component Configuration
@@ -241,6 +245,8 @@ export function generateJS(config, instanceId) {
 
   return `
     var selectedOptionIndices = new Set();
+    var msCheckIcon = ${JSON.stringify(CHECK_ICON)};
+    var msCrossIcon = ${JSON.stringify(CROSS_ICON)};
     var quizOptions = ${serializeForInlineScript(config.items)};
     var maxAttempts = ${maxAttempts};
     var attemptsUsed = 0;
@@ -283,13 +289,14 @@ export function generateJS(config, instanceId) {
 
         if (hint) {
           remedBox.style.display = 'block';
-          if (wasSelected === isCorrect) {
-            remedBox.className = 'option-remediation remed-correct';
-            remedBox.textContent = '✓ ' + (opt.correct ? 'Correct selection. ' : 'Correctly skipped. ') + hint;
-          } else {
-            remedBox.className = 'option-remediation remed-incorrect';
-            remedBox.textContent = '✗ ' + (opt.correct ? 'Should be selected. ' : 'Should not be selected. ') + hint;
-          }
+          var right = wasSelected === isCorrect;
+          remedBox.className = 'option-remediation ' + (right ? 'remed-correct' : 'remed-incorrect');
+          var label = right
+            ? (opt.correct ? 'Correct selection. ' : 'Correctly skipped. ')
+            : (opt.correct ? 'Should be selected. ' : 'Should not be selected. ');
+          remedBox.replaceChildren();
+          remedBox.insertAdjacentHTML('beforeend', (right ? msCheckIcon : msCrossIcon) + ' ');
+          remedBox.appendChild(document.createTextNode(label + hint));
         }
       });
     }

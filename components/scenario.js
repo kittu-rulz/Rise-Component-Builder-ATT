@@ -258,13 +258,17 @@ export function generateCSS() {
       border-radius: 4px;
       flex-shrink: 0;
     }
+    /* Positive score — AT&T Lime as a low-alpha accent fill with black text
+       (brand rule: Lime is an accent, never a text colour). */
     .choice-points-badge.pos {
-      background-color: rgba(0, 135, 82, 0.15);
-      color: var(--att-green, #008752);
+      background-color: rgba(145, 220, 0, 0.22);
+      color: #000000;
     }
+    /* Negative score — AT&T has no red; Cobalt plus the explicit minus value
+       carries the meaning (never colour alone). */
     .choice-points-badge.neg {
-      background-color: rgba(217, 38, 28, 0.15);
-      color: var(--att-red, #D9261C);
+      background-color: rgba(0, 56, 143, 0.10);
+      color: var(--att-cta-bg, #00388F);
     }
     .scenario-feedback-balloon {
       background-color: var(--att-grey-1, #F3F4F5);

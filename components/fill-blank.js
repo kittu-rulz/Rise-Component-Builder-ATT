@@ -1,6 +1,11 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, escapeHTML, sanitizeRichText, serializeForInlineScript } from '../js/utilities.js';
 import { validateFillBlankAnswers, combineValidationResults } from '../js/validation-utils.js';
+import { getAttIconSvg } from '../js/att-icons.js';
+
+const HINT_ICON = getAttIconSvg('information-circle', { width: 14, height: 14, ariaHidden: true });
+const CHECK_ICON = getAttIconSvg('check-circle-filled', { width: 13, height: 13, ariaHidden: true });
+const CROSS_ICON = getAttIconSvg('close-circle-filled', { width: 13, height: 13, ariaHidden: true });
 
 /**
  * Fill-in-the-Blank Component Configuration
@@ -45,7 +50,7 @@ export function generateHTML(config, instanceId) {
             </div>
             ${item.hint ? `
               <div class="blank-hint-row">
-                <button type="button" class="blank-hint-btn" data-hint-idx="${idx}" id="${instanceId}-hint-btn-${idx}" aria-expanded="false" aria-controls="${instanceId}-hint-box-${idx}">💡 Need a clue?</button>
+                <button type="button" class="blank-hint-btn" data-hint-idx="${idx}" id="${instanceId}-hint-btn-${idx}" aria-expanded="false" aria-controls="${instanceId}-hint-box-${idx}">${HINT_ICON} Need a clue?</button>
                 <div class="blank-hint-box" id="${instanceId}-hint-box-${idx}" hidden><strong>Clue:</strong> ${escapeHTML(item.hint)}</div>
               </div>
             ` : ''}
@@ -226,6 +231,8 @@ export function generateJS(config, instanceId) {
 
   return `
     var items = ${serializeForInlineScript(config.items)};
+    var fbCheckIcon = ${JSON.stringify(CHECK_ICON)};
+    var fbCrossIcon = ${JSON.stringify(CROSS_ICON)};
     var fuzzyEnabled = ${fuzzyMatch};
     var instantValidation = ${instantValidation};
 
@@ -280,12 +287,12 @@ export function generateJS(config, instanceId) {
         if (isCorrect) {
           input.classList.add('is-correct');
           input.setAttribute('aria-invalid', 'false');
-          if (badge) { badge.textContent = '✓ Correct'; badge.style.color = 'var(--success)'; }
+          if (badge) { badge.innerHTML = fbCheckIcon + ' Correct'; badge.style.color = 'var(--att-cta-bg, #00388F)'; }
         } else if (val.trim()) {
           allCorrect = false;
           input.classList.add('is-incorrect');
           input.setAttribute('aria-invalid', 'true');
-          if (badge) { badge.textContent = '✗ Incorrect'; badge.style.color = 'var(--danger)'; }
+          if (badge) { badge.innerHTML = fbCrossIcon + ' Incorrect'; badge.style.color = 'var(--att-cta-bg, #00388F)'; }
         } else {
           allCorrect = false;
           input.removeAttribute('aria-invalid');

@@ -255,6 +255,7 @@ export function generateJS(config, instanceId) {
   const enableModal = config.profileEnableModal !== false;
 
   return `
+    var profilePersonIcon = ${JSON.stringify(getAttIconSvg('person', { width: 34, height: 34, ariaHidden: true }))};
     var profileItems = ${itemsJson};
 
     function initComponent() {
@@ -270,7 +271,7 @@ export function generateJS(config, instanceId) {
 
         var avatarHtml = p.image
           ? '<img src="' + p.image + '" alt="' + (p.altText || '') + '" style="width:72px;height:72px;border-radius:' + (p.imageCrop === 'square' ? '8px' : '50%') + ';object-fit:cover;border:2px solid var(--primary);">'
-          : '<div style="width:72px;height:72px;border-radius:50%;background:var(--border-color);display:flex;align-items:center;justify-content:center;font-size:28px;">👤</div>';
+          : '<div style="width:72px;height:72px;border-radius:50%;background:var(--border-color);display:flex;align-items:center;justify-content:center;color:var(--text-muted);">' + profilePersonIcon + '</div>';
 
         var role = p.roleTag ? '<span class="profile-role-badge">' + p.roleTag + '</span>' : '';
         var quote = p.quote ? '<blockquote class="profile-pull-quote" style="margin:12px 0;">&ldquo;' + p.quote + '&rdquo;</blockquote>' : '';

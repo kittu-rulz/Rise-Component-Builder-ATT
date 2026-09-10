@@ -32,6 +32,7 @@ export const editorSchema = getEditorSchema(id);
 
 const arrowsIcon = getAttIconSvg('arrows-vertical-1', { width: 14, height: 14, ariaHidden: true });
 const checkIcon = getAttIconSvg('check-circle-filled', { width: 14, height: 14, ariaHidden: true });
+const crossIcon = getAttIconSvg('close-circle-filled', { width: 14, height: 14, ariaHidden: true });
 
 export function generateHTML(config, instanceId) {
   const categories = [...new Set(config.items.map(it => it.category || 'Category'))];
@@ -308,8 +309,20 @@ export function generateJS(config, instanceId) {
   return `
     var sortingChoices = {};
     var mistakeCount = 0;
+    var sortCheckIcon = ${JSON.stringify(checkIcon)};
+    var sortCrossIcon = ${JSON.stringify(crossIcon)};
     var originalCards = ${serializeForInlineScript(config.items)};
     var instantFeedback = ${instantFeedback};
+
+    // Result indicator: an AT&T functional icon (trusted constant) plus a plain
+    // text label — the icon carries an aria-hidden decoration, the words carry the
+    // meaning (never colour alone), and Cobalt is used for both states.
+    function setSortIndicator(el, iconSvg, label) {
+      el.replaceChildren();
+      el.insertAdjacentHTML('beforeend', iconSvg + ' ');
+      el.appendChild(document.createTextNode(label));
+      el.style.color = 'var(--att-cta-bg, #00388F)';
+    }
 
     function updateMistakeHUD() {
       var hud = document.getElementById('${instanceId}-mistakes-counter');
@@ -349,14 +362,12 @@ export function generateJS(config, instanceId) {
 
       if (instantFeedback) {
         if (cat === item.category) {
-          indicator.textContent = '✓ Correct';
-          indicator.style.color = 'var(--success)';
+          setSortIndicator(indicator, sortCheckIcon, 'Correct');
           if (expl) expl.style.display = 'block';
         } else {
           mistakeCount++;
           updateMistakeHUD();
-          indicator.textContent = '✗ Incorrect Category';
-          indicator.style.color = 'var(--danger)';
+          setSortIndicator(indicator, sortCrossIcon, 'Incorrect Category');
           if (expl) expl.style.display = 'none';
         }
       } else {
@@ -382,18 +393,12 @@ export function generateJS(config, instanceId) {
         var expl = document.getElementById('${instanceId}-expl-' + idx);
 
         if (choice === item.category) {
-          if (indicator) {
-            indicator.textContent = '✓ Correct';
-            indicator.style.color = 'var(--success)';
-          }
+          if (indicator) setSortIndicator(indicator, sortCheckIcon, 'Correct');
           if (expl) expl.style.display = 'block';
         } else {
           allCorrect = false;
           mistakeCount++;
-          if (indicator) {
-            indicator.textContent = '✗ Incorrect (expected ' + item.category + ')';
-            indicator.style.color = 'var(--danger)';
-          }
+          if (indicator) setSortIndicator(indicator, sortCrossIcon, 'Incorrect (expected ' + item.category + ')');
           if (expl) expl.style.display = 'block';
         }
       });
