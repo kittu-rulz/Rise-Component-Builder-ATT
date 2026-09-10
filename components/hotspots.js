@@ -588,7 +588,6 @@ export function generateCSS() {
       text-align: left;
       opacity: 0;
       pointer-events: auto;
-      transition: opacity 0.2s ease, transform 0.2s ease;
     }
 
     /* Placement Top (Default for lower pins) */
@@ -609,51 +608,64 @@ export function generateCSS() {
     .hotspot-tooltip:not(.align-left):not(.align-right) {
       left: 50%;
       right: auto;
-      transform: translateX(-50%) translateY(8px);
+      --tt-from: translateX(-50%) translateY(6px) scale(0.97);
+      --tt-to: translateX(-50%) translateY(0) scale(1);
     }
 
     .hotspot-tooltip.placement-bottom.align-center,
     .hotspot-tooltip.placement-bottom:not(.align-left):not(.align-right) {
-      transform: translateX(-50%) translateY(-8px);
+      left: 50%;
+      right: auto;
+      --tt-from: translateX(-50%) translateY(-6px) scale(0.97);
+      --tt-to: translateX(-50%) translateY(0) scale(1);
     }
 
     /* Align Left (For pins near left edge) */
     .hotspot-tooltip.align-left {
       left: -8px;
       right: auto;
-      transform: translateY(8px);
+      --tt-from: translateY(6px) scale(0.97);
+      --tt-to: translateY(0) scale(1);
     }
 
     .hotspot-tooltip.placement-bottom.align-left {
-      transform: translateY(-8px);
+      left: -8px;
+      right: auto;
+      --tt-from: translateY(-6px) scale(0.97);
+      --tt-to: translateY(0) scale(1);
     }
 
     /* Align Right (For pins near right edge) */
     .hotspot-tooltip.align-right {
       right: -8px;
       left: auto;
-      transform: translateY(8px);
+      --tt-from: translateY(6px) scale(0.97);
+      --tt-to: translateY(0) scale(1);
     }
 
     .hotspot-tooltip.placement-bottom.align-right {
-      transform: translateY(-8px);
+      right: -8px;
+      left: auto;
+      --tt-from: translateY(-6px) scale(0.97);
+      --tt-to: translateY(0) scale(1);
     }
 
     .hotspot-pin.active + .hotspot-tooltip {
       display: flex;
       flex-direction: column;
       gap: var(--att-space-2, 8px);
-      opacity: 1;
+      animation: hotspotTooltipEntrance 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    .hotspot-pin.active + .hotspot-tooltip.align-center,
-    .hotspot-pin.active + .hotspot-tooltip:not(.align-left):not(.align-right) {
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .hotspot-pin.active + .hotspot-tooltip.align-left,
-    .hotspot-pin.active + .hotspot-tooltip.align-right {
-      transform: translateY(0);
+    @keyframes hotspotTooltipEntrance {
+      0% {
+        opacity: 0;
+        transform: var(--tt-from, scale(0.97));
+      }
+      100% {
+        opacity: 1;
+        transform: var(--tt-to, scale(1));
+      }
     }
 
     .hotspot-callout-header {
