@@ -29,6 +29,8 @@ export const defaultConfig = {
   tabsNumbered: false,
   tabsOrientation: 'horizontal',
   tabsCompareMode: false,
+  tabsAutoAdvance: false,
+  tabsAutoAdvanceDelay: 5,
   items: [
     { title: 'Tab 1: Overview', content: 'A high-level explanation of the subject matter, laying a strong conceptual foundation.' },
     { title: 'Tab 2: Details', content: 'In-depth description of procedures, parameters, and design metrics.' },
@@ -56,11 +58,17 @@ export function generateHTML(config, instanceId) {
   const numbered = config.tabsNumbered === true;
   const vertical = config.tabsOrientation === 'vertical';
   const compareMode = config.tabsCompareMode === true;
+  const autoAdvance = config.tabsAutoAdvance === true;
+  const autoAdvanceDelay = Number.isFinite(Number(config.tabsAutoAdvanceDelay)) && Number(config.tabsAutoAdvanceDelay) > 0 ? Number(config.tabsAutoAdvanceDelay) : 5;
   const total = config.items.length;
 
-  const toolbar = (showProgress || allowReset || compareMode) ? `
+  const playIcon = getAttIconSvg('play', { width: 14, height: 14, ariaHidden: true, className: 'tabs-play-icon' });
+  const pauseIcon = getAttIconSvg('pause', { width: 14, height: 14, ariaHidden: true, className: 'tabs-pause-icon', style: 'display:none;' });
+
+  const toolbar = (showProgress || allowReset || compareMode || autoAdvance) ? `
     <div class="tabs-toolbar">
       ${compareMode ? '<button type="button" class="tabs-toolbar-btn tabs-compare-toggle-btn" aria-pressed="false">Compare Sections</button>' : ''}
+      ${autoAdvance ? `<button type="button" class="tabs-toolbar-btn tabs-autoadvance-btn" aria-label="Auto-advance tabs" aria-pressed="false">${playIcon}${pauseIcon}<span class="tabs-autoadvance-label">Auto-Play (${autoAdvanceDelay}s)</span></button>` : ''}
       ${allowReset ? '<button type="button" class="tabs-toolbar-btn tabs-reset-btn">Reset</button>' : ''}
       ${showProgress ? `<span class="tabs-progress-text" id="${instanceId}-tabs-progress" role="status" aria-live="polite">0 of ${total} explored</span>` : ''}
     </div>
@@ -158,12 +166,14 @@ export function generateCSS() {
       background: var(--bg-card);
       border: 1px solid var(--primary);
       border-radius: var(--button-radius, var(--att-radius-pill, 999px));
-      padding: 10px 20px;
+      padding: 10px 18px;
       font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       color: var(--primary);
       cursor: pointer;
-      white-space: nowrap;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.35;
       min-height: 44px;
       transition: all 0.2s;
     }
@@ -189,6 +199,11 @@ export function generateCSS() {
       border-color: var(--att-grey-2, #DCDFE3);
       color: var(--att-grey-3, #BDC2C7);
       opacity: 0.7;
+    }
+    .tab-label-text {
+      line-height: 1.35;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
     .tab-icon-img {
       width: 18px;
@@ -236,12 +251,17 @@ export function generateCSS() {
       padding: 20px 16px;
       overflow-x: visible;
       flex-shrink: 0;
-      width: 200px;
+      width: 240px;
+      min-width: 200px;
+      max-width: 35%;
       border-right: var(--border-style);
     }
     .tabs-container.tabs-vertical .tab-btn {
       justify-content: flex-start;
       width: 100%;
+      text-align: left;
+      white-space: normal;
+      padding: 10px 16px;
     }
     .tabs-container.tabs-vertical .tabs-content-wrapper {
       flex: 1;
@@ -249,19 +269,22 @@ export function generateCSS() {
       margin-top: 0;
       border-top: none;
     }
-    @media (max-width: 480px) {
+    @media (max-width: 640px) {
       .tabs-container.tabs-vertical {
         flex-direction: column;
       }
       .tabs-container.tabs-vertical .tabs-header {
         flex-direction: row;
-        width: auto;
+        width: 100%;
+        max-width: none;
         overflow-x: auto;
         border-right: none;
         border-bottom: var(--border-style);
+        padding: 16px 20px 0;
       }
       .tabs-container.tabs-vertical .tab-btn {
         width: auto;
+        text-align: center;
       }
       .tabs-container.tabs-vertical .tabs-content-wrapper {
         border-top: var(--border-style);
@@ -325,6 +348,8 @@ export function generateJS(config, instanceId) {
   const showVisitedBadge = config.tabsShowVisitedBadge === true;
   const showProgress = config.tabsShowProgress === true;
   const compareMode = config.tabsCompareMode === true;
+  const autoAdvance = config.tabsAutoAdvance === true;
+  const autoAdvanceDelay = Number.isFinite(Number(config.tabsAutoAdvanceDelay)) && Number(config.tabsAutoAdvanceDelay) > 0 ? Number(config.tabsAutoAdvanceDelay) : 5;
   const total = config.items.length;
 
   return `
@@ -332,6 +357,11 @@ export function generateJS(config, instanceId) {
     var showVisitedBadge = ${showVisitedBadge};
     var showProgress = ${showProgress};
     var tabsTotal = ${total};
+    var autoAdvanceEnabled = ${autoAdvance};
+    var autoAdvanceDelayMs = ${autoAdvanceDelay * 1000};
+    var autoAdvanceTimer = null;
+    var autoAdvanceActive = false;
+    var currentActiveIndex = 0;
     ${compareMode ? `var tabItems = ${serializeForInlineScript(config.items)};
     var compareSelected = [];` : ''}
 
@@ -366,11 +396,13 @@ export function generateJS(config, instanceId) {
       if (progress) progress.textContent = viewedItems.size + ' of ' + tabsTotal + ' explored';
     }
 
-    function selectTab(index, button) {
+    function selectTab(index, button, isAuto) {
       if (isTabLocked(index)) {
-        announce('This tab is locked. Select the previous tab first.');
+        if (!isAuto) announce('This tab is locked. Select the previous tab first.');
+        if (autoAdvanceActive) stopAutoAdvance();
         return;
       }
+      currentActiveIndex = index;
       var container = button.closest('.tabs-container');
       container.querySelectorAll('.tab-btn').forEach(function(b) {
         b.classList.remove('active');
@@ -394,6 +426,47 @@ export function generateJS(config, instanceId) {
       refreshTabLockState();
     }
 
+    function startAutoAdvance() {
+      if (!autoAdvanceEnabled) return;
+      autoAdvanceActive = true;
+      var btn = document.querySelector('.tabs-autoadvance-btn');
+      if (btn) {
+        btn.setAttribute('aria-pressed', 'true');
+        var playSvg = btn.querySelector('.tabs-play-icon');
+        var pauseSvg = btn.querySelector('.tabs-pause-icon');
+        var label = btn.querySelector('.tabs-autoadvance-label');
+        if (playSvg) playSvg.style.display = 'none';
+        if (pauseSvg) pauseSvg.style.display = 'inline-block';
+        if (label) label.textContent = 'Pause Auto-Play';
+      }
+      clearInterval(autoAdvanceTimer);
+      autoAdvanceTimer = setInterval(function() {
+        var tabs = Array.from(document.querySelectorAll('.tab-btn'));
+        if (!tabs.length) return;
+        var nextIndex = (currentActiveIndex + 1) % tabs.length;
+        if (isTabLocked(nextIndex)) {
+          stopAutoAdvance();
+          return;
+        }
+        selectTab(nextIndex, tabs[nextIndex], true);
+      }, autoAdvanceDelayMs);
+    }
+
+    function stopAutoAdvance() {
+      autoAdvanceActive = false;
+      clearInterval(autoAdvanceTimer);
+      var btn = document.querySelector('.tabs-autoadvance-btn');
+      if (btn) {
+        btn.setAttribute('aria-pressed', 'false');
+        var playSvg = btn.querySelector('.tabs-play-icon');
+        var pauseSvg = btn.querySelector('.tabs-pause-icon');
+        var label = btn.querySelector('.tabs-autoadvance-label');
+        if (playSvg) playSvg.style.display = 'inline-block';
+        if (pauseSvg) pauseSvg.style.display = 'none';
+        if (label) label.textContent = 'Auto-Play (${autoAdvanceDelay}s)';
+      }
+    }
+
     ${compareMode ? `
     function updateCompareColumns() {
       var columns = document.getElementById('${instanceId}-compare-columns');
@@ -415,7 +488,9 @@ export function generateJS(config, instanceId) {
     }` : ''}
 
     function resetTabs() {
+      if (autoAdvanceActive) stopAutoAdvance();
       viewedItems.clear();
+      currentActiveIndex = 0;
       var firstBtn = null;
       document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
         var isFirst = idx === 0;
@@ -440,6 +515,7 @@ export function generateJS(config, instanceId) {
       var tabs = Array.from(document.querySelectorAll('.tab-btn'));
       tabs.forEach(function(button, idx) {
         button.addEventListener('click', function() {
+          if (autoAdvanceActive) stopAutoAdvance();
           selectTab(idx, button);
         });
         button.addEventListener('keydown', function(event) {
@@ -450,6 +526,7 @@ export function generateJS(config, instanceId) {
           else if (event.key === 'End') next = tabs.length - 1;
           else return;
           event.preventDefault();
+          if (autoAdvanceActive) stopAutoAdvance();
           selectTab(next, tabs[next]);
           tabs[next].focus();
         });
@@ -460,6 +537,30 @@ export function generateJS(config, instanceId) {
 
       var resetBtn = document.querySelector('.tabs-reset-btn');
       if (resetBtn) resetBtn.addEventListener('click', resetTabs);
+
+      var autoAdvanceBtn = document.querySelector('.tabs-autoadvance-btn');
+      if (autoAdvanceBtn) {
+        autoAdvanceBtn.addEventListener('click', function() {
+          if (autoAdvanceActive) stopAutoAdvance();
+          else startAutoAdvance();
+        });
+      }
+
+      var tabsContainer = document.querySelector('.tabs-container');
+      if (tabsContainer) {
+        tabsContainer.addEventListener('mouseenter', function() {
+          if (autoAdvanceActive) clearInterval(autoAdvanceTimer);
+        });
+        tabsContainer.addEventListener('mouseleave', function() {
+          if (autoAdvanceActive) startAutoAdvance();
+        });
+        tabsContainer.addEventListener('focusin', function() {
+          if (autoAdvanceActive) clearInterval(autoAdvanceTimer);
+        });
+        tabsContainer.addEventListener('focusout', function() {
+          if (autoAdvanceActive) startAutoAdvance();
+        });
+      }
 
       ${compareMode ? `
       var compareToggleBtn = document.querySelector('.tabs-compare-toggle-btn');

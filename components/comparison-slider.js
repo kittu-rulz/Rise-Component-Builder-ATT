@@ -8,6 +8,7 @@ import { getAttIconSvg } from '../js/att-icons.js';
  * @property {string} [title] - Header title
  * @property {string} [content] - Explanatory caption / instructions
  * @property {number} [initialPosition] - Starting slider position (0-100)
+ * @property {string} [orientation] - 'horizontal' or 'vertical'
  * @property {boolean} [showLabels] - Whether to show Before/After floating badges
  * @property {Array<{beforeImage?: string, afterImage?: string, beforeLabel?: string, afterLabel?: string, beforeAltText?: string, afterAltText?: string}>} items
  */
@@ -21,6 +22,7 @@ export const defaultConfig = {
   title: '5G Infrastructure Modernization',
   content: 'Drag the slider handle or use the arrow keys to compare network capabilities before and after fiber modernization.',
   initialPosition: 50,
+  orientation: 'horizontal',
   showLabels: true,
   items: [
     {
@@ -36,7 +38,8 @@ export const defaultConfig = {
 
 export const editorSchema = getEditorSchema(id);
 
-const handleArrowsIcon = getAttIconSvg('arrows-horizontal', { width: 18, height: 18, ariaHidden: true });
+const handleArrowsHorizontalIcon = getAttIconSvg('arrows-horizontal', { width: 18, height: 18, ariaHidden: true });
+const handleArrowsVerticalIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3l4 4h-3v10h3l-4 4-4-4h3V7H8z"/></svg>`;
 
 function renderSchematicBeforeSvg() {
   return `<svg class="comparison-fallback-svg before-svg" viewBox="0 0 800 450" width="100%" height="100%" aria-hidden="true">
@@ -73,6 +76,7 @@ function renderSchematicAfterSvg() {
 export function generateHTML(config, instanceId) {
   const item = config.items?.[0] || defaultConfig.items[0];
   const initialPos = Math.max(0, Math.min(100, Number(config.initialPosition) || 50));
+  const isVertical = config.orientation === 'vertical';
   const showLabels = config.showLabels !== false;
   const beforeLabel = item.beforeLabel || 'Before';
   const afterLabel = item.afterLabel || 'After';
@@ -86,7 +90,7 @@ export function generateHTML(config, instanceId) {
     : renderSchematicAfterSvg();
 
   return `
-    <div class="comparison-slider-card" id="${instanceId}-slider-card" style="--slider-pos: ${initialPos}%;">
+    <div class="comparison-slider-card ${isVertical ? 'orientation-vertical' : 'orientation-horizontal'}" id="${instanceId}-slider-card" style="--slider-pos: ${initialPos}%;">
       ${config.title ? `<h3 class="comparison-title">${escapeHTML(config.title)}</h3>` : ''}
       ${config.content ? `<p class="comparison-description">${sanitizeRichText(config.content)}</p>` : ''}
       <div class="comparison-stage" id="${instanceId}-stage" role="region" aria-label="Before and after visual comparison">
@@ -102,13 +106,13 @@ export function generateHTML(config, instanceId) {
           <button type="button" class="comparison-handle" id="${instanceId}-handle"
             role="slider"
             tabindex="0"
-            aria-orientation="horizontal"
+            aria-orientation="${isVertical ? 'vertical' : 'horizontal'}"
             aria-label="Comparison slider position"
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow="${initialPos}"
             aria-valuetext="${initialPos} percent">
-            ${handleArrowsIcon}
+            ${isVertical ? handleArrowsVerticalIcon : handleArrowsHorizontalIcon}
           </button>
         </div>
       </div>
@@ -165,10 +169,15 @@ export function generateCSS() {
     .pane-after {
       z-index: 1;
     }
-    .pane-before {
+    .orientation-horizontal .pane-before {
       z-index: 2;
       clip-path: polygon(0 0, var(--slider-pos, 50%) 0, var(--slider-pos, 50%) 100%, 0 100%);
       -webkit-clip-path: polygon(0 0, var(--slider-pos, 50%) 0, var(--slider-pos, 50%) 100%, 0 100%);
+    }
+    .orientation-vertical .pane-before {
+      z-index: 2;
+      clip-path: polygon(0 0, 100% 0, 100% var(--slider-pos, 50%), 0 var(--slider-pos, 50%));
+      -webkit-clip-path: polygon(0 0, 100% 0, 100% var(--slider-pos, 50%), 0 var(--slider-pos, 50%));
     }
     .comparison-img, .comparison-fallback-svg {
       width: 100%;
@@ -179,7 +188,6 @@ export function generateCSS() {
     }
     .comparison-badge {
       position: absolute;
-      top: 14px;
       font-size: var(--att-fs-eyebrow, 0.75rem);
       font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
@@ -190,18 +198,33 @@ export function generateCSS() {
       pointer-events: none;
       box-shadow: var(--shadow-sm);
     }
-    .badge-before {
+    .orientation-horizontal .badge-before {
+      top: 14px;
       left: 14px;
       background-color: var(--bg-card);
       color: var(--text-main);
       border: 1px solid var(--border-color);
     }
-    .badge-after {
+    .orientation-horizontal .badge-after {
+      top: 14px;
       right: 14px;
       background-color: var(--primary);
       color: var(--on-primary);
     }
-    .comparison-divider-line {
+    .orientation-vertical .badge-before {
+      top: 14px;
+      left: 14px;
+      background-color: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+    .orientation-vertical .badge-after {
+      bottom: 14px;
+      left: 14px;
+      background-color: var(--primary);
+      color: var(--on-primary);
+    }
+    .orientation-horizontal .comparison-divider-line {
       position: absolute;
       top: 0;
       bottom: 0;
@@ -210,6 +233,17 @@ export function generateCSS() {
       background-color: var(--primary);
       z-index: 10;
       transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .orientation-vertical .comparison-divider-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--slider-pos, 50%);
+      height: 2px;
+      background-color: var(--primary);
+      z-index: 10;
+      transform: translateY(-50%);
       pointer-events: none;
     }
     .comparison-handle {
@@ -224,13 +258,18 @@ export function generateCSS() {
       color: var(--on-primary);
       border: 3px solid var(--bg-card);
       box-shadow: var(--att-shadow-2, 0 4px 6px -1px rgba(0, 0, 0, 0.2));
-      cursor: ew-resize;
       display: flex;
       align-items: center;
       justify-content: center;
       pointer-events: auto;
       transition: background-color var(--att-dur-base, 0.2s) ease, transform 0.1s ease;
       touch-action: none;
+    }
+    .orientation-horizontal .comparison-handle {
+      cursor: ew-resize;
+    }
+    .orientation-vertical .comparison-handle {
+      cursor: ns-resize;
     }
     .comparison-handle:hover {
       background-color: var(--primary-hover);
@@ -251,6 +290,8 @@ export function generateCSS() {
 
 export function generateJS(config, instanceId) {
   const initialPos = Math.max(0, Math.min(100, Number(config.initialPosition) || 50));
+  const isVertical = config.orientation === 'vertical';
+
   return `
     (function() {
       var root = document.getElementById('${instanceId}-slider-card');
@@ -259,6 +300,7 @@ export function generateJS(config, instanceId) {
       if (!root || !stage || !handle) return;
 
       var currentPos = ${initialPos};
+      var isVertical = ${isVertical};
       var isDragging = false;
       var hasInteracted = false;
 
@@ -276,12 +318,19 @@ export function generateJS(config, instanceId) {
         }
       }
 
-      function updateFromPointer(clientX) {
+      function updateFromPointer(clientX, clientY) {
         var rect = stage.getBoundingClientRect();
-        if (!rect.width) return;
-        var offset = clientX - rect.left;
-        var pct = (offset / rect.width) * 100;
-        setPosition(pct);
+        if (isVertical) {
+          if (!rect.height) return;
+          var offset = clientY - rect.top;
+          var pct = (offset / rect.height) * 100;
+          setPosition(pct);
+        } else {
+          if (!rect.width) return;
+          var offset = clientX - rect.left;
+          var pct = (offset / rect.width) * 100;
+          setPosition(pct);
+        }
       }
 
       function onPointerDown(e) {
@@ -290,12 +339,12 @@ export function generateJS(config, instanceId) {
         try {
           if (stage.setPointerCapture) stage.setPointerCapture(e.pointerId);
         } catch (err) {}
-        updateFromPointer(e.clientX);
+        updateFromPointer(e.clientX, e.clientY);
       }
 
       function onPointerMove(e) {
         if (!isDragging) return;
-        updateFromPointer(e.clientX);
+        updateFromPointer(e.clientX, e.clientY);
       }
 
       function onPointerUp(e) {
@@ -313,10 +362,10 @@ export function generateJS(config, instanceId) {
 
       handle.addEventListener('keydown', function(e) {
         var step = e.shiftKey ? 10 : 2;
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault();
           setPosition(currentPos - step);
-        } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault();
           setPosition(currentPos + step);
         } else if (e.key === 'Home') {
@@ -347,3 +396,4 @@ export function validate(config) {
   }
   return { valid: errors.length === 0, errors };
 }
+

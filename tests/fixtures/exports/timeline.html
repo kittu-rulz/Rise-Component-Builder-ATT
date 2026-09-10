@@ -401,6 +401,22 @@
       background-color: var(--border-color);
     }
 
+    .timeline-spine-track {
+      position: absolute;
+      left: 12px;
+      top: 14px;
+      bottom: 24px;
+      width: 2px;
+      background-color: transparent;
+      z-index: 1;
+    }
+    .timeline-spine-fill {
+      width: 100%;
+      height: 0%;
+      background-color: var(--primary);
+      transition: height 0.3s ease;
+    }
+
     .timeline-step {
       position: relative;
       margin-bottom: var(--att-space-5, 24px);
@@ -480,6 +496,18 @@
       border-radius: var(--att-radius-pill, 999px);
       background-color: var(--border-color);
       color: var(--text-main);
+    }
+
+    .step-visited-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--att-fs-eyebrow, 12px);
+      font-weight: 600;
+      color: var(--att-green, #008752);
+      background-color: rgba(0, 135, 82, 0.1);
+      padding: 2px 8px;
+      border-radius: var(--att-radius-pill, 999px);
     }
 
     .step-lock-icon-slot {
@@ -649,21 +677,23 @@
     </div>
 
     <div class="block-content">
-      <div class="vertical-timeline-container" role="list" aria-label="Timeline"><div class="timeline-step" role="listitem" tabindex="0" data-idx="0" aria-label="Step 1: Phase 1: Research" aria-pressed="false" >
+      <div class="vertical-timeline-container" role="list" aria-label="Timeline">
+    <div class="timeline-spine-track"><div class="timeline-spine-fill" id="rcb-fixture-vertical-timeline-spine-fill"></div></div>
+    <div class="timeline-step" role="listitem" tabindex="0" data-idx="0" id="rcb-fixture-vertical-timeline-step-0" aria-label="Step 1: Phase 1: Research" aria-pressed="false" >
     <div class="step-marker" aria-hidden="true"><span class="step-num">1</span></div>
     <div class="step-card">
       <h4>Phase 1: Research</h4>
       <p>Collect data assets, requirements, and verify targets.</p>
       
     </div>
-  </div><div class="timeline-step" role="listitem" tabindex="0" data-idx="1" aria-label="Step 2: Phase 2: Build Layout" aria-pressed="false" >
+  </div><div class="timeline-step" role="listitem" tabindex="0" data-idx="1" id="rcb-fixture-vertical-timeline-step-1" aria-label="Step 2: Phase 2: Build Layout" aria-pressed="false" >
     <div class="step-marker" aria-hidden="true"><span class="step-num">2</span></div>
     <div class="step-card">
       <h4>Phase 2: Build Layout</h4>
       <p>Configure colors, fonts, margins, and borders in the tool.</p>
       
     </div>
-  </div><div class="timeline-step" role="listitem" tabindex="0" data-idx="2" aria-label="Step 3: Phase 3: Export HTML" aria-pressed="false" >
+  </div><div class="timeline-step" role="listitem" tabindex="0" data-idx="2" id="rcb-fixture-vertical-timeline-step-2" aria-label="Step 3: Phase 3: Export HTML" aria-pressed="false" >
     <div class="step-marker" aria-hidden="true"><span class="step-num">3</span></div>
     <div class="step-card">
       <h4>Phase 3: Export HTML</h4>
@@ -815,10 +845,23 @@
       if (progress) progress.textContent = viewedItems.size + ' of ' + timelineTotal + ' explored';
     }
 
+    function updateSpineFill() {
+      var spine = document.getElementById('rcb-fixture-vertical-timeline-spine-fill');
+      if (spine && timelineTotal > 1) {
+        var maxIdx = -1;
+        viewedItems.forEach(function(i) { if (i > maxIdx) maxIdx = i; });
+        var pct = maxIdx >= 0 ? Math.min(100, Math.round((maxIdx / (timelineTotal - 1)) * 100)) : 0;
+        spine.style.height = pct + '%';
+      }
+    }
+
     function markStepViewed(index) {
       viewedItems.add(index);
+      var badge = document.getElementById('rcb-fixture-vertical-timeline-visited-' + index);
+      if (badge) badge.hidden = false;
       updateProgress();
       updateTimelineProgressText();
+      updateSpineFill();
       refreshStepLockState();
     }
 
@@ -844,9 +887,12 @@
           toggleBtn.setAttribute('aria-expanded', 'false');
           body.hidden = true;
         }
+        var badge = stepEl.querySelector('.step-visited-badge');
+        if (badge) badge.hidden = true;
       });
       refreshStepLockState();
       updateTimelineProgressText();
+      updateSpineFill();
       updateProgress();
       document.querySelectorAll('.timeline-filter-chip').forEach(function(chip) {
         chip.classList.toggle('active', chip.getAttribute('data-filter-category') === '');
@@ -897,6 +943,7 @@
 
       refreshStepLockState();
       updateTimelineProgressText();
+      updateSpineFill();
 
       if (categoriesEnabled) {
         document.querySelectorAll('.timeline-filter-chip').forEach(function(chip) {

@@ -402,12 +402,14 @@
       background: var(--bg-card);
       border: 1px solid var(--primary);
       border-radius: var(--button-radius, var(--att-radius-pill, 999px));
-      padding: 10px 20px;
+      padding: 10px 18px;
       font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       color: var(--primary);
       cursor: pointer;
-      white-space: nowrap;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.35;
       min-height: 44px;
       transition: all 0.2s;
     }
@@ -433,6 +435,11 @@
       border-color: var(--att-grey-2, #DCDFE3);
       color: var(--att-grey-3, #BDC2C7);
       opacity: 0.7;
+    }
+    .tab-label-text {
+      line-height: 1.35;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
     .tab-icon-img {
       width: 18px;
@@ -480,12 +487,17 @@
       padding: 20px 16px;
       overflow-x: visible;
       flex-shrink: 0;
-      width: 200px;
+      width: 240px;
+      min-width: 200px;
+      max-width: 35%;
       border-right: var(--border-style);
     }
     .tabs-container.tabs-vertical .tab-btn {
       justify-content: flex-start;
       width: 100%;
+      text-align: left;
+      white-space: normal;
+      padding: 10px 16px;
     }
     .tabs-container.tabs-vertical .tabs-content-wrapper {
       flex: 1;
@@ -493,19 +505,22 @@
       margin-top: 0;
       border-top: none;
     }
-    @media (max-width: 480px) {
+    @media (max-width: 640px) {
       .tabs-container.tabs-vertical {
         flex-direction: column;
       }
       .tabs-container.tabs-vertical .tabs-header {
         flex-direction: row;
-        width: auto;
+        width: 100%;
+        max-width: none;
         overflow-x: auto;
         border-right: none;
         border-bottom: var(--border-style);
+        padding: 16px 20px 0;
       }
       .tabs-container.tabs-vertical .tab-btn {
         width: auto;
+        text-align: center;
       }
       .tabs-container.tabs-vertical .tabs-content-wrapper {
         border-top: var(--border-style);
@@ -766,6 +781,11 @@
     var showVisitedBadge = false;
     var showProgress = false;
     var tabsTotal = 3;
+    var autoAdvanceEnabled = false;
+    var autoAdvanceDelayMs = 5000;
+    var autoAdvanceTimer = null;
+    var autoAdvanceActive = false;
+    var currentActiveIndex = 0;
     
 
     function isTabLocked(index) {
@@ -799,11 +819,13 @@
       if (progress) progress.textContent = viewedItems.size + ' of ' + tabsTotal + ' explored';
     }
 
-    function selectTab(index, button) {
+    function selectTab(index, button, isAuto) {
       if (isTabLocked(index)) {
-        announce('This tab is locked. Select the previous tab first.');
+        if (!isAuto) announce('This tab is locked. Select the previous tab first.');
+        if (autoAdvanceActive) stopAutoAdvance();
         return;
       }
+      currentActiveIndex = index;
       var container = button.closest('.tabs-container');
       container.querySelectorAll('.tab-btn').forEach(function(b) {
         b.classList.remove('active');
@@ -827,10 +849,53 @@
       refreshTabLockState();
     }
 
+    function startAutoAdvance() {
+      if (!autoAdvanceEnabled) return;
+      autoAdvanceActive = true;
+      var btn = document.querySelector('.tabs-autoadvance-btn');
+      if (btn) {
+        btn.setAttribute('aria-pressed', 'true');
+        var playSvg = btn.querySelector('.tabs-play-icon');
+        var pauseSvg = btn.querySelector('.tabs-pause-icon');
+        var label = btn.querySelector('.tabs-autoadvance-label');
+        if (playSvg) playSvg.style.display = 'none';
+        if (pauseSvg) pauseSvg.style.display = 'inline-block';
+        if (label) label.textContent = 'Pause Auto-Play';
+      }
+      clearInterval(autoAdvanceTimer);
+      autoAdvanceTimer = setInterval(function() {
+        var tabs = Array.from(document.querySelectorAll('.tab-btn'));
+        if (!tabs.length) return;
+        var nextIndex = (currentActiveIndex + 1) % tabs.length;
+        if (isTabLocked(nextIndex)) {
+          stopAutoAdvance();
+          return;
+        }
+        selectTab(nextIndex, tabs[nextIndex], true);
+      }, autoAdvanceDelayMs);
+    }
+
+    function stopAutoAdvance() {
+      autoAdvanceActive = false;
+      clearInterval(autoAdvanceTimer);
+      var btn = document.querySelector('.tabs-autoadvance-btn');
+      if (btn) {
+        btn.setAttribute('aria-pressed', 'false');
+        var playSvg = btn.querySelector('.tabs-play-icon');
+        var pauseSvg = btn.querySelector('.tabs-pause-icon');
+        var label = btn.querySelector('.tabs-autoadvance-label');
+        if (playSvg) playSvg.style.display = 'inline-block';
+        if (pauseSvg) pauseSvg.style.display = 'none';
+        if (label) label.textContent = 'Auto-Play (5s)';
+      }
+    }
+
     
 
     function resetTabs() {
+      if (autoAdvanceActive) stopAutoAdvance();
       viewedItems.clear();
+      currentActiveIndex = 0;
       var firstBtn = null;
       document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
         var isFirst = idx === 0;
@@ -855,6 +920,7 @@
       var tabs = Array.from(document.querySelectorAll('.tab-btn'));
       tabs.forEach(function(button, idx) {
         button.addEventListener('click', function() {
+          if (autoAdvanceActive) stopAutoAdvance();
           selectTab(idx, button);
         });
         button.addEventListener('keydown', function(event) {
@@ -865,6 +931,7 @@
           else if (event.key === 'End') next = tabs.length - 1;
           else return;
           event.preventDefault();
+          if (autoAdvanceActive) stopAutoAdvance();
           selectTab(next, tabs[next]);
           tabs[next].focus();
         });
@@ -875,6 +942,30 @@
 
       var resetBtn = document.querySelector('.tabs-reset-btn');
       if (resetBtn) resetBtn.addEventListener('click', resetTabs);
+
+      var autoAdvanceBtn = document.querySelector('.tabs-autoadvance-btn');
+      if (autoAdvanceBtn) {
+        autoAdvanceBtn.addEventListener('click', function() {
+          if (autoAdvanceActive) stopAutoAdvance();
+          else startAutoAdvance();
+        });
+      }
+
+      var tabsContainer = document.querySelector('.tabs-container');
+      if (tabsContainer) {
+        tabsContainer.addEventListener('mouseenter', function() {
+          if (autoAdvanceActive) clearInterval(autoAdvanceTimer);
+        });
+        tabsContainer.addEventListener('mouseleave', function() {
+          if (autoAdvanceActive) startAutoAdvance();
+        });
+        tabsContainer.addEventListener('focusin', function() {
+          if (autoAdvanceActive) clearInterval(autoAdvanceTimer);
+        });
+        tabsContainer.addEventListener('focusout', function() {
+          if (autoAdvanceActive) startAutoAdvance();
+        });
+      }
 
       
     }

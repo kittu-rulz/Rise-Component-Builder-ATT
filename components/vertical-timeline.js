@@ -29,6 +29,7 @@ export const defaultConfig = {
   timelineCollapsibleDetails: false,
   timelineShowProgress: false,
   timelineChronologicalReveal: false,
+  timelineShowVisitedBadge: false,
   timelineAllowReset: false,
   items: [
     { title: 'Phase 1: Research', content: 'Collect data assets, requirements, and verify targets.' },
@@ -39,23 +40,25 @@ export const defaultConfig = {
 export const editorSchema = getEditorSchema(id);
 
 const lockIconSvg = getAttIconSvg('padlock', { className: 'step-lock-icon', width: 11, height: 11, ariaHidden: true });
+const visitedCheckIconSvg = getAttIconSvg('check', { className: 'step-visited-icon', width: 11, height: 11, ariaHidden: true });
 
 function renderStep(item, index, instanceId, opts) {
-  const { collapsible, locked, showCategoryBadge } = opts;
+  const { collapsible, locked, showCategoryBadge, showVisitedBadge } = opts;
   const trimmedCategory = (item.category || '').trim();
   const stepNum = index + 1;
   const contentHtml = sanitizeRichText(item.content || 'Step content description details go here.');
   const categoryBadge = showCategoryBadge && trimmedCategory ? `<span class="step-category-badge">${escapeHTML(trimmedCategory)}</span>` : '';
+  const visitedBadge = showVisitedBadge ? `<span class="step-visited-badge" id="${instanceId}-visited-${index}" hidden>${visitedCheckIconSvg} Visited</span>` : '';
   const categoryAttr = trimmedCategory ? ` data-category="${escapeAttribute(trimmedCategory)}"` : '';
   const lockNote = locked ? `<p class="step-lock-note" id="${instanceId}-step-lock-note-${index}">Locked — reveal the previous step first.</p>` : '';
   const lockIconSlot = collapsible || locked ? `<span class="step-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : '';
 
   if (collapsible) {
-    return `<div class="timeline-step${locked ? ' locked' : ''}" data-idx="${index}"${categoryAttr}>
+    return `<div class="timeline-step${locked ? ' locked' : ''}" data-idx="${index}"${categoryAttr} id="${instanceId}-step-${index}">
       <div class="step-marker" aria-hidden="true"><span class="step-num">${stepNum}</span></div>
       <div class="step-card">
         <button type="button" class="step-toggle-btn" id="${instanceId}-step-toggle-${index}" aria-expanded="false" aria-controls="${instanceId}-step-body-${index}" ${locked ? `aria-disabled="true" aria-describedby="${instanceId}-step-lock-note-${index}"` : ''}>
-          ${lockIconSlot}<h4>${escapeHTML(item.title || 'Step Title')}</h4>${categoryBadge}
+          ${lockIconSlot}<h4>${escapeHTML(item.title || 'Step Title')}</h4>${categoryBadge}${visitedBadge}
         </button>
         <div class="step-body" id="${instanceId}-step-body-${index}" hidden><p>${contentHtml}</p></div>
         ${lockNote}
@@ -63,10 +66,10 @@ function renderStep(item, index, instanceId, opts) {
     </div>`;
   }
 
-  return `<div class="timeline-step${locked ? ' locked' : ''}" role="listitem" tabindex="0" data-idx="${index}"${categoryAttr} aria-label="Step ${stepNum}: ${escapeAttribute(item.title || 'Step Title')}" aria-pressed="false" ${locked ? `aria-disabled="true" aria-describedby="${instanceId}-step-lock-note-${index}"` : ''}>
+  return `<div class="timeline-step${locked ? ' locked' : ''}" role="listitem" tabindex="0" data-idx="${index}"${categoryAttr} id="${instanceId}-step-${index}" aria-label="Step ${stepNum}: ${escapeAttribute(item.title || 'Step Title')}" aria-pressed="false" ${locked ? `aria-disabled="true" aria-describedby="${instanceId}-step-lock-note-${index}"` : ''}>
     <div class="step-marker" aria-hidden="true"><span class="step-num">${stepNum}</span></div>
     <div class="step-card">
-      <h4>${lockIconSlot}${escapeHTML(item.title || 'Step Title')}${categoryBadge}</h4>
+      <h4>${lockIconSlot}${escapeHTML(item.title || 'Step Title')}${categoryBadge}${visitedBadge}</h4>
       <p>${contentHtml}</p>
       ${lockNote}
     </div>
@@ -78,6 +81,7 @@ export function generateHTML(config, instanceId) {
   const collapsible = config.timelineCollapsibleDetails === true;
   const showProgress = config.timelineShowProgress === true;
   const chronological = config.timelineChronologicalReveal === true;
+  const showVisitedBadge = config.timelineShowVisitedBadge === true;
   const allowReset = config.timelineAllowReset === true;
   const total = config.items.length;
 
@@ -116,16 +120,20 @@ export function generateHTML(config, instanceId) {
       <div class="timeline-compare-column">
         <h3 class="timeline-compare-column-title">${escapeHTML(label)}</h3>
         <div class="vertical-timeline-container" role="list" aria-label="${escapeAttribute(label)} timeline">
-          ${entries.map(entry => renderStep(entry.item, entry.index, instanceId, { collapsible, locked: chronological && entry.index > 0, showCategoryBadge: false })).join('')}
+          <div class="timeline-spine-track"><div class="timeline-spine-fill"></div></div>
+          ${entries.map(entry => renderStep(entry.item, entry.index, instanceId, { collapsible, locked: chronological && entry.index > 0, showCategoryBadge: false, showVisitedBadge })).join('')}
         </div>
       </div>`;
     return `${toolbar}<div class="timeline-compare-layout">${renderColumn(streamA, columnA)}${renderColumn(streamB || 'Other', columnB)}</div>`;
   }
 
-  return `${toolbar}<div class="vertical-timeline-container" role="list" aria-label="Timeline">${config.items.map((item, index) => renderStep(item, index, instanceId, {
+  return `${toolbar}<div class="vertical-timeline-container" role="list" aria-label="Timeline">
+    <div class="timeline-spine-track"><div class="timeline-spine-fill" id="${instanceId}-spine-fill"></div></div>
+    ${config.items.map((item, index) => renderStep(item, index, instanceId, {
     collapsible,
     locked: chronological && index > 0,
-    showCategoryBadge: categoriesEnabled
+    showCategoryBadge: categoriesEnabled,
+    showVisitedBadge
   })).join('')}</div>`;
 }
 
@@ -187,6 +195,22 @@ export function generateCSS() {
       bottom: 8px;
       width: 2px;
       background-color: var(--border-color);
+    }
+
+    .timeline-spine-track {
+      position: absolute;
+      left: 12px;
+      top: 14px;
+      bottom: 24px;
+      width: 2px;
+      background-color: transparent;
+      z-index: 1;
+    }
+    .timeline-spine-fill {
+      width: 100%;
+      height: 0%;
+      background-color: var(--primary);
+      transition: height 0.3s ease;
     }
 
     .timeline-step {
@@ -268,6 +292,18 @@ export function generateCSS() {
       border-radius: var(--att-radius-pill, 999px);
       background-color: var(--border-color);
       color: var(--text-main);
+    }
+
+    .step-visited-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--att-fs-eyebrow, 12px);
+      font-weight: 600;
+      color: var(--att-green, #008752);
+      background-color: rgba(0, 135, 82, 0.1);
+      padding: 2px 8px;
+      border-radius: var(--att-radius-pill, 999px);
     }
 
     .step-lock-icon-slot {
@@ -397,10 +433,23 @@ export function generateJS(config, instanceId) {
       if (progress) progress.textContent = viewedItems.size + ' of ' + timelineTotal + ' explored';
     }
 
+    function updateSpineFill() {
+      var spine = document.getElementById('${instanceId}-spine-fill');
+      if (spine && timelineTotal > 1) {
+        var maxIdx = -1;
+        viewedItems.forEach(function(i) { if (i > maxIdx) maxIdx = i; });
+        var pct = maxIdx >= 0 ? Math.min(100, Math.round((maxIdx / (timelineTotal - 1)) * 100)) : 0;
+        spine.style.height = pct + '%';
+      }
+    }
+
     function markStepViewed(index) {
       viewedItems.add(index);
+      var badge = document.getElementById('${instanceId}-visited-' + index);
+      if (badge) badge.hidden = false;
       updateProgress();
       updateTimelineProgressText();
+      updateSpineFill();
       refreshStepLockState();
     }
 
@@ -426,9 +475,12 @@ export function generateJS(config, instanceId) {
           toggleBtn.setAttribute('aria-expanded', 'false');
           body.hidden = true;
         }
+        var badge = stepEl.querySelector('.step-visited-badge');
+        if (badge) badge.hidden = true;
       });
       refreshStepLockState();
       updateTimelineProgressText();
+      updateSpineFill();
       updateProgress();
       document.querySelectorAll('.timeline-filter-chip').forEach(function(chip) {
         chip.classList.toggle('active', chip.getAttribute('data-filter-category') === '');
@@ -479,6 +531,7 @@ export function generateJS(config, instanceId) {
 
       refreshStepLockState();
       updateTimelineProgressText();
+      updateSpineFill();
 
       if (categoriesEnabled) {
         document.querySelectorAll('.timeline-filter-chip').forEach(function(chip) {

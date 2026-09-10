@@ -1,10 +1,13 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeHTML } from '../js/utilities.js';
+import { escapeHTML, escapeAttribute, sanitizeRichText } from '../js/utilities.js';
 
 export const id = 'process-flow';
 export const name = 'Step-by-Step Flow';
 export const category = 'process';
 export const defaultConfig = {
+  processClickableNav: true,
+  processShowCompletionBadges: false,
+  processShowSummary: false,
   items: [
     { title: 'Define Objectives', content: 'Align course content with measurable learner metrics.' },
     { title: 'Create Visual Wireframes', content: 'Draft templates in the Rise Component Builder UI.' },
@@ -14,35 +17,102 @@ export const defaultConfig = {
 export const editorSchema = getEditorSchema(id);
 
 export function generateHTML(config, instanceId) {
+  const clickableNav = config.processClickableNav !== false;
+  const showBadges = config.processShowCompletionBadges === true;
+  const showSummary = config.processShowSummary === true;
+  const total = config.items.length;
+
   return `
-    <div class="process-steps-container">
+    <div class="process-steps-container" id="${instanceId}">
       <div class="process-progress-header">
-        <span class="step-badge" aria-live="polite" aria-atomic="true">Step <span id="${instanceId}-current-process-num">1</span> of ${config.items.length}</span>
-        <div class="process-dots">
-          ${config.items.map((_, idx) => `<span class="p-dot ${idx === 0 ? 'active' : ''}" aria-hidden="true">${idx + 1}</span>`).join('')}
-        </div>
+        <span class="step-badge" aria-live="polite" aria-atomic="true">Step <span id="${instanceId}-current-process-num">1</span> of ${total}</span>
+        <nav class="process-dots" aria-label="Process step navigation">
+          ${config.items.map((item, idx) => `
+            <button type="button" class="p-dot ${idx === 0 ? 'active' : ''}" id="${instanceId}-dot-${idx}" data-idx="${idx}" aria-label="Go to Step ${idx + 1}: ${escapeAttribute(item.title || 'Step')}" ${!clickableNav && idx > 0 ? 'disabled' : ''}>
+              <span class="p-dot-num">${idx + 1}</span>
+              ${showBadges ? `<span class="p-dot-check" id="${instanceId}-dot-check-${idx}" hidden aria-hidden="true">&#10003;</span>` : ''}
+            </button>
+          `).join('')}
+          ${showSummary ? `
+            <button type="button" class="p-dot p-dot-summary" id="${instanceId}-dot-summary" data-idx="${total}" aria-label="Go to Process Summary" disabled>
+              <span>&starf;</span>
+            </button>
+          ` : ''}
+        </nav>
       </div>
+
+      <!-- Breadcrumbs navigation row -->
+      <div class="process-breadcrumbs" role="tablist" aria-label="Step progress">
+        ${config.items.map((item, idx) => `
+          <button type="button" class="process-breadcrumb-item ${idx === 0 ? 'active' : ''}" id="${instanceId}-crumb-${idx}" data-idx="${idx}" role="tab" aria-selected="${idx === 0}">
+            <span class="crumb-num">${idx + 1}.</span>
+            <span class="crumb-title">${escapeHTML(item.title || 'Step ' + (idx + 1))}</span>
+          </button>
+        `).join('')}
+      </div>
+
       <div class="process-slides-wrapper">
         ${config.items.map((item, idx) => {
-          // durationMinutes arrives as a string once the author edits the number input
-          // (control.value is always a string — see js/editor.js), so it must be coerced
-          // rather than checked with Number.isFinite directly on the raw item value.
           const duration = Number(item.durationMinutes);
           const durationLine = Number.isFinite(duration) && duration > 0
             ? `<p class="process-step-duration">Estimated time: ${Math.round(duration)} min</p>`
             : '';
+          const contentHtml = sanitizeRichText(item.content || 'Step content description details go here.');
+          
+          // Optional branching options
+          const branches = (item.branches || '').trim();
+          let branchControlsHtml = '';
+          if (branches) {
+            const branchList = branches.split(',').map(b => b.trim()).filter(Boolean);
+            if (branchList.length > 0) {
+              branchControlsHtml = `
+                <div class="process-branch-section">
+                  <p class="process-branch-title">Choose next branch:</p>
+                  <div class="process-branch-buttons">
+                    ${branchList.map(b => {
+                      const parts = b.split(':');
+                      const label = parts[0].trim();
+                      const targetStep = parts[1] ? parseInt(parts[1].trim(), 10) - 1 : idx + 1;
+                      return `<button type="button" class="process-branch-btn" data-target-idx="${targetStep}">${escapeHTML(label)}</button>`;
+                    }).join('')}
+                  </div>
+                </div>
+              `;
+            }
+          }
+
           return `
-          <div class="process-slide ${idx === 0 ? 'active' : ''}" id="${instanceId}-process-slide-${idx}" role="group" aria-roledescription="step" aria-label="Step ${idx + 1} of ${config.items.length}" tabindex="-1" ${idx === 0 ? '' : 'hidden'}>
+          <div class="process-slide ${idx === 0 ? 'active' : ''}" id="${instanceId}-process-slide-${idx}" role="group" aria-roledescription="step" aria-label="Step ${idx + 1} of ${total}" tabindex="-1" ${idx === 0 ? '' : 'hidden'}>
             <h3>${escapeHTML(item.title || 'Step Headline')}</h3>
             ${durationLine}
-            <p>${item.content || 'Step content description details go here.'}</p>
+            <div class="process-slide-body"><p>${contentHtml}</p></div>
+            ${branchControlsHtml}
           </div>
         `;
         }).join('')}
+
+        ${showSummary ? `
+          <div class="process-slide process-summary-slide" id="${instanceId}-process-slide-${total}" role="group" aria-roledescription="step" aria-label="Process Summary" tabindex="-1" hidden>
+            <h3>Workflow Summary & Review</h3>
+            <p class="process-summary-subtitle">Review all completed steps in this process:</p>
+            <div class="process-summary-checklist">
+              ${config.items.map((item, idx) => `
+                <div class="process-summary-item" id="${instanceId}-summary-item-${idx}">
+                  <div class="summary-check-icon">&#10003;</div>
+                  <div class="summary-item-content">
+                    <strong>Step ${idx + 1}: ${escapeHTML(item.title || 'Step')}</strong>
+                    <p>${escapeHTML((item.content || '').replace(/<[^>]*>/g, '').substring(0, 120))}${item.content && item.content.length > 120 ? '...' : ''}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
       </div>
+
       <div class="process-controls-row">
-        <button class="btn btn-secondary btn-small" id="${instanceId}-btn-process-prev" disabled>Previous</button>
-        <button class="btn btn-primary btn-small" id="${instanceId}-btn-process-next">Next Step</button>
+        <button type="button" class="btn btn-secondary btn-small" id="${instanceId}-btn-process-prev" disabled>Previous</button>
+        <button type="button" class="btn btn-primary btn-small" id="${instanceId}-btn-process-next">Next Step</button>
       </div>
     </div>
   `;
@@ -58,7 +128,7 @@ export function generateCSS() {
       padding: var(--att-space-5, 24px);
       display: flex;
       flex-direction: column;
-      gap: var(--att-space-5, 20px);
+      gap: var(--att-space-4, 16px);
     }
     .process-progress-header {
       display: flex;
@@ -68,10 +138,6 @@ export function generateCSS() {
     .step-badge {
       font-size: var(--att-fs-body-sm, 0.875rem);
       font-weight: var(--att-fw-bold, 700);
-      /* Not --accent-light + AT&T Blue text: a derived shade, and below-19px blue
-         text fails the brand's own contrast threshold. Neutral background, dark
-         text. Not a capsule either — a static "Step X of Y" readout, not a
-         clickable control. */
       color: var(--text-main);
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -82,29 +148,81 @@ export function generateCSS() {
     .process-dots {
       display: flex;
       gap: var(--att-space-2, 6px);
+      align-items: center;
     }
     .p-dot {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background-color: var(--border-color);
-      /* Stakeholder request: a visible step number, not just a bare dot. Still
-         aria-hidden — the accessible name for "which step" comes from .step-badge's
-         own aria-live announcement, so this stays decorative for sighted users. */
+      border: 2px solid transparent;
       color: var(--text-main);
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: var(--att-fs-eyebrow, 0.75rem);
       font-weight: var(--att-fw-bold, 700);
       transition: all 0.2s;
+      cursor: pointer;
+      padding: 0;
+      position: relative;
+    }
+    .p-dot:hover:not(:disabled) {
+      border-color: var(--primary);
+      transform: scale(1.05);
     }
     .p-dot.active {
-      background-color: var(--accent);
-      /* Not --on-accent (white): at 10px this is well under the brand's 19px
-         threshold for white text on an AT&T Blue background. */
-      color: var(--text-main);
+      background-color: var(--primary);
+      color: var(--on-primary);
       transform: scale(1.1);
+    }
+    .p-dot.completed {
+      background-color: var(--att-green, #008752);
+      color: #fff;
+    }
+    .p-dot:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .p-dot:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+    .p-dot-check {
+      font-size: 11px;
+    }
+    .process-breadcrumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--att-space-2, 8px);
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .process-breadcrumb-item {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: var(--att-radius-pill, 999px);
+      padding: 4px 10px;
+      font-size: var(--att-fs-eyebrow, 12px);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .process-breadcrumb-item:hover {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+    }
+    .process-breadcrumb-item.active {
+      background-color: var(--primary);
+      color: var(--on-primary);
+      font-weight: 600;
+    }
+    .process-breadcrumb-item.completed {
+      color: var(--primary);
+      font-weight: 500;
     }
     .process-slides-wrapper {
       min-height: 120px;
@@ -125,7 +243,7 @@ export function generateCSS() {
       color: var(--text-main);
       text-wrap: pretty;
     }
-    .process-slide p {
+    .process-slide-body p, .process-slide p {
       font-size: var(--att-fs-body, 1rem);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-muted);
@@ -133,12 +251,81 @@ export function generateCSS() {
       margin: 0;
     }
     .process-step-duration {
-      /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
-         text (3.01:1 on white — accepted at large-text size, not below it). */
       font-size: var(--att-fs-h3, 1.25rem);
       font-weight: var(--att-fw-bold, 700);
       color: var(--accent);
       margin-bottom: 8px;
+    }
+    .process-branch-section {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: var(--bg-body);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--att-radius-md, 8px);
+    }
+    .process-branch-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .process-branch-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .process-branch-btn {
+      background-color: var(--bg-card);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      border-radius: var(--att-radius-pill, 999px);
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .process-branch-btn:hover {
+      background-color: var(--primary);
+      color: var(--on-primary);
+    }
+    .process-summary-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .process-summary-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px;
+      background-color: var(--bg-body);
+      border: 1px solid var(--border-color);
+      border-radius: var(--att-radius-md, 8px);
+    }
+    .summary-check-icon {
+      width: 22px;
+      height: 22px;
+      background-color: var(--att-green, #008752);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .summary-item-content strong {
+      font-size: 14px;
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 2px;
+    }
+    .summary-item-content p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0;
     }
     .process-controls-row {
       display: flex;
@@ -196,45 +383,103 @@ export function generateCSS() {
 }
 
 export function generateJS(config, instanceId) {
+  const showSummary = config.processShowSummary === true;
+  const showBadges = config.processShowCompletionBadges === true;
+  const total = config.items.length;
+  const maxIdx = showSummary ? total : total - 1;
+
   return `
     var activeProcessIndex = 0;
-    var totalProcessSteps = ${config.items.length};
+    var totalProcessSteps = ${total};
+    var maxProcessIndex = ${maxIdx};
+    var showProcessSummary = ${showSummary};
 
-    function moveProcessStep(direction) {
-      var nextIdx = activeProcessIndex + direction;
-      if (nextIdx < 0 || nextIdx >= totalProcessSteps) return;
+    function jumpToProcessStep(targetIdx) {
+      if (targetIdx < 0 || targetIdx > maxProcessIndex) return;
 
-      document.querySelectorAll('.process-slide').forEach(function(s) {
+      var container = document.getElementById('${instanceId}') || document;
+      container.querySelectorAll('.process-slide').forEach(function(s) {
         s.classList.remove('active');
         s.hidden = true;
       });
-      document.querySelectorAll('.p-dot').forEach(function(d) { d.classList.remove('active'); });
+      container.querySelectorAll('.p-dot').forEach(function(d) { d.classList.remove('active'); });
+      container.querySelectorAll('.process-breadcrumb-item').forEach(function(b) { b.classList.remove('active'); });
 
-      activeProcessIndex = nextIdx;
+      activeProcessIndex = targetIdx;
 
       var activeSlide = document.getElementById('${instanceId}-process-slide-' + activeProcessIndex);
-      activeSlide.hidden = false;
-      activeSlide.classList.add('active');
-      document.querySelectorAll('.p-dot')[activeProcessIndex].classList.add('active');
-      document.getElementById('${instanceId}-current-process-num').textContent = activeProcessIndex + 1;
+      if (activeSlide) {
+        activeSlide.hidden = false;
+        activeSlide.classList.add('active');
+      }
 
-      document.getElementById('${instanceId}-btn-process-prev').disabled = (activeProcessIndex === 0);
-      document.getElementById('${instanceId}-btn-process-next').disabled = (activeProcessIndex === totalProcessSteps - 1);
-      announce('Step ' + (activeProcessIndex + 1) + ' of ' + totalProcessSteps + ': ' + activeSlide.querySelector('h3').textContent);
+      var dot = document.getElementById('${instanceId}-dot-' + activeProcessIndex) || document.getElementById('${instanceId}-dot-summary');
+      if (dot) dot.classList.add('active');
 
-      viewedItems.add(activeProcessIndex);
+      var crumb = document.getElementById('${instanceId}-crumb-' + activeProcessIndex);
+      if (crumb) crumb.classList.add('active');
+
+      var numEl = document.getElementById('${instanceId}-current-process-num');
+      if (numEl) numEl.textContent = (activeProcessIndex >= totalProcessSteps ? 'Summary' : (activeProcessIndex + 1));
+
+      var prevBtn = document.getElementById('${instanceId}-btn-process-prev');
+      var nextBtn = document.getElementById('${instanceId}-btn-process-next');
+      if (prevBtn) prevBtn.disabled = (activeProcessIndex === 0);
+      if (nextBtn) {
+        nextBtn.disabled = (activeProcessIndex === maxProcessIndex);
+        nextBtn.textContent = (activeProcessIndex === totalProcessSteps - 1 && showProcessSummary) ? 'Review Summary' : (activeProcessIndex >= totalProcessSteps ? 'Completed' : 'Next Step');
+      }
+
+      if (activeProcessIndex < totalProcessSteps) {
+        viewedItems.add(activeProcessIndex);
+        ${showBadges ? `
+          var badge = document.getElementById('${instanceId}-dot-check-' + activeProcessIndex);
+          if (badge) badge.hidden = false;
+          if (dot) dot.classList.add('completed');
+        ` : ''}
+        if (crumb) crumb.classList.add('completed');
+      }
+
       updateProgress();
+      if (activeSlide) {
+        var h3 = activeSlide.querySelector('h3');
+        if (h3) announce('Step ' + (activeProcessIndex + 1) + ': ' + h3.textContent);
+      }
+    }
+
+    function moveProcessStep(direction) {
+      jumpToProcessStep(activeProcessIndex + direction);
     }
 
     function initComponent() {
+      var container = document.getElementById('${instanceId}');
+      if (!container) return;
+
       var prevProcessBtn = document.getElementById('${instanceId}-btn-process-prev');
       var nextProcessBtn = document.getElementById('${instanceId}-btn-process-next');
       if (prevProcessBtn) prevProcessBtn.addEventListener('click', function() { moveProcessStep(-1); });
       if (nextProcessBtn) nextProcessBtn.addEventListener('click', function() { moveProcessStep(1); });
-      if (document.querySelector('.process-steps-container')) {
-        viewedItems.add(0);
-        updateProgress();
-      }
+
+      container.querySelectorAll('.p-dot').forEach(function(dot) {
+        dot.addEventListener('click', function() {
+          jumpToProcessStep(parseInt(dot.getAttribute('data-idx'), 10));
+        });
+      });
+
+      container.querySelectorAll('.process-breadcrumb-item').forEach(function(crumb) {
+        crumb.addEventListener('click', function() {
+          jumpToProcessStep(parseInt(crumb.getAttribute('data-idx'), 10));
+        });
+      });
+
+      container.querySelectorAll('.process-branch-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var target = parseInt(btn.getAttribute('data-target-idx'), 10);
+          jumpToProcessStep(target);
+        });
+      });
+
+      jumpToProcessStep(0);
     }`;
 }
 
@@ -242,3 +487,4 @@ export function validate(config) {
   const errors = Array.isArray(config.items) && config.items.length >= 2 ? [] : ['Add at least two process steps.'];
   return { valid: errors.length === 0, errors };
 }
+

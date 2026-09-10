@@ -1,11 +1,13 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { serializeForInlineScript } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, sanitizeRichText, serializeForInlineScript } from '../js/utilities.js';
 import { validateFillBlankAnswers, combineValidationResults } from '../js/validation-utils.js';
 
 /**
  * Fill-in-the-Blank Component Configuration
  * @typedef {Object} FillBlankConfig
- * @property {Array<{title: string, content: string}>} items - Array of sentences with blanks and answers
+ * @property {boolean} [fuzzyMatch] - Allows 1-character typo tolerance
+ * @property {boolean} [instantValidation] - Validates live as the learner types
+ * @property {Array<{title: string, content: string, hint?: string}>} items
  */
 
 export const id = 'fill-blank';
@@ -14,29 +16,44 @@ export const category = 'knowledge';
 
 /** @type {FillBlankConfig} */
 export const defaultConfig = {
+  fuzzyMatch: true,
+  instantValidation: false,
   items: [
-    { title: 'Articulate Rise uses [blank] to display custom interactive content.', content: 'iframes' },
-    { title: 'To keep web builds lightweight, use [blank] CSS styles.', content: 'vanilla' }
+    { title: 'Articulate Rise uses [blank] to display custom interactive content.', content: 'iframes, iframe, embed, web objects', hint: 'Think of the standard HTML tag used to embed one page within another.' },
+    { title: 'To keep web builds lightweight, use [blank] CSS styles.', content: 'vanilla, native, pure', hint: 'Refers to unadulterated, standard CSS without bulky preprocessors.' }
   ]
 };
 export const editorSchema = getEditorSchema(id);
 
 export function generateHTML(config, instanceId) {
+  const instantValidation = config.instantValidation === true;
+
   return `
-    <div class="fill-blank-container" aria-describedby="${instanceId}-blank-instructions">
+    <div class="fill-blank-container" id="${instanceId}-container" aria-describedby="${instanceId}-blank-instructions">
       <p id="${instanceId}-blank-instructions" class="sr-only">Fill in each blank, then check your answers.</p>
       ${config.items.map((item, idx) => {
         const sentence = item.title || '';
-        const blanked = sentence.replace(/\[blank\]/gi, `<input type="text" class="blank-input" data-index="${idx}" aria-label="Answer for sentence ${idx + 1}" aria-describedby="${instanceId}-blank-status-${idx}" autocomplete="off">`);
+        const blanked = sentence.replace(/\[blank\]/gi, `<input type="text" class="blank-input" data-index="${idx}" id="${instanceId}-input-${idx}" aria-label="Answer for sentence ${idx + 1}" aria-describedby="${instanceId}-blank-status-${idx}" autocomplete="off" spellcheck="false">`);
         return `
-          <div class="blank-sentence-card">
-            <span class="sentence-num">${idx + 1}</span>
-            <div class="blank-sentence-content">${blanked}<span id="${instanceId}-blank-status-${idx}" class="sr-only" role="status"></span></div>
+          <div class="blank-sentence-card" id="${instanceId}-card-${idx}">
+            <div class="blank-sentence-main">
+              <span class="sentence-num">${idx + 1}</span>
+              <div class="blank-sentence-content">
+                ${blanked}
+                <span id="${instanceId}-blank-status-${idx}" class="blank-status-badge" role="status" aria-live="polite"></span>
+              </div>
+            </div>
+            ${item.hint ? `
+              <div class="blank-hint-row">
+                <button type="button" class="blank-hint-btn" data-hint-idx="${idx}" id="${instanceId}-hint-btn-${idx}" aria-expanded="false" aria-controls="${instanceId}-hint-box-${idx}">💡 Need a clue?</button>
+                <div class="blank-hint-box" id="${instanceId}-hint-box-${idx}" hidden><strong>Clue:</strong> ${escapeHTML(item.hint)}</div>
+              </div>
+            ` : ''}
           </div>
         `;
       }).join('')}
-      <button type="button" class="quiz-submit-btn">Check Answers</button>
-      <div id="${instanceId}-blank-feedback-box" class="quiz-feedback" role="status" aria-live="polite" aria-atomic="true" style="display:none;"></div>
+      ${!instantValidation ? `<button type="button" class="quiz-submit-btn" id="${instanceId}-check-btn">Check Answers</button>` : ''}
+      <div id="${instanceId}-blank-feedback-box" class="quiz-feedback" role="status" aria-live="polite" aria-atomic="true" tabindex="-1" style="display:none;"></div>
     </div>
   `;
 }
@@ -55,54 +72,106 @@ export function generateCSS() {
     }
     .blank-sentence-card {
       display: flex;
-      gap: var(--att-space-3, 12px);
-      align-items: flex-start;
+      flex-direction: column;
+      gap: var(--att-space-2, 8px);
       border-bottom: 1px dashed var(--border-color);
-      padding-bottom: var(--att-space-3, 12px);
+      padding-bottom: var(--att-space-4, 14px);
     }
     .blank-sentence-card:last-child {
       border-bottom: none;
     }
+    .blank-sentence-main {
+      display: flex;
+      gap: var(--att-space-3, 12px);
+      align-items: flex-start;
+    }
     .sentence-num {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
-      /* Not --accent-light (a shade of AT&T Blue, not the approved palette) with
-         AT&T Blue text on top — at 11px, non-bold, that also fails the brand's own
-         19px threshold for AT&T-Blue-colored text. Neutral background, dark text. */
       background-color: var(--border-color);
       color: var(--text-main);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: var(--att-fs-body-sm, 14px);
+      font-size: var(--att-fs-body-sm, 13px);
       font-weight: 700;
       flex-shrink: 0;
+      margin-top: 4px;
     }
     .blank-sentence-content {
       font-size: var(--att-fs-body, 16px);
-      line-height: var(--att-lh-body, 1.5);
+      line-height: var(--att-lh-body, 1.6);
       max-width: 70ch;
+      color: var(--text-main);
     }
     .blank-input {
-      border: 1px solid var(--border-color, #DCDFE3);
+      border: 1.5px solid var(--border-color, #DCDFE3);
       border-radius: var(--att-radius-sm, 6px);
       background-color: var(--bg-card, #FFFFFF);
-      padding: 6px 10px;
+      padding: 6px 12px;
       font-size: var(--att-fs-body, 16px);
       font-weight: 600;
       color: var(--text-main);
-      width: 140px;
-      min-height: 36px;
+      min-width: 140px;
+      min-height: 38px;
       text-align: center;
-      transition: border-color 0.2s ease;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      margin: 0 4px;
     }
     .blank-input:focus-visible {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
       border-color: var(--primary);
     }
-
+    .blank-input.is-correct {
+      border-color: var(--success);
+      color: var(--success);
+      background-color: var(--success-tint);
+    }
+    .blank-input.is-incorrect {
+      border-color: var(--danger);
+      color: var(--danger);
+      background-color: var(--danger-tint);
+    }
+    .blank-status-badge {
+      font-size: var(--att-fs-eyebrow, 12px);
+      font-weight: 700;
+      margin-left: 8px;
+      display: inline-block;
+    }
+    .blank-hint-row {
+      margin-left: 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+    }
+    .blank-hint-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: var(--att-fs-body-sm, 13px);
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .blank-hint-btn:hover {
+      text-decoration: underline;
+    }
+    .blank-hint-box {
+      background-color: var(--bg-body, #F3F4F5);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--att-radius-sm, 6px);
+      padding: 6px 12px;
+      font-size: var(--att-fs-body-sm, 13px);
+      color: var(--text-muted);
+      animation: fadeIn 0.2s ease;
+    }
     .quiz-submit-btn {
       align-self: flex-start;
       margin-top: 10px;
@@ -130,12 +199,6 @@ export function generateCSS() {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
     }
-    .quiz-submit-btn:disabled {
-      background-color: var(--att-grey-2, #DCDFE3);
-      color: var(--att-grey-3, #BDC2C7);
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
     .quiz-feedback {
       margin-top: var(--att-space-4, 16px);
       padding: var(--att-space-4, 16px) var(--att-space-5, 24px);
@@ -158,46 +221,122 @@ export function generateCSS() {
 }
 
 export function generateJS(config, instanceId) {
+  const fuzzyMatch = config.fuzzyMatch !== false;
+  const instantValidation = config.instantValidation === true;
+
   return `
+    var items = ${serializeForInlineScript(config.items)};
+    var fuzzyEnabled = ${fuzzyMatch};
+    var instantValidation = ${instantValidation};
+
+    function levenshteinDistance(a, b) {
+      if (a.length === 0) return b.length;
+      if (b.length === 0) return a.length;
+      var matrix = [];
+      for (var i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+      for (var j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+      for (var i = 1; i <= b.length; i++) {
+        for (var j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
+    function checkAnswerMatch(userVal, rawSolutions) {
+      if (!userVal) return false;
+      var cleanUser = userVal.trim().toLowerCase();
+      // Split by commas, semicolons, or pipes for multiple accepted synonyms
+      var validVariants = rawSolutions.split(/[,|;]/).map(function(v) { return v.trim().toLowerCase(); }).filter(Boolean);
+
+      return validVariants.some(function(variant) {
+        if (cleanUser === variant) return true;
+        if (fuzzyEnabled && variant.length >= 4) {
+          return levenshteinDistance(cleanUser, variant) <= 1;
+        }
+        return false;
+      });
+    }
+
     function checkBlanks() {
-      var blanks = document.querySelectorAll('.blank-input');
       var allCorrect = true;
-      var solutions = ${serializeForInlineScript(config.items)};
+      var anyEmpty = false;
 
-      blanks.forEach(function(input) {
-        var idx = parseInt(input.getAttribute('data-index'));
-        var userVal = input.value.trim().toLowerCase();
-        var correctVal = solutions[idx].content.trim().toLowerCase();
+      items.forEach(function(item, idx) {
+        var input = document.getElementById('${instanceId}-input-' + idx);
+        var badge = document.getElementById('${instanceId}-blank-status-' + idx);
+        if (!input) return;
 
-        if (userVal === correctVal) {
-          input.style.borderBottomColor = 'var(--success)';
-          input.style.color = 'var(--success)';
+        var val = input.value;
+        if (!val.trim()) anyEmpty = true;
+
+        var isCorrect = checkAnswerMatch(val, item.content);
+
+        input.classList.remove('is-correct', 'is-incorrect');
+        if (isCorrect) {
+          input.classList.add('is-correct');
           input.setAttribute('aria-invalid', 'false');
-          document.getElementById('${instanceId}-blank-status-' + idx).textContent = 'Correct';
+          if (badge) { badge.textContent = '✓ Correct'; badge.style.color = 'var(--success)'; }
+        } else if (val.trim()) {
+          allCorrect = false;
+          input.classList.add('is-incorrect');
+          input.setAttribute('aria-invalid', 'true');
+          if (badge) { badge.textContent = '✗ Incorrect'; badge.style.color = 'var(--danger)'; }
         } else {
           allCorrect = false;
-          input.style.borderBottomColor = 'var(--danger)';
-          input.style.color = 'var(--danger)';
-          input.setAttribute('aria-invalid', 'true');
-          document.getElementById('${instanceId}-blank-status-' + idx).textContent = 'Incorrect';
+          input.removeAttribute('aria-invalid');
+          if (badge) badge.textContent = '';
         }
       });
 
       var feedback = document.getElementById('${instanceId}-blank-feedback-box');
-      feedback.style.display = 'block';
-      if (allCorrect) {
-        feedback.className = 'quiz-feedback correct';
-        feedback.innerHTML = '<strong>Excellent!</strong> All answers are correct.';
-        updateTrackerComplete();
-      } else {
-        feedback.className = 'quiz-feedback wrong';
-        feedback.innerHTML = '<strong>Incorrect blanks.</strong> Review and adjust input answers.';
+      if (feedback && !instantValidation) {
+        feedback.style.display = 'block';
+        if (allCorrect && !anyEmpty) {
+          feedback.className = 'quiz-feedback correct';
+          feedback.innerHTML = '<strong>Excellent!</strong> All answers are correct.';
+          updateTrackerComplete();
+        } else {
+          feedback.className = 'quiz-feedback wrong';
+          feedback.innerHTML = '<strong>Some answers need adjustment.</strong> Review clues or check spelling.';
+        }
+        feedback.focus();
       }
+
+      if (allCorrect && !anyEmpty) updateTrackerComplete();
     }
 
     function initComponent() {
-      var blanksSubmitBtn = document.querySelector('.quiz-submit-btn');
-      if (blanksSubmitBtn) blanksSubmitBtn.addEventListener('click', checkBlanks);
+      var checkBtn = document.getElementById('${instanceId}-check-btn');
+      if (checkBtn) checkBtn.addEventListener('click', checkBlanks);
+
+      document.querySelectorAll('.blank-input').forEach(function(input) {
+        if (instantValidation) {
+          input.addEventListener('input', checkBlanks);
+        }
+        input.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            checkBlanks();
+          }
+        });
+      });
+
+      document.querySelectorAll('.blank-hint-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = btn.getAttribute('data-hint-idx');
+          var box = document.getElementById('${instanceId}-hint-box-' + idx);
+          if (box) {
+            var expanded = btn.getAttribute('aria-expanded') === 'true';
+            btn.setAttribute('aria-expanded', String(!expanded));
+            box.hidden = expanded;
+          }
+        });
+      });
     }`;
 }
 
@@ -211,7 +350,6 @@ export function validate(config) {
     validateFillBlankAnswers(config.items)
   ];
   
-  // Validate each item has required fields
   if (Array.isArray(config.items)) {
     config.items.forEach((item, index) => {
       if (!item.title || !String(item.title).trim()) {

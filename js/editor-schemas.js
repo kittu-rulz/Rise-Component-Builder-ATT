@@ -33,6 +33,11 @@ export const editorSchemas = {
   },
   'tab-blocks': {
     itemLabel: 'Tab', minItems: 2,
+    componentLabel: 'Tab Presentation & Auto-Advance',
+    componentFields: [
+      field('tabsAutoAdvance', 'Enable Auto-Advancing Step Mode', 'checkbox', { default: false }),
+      field('tabsAutoAdvanceDelay', 'Auto-Advance Step Delay (seconds)', 'number', { required: false, default: 5, min: 1, max: 60, step: 1 })
+    ],
     itemFields: [
       field('title', 'Tab Label', 'text', { required: true, default: 'New Tab', maxLength: 40 }),
       field('content', 'Tab Content', 'richtext', { required: true, default: 'Add tab content.' }),
@@ -125,10 +130,47 @@ export const editorSchemas = {
   },
   'button-list': {
     itemLabel: 'Link Button', minItems: 1,
-    itemFields: [field('title', 'Button Label', 'text', { required: true, default: 'New Resource' }), field('content', 'Destination URL', 'url', { required: true, default: 'https://' })]
+    componentLabel: 'Resource Directory Settings',
+    componentFields: [
+      field('searchable', 'Enable Searchable Link Directory', 'checkbox', { default: false })
+    ],
+    itemFields: [
+      field('title', 'Button Label', 'text', { required: true, default: 'New Resource' }),
+      field('content', 'Destination URL', 'url', { required: true, default: 'https://' }),
+      field('category', 'Resource Category (Optional)', 'text', { required: false, default: '', maxLength: 40 }),
+      field('fileType', 'File Type (e.g., PDF, DOCX, ZIP)', 'text', { required: false, default: '', maxLength: 10 }),
+      field('fileSize', 'File Size (e.g., 2.4 MB)', 'text', { required: false, default: '', maxLength: 15 }),
+      field('styleVariant', 'Button Style Variant', 'select', {
+        default: 'primary',
+        options: [
+          { value: 'primary', label: 'Primary Brand (Filled Cobalt)' },
+          { value: 'secondary', label: 'Secondary (Card Surface)' },
+          { value: 'outline', label: 'Outline (Cobalt Border)' }
+        ]
+      })
+    ]
   },
   'menu-list': {
-    itemLabel: 'Menu Item', minItems: 1, itemFields: contentFields
+    itemLabel: 'Reference Drawer', minItems: 1,
+    componentLabel: 'Glossary & Reference Explorer Settings',
+    componentFields: [
+      field('searchable', 'Enable In-Block Search & Filter', 'checkbox', { default: false }),
+      field('indexingMode', 'Indexing & Navigation Mode', 'select', {
+        default: 'none',
+        options: [
+          { value: 'none', label: 'Standard Drawer List' },
+          { value: 'alphabetical', label: 'Alphabetical Index (A–Z Jump Chips)' },
+          { value: 'category', label: 'Category Filter Chips' }
+        ]
+      }),
+      field('showQuickJump', 'Show Quick-Jump Navigation Bar', 'checkbox', { default: false })
+    ],
+    itemFields: [
+      field('title', 'Topic or Term Name', 'text', { required: true, default: 'New Topic' }),
+      field('content', 'Definition & Detailed Content', 'richtext', { required: true, default: 'Add detailed definition or sub-lesson content here.' }),
+      field('category', 'Category Tag (Optional)', 'text', { required: false, default: '', maxLength: 40 }),
+      field('badge', 'Highlight Badge (Optional, e.g. Core, Policy, New)', 'text', { required: false, default: '', maxLength: 20 })
+    ]
   },
   'multiple-choice': {
     itemLabel: 'Answer Option', minItems: 2,
@@ -143,26 +185,61 @@ export const editorSchemas = {
   },
   'multiple-select': {
     itemLabel: 'Answer Option', minItems: 2,
+    componentLabel: 'Evaluation & Retry Settings',
+    componentFields: [
+      field('msPartialScoring', 'Enable Partial Credit Scoring', 'checkbox', { default: false }),
+      field('msMaxAttempts', 'Maximum Attempts', 'number', { required: false, default: 1, min: 1, max: 10, step: 1 }),
+      field('msAllowReset', 'Allow Retry / Try Again Action', 'checkbox', { default: false }),
+      field('msFinalExplanation', 'Final Explanation (Displayed once completed)', 'richtext', { required: false, default: '' }),
+      field('msSubmitButtonText', 'Submit Button Text', 'text', { required: false, default: 'Submit Answer', maxLength: 40 })
+    ],
     itemFields: [
       field('label', 'Answer Option', 'richtext', { required: true, default: 'New option' }),
-      field('content', 'Answer Feedback', 'textarea', { required: false, default: 'Add feedback for this option.' }),
+      field('content', 'Option Feedback', 'textarea', { required: false, default: 'Add feedback for this option.' }),
+      field('remediation', 'Specific Remediation Hint (Shown on submission)', 'textarea', { required: false, default: '' }),
       field('correct', 'Correct Answer', 'checkbox', { default: false })
     ]
   },
   'sorting-activity': {
     itemLabel: 'Sortable Item', minItems: 2,
+    componentLabel: 'Activity Feedback & Rules',
+    componentFields: [
+      field('instantFeedback', 'Enable Instant Matching Feedback on Drop', 'checkbox', { default: false }),
+      field('showMistakes', 'Show Mistakes Counter HUD', 'checkbox', { default: true }),
+      field('allowReset', 'Show Reset Activity Button', 'checkbox', { default: true })
+    ],
     itemFields: [
       field('title', 'Item Label', 'text', { required: true, default: 'New Sortable Item' }),
-      field('content', 'Item Description', 'textarea', { required: false, default: '' }),
-      field('category', 'Correct Category', 'select', { required: true, default: 'Design', options: ['Design', 'Logic'] })
+      field('content', 'Item Description (Optional)', 'textarea', { required: false, default: '' }),
+      field('category', 'Correct Category', 'select', { required: true, default: 'Design', options: ['Design', 'Logic'] }),
+      field('explanation', 'Placement Explanation (Revealed when sorted)', 'textarea', { required: false, default: '' })
     ]
   },
   'fill-blank': {
     itemLabel: 'Blank Statement', minItems: 1,
-    itemFields: [field('title', 'Sentence with [blank]', 'richtext', { required: true, default: 'Enter a sentence containing [blank].', pattern: '\\[blank\\]', patternMessage: 'Include one [blank] token.' }), field('content', 'Accepted Answer', 'text', { required: true, default: 'answer' })]
+    componentLabel: 'Validation & Clue Settings',
+    componentFields: [
+      field('fuzzyMatch', 'Enable 1-Character Fuzzy Typo Tolerance', 'checkbox', { default: true }),
+      field('instantValidation', 'Enable Live Validation as Learner Types', 'checkbox', { default: false })
+    ],
+    itemFields: [
+      field('title', 'Sentence with [blank]', 'richtext', { required: true, default: 'Enter a sentence containing [blank].', pattern: '\\[blank\\]', patternMessage: 'Include one [blank] token.' }),
+      field('content', 'Accepted Answers (comma-separated for synonyms)', 'text', { required: true, default: 'answer, alternative' }),
+      field('hint', 'Progressive Clue / Hint (Optional)', 'textarea', { required: false, default: '' })
+    ]
   },
   'vertical-timeline': {
     itemLabel: 'Timeline Event', minItems: 2,
+    componentLabel: 'Timeline Layout & Options',
+    componentFields: [
+      field('timelineCategoriesEnabled', 'Enable Category Badges & Filters', 'checkbox', { default: false }),
+      field('timelineCompareMode', 'Enable 2-Column Stream Comparison (Requires 2+ categories)', 'checkbox', { default: false }),
+      field('timelineCollapsibleDetails', 'Collapsible Step Accordion Details', 'checkbox', { default: false }),
+      field('timelineShowProgress', 'Show Explored Progress Counter', 'checkbox', { default: false }),
+      field('timelineChronologicalReveal', 'Chronological Step Reveal Locking', 'checkbox', { default: false }),
+      field('timelineShowVisitedBadge', 'Show Visited Checkmark Badges', 'checkbox', { default: false }),
+      field('timelineAllowReset', 'Show Reset Timeline Button', 'checkbox', { default: false })
+    ],
     itemFields: [
       ...contentFields,
       field('category', 'Category / Stream (Optional)', 'text', { required: false, default: '', maxLength: 40 })
@@ -172,31 +249,54 @@ export const editorSchemas = {
     itemLabel: 'Timeline Milestone', minItems: 2,
     itemFields: [
       ...contentFields,
-      // Optional: renders inside the circular marker (aria-hidden — the tab's
-      // accessible name always comes from the title text, never from this).
-      // Empty by default so projects saved before this field existed render
-      // identically (js/storage.js needs no migration for it).
-      field('markerLabel', 'Marker Number or Label (Optional)', 'text', { required: false, default: '', maxLength: 4 })
+      field('markerLabel', 'Marker Number or Label (Optional)', 'text', { required: false, default: '', maxLength: 4 }),
+      field('image', 'Milestone Image (Optional)', 'image', { required: false, default: '', preferredDimensions: '800 × 600 px' }),
+      field('imageAlt', 'Image Alternative Text', 'textarea', { required: false, default: '' })
     ]
   },
   'process-flow': {
     itemLabel: 'Process Step', minItems: 2,
-    itemFields: [...contentFields, field('durationMinutes', 'Estimated Duration', 'number', { required: false, default: 5, min: 0, max: 999, step: 1 })]
+    componentLabel: 'Workflow Navigation & Rules',
+    componentFields: [
+      field('processClickableNav', 'Allow Direct Clicking on Steps & Breadcrumbs', 'checkbox', { default: true }),
+      field('processShowCompletionBadges', 'Show Step Completion Checkmark Badges', 'checkbox', { default: false }),
+      field('processShowSummary', 'Show Final Summary Review Screen', 'checkbox', { default: false })
+    ],
+    itemFields: [
+      ...contentFields,
+      field('durationMinutes', 'Estimated Duration (min)', 'number', { required: false, default: 5, min: 0, max: 999, step: 1 }),
+      field('branches', 'Branch Choices (Optional, e.g. "Path A:2, Path B:3")', 'text', { required: false, default: '' })
+    ]
   },
   scenario: {
-    // Item 0 is the dialogue prompt; every item after it is a selectable choice button
-    // — see components/scenario.js#generateHTML (`items[0]` vs `items.slice(1)`).
-    // roleLabels makes that first-item-is-different-in-kind structure visible in the
-    // editor instead of a flat "Scenario Entry 1, 2, 3" that reads as if all entries
-    // are the same kind of thing.
     itemLabel: 'Scenario Entry', minItems: 2, roleLabels: ['Prompt', 'Choice'],
-    itemFields: [field('title', 'Scene or Choice Label', 'text', { required: true, default: 'New Scenario Entry' }), field('content', 'Dialogue or Feedback', 'richtext', { required: true, default: 'Add scenario content.' })]
+    componentLabel: 'Scenario Scoring & Logs',
+    componentFields: [
+      field('scenarioShowMeter', 'Show Decision Impact Score Meter', 'checkbox', { default: false }),
+      field('scenarioShowHistory', 'Show Dialogue History Review Log', 'checkbox', { default: false }),
+      field('scenarioAllowReset', 'Show Restart Scenario Button', 'checkbox', { default: true })
+    ],
+    itemFields: [
+      field('title', 'Scene or Choice Label', 'text', { required: true, default: 'New Scenario Entry' }),
+      field('speaker', 'Speaker Name (Prompt only)', 'text', { required: false, default: 'Chris (Team Lead)' }),
+      field('emotion', 'Emotion State', 'select', { default: 'neutral', options: ['neutral', 'happy', 'thinking', 'concerned'] }),
+      field('points', 'Decision Score Delta (+/- points)', 'number', { required: false, default: 0, step: 5 }),
+      field('content', 'Dialogue or Feedback', 'richtext', { required: true, default: 'Add scenario content.' })
+    ]
   },
   'profile-cards': {
     itemLabel: 'Profile', minItems: 1,
+    componentLabel: 'Profile Presentation',
+    componentFields: [
+      field('profileEnableModal', 'Enable Modal Bio Detail View', 'checkbox', { default: true })
+    ],
     itemFields: [
       field('title', 'Name', 'text', { required: true, default: 'New Profile' }),
+      field('roleTag', 'Role Tag / Department (Optional)', 'text', { required: false, default: 'Specialist', maxLength: 50 }),
       field('content', 'Role and Biography', 'richtext', { required: true, default: 'Add role and biography.' }),
+      field('quote', 'Pull Quote / Highlight (Optional)', 'textarea', { required: false, default: '' }),
+      field('contactUrl', 'Contact URL or Email (Optional)', 'text', { required: false, default: '' }),
+      field('contactLabel', 'Contact Button Label (Optional)', 'text', { required: false, default: 'Connect', maxLength: 30 }),
       field('image', 'Profile Image', 'image', { required: false, default: '', preferredDimensions: '800 × 800 px (square)' }),
       field('altText', 'Profile Image Alternative Text', 'textarea', { default: '', warningWhen: 'image', warningUnless: 'decorative', warningMessage: 'Add alternative text or mark the profile image decorative.' }),
       field('decorative', 'Profile Image Is Decorative', 'checkbox', { default: false }),
@@ -205,30 +305,31 @@ export const editorSchemas = {
   },
   'info-grid': {
     itemLabel: 'Information Card', minItems: 1,
-    // Default is the theme's own AT&T Blue accent, not an off-brand blue — this
-    // colors a passive decorative icon, never clickable text, so it stays within
-    // the approved brand palette without the AT&T-Blue 19px text restriction.
-    itemFields: [...contentFields, ...visualIconFields, field('accentColor', 'Card Accent Color', 'color', { required: false, default: '#009FDB' })]
+    itemFields: [
+      field('subtitle', 'Subtitle / Eyebrow (Optional)', 'text', { required: false, default: '', maxLength: 40 }),
+      field('badgeLabel', 'Badge Tag (Optional)', 'text', { required: false, default: '', maxLength: 30 }),
+      field('title', 'Card Title', 'text', { required: true, default: 'Feature Key' }),
+      field('metricValue', 'Metric Callout Value (Optional)', 'text', { required: false, default: '', maxLength: 20 }),
+      field('metricLabel', 'Metric Callout Label (Optional)', 'text', { required: false, default: '', maxLength: 30 }),
+      field('content', 'Card Description', 'richtext', { required: true, default: 'Description layout parameters.' }),
+      ...visualIconFields,
+      field('accentColor', 'Card Accent Color', 'color', { required: false, default: '#009FDB' })
+    ]
   },
   'pricing-comparison': {
     itemLabel: 'Comparison Option', minItems: 2,
-    itemFields: [...contentFields, field('highlighted', 'Highlight This Option', 'checkbox', { default: false }), field('actionUrl', 'Action URL', 'url', { required: false, default: '' })]
+    componentLabel: 'Comparison Layout',
+    componentFields: [
+      field('pricingMatrixMode', 'Display as Matrix Table Checklist', 'checkbox', { default: false })
+    ],
+    itemFields: [
+      field('title', 'Option Title', 'text', { required: true, default: 'Service Plan' }),
+      field('content', 'Features (separate with • , add tooltips with [info: text])', 'richtext', { required: true, default: 'Feature 1 • Feature 2 [info: Tooltip details]' }),
+      field('highlighted', 'Highlight This Option', 'checkbox', { default: false }),
+      field('actionUrl', 'Action URL', 'url', { required: false, default: '' })
+    ]
   },
   'audio-player': {
-    // The player only ever renders items[0] (components/audio-player.js#generateHTML)
-    // — it plays one track, not a playlist. maxItems stops the editor from letting an
-    // author add a 2nd/3rd track that would be silently accepted but never shown
-    // anywhere (not in preview, not in the export).
-    //
-    // Chapters/transcriptSegments/takeaways are delimited plain-text fields, not a
-    // repeatable nested sub-list — this schema-driven item editor has no field type for
-    // a nested, repeatable sub-list within an item (docs/COMPONENT-SCHEMA.md "Recommended
-    // schema improvements"), the same constraint interactive-video's fixed 4 answer slots
-    // already document. A delimited textarea (one row per line) matches the established,
-    // lower-risk pattern already shipped in pricing-comparison.js's `•`-split feature list,
-    // rather than inventing new schema/editor machinery for this one component. Parsing
-    // lives in components/audio-player.js (parseChapters/parseTranscriptSegments/
-    // parseTakeaways) and tolerates malformed lines by skipping them, never throwing.
     itemLabel: 'Audio Track', minItems: 1, maxItems: 1,
     componentLabel: 'Presentation, Chapters, Transcript & Progress',
     componentFields: [
@@ -262,17 +363,6 @@ export const editorSchemas = {
     ]
   },
   'video-frame': {
-    // Same reasoning as audio-player above: only items[0] is ever rendered
-    // (components/video-frame.js#generateHTML) — one embedded video, not a playlist.
-    // Chapters/transcriptSegments/takeaways are delimited text, not a nested repeatable
-    // list, for the exact same reason documented on audio-player's own entry below —
-    // this editor has no field type for that yet (docs/COMPONENT-SCHEMA.md "Recommended
-    // schema improvements"). Chapters here are navigation-only (click-to-seek), never a
-    // pause-and-quiz gate — that richer, required-checkpoint interaction model already
-    // belongs to Interactive Video (docs/INTERACTIVE-VIDEO.md); this stays the simple,
-    // passive-consumption video block, matched in capability to Interactive Learning
-    // Audio's own passive-consumption feature set (docs/AUDIO-PLAYER.md), not to
-    // Interactive Video's.
     itemLabel: 'Video', minItems: 1, maxItems: 1,
     componentLabel: 'Chapters, Transcript & Progress',
     componentFields: [
@@ -301,9 +391,20 @@ export const editorSchemas = {
   },
   'image-gallery': {
     itemLabel: 'Gallery Image', minItems: 1,
+    componentLabel: 'Gallery Presentation',
+    componentFields: [
+      field('galleryLayout', 'Gallery Layout Mode', 'select', {
+        default: 'grid',
+        options: [
+          { value: 'grid', label: 'Uniform Grid' },
+          { value: 'masonry', label: 'Pinterest Masonry' }
+        ]
+      })
+    ],
     itemFields: [
       field('content', 'Image Source', 'image', { required: true, default: '', multiple: true, preferredDimensions: '1600 × 1200 px (4:3)' }),
       field('title', 'Image Title', 'text', { required: true, default: 'New Image' }),
+      field('category', 'Category Tag (Optional)', 'text', { required: false, default: '', maxLength: 40 }),
       field('caption', 'Image Caption', 'textarea', { required: false, default: '' }),
       field('altText', 'Alternative Text', 'textarea', { required: false, default: '', warningWhen: 'content', warningUnless: 'decorative', warningMessage: 'Add alternative text or mark this image decorative.' }),
       field('decorative', 'Image Is Decorative', 'checkbox', { default: false }),
@@ -311,24 +412,11 @@ export const editorSchemas = {
     ]
   },
   'interactive-video': {
-    // The video itself (source/poster/captions/transcript) is component-level content,
-    // matching video-frame's field naming exactly (posterImage/captionsUrl/transcript,
-    // not the "-MediaId" suffix the initial proposal used) — componentFields is the
-    // established place for "content the author configures once," same as hotspots'
-    // background image. Interaction markers are the dynamic items list; a video with
-    // zero markers is a valid, complete configuration (minItems: 0) — the video itself,
-    // not the marker count, is what validate() actually requires.
     itemLabel: 'Interaction Marker', minItems: 0, componentLabel: 'Video Details',
     componentFields: [
       field('title', 'Video Block Title', 'text', { required: true, default: 'Interactive Video', maxLength: 120 }),
       field('introduction', 'Introduction (Optional)', 'richtext', { required: false, default: '' }),
       field('videoSourceType', 'Video Source', 'select', {
-        // Defaults mirror components/interactive-video.js#defaultConfig exactly, not just
-        // "a" valid default — app.js#loadComponentToEditor applies componentFields'
-        // schema defaults on top of defaultConfig immediately after setting it (the same
-        // ordering every componentFields-using component goes through), so a mismatch
-        // here would silently clobber a real starting value back to empty the moment the
-        // component is freshly selected from the catalog.
         default: 'url', options: [{ value: 'upload', label: 'Uploaded video' }, { value: 'url', label: 'External direct video URL' }]
       }),
       field('videoMediaId', 'Upload Video', 'video', { required: false, default: '' }),
@@ -376,6 +464,13 @@ export const editorSchemas = {
     componentFields: [
       field('title', 'Header Title', 'text', { required: false, default: '5G Infrastructure Modernization' }),
       field('content', 'Description / Instructions', 'richtext', { required: false, default: 'Drag the slider handle or use the arrow keys to compare network capabilities before and after fiber modernization.' }),
+      field('orientation', 'Split Orientation', 'select', {
+        default: 'horizontal',
+        options: [
+          { value: 'horizontal', label: 'Horizontal Split (Left / Right)' },
+          { value: 'vertical', label: 'Vertical Split (Top / Bottom)' }
+        ]
+      }),
       field('initialPosition', 'Initial Slider Position (%)', 'range', { default: 50, min: 0, max: 100, step: 1, suffix: '%' }),
       field('showLabels', 'Show Floating Before/After Badges', 'checkbox', { default: true })
     ],
@@ -446,6 +541,14 @@ export const editorSchemas = {
     componentFields: [
       field('title', 'Header Title', 'text', { required: false, default: '5G Enterprise Solutions Portfolio' }),
       field('content', 'Description / Instructions', 'richtext', { required: false, default: 'Explore how AT&T 5G and dedicated cellular infrastructure empower modern enterprise operations.' }),
+      field('cardsPerView', 'Visible Cards Density', 'select', {
+        default: '1',
+        options: [
+          { value: '1', label: '1 Card (Single - Default)' },
+          { value: '2', label: '2 Cards (Dual View)' },
+          { value: '3', label: '3 Cards (Triple View)' }
+        ]
+      }),
       field('showPaginationDots', 'Show Pagination Dot Pills', 'checkbox', { default: true }),
       field('loop', 'Loop Carousel Continuously', 'checkbox', { default: false })
     ],

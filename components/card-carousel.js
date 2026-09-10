@@ -9,6 +9,7 @@ import { getAttIconSvg } from '../js/att-icons.js';
  * @property {string} [content] - Explanatory caption / instructions
  * @property {boolean} [showPaginationDots] - Whether to show clickable pagination dot pills
  * @property {boolean} [loop] - Whether carousel wraps around at ends
+ * @property {number} [cardsPerView] - Number of cards visible simultaneously (1, 2, or 3)
  * @property {Array<{title: string, category?: string, content: string, image?: string, altText?: string, buttonLabel?: string, buttonUrl?: string}>} items
  */
 
@@ -22,6 +23,7 @@ export const defaultConfig = {
   content: 'Explore how AT&T 5G and dedicated cellular infrastructure empower modern enterprise operations.',
   showPaginationDots: true,
   loop: false,
+  cardsPerView: 1,
   items: [
     {
       title: 'Dedicated Private 5G Networks',
@@ -63,6 +65,7 @@ export function generateHTML(config, instanceId) {
   const items = Array.isArray(config.items) && config.items.length ? config.items : defaultConfig.items;
   const showDots = config.showPaginationDots !== false;
   const isLoop = Boolean(config.loop);
+  const cardsPerView = Math.max(1, Math.min(3, Number(config.cardsPerView) || 1));
   const total = items.length;
 
   const slidesHtml = items.map((item, idx) => {
@@ -116,7 +119,9 @@ export function generateHTML(config, instanceId) {
   return `
     <div class="carousel-card-block" id="${instanceId}-carousel-block"
       data-total="${total}"
-      data-loop="${isLoop}">
+      data-cards-per-view="${cardsPerView}"
+      data-loop="${isLoop}"
+      style="--cards-per-view: ${cardsPerView};">
       ${config.title ? `
         <div class="carousel-header">
           <div class="carousel-header-icon">${cardsIcon}</div>
@@ -139,7 +144,7 @@ export function generateHTML(config, instanceId) {
           <div class="carousel-counter" id="${instanceId}-counter" aria-live="polite">
             <span class="carousel-counter-current">1</span> of <span class="carousel-counter-total">${total}</span>
           </div>
-          <button type="button" class="carousel-nav-btn carousel-btn-next btn-next" id="${instanceId}-btn-next" aria-label="Next card" ${total <= 1 && !isLoop ? 'disabled' : ''}>
+          <button type="button" class="carousel-nav-btn carousel-btn-next btn-next" id="${instanceId}-btn-next" aria-label="Next card" ${total <= cardsPerView && !isLoop ? 'disabled' : ''}>
             ${chevronRightIcon}
           </button>
         </div>
@@ -218,10 +223,16 @@ export function generateCSS() {
       }
     }
     .carousel-slide-item {
-      flex: 0 0 100%;
-      min-width: 100%;
+      flex: 0 0 calc(100% / var(--cards-per-view, 1));
+      min-width: calc(100% / var(--cards-per-view, 1));
       box-sizing: border-box;
       padding: var(--att-space-2, 8px);
+    }
+    @media (max-width: 768px) {
+      .carousel-slide-item {
+        flex: 0 0 100% !important;
+        min-width: 100% !important;
+      }
     }
     .carousel-card-inner {
       background-color: var(--bg-card, #FFFFFF);
@@ -232,6 +243,8 @@ export function generateCSS() {
       flex-direction: column;
       gap: var(--att-space-3, 12px);
       min-height: 220px;
+      height: 100%;
+      box-sizing: border-box;
       box-shadow: var(--shadow-style);
     }
     .carousel-card-category {
@@ -389,20 +402,33 @@ export function generateJS(config, instanceId) {
       if (!root || !track) return;
 
       var total = Number(root.dataset.total) || 1;
+      var cardsPerView = Number(root.dataset.cardsPerView) || 1;
       var isLoop = root.dataset.loop === 'true';
       var currentIndex = 0;
       var startX = 0;
       var isDragging = false;
 
+      function getEffectiveCardsPerView() {
+        return window.innerWidth <= 768 ? 1 : cardsPerView;
+      }
+
+      function getMaxIndex() {
+        var eff = getEffectiveCardsPerView();
+        return Math.max(0, total - eff);
+      }
+
       function updateSlide(index) {
+        var maxIdx = getMaxIndex();
         if (index < 0) {
-          index = isLoop ? total - 1 : 0;
-        } else if (index >= total) {
-          index = isLoop ? 0 : total - 1;
+          index = isLoop ? maxIdx : 0;
+        } else if (index > maxIdx) {
+          index = isLoop ? 0 : maxIdx;
         }
 
         currentIndex = index;
-        track.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
+        var eff = getEffectiveCardsPerView();
+        var shiftPct = (100 / eff) * currentIndex;
+        track.style.transform = 'translateX(-' + shiftPct + '%)';
 
         if (counterEl) {
           var curSpan = counterEl.querySelector('.carousel-counter-current');
@@ -413,7 +439,7 @@ export function generateJS(config, instanceId) {
           btnPrev.disabled = currentIndex === 0;
         }
         if (btnNext && !isLoop) {
-          btnNext.disabled = currentIndex === total - 1;
+          btnNext.disabled = currentIndex >= maxIdx;
         }
 
         if (dotsContainer) {
@@ -487,7 +513,7 @@ export function generateJS(config, instanceId) {
             updateSlide(0);
           } else if (e.key === 'End') {
             e.preventDefault();
-            updateSlide(total - 1);
+            updateSlide(getMaxIndex());
           }
         });
 
@@ -517,6 +543,10 @@ export function generateJS(config, instanceId) {
         });
       }
 
+      window.addEventListener('resize', function() {
+        updateSlide(currentIndex);
+      });
+
       // Initial tracking
       updateSlide(0);
     })();
@@ -536,3 +566,4 @@ export function validate(config) {
   }
   return { valid: errors.length === 0, errors };
 }
+

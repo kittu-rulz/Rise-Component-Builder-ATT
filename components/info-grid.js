@@ -1,14 +1,35 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeAttribute, escapeHTML, sanitizeCSSColor } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, sanitizeCSSColor, sanitizeRichText } from '../js/utilities.js';
 
 export const id = 'info-grid';
 export const name = 'Multi-Column Info Grid';
 export const category = 'cards';
 export const defaultConfig = {
   items: [
-    { title: 'SaaS Aesthetic', content: 'Vibrant custom colors, layered shadows, and large margins.' },
-    { title: 'Fully Serverless', content: 'Direct srcdoc codes containing styles and scripts.' },
-    { title: 'Responsive Shell', content: 'Adaptive grid layout structures for all target screens.' }
+    {
+      title: 'SaaS Aesthetic',
+      subtitle: 'Design Standard',
+      badgeLabel: 'Modern',
+      metricValue: '99.9%',
+      metricLabel: 'Learner Engagement',
+      content: 'Vibrant custom colors, layered shadows, and large margins.'
+    },
+    {
+      title: 'Fully Serverless',
+      subtitle: 'Architecture',
+      badgeLabel: 'Fast',
+      metricValue: '< 50ms',
+      metricLabel: 'Render Latency',
+      content: 'Direct srcdoc codes containing styles and scripts.'
+    },
+    {
+      title: 'Responsive Shell',
+      subtitle: 'Layout Engine',
+      badgeLabel: 'Adaptive',
+      metricValue: '100%',
+      metricLabel: 'Mobile Compatible',
+      content: 'Adaptive grid layout structures for all target screens.'
+    }
   ]
 };
 export const editorSchema = getEditorSchema(id);
@@ -24,17 +45,28 @@ export function generateHTML(config) {
   return `
     <div class="info-grid-container">
       ${config.items.map((item) => {
-        // sanitizeCSSColor here (not just in js/utilities.js#sanitizePreviewConfig) means
-        // this generator stays safe even called directly with an unvalidated config, the
-        // same defense-in-depth already used for flip-cards' custom icon URLs.
         const accentColor = item.accentColor ? sanitizeCSSColor(item.accentColor, '') : '';
+        const badgeHtml = (item.badgeLabel || '').trim() ? `<span class="info-grid-badge">${escapeHTML(item.badgeLabel)}</span>` : '';
+        const subtitleHtml = (item.subtitle || '').trim() ? `<span class="info-grid-subtitle">${escapeHTML(item.subtitle)}</span>` : '';
+        const metricHtml = (item.metricValue || '').trim() ? `
+          <div class="info-grid-metric-box">
+            <span class="info-grid-metric-val">${escapeHTML(item.metricValue)}</span>
+            ${(item.metricLabel || '').trim() ? `<span class="info-grid-metric-lbl">${escapeHTML(item.metricLabel)}</span>` : ''}
+          </div>
+        ` : '';
+
         return `
         <div class="info-grid-item">
-          <div class="info-grid-icon" style="${accentColor ? `color:${accentColor};` : ''}">
-            ${renderCustomItemArtwork(item, '<svg width="20" height="20" viewBox="0 0 96 96" fill="currentColor" aria-hidden="true"><g class="info-grid-icon-accent-dots"><rect x="30" y="43" width="4" height="4"/><rect x="30" y="56" width="4" height="4"/><rect x="30" y="69" width="4" height="4"/></g><g><rect x="37" y="44" width="29" height="2"/><rect x="37" y="57" width="29" height="2"/><rect x="37" y="70" width="29" height="2"/><path d="M56.4 10 24 10C20.7 10 18 12.7 18 16L18 80C18 83.3 20.7 86 24 86L72 86C75.3 86 78 83.3 78 80L78 31.6 56.4 10ZM57 13.4 74.6 31 61 31C58.8 31 57 29.2 57 27L57 13.4ZM72 84 24 84C21.8 84 20 82.2 20 80L20 16C20 13.8 21.8 12 24 12L55 12 55 27C55 30.3 57.7 33 61 33L76 33 76 80C76 82.2 74.2 84 72 84Z"/></g></svg>')}
+          <div class="info-grid-header-row">
+            <div class="info-grid-icon" style="${accentColor ? `color:${accentColor};` : ''}">
+              ${renderCustomItemArtwork(item, '<svg width="20" height="20" viewBox="0 0 96 96" fill="currentColor" aria-hidden="true"><g class="info-grid-icon-accent-dots"><rect x="30" y="43" width="4" height="4"/><rect x="30" y="56" width="4" height="4"/><rect x="30" y="69" width="4" height="4"/></g><g><rect x="37" y="44" width="29" height="2"/><rect x="37" y="57" width="29" height="2"/><rect x="37" y="70" width="29" height="2"/><path d="M56.4 10 24 10C20.7 10 18 12.7 18 16L18 80C18 83.3 20.7 86 24 86L72 86C75.3 86 78 83.3 78 80L78 31.6 56.4 10ZM57 13.4 74.6 31 61 31C58.8 31 57 29.2 57 27L57 13.4ZM72 84 24 84C21.8 84 20 82.2 20 80L20 16C20 13.8 21.8 12 24 12L55 12 55 27C55 30.3 57.7 33 61 33L76 33 76 80C76 82.2 74.2 84 72 84Z"/></g></svg>')}
+            </div>
+            ${badgeHtml}
           </div>
+          ${subtitleHtml}
           <h4>${escapeHTML(item.title || 'Feature Key')}</h4>
-          <p>${item.content || 'Description layout parameters.'}</p>
+          ${metricHtml}
+          <p>${sanitizeRichText(item.content || 'Description layout parameters.')}</p>
         </div>
       `;
       }).join('')}
@@ -46,7 +78,7 @@ export function generateCSS() {
   return `
     .info-grid-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: var(--att-space-5, 20px);
     }
     .info-grid-item {
@@ -56,9 +88,10 @@ export function generateCSS() {
       box-shadow: var(--shadow-style);
       padding: var(--att-space-5, 20px);
       transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
     }
     .info-grid-item:hover {
-      /* Cobalt (--primary), not AT&T Blue: this card is clickable. */
       border-color: var(--primary);
       box-shadow: var(--att-shadow-2, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     }
@@ -70,22 +103,19 @@ export function generateCSS() {
       outline-offset: 2px;
     }
     .info-grid-item.active {
-      /* Cobalt border, not an AT&T-Blue tint background: the selected state of a
-         clickable card needs the Cobalt clickable treatment, not an invented
-         translucent brand-color shade. */
       border-color: var(--primary);
       border-width: 2px;
     }
+    .info-grid-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--att-space-3, 10px);
+    }
     .info-grid-icon {
-      /* Decorative branding icon, not itself a control — AT&T Blue is the
-         approved usage here. */
       color: var(--accent);
-      margin-bottom: var(--att-space-3, 12px);
     }
     .info-grid-icon-accent-dots {
-      /* Matches the fallback icon's own baked-in accent-dot styling, sourced
-         from the icon as authored, expressed as a token instead of a hardcoded
-         hex so it always tracks the theme's real accent value. */
       fill: var(--accent);
     }
     .info-grid-icon .custom-item-icon {
@@ -93,13 +123,51 @@ export function generateCSS() {
       height: 42px;
       border-radius: var(--att-radius-sm, 8px);
     }
+    .info-grid-badge {
+      font-size: var(--att-fs-eyebrow, 11px);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 2px 8px;
+      border-radius: var(--att-radius-pill, 999px);
+      background-color: var(--border-color);
+      color: var(--text-main);
+    }
+    .info-grid-subtitle {
+      font-size: var(--att-fs-eyebrow, 12px);
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
     .info-grid-item h4 {
       font-size: var(--att-fs-h4, 1.125rem);
       font-weight: var(--att-fw-bold, 700);
       line-height: var(--att-lh-heading, 1.25);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: var(--text-main);
       text-wrap: pretty;
+    }
+    .info-grid-metric-box {
+      margin: 6px 0 10px 0;
+      padding: 6px 10px;
+      background-color: var(--bg-body);
+      border-radius: var(--att-radius-md, 6px);
+      display: inline-flex;
+      flex-direction: column;
+      align-self: flex-start;
+    }
+    .info-grid-metric-val {
+      font-size: var(--att-fs-h3, 1.25rem);
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+    .info-grid-metric-lbl {
+      font-size: var(--att-fs-eyebrow, 11px);
+      color: var(--text-muted);
+      font-weight: 600;
     }
     .info-grid-item p {
       font-size: var(--att-fs-body, 1rem);
@@ -128,3 +196,4 @@ export function validate(config) {
   const errors = Array.isArray(config.items) && config.items.length ? [] : ['Add at least one info card.'];
   return { valid: errors.length === 0, errors };
 }
+

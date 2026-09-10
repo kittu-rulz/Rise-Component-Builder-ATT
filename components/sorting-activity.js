@@ -1,12 +1,15 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeAttribute, escapeHTML, serializeForInlineScript } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, sanitizeRichText, serializeForInlineScript } from '../js/utilities.js';
 import { combineValidationResults } from '../js/validation-utils.js';
 import { getAttIconSvg } from '../js/att-icons.js';
 
 /**
  * Sorting Activity Component Configuration
  * @typedef {Object} SortingActivityConfig
- * @property {Array<{title: string, content: string, category: string}>} items - Array of sortable items with categories
+ * @property {boolean} [instantFeedback] - Whether cards validate immediately upon placement
+ * @property {boolean} [showMistakes] - Shows mistakes counter HUD
+ * @property {boolean} [allowReset] - Shows a Try Again / Reset button
+ * @property {Array<{title: string, content?: string, category: string, explanation?: string}>} items - Array of sortable items
  */
 
 export const id = 'sorting-activity';
@@ -15,36 +18,57 @@ export const category = 'knowledge';
 
 /** @type {SortingActivityConfig} */
 export const defaultConfig = {
+  instantFeedback: false,
+  showMistakes: true,
+  allowReset: true,
   items: [
-    { title: 'Vibrant Colors', content: 'Design System', category: 'Design' },
-    { title: 'Click Triggers', content: 'Interaction Logic', category: 'Logic' },
-    { title: 'Rounded Corners', content: 'Design System', category: 'Design' },
-    { title: 'Theme Toggles', content: 'Interaction Logic', category: 'Logic' }
+    { title: 'Vibrant Colors', content: 'Visual token specification', category: 'Design', explanation: 'Colors, typography, and borders form the visual foundation of the design system.' },
+    { title: 'Click Triggers', content: 'Action handler configuration', category: 'Logic', explanation: 'Event listeners and state machines control user interaction logic.' },
+    { title: 'Rounded Corners', content: 'Component geometry', category: 'Design', explanation: 'Border radii specify geometric rounding across buttons, cards, and chips.' },
+    { title: 'Theme Toggles', content: 'State manipulation', category: 'Logic', explanation: 'Dark and light mode state switching requires interactive JavaScript logic.' }
   ]
 };
 export const editorSchema = getEditorSchema(id);
 
+const arrowsIcon = getAttIconSvg('arrows-vertical-1', { width: 14, height: 14, ariaHidden: true });
+const checkIcon = getAttIconSvg('check-circle-filled', { width: 14, height: 14, ariaHidden: true });
+
 export function generateHTML(config, instanceId) {
   const categories = [...new Set(config.items.map(it => it.category || 'Category'))];
+  const instantFeedback = config.instantFeedback === true;
+  const showMistakes = config.showMistakes !== false;
+  const allowReset = config.allowReset !== false;
+
   return `
-    <div class="sorting-activity-container" aria-describedby="${instanceId}-sorting-instructions">
+    <div class="sorting-activity-container" id="${instanceId}-container" aria-describedby="${instanceId}-sorting-instructions">
       <p id="${instanceId}-sorting-instructions" class="sr-only">For each item, choose its category. Then verify the sorting.</p>
+      
+      <div class="sorting-hud-bar">
+        ${showMistakes ? `<span class="sorting-mistakes-counter" id="${instanceId}-mistakes-counter" role="status" aria-live="polite">Mistakes: 0</span>` : ''}
+        ${allowReset ? `<button type="button" class="sorting-reset-btn" id="${instanceId}-reset-btn">Reset Activity</button>` : ''}
+      </div>
+
       <div class="sorting-card-pool" role="group" aria-label="Items to sort">
         ${config.items.map((item, idx) => `
-          <div class="sorting-draggable" id="${instanceId}-sort-card-${idx}" data-category="${escapeAttribute(item.category || '')}" role="group" aria-labelledby="${instanceId}-sort-label-${idx}">
-            <div class="drag-handle">
-              ${getAttIconSvg('arrows-vertical-1', { width: 14, height: 14, ariaHidden: true })}
+          <div class="sorting-draggable" id="${instanceId}-sort-card-${idx}" data-idx="${idx}" data-category="${escapeAttribute(item.category || '')}" role="group" aria-labelledby="${instanceId}-sort-label-${idx}">
+            <div class="drag-handle-row">
+              <div class="drag-handle" aria-hidden="true">${arrowsIcon}</div>
+              <div class="drag-text-wrap">
+                <div class="drag-text" id="${instanceId}-sort-label-${idx}">${escapeHTML(item.title || 'Sorting Card')}</div>
+                ${item.content ? `<div class="drag-sub">${escapeHTML(item.content)}</div>` : ''}
+              </div>
             </div>
-            <div class="drag-text" id="${instanceId}-sort-label-${idx}">${escapeHTML(item.title || 'Sorting Card')}</div>
             <div class="sorting-targets-row">
               ${categories.map(cat => `
                 <button type="button" class="target-btn" data-idx="${idx}" data-cat="${escapeAttribute(cat)}" aria-pressed="false">Move to ${escapeHTML(cat)}</button>
               `).join('')}
             </div>
-            <div class="sort-status-indicator" role="status" aria-live="polite"></div>
+            <div class="sort-status-indicator" id="${instanceId}-indicator-${idx}" role="status" aria-live="polite"></div>
+            ${item.explanation ? `<div class="sort-explanation-card" id="${instanceId}-expl-${idx}" style="display:none;" aria-live="polite"><strong>Why:</strong> ${escapeHTML(item.explanation)}</div>` : ''}
           </div>
         `).join('')}
       </div>
+
       <div class="sorting-categories-columns">
         ${categories.map((cat, catIdx) => `
           <div class="sorting-column" data-column-cat="${escapeAttribute(cat)}" role="group" aria-labelledby="${instanceId}-sorting-column-${catIdx}">
@@ -53,7 +77,8 @@ export function generateHTML(config, instanceId) {
           </div>
         `).join('')}
       </div>
-      <button type="button" class="quiz-submit-btn">Verify Sorting</button>
+
+      ${!instantFeedback ? `<button type="button" class="quiz-submit-btn" id="${instanceId}-verify-btn">Verify Sorting</button>` : ''}
       <div id="${instanceId}-sorting-feedback-box" class="quiz-feedback" role="status" aria-live="polite" aria-atomic="true" style="display:none;"></div>
     </div>
   `;
@@ -64,7 +89,37 @@ export function generateCSS() {
     .sorting-activity-container {
       display: flex;
       flex-direction: column;
-      gap: var(--att-space-5, 20px);
+      gap: var(--att-space-4, 16px);
+    }
+    .sorting-hud-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+    }
+    .sorting-mistakes-counter {
+      font-size: var(--att-fs-body-sm, 14px);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .sorting-reset-btn {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--att-radius-pill, 999px);
+      padding: 6px 16px;
+      font-size: var(--att-fs-body-sm, 13px);
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .sorting-reset-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
     }
     .sorting-card-pool {
       background-color: var(--bg-card);
@@ -80,42 +135,48 @@ export function generateCSS() {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
       border-radius: var(--att-radius-md, var(--border-radius, 12px));
-      padding: 12px 16px;
+      padding: 14px 16px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 8px;
       font-size: var(--att-fs-body, 1rem);
       transition: all 0.2s;
     }
+    .drag-handle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
     .drag-handle {
       color: var(--text-muted);
-      cursor: grab;
-      margin-right: 12px;
       display: flex;
+      flex-shrink: 0;
+    }
+    .drag-text-wrap {
+      flex: 1;
     }
     .drag-text {
-      flex: 1;
       font-weight: var(--att-fw-medium, 500);
-      max-width: 70ch;
+      color: var(--text-main);
+    }
+    .drag-sub {
+      font-size: var(--att-fs-body-sm, 13px);
+      color: var(--text-muted);
+      margin-top: 2px;
     }
     .sorting-targets-row {
       display: flex;
       gap: var(--att-space-2, 8px);
       flex-wrap: wrap;
+      margin-top: 4px;
     }
     .target-btn {
       background-color: var(--bg-card);
-      /* Cobalt (--primary) at rest, not a neutral gray: this button is
-         clickable at all times (not only once assigned), so it carries the
-         Cobalt clickable treatment from the start. */
       border: 1px solid var(--primary);
       color: var(--primary);
       padding: 6px 14px;
       font-size: var(--att-fs-body-sm, 0.875rem);
       font-weight: var(--att-fw-medium, 500);
-      /* Full capsule, not a partial rounding: this is a clickable control, and
-         capsule shapes are only allowed on clickable elements when they're a
-         complete pill. */
       border-radius: var(--button-radius, var(--att-radius-pill, 999px));
       cursor: pointer;
       min-height: 44px;
@@ -137,18 +198,28 @@ export function generateCSS() {
       outline-offset: 2px;
     }
     .target-btn.active {
-      /* Cobalt (--primary) background + white text: the brand's clickable
-         treatment. --accent was previously used here with black text purely to
-         satisfy contrast at small size — Cobalt's 10.7:1 contrast clears white
-         text at any size, so this is now the correct pairing rather than a
-         workaround. */
       border-color: var(--primary);
       background-color: var(--primary);
       color: var(--on-primary);
     }
+    .sort-status-indicator {
+      font-size: var(--att-fs-body-sm, 0.875rem);
+      font-weight: var(--att-fw-bold, 700);
+    }
+    .sort-explanation-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--att-radius-sm, 6px);
+      padding: 8px 12px;
+      font-size: var(--att-fs-body-sm, 13px);
+      line-height: 1.4;
+      color: var(--text-main);
+      animation: fadeIn 0.2s ease;
+    }
     .sorting-categories-columns {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: var(--att-space-4, 16px);
     }
     .sorting-column {
@@ -159,9 +230,7 @@ export function generateCSS() {
       padding: var(--att-space-4, 16px);
     }
     .column-header {
-      /* AT&T Blue kept, sized up to the brand's own 19px floor for accent
-         text (3.01:1 on white — accepted at large-text size, not below it). */
-      font-size: var(--att-fs-h3, 1.25rem);
+      font-size: var(--att-fs-h3, 1.125rem);
       font-weight: var(--att-fw-bold, 700);
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -180,17 +249,11 @@ export function generateCSS() {
       background-color: var(--bg-body);
       border: 1px solid var(--border-color);
       border-radius: var(--att-radius-pill, 999px);
-      padding: 6px 12px;
+      padding: 6px 14px;
       font-size: var(--att-fs-body-sm, 0.875rem);
       font-weight: var(--att-fw-medium, 500);
       animation: fadeIn 0.2s ease;
     }
-    .sort-status-indicator {
-      font-size: var(--att-fs-body-sm, 0.875rem);
-      font-weight: var(--att-fw-medium, 500);
-      margin-left: 10px;
-    }
-
     .quiz-submit-btn {
       align-self: flex-start;
       margin-top: 10px;
@@ -212,18 +275,12 @@ export function generateCSS() {
     .quiz-submit-btn:hover {
       background-color: var(--primary-hover);
     }
-    .quiz-submit-btn:active:not(:disabled) {
+    .quiz-submit-btn:active {
       transform: scale(0.98);
     }
     .quiz-submit-btn:focus-visible {
       outline: 3px solid var(--att-cobalt, var(--primary));
       outline-offset: 2px;
-    }
-    .quiz-submit-btn:disabled {
-      background-color: var(--att-grey-2, #DCDFE3);
-      color: var(--att-grey-3, #BDC2C7);
-      opacity: 0.7;
-      cursor: not-allowed;
     }
     .quiz-feedback {
       margin-top: var(--att-space-4, 16px);
@@ -247,18 +304,24 @@ export function generateCSS() {
 }
 
 export function generateJS(config, instanceId) {
+  const instantFeedback = config.instantFeedback === true;
   return `
     var sortingChoices = {};
+    var mistakeCount = 0;
+    var originalCards = ${serializeForInlineScript(config.items)};
+    var instantFeedback = ${instantFeedback};
+
+    function updateMistakeHUD() {
+      var hud = document.getElementById('${instanceId}-mistakes-counter');
+      if (hud) hud.textContent = 'Mistakes: ' + mistakeCount;
+    }
 
     function assignCategory(idx, cat, btn) {
       sortingChoices[idx] = cat;
-
       var card = document.getElementById('${instanceId}-sort-card-' + idx);
-      var indicator = card.querySelector('.sort-status-indicator');
-      indicator.textContent = '-> assigned to ' + cat;
-      // Not the brand's clickable-only Cobalt (--primary) — this is a status readout,
-      // not a control.
-      indicator.style.color = 'var(--text-main)';
+      var indicator = document.getElementById('${instanceId}-indicator-' + idx);
+      var expl = document.getElementById('${instanceId}-expl-' + idx);
+      var item = originalCards[idx];
 
       document.querySelectorAll('.target-btn[data-idx="' + idx + '"]').forEach(function(targetBtn) {
         targetBtn.classList.toggle('active', targetBtn === btn);
@@ -284,39 +347,99 @@ export function generateJS(config, instanceId) {
         targetZone.appendChild(badge);
       }
 
+      if (instantFeedback) {
+        if (cat === item.category) {
+          indicator.textContent = '✓ Correct';
+          indicator.style.color = 'var(--success)';
+          if (expl) expl.style.display = 'block';
+        } else {
+          mistakeCount++;
+          updateMistakeHUD();
+          indicator.textContent = '✗ Incorrect Category';
+          indicator.style.color = 'var(--danger)';
+          if (expl) expl.style.display = 'none';
+        }
+      } else {
+        indicator.textContent = '-> Assigned to ' + cat;
+        indicator.style.color = 'var(--text-main)';
+        if (expl) expl.style.display = 'none';
+      }
+
       viewedItems.add(idx);
       updateProgress();
+
+      if (instantFeedback && Object.keys(sortingChoices).length === originalCards.length) {
+        var allRight = originalCards.every(function(it, i) { return sortingChoices[i] === it.category; });
+        if (allRight) updateTrackerComplete();
+      }
     }
 
     function checkSorting() {
       var allCorrect = true;
-      var originalCards = ${serializeForInlineScript(config.items)};
-
       originalCards.forEach(function(item, idx) {
         var choice = sortingChoices[idx];
-        var card = document.getElementById('${instanceId}-sort-card-' + idx);
-        var indicator = card.querySelector('.sort-status-indicator');
+        var indicator = document.getElementById('${instanceId}-indicator-' + idx);
+        var expl = document.getElementById('${instanceId}-expl-' + idx);
 
         if (choice === item.category) {
-          indicator.textContent = 'Correct';
-          indicator.style.color = 'var(--success)';
+          if (indicator) {
+            indicator.textContent = '✓ Correct';
+            indicator.style.color = 'var(--success)';
+          }
+          if (expl) expl.style.display = 'block';
         } else {
           allCorrect = false;
-          indicator.textContent = 'Incorrect';
-          indicator.style.color = 'var(--danger)';
+          mistakeCount++;
+          if (indicator) {
+            indicator.textContent = '✗ Incorrect (expected ' + item.category + ')';
+            indicator.style.color = 'var(--danger)';
+          }
+          if (expl) expl.style.display = 'block';
         }
       });
 
+      updateMistakeHUD();
+
       var feedback = document.getElementById('${instanceId}-sorting-feedback-box');
-      feedback.style.display = 'block';
-      if (allCorrect) {
-        feedback.className = 'quiz-feedback correct';
-        feedback.innerHTML = '<strong>Superb!</strong> All items sorted correctly.';
-        updateTrackerComplete();
-      } else {
-        feedback.className = 'quiz-feedback wrong';
-        feedback.innerHTML = '<strong>Try again.</strong> Some items are not in their correct categories.';
+      if (feedback) {
+        feedback.style.display = 'block';
+        if (allCorrect) {
+          feedback.className = 'quiz-feedback correct';
+          feedback.innerHTML = '<strong>Superb!</strong> All items sorted correctly into their categories.';
+          updateTrackerComplete();
+        } else {
+          feedback.className = 'quiz-feedback wrong';
+          feedback.innerHTML = '<strong>Review incorrect cards.</strong> See explanation cards above and adjust assignments.';
+        }
+        feedback.focus();
       }
+    }
+
+    function resetActivity() {
+      sortingChoices = {};
+      mistakeCount = 0;
+      updateMistakeHUD();
+
+      document.querySelectorAll('.target-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
+      });
+
+      document.querySelectorAll('.sort-status-indicator').forEach(function(ind) {
+        ind.textContent = '';
+      });
+
+      document.querySelectorAll('.sort-explanation-card').forEach(function(exp) {
+        exp.style.display = 'none';
+      });
+
+      document.querySelectorAll('.sorted-item-badge').forEach(function(b) {
+        b.remove();
+      });
+
+      var feedback = document.getElementById('${instanceId}-sorting-feedback-box');
+      if (feedback) { feedback.style.display = 'none'; feedback.innerHTML = ''; }
+      announce('Sorting activity reset.');
     }
 
     function initComponent() {
@@ -326,8 +449,11 @@ export function generateJS(config, instanceId) {
         });
       });
 
-      var sortingSubmitBtn = document.querySelector('.quiz-submit-btn');
-      if (sortingSubmitBtn) sortingSubmitBtn.addEventListener('click', checkSorting);
+      var verifyBtn = document.getElementById('${instanceId}-verify-btn');
+      if (verifyBtn) verifyBtn.addEventListener('click', checkSorting);
+
+      var resetBtn = document.getElementById('${instanceId}-reset-btn');
+      if (resetBtn) resetBtn.addEventListener('click', resetActivity);
     }`;
 }
 
@@ -339,11 +465,9 @@ export function generateJS(config, instanceId) {
 export function validate(config) {
   const results = [];
   
-  // Check minimum items
   if (!Array.isArray(config.items) || config.items.length < 2) {
     results.push({ valid: false, error: 'Add at least two sortable items.' });
   } else {
-    // Validate each item has required fields
     config.items.forEach((item, index) => {
       if (!item.title || !String(item.title).trim()) {
         results.push({ valid: false, error: `Item ${index + 1}: Title is required.` });
@@ -353,7 +477,6 @@ export function validate(config) {
       }
     });
     
-    // Check that at least 2 unique categories exist
     const categories = new Set(config.items.map(item => item.category));
     if (categories.size < 2) {
       results.push({ valid: false, error: 'Items must have at least two different categories.' });
