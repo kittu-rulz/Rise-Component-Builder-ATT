@@ -114,4 +114,45 @@ describe('comparison slider component', () => {
     });
     expect(invalidPositionResult.valid).toBe(false);
   });
+
+  test('applies custom aspectRatio and imageFit CSS variables', () => {
+    const html = comparisonSlider.generateHTML({
+      aspectRatio: '4/3',
+      imageFit: 'contain',
+      items: [{
+        beforeImage: 'https://example.com/b.jpg',
+        afterImage: 'https://example.com/a.jpg'
+      }]
+    }, INSTANCE_ID);
+
+    expect(html).toContain('--comparison-aspect-ratio: 4 / 3');
+    expect(html).toContain('--comparison-img-fit: contain');
+  });
+
+  test('allows item-level imageFit override', () => {
+    const html = comparisonSlider.generateHTML({
+      aspectRatio: '1/1',
+      imageFit: 'cover',
+      items: [{
+        beforeImage: 'https://example.com/b.jpg',
+        afterImage: 'https://example.com/a.jpg',
+        imageFit: 'contain'
+      }]
+    }, INSTANCE_ID);
+
+    expect(html).toContain('--comparison-aspect-ratio: 1 / 1');
+    expect(html).toContain('--comparison-img-fit: contain');
+  });
+
+  test('renders relative asset paths safely', () => {
+    const html = comparisonSlider.generateHTML({
+      items: [{
+        beforeImage: 'assets/router-before.jpg',
+        afterImage: 'assets/router-after.jpg'
+      }]
+    }, INSTANCE_ID);
+
+    expect(html).toContain('src="assets/router-before.jpg"');
+    expect(html).toContain('src="assets/router-after.jpg"');
+  });
 });

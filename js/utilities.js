@@ -486,8 +486,14 @@ export function sanitizePreviewConfig(config, componentId) {
     if (componentId === 'multiple-choice' || componentId === 'multiple-select') safeItem.label = sanitizeRichText(item.label);
     if (componentId === 'fill-blank') safeItem.title = sanitizeRichText(item.title);
     if (item.image !== undefined) safeItem.image = sanitizeURL(item.image, { allowDataImage: true, allowBlob: true, allowRelative: true });
+    if (item.beforeImage !== undefined) safeItem.beforeImage = sanitizeURL(item.beforeImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
+    if (item.afterImage !== undefined) safeItem.afterImage = sanitizeURL(item.afterImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
     if (item.iconImage !== undefined) safeItem.iconImage = sanitizeURL(item.iconImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
     if (item.posterImage !== undefined) safeItem.posterImage = sanitizeURL(item.posterImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
+    if (item.beforeLabel !== undefined) safeItem.beforeLabel = sanitizeRichText(item.beforeLabel);
+    if (item.afterLabel !== undefined) safeItem.afterLabel = sanitizeRichText(item.afterLabel);
+    if (item.beforeAltText !== undefined) safeItem.beforeAltText = String(item.beforeAltText || '');
+    if (item.afterAltText !== undefined) safeItem.afterAltText = String(item.afterAltText || '');
     if (item.actionUrl !== undefined) safeItem.actionUrl = sanitizeURL(item.actionUrl);
     if (item.captionsUrl !== undefined) safeItem.captionsUrl = sanitizeURL(item.captionsUrl, { allowBlob: true, allowRelative: true });
     if (item.transcript !== undefined) safeItem.transcript = sanitizeRichText(item.transcript);
@@ -515,6 +521,12 @@ export function sanitizePreviewConfig(config, componentId) {
     if (item.question !== undefined) safeItem.question = sanitizeRichText(item.question);
     return safeItem;
   });
+  if (config.aspectRatio !== undefined) {
+    result.aspectRatio = ['16/9', '4/3', '3/2', '1/1', '3/4', '9/16', '2/1'].includes(config.aspectRatio) ? config.aspectRatio : '16/9';
+  }
+  if (config.imageFit !== undefined) {
+    result.imageFit = config.imageFit === 'contain' ? 'contain' : 'cover';
+  }
   result.backgroundImage = sanitizeURL(result.backgroundImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
   result.backgroundAltText = String(result.backgroundAltText || '');
   result.backgroundDecorative = Boolean(result.backgroundDecorative);

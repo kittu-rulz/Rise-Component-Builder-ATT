@@ -15,7 +15,7 @@
 // index.html's asset URLs and generated import map (docs/ARCHITECTURE.md, "Cache-busting").
 // So on each release: bump APP_VERSION here + package.json, then run `npm run stamp` (or
 // `npm run build`) and commit the re-stamped index.html alongside.
-export const APP_VERSION = '2.4.2+20260911.1603';
+export const APP_VERSION = '2.4.3+20260911.1611';
 
 // The build-metadata suffix above is stamped as YYYYMMDD.HHmm — compact and sortable,
 // but raw semver build metadata can't contain spaces or colons (semver.org #spec-item-10),

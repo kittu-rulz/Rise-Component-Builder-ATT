@@ -1,5 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeAttribute, escapeHTML, sanitizeRichText } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, sanitizeRichText, sanitizeURL } from '../js/utilities.js';
 import { getAttIconSvg } from '../js/att-icons.js';
 
 /**
@@ -9,8 +9,10 @@ import { getAttIconSvg } from '../js/att-icons.js';
  * @property {string} [content] - Explanatory caption / instructions
  * @property {number} [initialPosition] - Starting slider position (0-100)
  * @property {string} [orientation] - 'horizontal' or 'vertical'
+ * @property {string} [aspectRatio] - '16/9', '4/3', '3/2', '1/1', '3/4', '9/16', '2/1'
+ * @property {string} [imageFit] - 'cover' or 'contain'
  * @property {boolean} [showLabels] - Whether to show Before/After floating badges
- * @property {Array<{beforeImage?: string, afterImage?: string, beforeLabel?: string, afterLabel?: string, beforeAltText?: string, afterAltText?: string}>} items
+ * @property {Array<{beforeImage?: string, afterImage?: string, beforeLabel?: string, afterLabel?: string, beforeAltText?: string, afterAltText?: string, imageFit?: string}>} items
  */
 
 export const id = 'comparison-slider';
@@ -23,6 +25,8 @@ export const defaultConfig = {
   content: 'Drag the slider handle or use the arrow keys to compare network capabilities before and after fiber modernization.',
   initialPosition: 50,
   orientation: 'horizontal',
+  aspectRatio: '16/9',
+  imageFit: 'cover',
   showLabels: true,
   items: [
     {
@@ -31,7 +35,8 @@ export const defaultConfig = {
       beforeLabel: 'Before (Legacy Copper)',
       afterLabel: 'After (Fiber Optic 5G)',
       beforeAltText: 'Legacy copper wire network diagram with bandwidth constraints',
-      afterAltText: 'Modern ultra-fast fiber optic 5G infrastructure diagram'
+      afterAltText: 'Modern ultra-fast fiber optic 5G infrastructure diagram',
+      imageFit: 'cover'
     }
   ]
 };
@@ -81,19 +86,34 @@ export function generateHTML(config, instanceId) {
   const beforeLabel = item.beforeLabel || 'Before';
   const afterLabel = item.afterLabel || 'After';
 
-  const beforeMedia = item.beforeImage
-    ? `<img src="${escapeAttribute(item.beforeImage)}" alt="${escapeAttribute(item.beforeAltText || beforeLabel)}" class="comparison-img">`
+  const imageFit = (item.imageFit === 'contain' || config.imageFit === 'contain') ? 'contain' : 'cover';
+  const aspectMap = {
+    '16/9': '16 / 9',
+    '4/3': '4 / 3',
+    '3/2': '3 / 2',
+    '1/1': '1 / 1',
+    '3/4': '3 / 4',
+    '9/16': '9 / 16',
+    '2/1': '2 / 1'
+  };
+  const aspectCss = aspectMap[config.aspectRatio] || '16 / 9';
+
+  const beforeSrc = sanitizeURL(item.beforeImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
+  const afterSrc = sanitizeURL(item.afterImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
+
+  const beforeMedia = beforeSrc
+    ? `<img src="${escapeAttribute(beforeSrc)}" alt="${escapeAttribute(item.beforeAltText || beforeLabel)}" class="comparison-img">`
     : renderSchematicBeforeSvg();
 
-  const afterMedia = item.afterImage
-    ? `<img src="${escapeAttribute(item.afterImage)}" alt="${escapeAttribute(item.afterAltText || afterLabel)}" class="comparison-img">`
+  const afterMedia = afterSrc
+    ? `<img src="${escapeAttribute(afterSrc)}" alt="${escapeAttribute(item.afterAltText || afterLabel)}" class="comparison-img">`
     : renderSchematicAfterSvg();
 
   return `
     <div class="comparison-slider-card ${isVertical ? 'orientation-vertical' : 'orientation-horizontal'}" id="${instanceId}-slider-card" style="--slider-pos: ${initialPos}%;">
       ${config.title ? `<h3 class="comparison-title">${escapeHTML(config.title)}</h3>` : ''}
       ${config.content ? `<p class="comparison-description">${sanitizeRichText(config.content)}</p>` : ''}
-      <div class="comparison-stage" id="${instanceId}-stage" role="region" aria-label="Before and after visual comparison">
+      <div class="comparison-stage" id="${instanceId}-stage" role="region" aria-label="Before and after visual comparison" style="--comparison-aspect-ratio: ${aspectCss}; --comparison-img-fit: ${imageFit};">
         <div class="comparison-pane pane-after">
           ${afterMedia}
           ${showLabels ? `<span class="comparison-badge badge-after">${escapeHTML(afterLabel)}</span>` : ''}
@@ -150,7 +170,8 @@ export function generateCSS() {
     .comparison-stage {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 9;
+      aspect-ratio: var(--comparison-aspect-ratio, 16 / 9);
+      min-height: 240px;
       border-radius: var(--att-radius-md, 12px);
       overflow: hidden;
       user-select: none;
@@ -182,7 +203,8 @@ export function generateCSS() {
     .comparison-img, .comparison-fallback-svg {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: var(--comparison-img-fit, cover);
+      object-position: center;
       display: block;
       pointer-events: none;
     }

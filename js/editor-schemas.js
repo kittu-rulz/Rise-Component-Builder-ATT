@@ -471,6 +471,25 @@ export const editorSchemas = {
           { value: 'vertical', label: 'Vertical Split (Top / Bottom)' }
         ]
       }),
+      field('aspectRatio', 'Frame Aspect Ratio', 'select', {
+        default: '16/9',
+        options: [
+          { value: '16/9', label: '16:9 (Widescreen Landscape)' },
+          { value: '4/3', label: '4:3 (Standard Landscape)' },
+          { value: '3/2', label: '3:2 (Classic Photo)' },
+          { value: '1/1', label: '1:1 (Square)' },
+          { value: '3/4', label: '3:4 (Standard Portrait)' },
+          { value: '9/16', label: '9:16 (Tall / Mobile Portrait)' },
+          { value: '2/1', label: '2:1 (Ultra-Wide)' }
+        ]
+      }),
+      field('imageFit', 'Image Fit & Scaling', 'select', {
+        default: 'cover',
+        options: [
+          { value: 'cover', label: 'Cover (Fill frame, crop excess)' },
+          { value: 'contain', label: 'Contain (Fit entire image, no crop)' }
+        ]
+      }),
       field('initialPosition', 'Initial Slider Position (%)', 'range', { default: 50, min: 0, max: 100, step: 1, suffix: '%' }),
       field('showLabels', 'Show Floating Before/After Badges', 'checkbox', { default: true })
     ],
@@ -480,7 +499,14 @@ export const editorSchemas = {
       field('beforeImage', 'Before Image', 'image', { required: false, default: '', preferredDimensions: '1600 × 900 px (16:9)' }),
       field('beforeAltText', 'Before Image Alternative Text', 'textarea', { default: '' }),
       field('afterImage', 'After Image', 'image', { required: false, default: '', preferredDimensions: '1600 × 900 px (16:9)' }),
-      field('afterAltText', 'After Image Alternative Text', 'textarea', { default: '' })
+      field('afterAltText', 'After Image Alternative Text', 'textarea', { default: '' }),
+      field('imageFit', 'Item Image Fit (Override)', 'select', {
+        default: 'cover',
+        options: [
+          { value: 'cover', label: 'Cover (Fill frame)' },
+          { value: 'contain', label: 'Contain (Fit entire image)' }
+        ]
+      })
     ]
   },
   'dial-gauge': {
