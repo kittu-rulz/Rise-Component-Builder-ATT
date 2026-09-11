@@ -29,7 +29,7 @@ export function generateHTML(config, instanceId) {
         ${config.items.map((item, idx) => `
           <div class="timeline-node ${idx === 0 ? 'active' : ''}" id="${instanceId}-timeline-tab-${idx}" data-idx="${idx}" role="tab" tabindex="${idx === 0 ? '0' : '-1'}" aria-selected="${idx === 0}" aria-controls="${instanceId}-timeline-slide-${idx}">
             <div class="node-marker">${(item.markerLabel || '').trim() ? `<span class="node-marker-label" aria-hidden="true">${escapeHTML(String(item.markerLabel).trim())}</span>` : ''}</div>
-            <span class="node-label">${escapeHTML(item.title || 'Step')}</span>
+            <span class="node-label">${item.title ? sanitizeRichText(item.title) : 'Step'}</span>
           </div>
         `).join('')}
       </div>
@@ -51,7 +51,7 @@ export function generateHTML(config, instanceId) {
             <div class="timeline-slide-layout ${hasImage ? 'has-media' : ''}">
               ${imageHtml}
               <div class="timeline-slide-text">
-                <h4>${escapeHTML(item.title || 'Phase Header')}</h4>
+                <h4>${item.title ? sanitizeRichText(item.title) : 'Phase Header'}</h4>
                 <p>${contentHtml}</p>
               </div>
             </div>
@@ -93,20 +93,31 @@ export function generateCSS() {
     }
     .timeline-nodes-row {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       position: relative;
-      padding-bottom: 12px;
+      padding: 6px 4px 14px;
       overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color, #DCDFE3) transparent;
+      -webkit-overflow-scrolling: touch;
     }
-    .timeline-nodes-row::before {
-      content: '';
-      position: absolute;
-      left: 10px;
-      right: 10px;
-      top: 10px;
-      height: 2px;
-      background-color: var(--border-color);
-      z-index: 1;
+    .timeline-nodes-row::-webkit-scrollbar {
+      height: 6px;
+    }
+    .timeline-nodes-row::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .timeline-nodes-row::-webkit-scrollbar-thumb {
+      background-color: var(--border-color, #DCDFE3);
+      border-radius: 999px;
+    }
+    .timeline-nodes-row::-webkit-scrollbar-thumb:hover {
+      background-color: var(--text-muted, #6B7280);
+    }
+    .timeline-nodes-row::-webkit-scrollbar-button {
+      display: none;
+      width: 0;
+      height: 0;
     }
     .timeline-node {
       display: flex;
@@ -114,10 +125,25 @@ export function generateCSS() {
       align-items: center;
       cursor: pointer;
       z-index: 2;
-      flex: 1;
+      flex: 1 0 100px;
+      min-width: 90px;
       min-height: 44px;
       justify-content: flex-start;
-      min-width: 80px;
+      position: relative;
+      padding: 0 4px;
+    }
+    .timeline-node::before {
+      content: '';
+      position: absolute;
+      left: -50%;
+      right: 50%;
+      top: 11px;
+      height: 2px;
+      background-color: var(--border-color, #DCDFE3);
+      z-index: 1;
+    }
+    .timeline-node:first-child::before {
+      display: none;
     }
     .timeline-node:focus-visible {
       outline: none;
@@ -140,6 +166,8 @@ export function generateCSS() {
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+      z-index: 2;
     }
     .node-marker-label {
       font-size: var(--att-fs-eyebrow, 0.75rem);
@@ -160,6 +188,8 @@ export function generateCSS() {
       margin-top: 8px;
       text-align: center;
       transition: color 0.2s;
+      word-break: break-word;
+      max-width: 100%;
     }
     .timeline-node.active .node-label {
       color: var(--primary);
