@@ -362,8 +362,9 @@ export function generateCSS() {
         transition: none !important;
         animation: none !important;
       }
-      ${getItemMediaCSS()}
-    }`;
+    }
+
+    ${getItemMediaCSS()}`;
 }
 
 export function generateJS(config, instanceId) {

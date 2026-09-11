@@ -795,6 +795,7 @@ export function getItemMediaCSS() {
       border-radius: var(--att-radius-md, 8px);
       overflow: hidden;
       background-color: rgba(0, 0, 0, 0.03);
+      position: relative;
     }
 
     .item-media-img {
@@ -803,6 +804,7 @@ export function getItemMediaCSS() {
       height: 100%;
       max-width: 100%;
       object-fit: var(--item-media-fit, contain);
+      object-position: center center;
     }
 
     .item-media-aspect-16-9 {
@@ -818,7 +820,14 @@ export function getItemMediaCSS() {
       aspect-ratio: 3 / 2;
     }
     .item-media-aspect-original {
+      aspect-ratio: auto;
       height: auto;
+    }
+    .item-media-aspect-original .item-media-img {
+      width: 100%;
+      height: auto;
+      max-height: 560px;
+      object-fit: var(--item-media-fit, contain);
     }
 
     .item-media-caption {
