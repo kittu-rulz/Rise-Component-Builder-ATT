@@ -138,7 +138,7 @@ export function revokeLocalBlobURL(url) {
 }
 
 export function sanitizeURL(value, options = {}) {
-  const { allowDataImage = false, allowBlob = false, allowRelative = false, fallback = '' } = options;
+  const { allowDataImage = false, allowBlob = false, allowRelative = false, allowMailto = true, allowTel = true, fallback = '' } = options;
   const input = String(value ?? '').trim();
   if (!input) return fallback;
   const schemeEnd = input.indexOf(':');
@@ -152,6 +152,12 @@ export function sanitizeURL(value, options = {}) {
     return /^data:image\/(?:png|jpeg|gif|webp|avif);base64,[a-z0-9+/=]+$/i.test(input) ? input : fallback;
   }
   if (normalizedScheme === 'blob') return allowBlob && localBlobURLs.has(input) ? input : fallback;
+  if (allowMailto && normalizedScheme === 'mailto') {
+    return /^mailto:[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(input) ? input : fallback;
+  }
+  if (allowTel && normalizedScheme === 'tel') {
+    return /^tel:[+0-9()\-.\s]+$/i.test(input) ? input : fallback;
+  }
   if (!['http', 'https'].includes(normalizedScheme)) return fallback;
 
   try {
@@ -255,7 +261,7 @@ export function sanitizeRichText(value) {
       const closeStyled = /^<\s*\/\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small)\s*>$/i.exec(tag);
       const fontTag = /^<\s*font\s+color\s*=\s*(["'])(.*?)\1\s*\/?>$/i.exec(tag);
       const closeFont = /^<\s*\/\s*font\s*>$/i.exec(tag);
-      const anchor = /^<\s*a\s+href\s*=\s*(["'])(.*?)\1(?:\s+target\s*=\s*(["'])_blank\3)?\s*>$/i.exec(tag);
+      const anchor = /^<\s*a\s+([^>]*?)href\s*=\s*(["'])(.*?)\2([^>]*?)\/?>$/i.exec(tag);
       const closeAnchor = /^<\s*\/\s*a\s*>$/i.exec(tag);
 
       if (styledTag) {
@@ -272,8 +278,23 @@ export function sanitizeRichText(value) {
       } else if (closeFont) {
         output += '</span>';
       } else if (anchor) {
-        const href = sanitizeURL(decodeEntities(anchor[2]), { allowRelative: true });
-        output += href ? `<a href="${escapeAttribute(href)}"${anchor[3] ? ' target="_blank" rel="noopener noreferrer"' : ''}>` : '&lt;a&gt;';
+        const combinedAttrs = `${anchor[1]} ${anchor[4]}`;
+        const hasHostileAttr = /(?:\bon\w+\s*=|\bid\s*=|\bname\s*=|\bdata-\w+\s*=)/i.test(combinedAttrs);
+        if (hasHostileAttr) {
+          output += escapeHTML(decodeEntities(tag));
+        } else {
+          const href = sanitizeURL(decodeEntities(anchor[3]), { allowRelative: true });
+          if (href) {
+            const isTargetBlank = /\btarget\s*=\s*(["'])_blank\1/i.test(combinedAttrs);
+            const styleMatch = /\bstyle\s*=\s*(["'])(.*?)\1/i.exec(combinedAttrs);
+            const safeStyle = styleMatch ? sanitizeInlineStyle(decodeEntities(styleMatch[2])) : '';
+            const targetAttr = isTargetBlank ? ' target="_blank" rel="noopener noreferrer"' : '';
+            const styleAttr = safeStyle ? ` style="${escapeAttribute(safeStyle)}"` : '';
+            output += `<a href="${escapeAttribute(href)}"${targetAttr}${styleAttr}>`;
+          } else {
+            output += '&lt;a&gt;';
+          }
+        }
       } else if (closeAnchor) {
         output += '</a>';
       } else {

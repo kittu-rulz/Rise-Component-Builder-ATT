@@ -66,6 +66,26 @@ describe('sanitizeRichText with inline formatting', () => {
     expect(output).toContain('<p style="font-size: 18px">Large</p>');
   });
 
+  test('preserves valid hyperlinks with target and rel attributes', () => {
+    const input = '<a href="https://www.att.com/portal" target="_blank" rel="noopener noreferrer">AT&amp;T Portal</a>';
+    const output = sanitizeRichText(input);
+    expect(output).toContain('<a href="https://www.att.com/portal" target="_blank" rel="noopener noreferrer">AT&amp;T Portal</a>');
+  });
+
+  test('preserves mailto and tel hyperlinks safely', () => {
+    const input = '<a href="mailto:support@att.com">Email Us</a> <a href="tel:+18001234567">Call Us</a>';
+    const output = sanitizeRichText(input);
+    expect(output).toContain('<a href="mailto:support@att.com">Email Us</a>');
+    expect(output).toContain('<a href="tel:+18001234567">Call Us</a>');
+  });
+
+  test('neutralizes unsafe javascript URLs in hyperlinks', () => {
+    const input = '<a href="javascript:alert(1)">Click Me</a>';
+    const output = sanitizeRichText(input);
+    expect(output).not.toContain('javascript:alert');
+    expect(output).toContain('&lt;a&gt;');
+  });
+
   test('neutralizes scripts, event handlers and disallowed styles', () => {
     const input = '<span style="color: blue;" onclick="alert(1)">Click</span><script>bad()</script>';
     const output = sanitizeRichText(input);
@@ -101,7 +121,7 @@ describe('createRichTextEditor UI component', () => {
     expect(editor.validationControl.innerHTML).toContain('Initial content');
   });
 
-  test('includes formatting toolbar buttons (Bold, Italic, Underline, Size, Color, Highlight, Lists, Clear)', () => {
+  test('includes formatting toolbar buttons (Bold, Italic, Underline, Strike, Link, Size, Color, Highlight, Lists, Clear)', () => {
     const editor = createRichTextEditor({
       controlId: 'test-field-2',
       fieldId: 'content',
@@ -112,7 +132,27 @@ describe('createRichTextEditor UI component', () => {
     const toolbar = editor.element.querySelector('.rich-text-toolbar');
     expect(toolbar).not.toBeNull();
     const buttons = toolbar.querySelectorAll('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(6);
+    expect(buttons.length).toBeGreaterThanOrEqual(7);
+
+    const linkBtn = toolbar.querySelector('button[title*="Link"]');
+    expect(linkBtn).not.toBeNull();
+  });
+
+  test('opens link popover on Link button click', () => {
+    const editor = createRichTextEditor({
+      controlId: 'test-link-field',
+      fieldId: 'content',
+      value: 'Check our site',
+      onChange
+    });
+
+    const linkBtn = editor.element.querySelector('button[title*="Link"]');
+    linkBtn.click();
+
+    const popover = editor.element.querySelector('.rt-link-popover');
+    expect(popover).not.toBeNull();
+    const urlInput = popover.querySelector('.rt-link-input');
+    expect(urlInput).not.toBeNull();
   });
 
   test('supports single line mode without list buttons', () => {

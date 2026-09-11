@@ -200,6 +200,232 @@ export function createRichTextEditor({
   );
   toolbar.appendChild(underlineBtn);
 
+  // Strikethrough
+  const strikeBtn = createToolbarButton(
+    'Strikethrough', 'Strikethrough',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4H9a3 3 0 0 0-2.83 4"></path><path d="M14 12a4 4 0 0 1 0 8H6"></path><line x1="4" y1="12" x2="20" y2="12"></line></svg>',
+    () => executeFormatting('strikeThrough', null, editor),
+    true
+  );
+  toolbar.appendChild(strikeBtn);
+
+  // Hyperlink Popover & Action
+  const linkWrapper = document.createElement('div');
+  linkWrapper.className = 'rt-dropdown-wrapper';
+
+  function getSurroundingAnchor() {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    let node = sel.anchorNode;
+    while (node && node !== editor) {
+      if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'a') {
+        return node;
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function openLinkPopover() {
+    if (activePopover && activePopover.dataset.popoverType === 'link') {
+      closePopovers();
+      return;
+    }
+    closePopovers();
+
+    const existingAnchor = getSurroundingAnchor();
+    const sel = window.getSelection();
+    let savedRange = null;
+    if (sel && sel.rangeCount > 0) {
+      savedRange = sel.getRangeAt(0).cloneRange();
+    }
+
+    const initialHref = existingAnchor ? existingAnchor.getAttribute('href') || '' : '';
+    const initialText = existingAnchor
+      ? existingAnchor.textContent
+      : (savedRange ? savedRange.toString() : '');
+    const initialNewTab = existingAnchor
+      ? existingAnchor.getAttribute('target') === '_blank'
+      : true;
+
+    const popover = document.createElement('div');
+    popover.className = 'rt-popover rt-link-popover';
+    popover.dataset.popoverType = 'link';
+
+    const heading = document.createElement('div');
+    heading.className = 'rt-popover-heading';
+    heading.textContent = existingAnchor ? 'Edit Hyperlink' : 'Insert Hyperlink';
+    popover.appendChild(heading);
+
+    // URL Field
+    const urlGroup = document.createElement('div');
+    urlGroup.className = 'rt-link-field-group';
+    const urlLabel = document.createElement('label');
+    urlLabel.className = 'rt-link-field-label';
+    urlLabel.textContent = 'Link URL:';
+    const urlInput = document.createElement('input');
+    urlInput.type = 'text';
+    urlInput.className = 'rt-link-input';
+    urlInput.placeholder = 'https://example.com or mailto:...';
+    urlInput.value = initialHref;
+    urlGroup.append(urlLabel, urlInput);
+    popover.appendChild(urlGroup);
+
+    // Text Field
+    const textGroup = document.createElement('div');
+    textGroup.className = 'rt-link-field-group';
+    const textLabel = document.createElement('label');
+    textLabel.className = 'rt-link-field-label';
+    textLabel.textContent = 'Display Text:';
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'rt-link-input';
+    textInput.placeholder = 'Text to display';
+    textInput.value = initialText;
+    textGroup.append(textLabel, textInput);
+    popover.appendChild(textGroup);
+
+    // Target Checkbox
+    const targetGroup = document.createElement('label');
+    targetGroup.className = 'rt-link-checkbox-label';
+    const targetCheckbox = document.createElement('input');
+    targetCheckbox.type = 'checkbox';
+    targetCheckbox.checked = initialNewTab;
+    const targetSpan = document.createElement('span');
+    targetSpan.textContent = 'Open in new tab';
+    targetGroup.append(targetCheckbox, targetSpan);
+    popover.appendChild(targetGroup);
+
+    // Actions Row
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'rt-link-actions';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'rt-link-btn rt-link-btn-save';
+    saveBtn.textContent = existingAnchor ? 'Update' : 'Add Link';
+    saveBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      let rawUrl = urlInput.value.trim();
+      if (!rawUrl) {
+        urlInput.focus();
+        return;
+      }
+
+      if (!/^(?:https?:\/\/|mailto:|tel:|#|\/)/i.test(rawUrl)) {
+        rawUrl = `https://${rawUrl}`;
+      }
+
+      const displayText = textInput.value.trim() || rawUrl;
+      const isNewTab = targetCheckbox.checked;
+
+      if (existingAnchor) {
+        existingAnchor.setAttribute('href', rawUrl);
+        if (isNewTab) {
+          existingAnchor.setAttribute('target', '_blank');
+          existingAnchor.setAttribute('rel', 'noopener noreferrer');
+        } else {
+          existingAnchor.removeAttribute('target');
+          existingAnchor.removeAttribute('rel');
+        }
+        if (textInput.value.trim() && textInput.value.trim() !== existingAnchor.textContent) {
+          existingAnchor.textContent = textInput.value.trim();
+        }
+      } else {
+        if (savedRange) {
+          const currentSel = window.getSelection();
+          currentSel.removeAllRanges();
+          currentSel.addRange(savedRange);
+        }
+
+        const a = document.createElement('a');
+        a.setAttribute('href', rawUrl);
+        if (isNewTab) {
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer');
+        }
+
+        if (!savedRange || savedRange.collapsed) {
+          a.textContent = displayText;
+          if (savedRange) {
+            savedRange.insertNode(a);
+            savedRange.setStartAfter(a);
+            savedRange.collapse(true);
+          } else {
+            editor.appendChild(a);
+          }
+        } else {
+          const fragment = savedRange.extractContents();
+          if (textInput.value.trim() && textInput.value.trim() !== fragment.textContent) {
+            a.textContent = textInput.value.trim();
+          } else {
+            a.appendChild(fragment);
+          }
+          savedRange.insertNode(a);
+        }
+      }
+
+      closePopovers();
+      editor.focus();
+      triggerChange();
+    });
+    actionsRow.appendChild(saveBtn);
+
+    if (existingAnchor) {
+      const unlinkBtn = document.createElement('button');
+      unlinkBtn.type = 'button';
+      unlinkBtn.className = 'rt-link-btn rt-link-btn-danger';
+      unlinkBtn.textContent = 'Remove';
+      unlinkBtn.title = 'Remove link';
+      unlinkBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        existingAnchor.replaceWith(...existingAnchor.childNodes);
+        closePopovers();
+        editor.focus();
+        triggerChange();
+      });
+      actionsRow.appendChild(unlinkBtn);
+    }
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'rt-link-btn rt-link-btn-ghost';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closePopovers();
+      editor.focus();
+    });
+    actionsRow.appendChild(cancelBtn);
+
+    popover.appendChild(actionsRow);
+
+    popover.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closePopovers();
+        editor.focus();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        saveBtn.click();
+      }
+    });
+
+    linkWrapper.appendChild(popover);
+    activePopover = popover;
+    setTimeout(() => urlInput.focus(), 50);
+  }
+
+  const linkBtn = createToolbarButton(
+    'Hyperlink', 'Insert or Edit Link (Ctrl+K)',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>',
+    () => openLinkPopover(),
+    true
+  );
+  linkWrapper.appendChild(linkBtn);
+  toolbar.appendChild(linkWrapper);
+
   // Separator
   const sep1 = document.createElement('span');
   sep1.className = 'rt-separator';
@@ -446,6 +672,9 @@ export function createRichTextEditor({
         e.preventDefault();
         executeFormatting('underline', null, editor);
         triggerChange();
+      } else if (e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        openLinkPopover();
       }
     }
   });
@@ -456,6 +685,8 @@ export function createRichTextEditor({
       boldBtn.classList.toggle('is-active', document.queryCommandState('bold'));
       italicBtn.classList.toggle('is-active', document.queryCommandState('italic'));
       underlineBtn.classList.toggle('is-active', document.queryCommandState('underline'));
+      strikeBtn.classList.toggle('is-active', document.queryCommandState('strikeThrough'));
+      linkBtn.classList.toggle('is-active', Boolean(getSurroundingAnchor()));
     } catch {
       // queryCommandState might fail in certain environments
     }
