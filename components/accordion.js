@@ -254,6 +254,12 @@ export function generateCSS() {
       font-size: var(--att-fs-body, 16px);
       line-height: var(--att-lh-body, 1.5);
       color: var(--text-main);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .accordion-body p,
+    .accordion-body .item-text-slot {
       max-width: 70ch;
     }
 
