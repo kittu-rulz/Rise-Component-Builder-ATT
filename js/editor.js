@@ -246,20 +246,24 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
     warning.className = 'field-warning';
     warning.id = `${controlId}-warning`;
 
-    const updateError = control => {
+    const updateError = ctrl => {
+      const targetControl = ctrl || control;
       const errors = validateSchemaField(field, model[field.id], items);
       const warningText = getAccessibilityWarning(field, model[field.id], model);
       error.textContent = errors[0] || '';
       warning.textContent = warningText;
       wrapper.classList.toggle('has-error', errors.length > 0);
       wrapper.classList.toggle('has-warning', Boolean(warningText));
-      control.setAttribute('aria-invalid', String(errors.length > 0));
-      control.setAttribute('aria-describedby', [control.dataset.guidanceId, error.id, warningText ? warning.id : ''].filter(Boolean).join(' '));
+      if (targetControl) {
+        targetControl.setAttribute('aria-invalid', String(errors.length > 0));
+        targetControl.setAttribute('aria-describedby', [targetControl.dataset?.guidanceId, error.id, warningText ? warning.id : ''].filter(Boolean).join(' '));
+      }
     };
-    const updateValue = (value, control) => {
+    const updateValue = (value, ctrl) => {
+      const targetControl = ctrl || control;
       if (field.type === 'radio' && field.groupAcrossItems) items.forEach(entry => { entry[field.id] = false; });
       model[field.id] = value;
-      updateError(control);
+      updateError(targetControl);
       refreshDependentWarnings(model, field.id);
       onChange();
     };
@@ -283,6 +287,7 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
         }
       });
       fieldElement = media.element;
+      control = media.validationControl;
     } else if (field.type === 'richtext') {
       const rte = createRichTextEditor({
         controlId,
