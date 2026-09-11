@@ -117,8 +117,9 @@ export function normalizeItemMedia(item) {
  */
 export function isItemMediaActive(media) {
   if (!media || typeof media !== 'object') return false;
-  if (!media.type || media.type === 'none') return false;
-  return Boolean(media.src || media.mediaId);
+  const target = media.media && typeof media.media === 'object' ? media.media : media;
+  if (!target.type || target.type === 'none') return false;
+  return Boolean(target.src || target.mediaId || target.fileName);
 }
 
 /**
@@ -266,7 +267,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
           media.mediaId = value.mediaId;
           media.fileName = value.name || '';
           media.mimeType = value.mimeType || '';
-          media.src = value.name || '';
+          media.src = value;
         } else if (typeof value === 'string') {
           media.sourceType = 'url';
           media.src = value;
@@ -656,9 +657,13 @@ export function renderItemMediaElement(media, instanceId, itemIndex) {
   if (!isItemMediaActive(media)) return '';
 
   const normalized = normalizeItemMedia({ media });
-  let resolvedSrc = normalized.src || '';
-  if (normalized.mediaId) {
-    resolvedSrc = peekMediaObjectURL(normalized.mediaId) || normalized.fileName || resolvedSrc;
+  let resolvedSrc = '';
+  if (normalized.src && typeof normalized.src === 'string' && (normalized.src.startsWith('blob:') || normalized.src.startsWith('data:') || normalized.src.startsWith('assets/') || normalized.src.startsWith('http://') || normalized.src.startsWith('https://') || normalized.src.startsWith('/') || normalized.src.startsWith('./'))) {
+    resolvedSrc = normalized.src;
+  } else if (normalized.mediaId) {
+    resolvedSrc = peekMediaObjectURL(normalized.mediaId) || (typeof normalized.src === 'string' ? normalized.src : '') || normalized.fileName || '';
+  } else {
+    resolvedSrc = (typeof normalized.src === 'string' ? normalized.src : '') || normalized.fileName || '';
   }
   const src = escapeAttribute(resolvedSrc);
   const alt = normalized.decorative ? '' : escapeAttribute(normalized.alt || 'Item illustration');
@@ -725,12 +730,13 @@ export function renderItemMediaElement(media, instanceId, itemIndex) {
  * @param {number} itemIndex
  * @returns {string}
  */
-export function wrapItemMediaContent(media, contentHTML, instanceId, itemIndex) {
+export function wrapItemMediaContent(media, contentHTML, instanceId = 'comp', itemIndex = 0) {
   if (!isItemMediaActive(media)) {
     return contentHTML;
   }
 
-  const normalized = normalizeItemMedia({ media });
+  const targetMedia = media && typeof media === 'object' && media.media ? media.media : media;
+  const normalized = normalizeItemMedia({ media: targetMedia });
   const mediaHTML = renderItemMediaElement(normalized, instanceId, itemIndex);
   const placement = normalized.placement;
 

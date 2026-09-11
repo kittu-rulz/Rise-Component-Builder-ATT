@@ -325,6 +325,43 @@ describe('Item Media Attachment Module (js/item-media.js)', () => {
       expect(js).toContain('mediaEl.pause()');
     });
 
+    it('renders MediaReference object and blob URLs correctly when resolved for preview', () => {
+      const itemWithMediaRef = {
+        title: 'Resolved Item',
+        content: '<p>Body text</p>',
+        media: {
+          type: 'image',
+          sourceType: 'upload',
+          src: {
+            mediaId: 'med-9999',
+            name: 'photo.png',
+            mimeType: 'image/png',
+            size: 1024
+          },
+          alt: 'Photo description',
+          placement: 'above'
+        }
+      };
+      const rendered = wrapItemMediaContent(itemWithMediaRef.media, itemWithMediaRef.content, 'acc-test', 0);
+      expect(rendered).toContain('item-media-slot');
+      expect(rendered).toContain('alt="Photo description"');
+
+      // When resolved in preview as a blob URL string:
+      const itemWithBlob = {
+        title: 'Blob Item',
+        content: '<p>Body text</p>',
+        media: {
+          type: 'image',
+          sourceType: 'upload',
+          src: 'blob:http://localhost:5173/1234-5678',
+          alt: 'Blob photo',
+          placement: 'above'
+        }
+      };
+      const renderedBlob = wrapItemMediaContent(itemWithBlob.media, itemWithBlob.content, 'acc-test', 0);
+      expect(renderedBlob).toContain('src="blob:http://localhost:5173/1234-5678"');
+    });
+
     it('validates accordion items and reports media errors/warnings', () => {
       const invalidConfig = {
         items: [
@@ -347,3 +384,4 @@ describe('Item Media Attachment Module (js/item-media.js)', () => {
     });
   });
 });
+

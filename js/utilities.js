@@ -534,6 +534,23 @@ export function sanitizePreviewConfig(config, componentId) {
     // a compile-time-only function, unavailable inside the exported script itself.
     if (item.body !== undefined) safeItem.body = sanitizeRichText(item.body);
     if (item.question !== undefined) safeItem.question = sanitizeRichText(item.question);
+    if (item.media && typeof item.media === 'object') {
+      const safeMedia = { ...item.media };
+      if (typeof safeMedia.src === 'string') {
+        safeMedia.src = sanitizeURL(safeMedia.src, { allowDataImage: true, allowBlob: true, allowRelative: true });
+      }
+      if (typeof safeMedia.posterSrc === 'string') {
+        safeMedia.posterSrc = sanitizeURL(safeMedia.posterSrc, { allowDataImage: true, allowBlob: true, allowRelative: true });
+      }
+      if (typeof safeMedia.captionsSrc === 'string') {
+        safeMedia.captionsSrc = sanitizeURL(safeMedia.captionsSrc, { allowBlob: true, allowRelative: true });
+      }
+      if (safeMedia.alt !== undefined) safeMedia.alt = String(safeMedia.alt || '');
+      if (safeMedia.caption !== undefined) safeMedia.caption = String(safeMedia.caption || '');
+      if (safeMedia.transcript !== undefined) safeMedia.transcript = sanitizeRichText(safeMedia.transcript);
+      if (safeMedia.audioDescription !== undefined) safeMedia.audioDescription = sanitizeRichText(safeMedia.audioDescription);
+      safeItem.media = safeMedia;
+    }
     return safeItem;
   });
   if (config.aspectRatio !== undefined) {
