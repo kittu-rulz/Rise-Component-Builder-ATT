@@ -42,13 +42,21 @@ export function generateHTML(config, instanceId) {
       </div>
 
       <!-- Breadcrumbs navigation row -->
-      <div class="process-breadcrumbs" role="tablist" aria-label="Step progress">
-        ${config.items.map((item, idx) => `
-          <button type="button" class="process-breadcrumb-item ${idx === 0 ? 'active' : ''}" id="${instanceId}-crumb-${idx}" data-idx="${idx}" role="tab" aria-selected="${idx === 0}">
-            <span class="crumb-num">${idx + 1}.</span>
-            <span class="crumb-title">${escapeHTML(item.title || 'Step ' + (idx + 1))}</span>
-          </button>
-        `).join('')}
+      <div class="process-breadcrumbs-wrapper">
+        <button type="button" class="process-crumb-arrow process-crumb-prev" id="${instanceId}-crumb-prev" aria-label="Scroll steps left" title="Scroll steps left" tabindex="-1" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="process-breadcrumbs" id="${instanceId}-breadcrumbs" role="tablist" aria-label="Step progress">
+          ${config.items.map((item, idx) => `
+            <button type="button" class="process-breadcrumb-item ${idx === 0 ? 'active' : ''}" id="${instanceId}-crumb-${idx}" data-idx="${idx}" role="tab" aria-selected="${idx === 0}">
+              <span class="crumb-num">${idx + 1}.</span>
+              <span class="crumb-title">${escapeHTML(item.title || 'Step ' + (idx + 1))}</span>
+            </button>
+          `).join('')}
+        </div>
+        <button type="button" class="process-crumb-arrow process-crumb-next" id="${instanceId}-crumb-next" aria-label="Scroll steps right" title="Scroll steps right" tabindex="-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
       </div>
 
       <div class="process-slides-wrapper">
@@ -191,12 +199,28 @@ export function generateCSS() {
     .p-dot-check {
       font-size: 11px;
     }
+    .process-breadcrumbs-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-bottom: 1px solid var(--border-color);
+      padding: 4px 0;
+      position: relative;
+    }
     .process-breadcrumbs {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: var(--att-space-2, 8px);
-      padding: 6px 0;
-      border-bottom: 1px solid var(--border-color);
+      padding: 2px 2px 4px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      flex: 1;
+      min-width: 0;
+    }
+    .process-breadcrumbs::-webkit-scrollbar {
+      display: none;
     }
     .process-breadcrumb-item {
       background: none;
@@ -209,6 +233,8 @@ export function generateCSS() {
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: all 0.2s;
     }
     .process-breadcrumb-item:hover {
@@ -223,6 +249,37 @@ export function generateCSS() {
     .process-breadcrumb-item.completed {
       color: var(--primary);
       font-weight: 500;
+    }
+    .process-crumb-arrow {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      min-height: 28px;
+      padding: 0;
+      border-radius: var(--att-radius-pill, 999px);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+      z-index: 2;
+    }
+    .process-crumb-arrow:hover:not(:disabled) {
+      background: var(--bg-body);
+      border-color: var(--primary);
+      color: var(--primary-hover, var(--primary));
+    }
+    .process-crumb-arrow:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .process-crumb-arrow[hidden] {
+      display: none !important;
     }
     .process-slides-wrapper {
       min-height: 120px;
@@ -417,7 +474,12 @@ export function generateJS(config, instanceId) {
       if (dot) dot.classList.add('active');
 
       var crumb = document.getElementById('${instanceId}-crumb-' + activeProcessIndex);
-      if (crumb) crumb.classList.add('active');
+      if (crumb) {
+        crumb.classList.add('active');
+        if (typeof crumb.scrollIntoView === 'function') {
+          crumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }
 
       var numEl = document.getElementById('${instanceId}-current-process-num');
       if (numEl) numEl.textContent = (activeProcessIndex >= totalProcessSteps ? 'Summary' : (activeProcessIndex + 1));
@@ -478,6 +540,53 @@ export function generateJS(config, instanceId) {
           jumpToProcessStep(target);
         });
       });
+
+      var breadcrumbs = document.getElementById('${instanceId}-breadcrumbs');
+      var prevCrumbArrow = document.getElementById('${instanceId}-crumb-prev');
+      var nextCrumbArrow = document.getElementById('${instanceId}-crumb-next');
+
+      function updateCrumbArrows() {
+        if (!breadcrumbs || !prevCrumbArrow || !nextCrumbArrow) return;
+        var scrollLeft = breadcrumbs.scrollLeft;
+        var maxScroll = breadcrumbs.scrollWidth - breadcrumbs.clientWidth;
+        var hasOverflow = maxScroll > 4;
+
+        if (!hasOverflow) {
+          prevCrumbArrow.hidden = true;
+          nextCrumbArrow.hidden = true;
+          prevCrumbArrow.disabled = true;
+          nextCrumbArrow.disabled = true;
+        } else {
+          prevCrumbArrow.hidden = false;
+          nextCrumbArrow.hidden = false;
+          prevCrumbArrow.disabled = scrollLeft <= 2;
+          nextCrumbArrow.disabled = scrollLeft >= maxScroll - 2;
+        }
+      }
+
+      if (breadcrumbs) {
+        breadcrumbs.addEventListener('scroll', updateCrumbArrows, { passive: true });
+      }
+      if (prevCrumbArrow) {
+        prevCrumbArrow.addEventListener('click', function() {
+          if (breadcrumbs) breadcrumbs.scrollBy({ left: -160, behavior: 'smooth' });
+        });
+      }
+      if (nextCrumbArrow) {
+        nextCrumbArrow.addEventListener('click', function() {
+          if (breadcrumbs) breadcrumbs.scrollBy({ left: 160, behavior: 'smooth' });
+        });
+      }
+
+      updateCrumbArrows();
+      if (window.ResizeObserver && breadcrumbs) {
+        var ro = new ResizeObserver(function() {
+          updateCrumbArrows();
+        });
+        ro.observe(breadcrumbs);
+      }
+      window.addEventListener('resize', updateCrumbArrows);
+      setTimeout(updateCrumbArrows, 100);
 
       jumpToProcessStep(0);
     }`;

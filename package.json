@@ -1,6 +1,6 @@
 {
   "name": "rise-component-builder",
-  "version": "2.3.3+20260911.1520",
+  "version": "2.3.4+20260911.1540",
   "private": true,
   "type": "module",
   "description": "Vanilla JavaScript component authoring tool with automated unit and browser testing.",

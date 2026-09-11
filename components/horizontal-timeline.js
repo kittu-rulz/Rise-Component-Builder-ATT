@@ -370,6 +370,9 @@ export function generateJS(config, instanceId) {
         targetNode.classList.add('active');
         targetNode.setAttribute('aria-selected', 'true');
         targetNode.setAttribute('tabindex', '0');
+        if (typeof targetNode.scrollIntoView === 'function') {
+          targetNode.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
       }
 
       var slide = document.getElementById('${instanceId}-timeline-slide-' + index);

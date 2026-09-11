@@ -97,9 +97,20 @@ export function generateHTML(config, instanceId) {
     </div>
   ` : '';
 
+  const leftArrowSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>`;
+  const rightArrowSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+
   return `<div class="tabs-container ${vertical ? 'tabs-vertical' : ''}">
     ${toolbar}
-    <div class="tabs-header" role="tablist" aria-label="Content sections" aria-orientation="${vertical ? 'vertical' : 'horizontal'}">${tabHeaders}</div>
+    <div class="tabs-nav-wrapper">
+      <button type="button" class="tabs-nav-arrow tabs-nav-prev" id="${instanceId}-nav-prev" aria-label="Scroll tabs left" title="Scroll tabs left" tabindex="-1" disabled>
+        ${leftArrowSvg}
+      </button>
+      <div class="tabs-header" id="${instanceId}-tabs-header" role="tablist" aria-label="Content sections" aria-orientation="${vertical ? 'vertical' : 'horizontal'}">${tabHeaders}</div>
+      <button type="button" class="tabs-nav-arrow tabs-nav-next" id="${instanceId}-nav-next" aria-label="Scroll tabs right" title="Scroll tabs right" tabindex="-1">
+        ${rightArrowSvg}
+      </button>
+    </div>
     <div class="tabs-content-wrapper">${tabPanels}</div>
     ${compareBlock}
   </div>`;
@@ -147,12 +158,68 @@ export function generateCSS() {
       font-weight: 600;
       color: var(--text-muted);
     }
+    .tabs-nav-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 16px 16px 0;
+      width: 100%;
+    }
     .tabs-header {
       display: flex;
       gap: var(--att-space-2, 8px);
-      flex-wrap: wrap;
-      padding: 16px 20px 0;
+      flex-wrap: nowrap;
+      padding: 2px 2px 6px;
       overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      flex: 1;
+      min-width: 0;
+    }
+    .tabs-header::-webkit-scrollbar {
+      display: none;
+    }
+    .tabs-nav-arrow {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      padding: 0;
+      border-radius: var(--att-radius-pill, 999px);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+      z-index: 2;
+    }
+    .tabs-nav-arrow:hover:not(:disabled) {
+      background: var(--bg-body);
+      border-color: var(--primary);
+      color: var(--primary-hover, var(--primary));
+      transform: scale(1.05);
+    }
+    .tabs-nav-arrow:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+    .tabs-nav-arrow:focus-visible {
+      outline: 3px solid var(--att-cobalt, var(--primary));
+      outline-offset: 2px;
+    }
+    .tabs-nav-arrow:disabled,
+    .tabs-nav-arrow[aria-disabled="true"] {
+      opacity: 0.25;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .tabs-nav-arrow[hidden] {
+      display: none !important;
     }
     .tab-btn {
       /* Complete capsule (full var(--button-radius)), not an underline tab —
@@ -171,7 +238,8 @@ export function generateCSS() {
       font-weight: 600;
       color: var(--primary);
       cursor: pointer;
-      white-space: normal;
+      white-space: nowrap;
+      flex-shrink: 0;
       text-align: center;
       line-height: 1.35;
       min-height: 44px;
@@ -246,15 +314,24 @@ export function generateCSS() {
     .tabs-container.tabs-vertical {
       display: flex;
     }
-    .tabs-container.tabs-vertical .tabs-header {
+    .tabs-container.tabs-vertical .tabs-nav-wrapper {
+      display: flex;
       flex-direction: column;
-      padding: 20px 16px;
-      overflow-x: visible;
-      flex-shrink: 0;
+      padding: 0;
       width: 240px;
       min-width: 200px;
       max-width: 35%;
       border-right: var(--border-style);
+    }
+    .tabs-container.tabs-vertical .tabs-nav-arrow {
+      display: none !important;
+    }
+    .tabs-container.tabs-vertical .tabs-header {
+      flex-direction: column;
+      padding: 20px 16px;
+      overflow-x: visible;
+      width: 100%;
+      min-width: 0;
     }
     .tabs-container.tabs-vertical .tab-btn {
       justify-content: flex-start;
@@ -273,18 +350,27 @@ export function generateCSS() {
       .tabs-container.tabs-vertical {
         flex-direction: column;
       }
+      .tabs-container.tabs-vertical .tabs-nav-wrapper {
+        width: 100%;
+        max-width: none;
+        border-right: none;
+        border-bottom: var(--border-style);
+        flex-direction: row;
+        padding: 16px 12px 0;
+      }
+      .tabs-container.tabs-vertical .tabs-nav-arrow {
+        display: inline-flex !important;
+      }
       .tabs-container.tabs-vertical .tabs-header {
         flex-direction: row;
         width: 100%;
-        max-width: none;
+        padding: 2px 2px 6px;
         overflow-x: auto;
-        border-right: none;
-        border-bottom: var(--border-style);
-        padding: 16px 20px 0;
       }
       .tabs-container.tabs-vertical .tab-btn {
         width: auto;
         text-align: center;
+        white-space: nowrap;
       }
       .tabs-container.tabs-vertical .tabs-content-wrapper {
         border-top: var(--border-style);
@@ -416,6 +502,9 @@ export function generateJS(config, instanceId) {
       button.classList.add('active');
       button.setAttribute('aria-selected', 'true');
       button.setAttribute('tabindex', '0');
+      if (typeof button.scrollIntoView === 'function') {
+        button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
       var panel = document.getElementById('${instanceId}-tab-panel-' + index);
       panel.hidden = false;
       panel.classList.add('active');
@@ -534,6 +623,53 @@ export function generateJS(config, instanceId) {
 
       refreshTabLockState();
       updateTabsProgressText();
+
+      var tabsHeader = document.getElementById('${instanceId}-tabs-header');
+      var prevArrow = document.getElementById('${instanceId}-nav-prev');
+      var nextArrow = document.getElementById('${instanceId}-nav-next');
+
+      function updateNavArrows() {
+        if (!tabsHeader || !prevArrow || !nextArrow) return;
+        var scrollLeft = tabsHeader.scrollLeft;
+        var maxScroll = tabsHeader.scrollWidth - tabsHeader.clientWidth;
+        var hasOverflow = maxScroll > 4;
+
+        if (!hasOverflow) {
+          prevArrow.hidden = true;
+          nextArrow.hidden = true;
+          prevArrow.disabled = true;
+          nextArrow.disabled = true;
+        } else {
+          prevArrow.hidden = false;
+          nextArrow.hidden = false;
+          prevArrow.disabled = scrollLeft <= 2;
+          nextArrow.disabled = scrollLeft >= maxScroll - 2;
+        }
+      }
+
+      if (tabsHeader) {
+        tabsHeader.addEventListener('scroll', updateNavArrows, { passive: true });
+      }
+      if (prevArrow) {
+        prevArrow.addEventListener('click', function() {
+          if (tabsHeader) tabsHeader.scrollBy({ left: -220, behavior: 'smooth' });
+        });
+      }
+      if (nextArrow) {
+        nextArrow.addEventListener('click', function() {
+          if (tabsHeader) tabsHeader.scrollBy({ left: 220, behavior: 'smooth' });
+        });
+      }
+
+      updateNavArrows();
+      if (window.ResizeObserver && tabsHeader) {
+        var ro = new ResizeObserver(function() {
+          updateNavArrows();
+        });
+        ro.observe(tabsHeader);
+      }
+      window.addEventListener('resize', updateNavArrows);
+      setTimeout(updateNavArrows, 100);
 
       var resetBtn = document.querySelector('.tabs-reset-btn');
       if (resetBtn) resetBtn.addEventListener('click', resetTabs);
