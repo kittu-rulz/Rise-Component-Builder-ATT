@@ -1,4 +1,4 @@
-import { escapeHTML, sanitizePreviewConfig, serializeForInlineScript } from './utilities.js';
+import { escapeHTML, sanitizePreviewConfig, sanitizeRichText, serializeForInlineScript } from './utilities.js';
 import { resolveMediaReferencesForPreview } from './media-storage.js';
 import { applyThemeToConfig, getBuiltInTheme, resolveThemeTokens } from './themes.js';
 import { renderCompletionTrackerHTML, renderSharedA11yScript, renderShell } from './export-shell.js';
@@ -170,9 +170,9 @@ ${ATT_TOKENS_CSS}`;
     fontQuery,
     customFontFaceCSS,
     componentCSS: entry.generateCSS(),
-    blockLabel: escapeHTML(c.blockTitle),
-    blockHeadline: escapeHTML(c.blockHeadline),
-    blockDesc: escapeHTML(c.blockDesc),
+    blockLabel: sanitizeRichText(c.blockTitle || ''),
+    blockHeadline: sanitizeRichText(c.blockHeadline || ''),
+    blockDesc: sanitizeRichText(c.blockDesc || ''),
     blockHeadingLevel: c.blockHeadingLevel,
     componentHTML: entry.generateHTML(c, instanceId),
     completionTrackerHTML: renderCompletionTrackerHTML(instanceId, c.trackCompletion),
@@ -183,7 +183,7 @@ ${ATT_TOKENS_CSS}`;
     headerCyanRule: Boolean(c.headerCyanRule),
     spacingDensity: density,
     contextBandEnabled: Boolean(c.contextBandEnabled),
-    contextBandText: c.contextBandText || '',
+    contextBandText: sanitizeRichText(c.contextBandText || ''),
     contextBandAlignment: c.contextBandAlignment || 'left'
   });
 }

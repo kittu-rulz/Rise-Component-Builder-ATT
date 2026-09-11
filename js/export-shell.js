@@ -31,6 +31,11 @@ export const BASE_RESET_CSS = `
     }
 
     button { border-radius: var(--button-radius); }
+    li::marker { color: inherit; font-size: inherit; line-height: inherit; }
+    sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+    sup { top: -0.5em; }
+    sub { bottom: -0.25em; }
+    a { color: var(--accent, #0057B8); text-underline-offset: 2px; }
 
     /* Interactive Block Shell */
     .rise-block-wrapper {

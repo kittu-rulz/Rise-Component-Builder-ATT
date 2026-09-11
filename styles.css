@@ -4973,6 +4973,12 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   background: transparent;
 }
 
+.rich-text-editor-container.is-single-line .rich-text-contenteditable {
+  min-height: 38px;
+  max-height: 120px;
+  padding: 6px 10px;
+}
+
 .rich-text-contenteditable {
   min-height: 80px;
   max-height: 320px;
@@ -5007,6 +5013,17 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   margin-bottom: 0.5em;
 }
 
+.rich-text-contenteditable li {
+  color: inherit;
+}
+
+.rich-text-contenteditable li::marker,
+.rise-block-wrapper li::marker {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
 .rich-text-contenteditable a {
   color: var(--att-cobalt, #0057B8);
   text-decoration: underline;
@@ -5018,6 +5035,10 @@ input[type="number"]:focus::-webkit-inner-spin-button {
 .rich-text-contenteditable a:hover {
   color: var(--att-navy, #00388F);
   text-decoration-thickness: 2px;
+}
+
+.rt-align-popover {
+  min-width: 130px;
 }
 
 .rt-link-popover {

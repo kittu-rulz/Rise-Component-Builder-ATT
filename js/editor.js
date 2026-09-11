@@ -288,18 +288,20 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
       });
       fieldElement = media.element;
       control = media.validationControl;
-    } else if (field.type === 'richtext') {
+    } else if (field.type === 'richtext' || field.type === 'textarea' || field.type === 'text') {
       const rte = createRichTextEditor({
         controlId,
         fieldId: field.id,
         value: model[field.id],
-        isSingleLine: false,
+        isSingleLine: field.type === 'text',
+        placeholder: field.placeholder || '',
         onChange: (sanitizedVal) => {
           updateValue(sanitizedVal, rte.validationControl);
         }
       });
       fieldElement = rte.element;
       control = rte.validationControl;
+      control.maxLength = field.maxLength !== undefined ? field.maxLength : -1;
     } else {
       control = createBasicControl(field, controlId, model[field.id]);
       fieldElement = control;

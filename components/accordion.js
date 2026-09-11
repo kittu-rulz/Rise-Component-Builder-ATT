@@ -94,7 +94,7 @@ export function generateHTML(config, instanceId) {
       <h3><button class="accordion-trigger" id="${instanceId}-accordion-trigger-${index}" data-idx="${index}" aria-expanded="false" aria-controls="${instanceId}-accordion-panel-${index}" ${sequential ? `aria-describedby="${instanceId}-lock-note-${index}"` : ''} ${locked ? 'aria-disabled="true"' : ''}>
         <span class="accordion-trigger-text">
           ${sequential ? `<span class="accordion-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : ''}
-          <span>${escapeHTML(item.title || 'Item Title Header')}</span>
+          <span>${item.title ? sanitizeRichText(item.title) : 'Item Title Header'}</span>
           ${showVisitedBadge ? `<span class="accordion-visited-badge" hidden>${visitedCheckIconSvg} Visited</span>` : ''}
         </span>
         ${icon}

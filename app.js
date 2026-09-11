@@ -35,6 +35,7 @@ import { pruneMediaObjectURLs, releaseAllMediaObjectURLs, resolveMediaReference,
 import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, getBuiltInTheme, normalizeComponentOverrides } from './js/themes.js';
 import { createHistoryManager } from './js/history.js';
 import { getPresetsForComponent } from './js/presets.js';
+import { upgradeTextareaToRichText } from './js/rich-text-editor.js';
 // app.js is the composition root and is explicitly allowed to depend on any module,
 // including one specific component's own file (docs/ARCHITECTURE.md "Important
 // dependencies") — reused here only for its MM:SS/H:MM:SS formatter, so the builder's own
@@ -118,10 +119,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const editorTabs = document.querySelectorAll('.editor-tab');
   const tabPanes = document.querySelectorAll('.tab-pane');
   
-  // Form Inputs
-  const inputBlockTitle = document.getElementById('input-block-title');
-  const inputBlockHeadline = document.getElementById('input-block-headline');
-  const inputBlockDesc = document.getElementById('input-block-desc');
+  // Form Inputs — upgrade text & textarea inputs to rich text editors with full formatting tools
+  const inputBlockTitle = upgradeTextareaToRichText(document.getElementById('input-block-title'), { fieldId: 'blockTitle', isSingleLine: true })?.validationControl || document.getElementById('input-block-title');
+  const inputBlockHeadline = upgradeTextareaToRichText(document.getElementById('input-block-headline'), { fieldId: 'blockHeadline', isSingleLine: true })?.validationControl || document.getElementById('input-block-headline');
+  const inputBlockDesc = upgradeTextareaToRichText(document.getElementById('input-block-desc'), { fieldId: 'blockDesc', isSingleLine: false })?.validationControl || document.getElementById('input-block-desc');
   const selectHeadingLevel = document.getElementById('select-heading-level');
   const selectHeaderStyle = document.getElementById('select-header-style');
   const inputHeaderCyanRule = document.getElementById('input-header-cyan-rule');
@@ -129,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const selectSpacingDensity = document.getElementById('select-spacing-density');
   const inputContextBandEnabled = document.getElementById('input-context-band-enabled');
   const contextBandFields = document.getElementById('context-band-fields');
-  const inputContextBandText = document.getElementById('input-context-band-text');
+  const inputContextBandText = upgradeTextareaToRichText(document.getElementById('input-context-band-text'), { fieldId: 'contextBandText', isSingleLine: false })?.validationControl || document.getElementById('input-context-band-text');
   const selectContextBandAlignment = document.getElementById('select-context-band-alignment');
 
   const inputBehaviorAccordionMulti = document.getElementById('input-behavior-accordion-multi');
@@ -191,13 +192,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputMcConfidenceHighLabel = document.getElementById('input-mc-confidence-high-label');
   const inputMcShowResultSummary = document.getElementById('input-mc-show-result-summary');
   const inputMcMaxAttempts = document.getElementById('input-mc-max-attempts');
-  const inputMcHintText = document.getElementById('input-mc-hint-text');
+  const inputMcHintText = upgradeTextareaToRichText(document.getElementById('input-mc-hint-text'), { fieldId: 'mcHintText', isSingleLine: false })?.validationControl || document.getElementById('input-mc-hint-text');
   const inputMcShowCorrectAfterFinal = document.getElementById('input-mc-show-correct-after-final');
-  const inputMcFinalExplanation = document.getElementById('input-mc-final-explanation');
+  const inputMcFinalExplanation = upgradeTextareaToRichText(document.getElementById('input-mc-final-explanation'), { fieldId: 'mcFinalExplanation', isSingleLine: false })?.validationControl || document.getElementById('input-mc-final-explanation');
   const inputMcAllowReset = document.getElementById('input-mc-allow-reset');
 
   const inputTrackCompletion = document.getElementById('input-track-completion');
-  const inputCompletionMsg = document.getElementById('input-completion-msg');
+  const inputCompletionMsg = upgradeTextareaToRichText(document.getElementById('input-completion-msg'), { fieldId: 'completionMsg', isSingleLine: true })?.validationControl || document.getElementById('input-completion-msg');
   
   // Dynamic Content Items
   const dynamicItemsContainer = document.getElementById('dynamic-items-container');

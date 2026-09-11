@@ -77,7 +77,7 @@ export function generateHTML(config, instanceId) {
   const tabHeaders = config.items.map((item, index) => {
     const locked = sequential && index > 0;
     const icon = renderTabIcon(item);
-    return `<button class="tab-btn ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-${index}" role="tab" aria-selected="${index === 0}" aria-controls="${instanceId}-tab-panel-${index}" tabindex="${index === 0 ? '0' : '-1'}" data-idx="${index}" ${sequential ? `aria-describedby="${instanceId}-tab-lock-note-${index}"` : ''} ${locked ? 'aria-disabled="true"' : ''}>${sequential ? `<span class="tab-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : ''}${icon}${numbered ? `<span class="tab-number" aria-hidden="true">${index + 1}.</span>` : ''}<span class="tab-label-text">${escapeHTML(item.title || 'Tab')}</span>${showVisitedBadge ? `<span class="tab-visited-badge" hidden>${visitedCheckIconSvg} Visited</span>` : ''}</button>${sequential ? `<span class="sr-only tab-lock-note" id="${instanceId}-tab-lock-note-${index}" ${locked ? '' : 'hidden'}>Locked. Select the previous tab first.</span>` : ''}`;
+    return `<button class="tab-btn ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-${index}" role="tab" aria-selected="${index === 0}" aria-controls="${instanceId}-tab-panel-${index}" tabindex="${index === 0 ? '0' : '-1'}" data-idx="${index}" ${sequential ? `aria-describedby="${instanceId}-tab-lock-note-${index}"` : ''} ${locked ? 'aria-disabled="true"' : ''}>${sequential ? `<span class="tab-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : ''}${icon}${numbered ? `<span class="tab-number" aria-hidden="true">${index + 1}.</span>` : ''}<span class="tab-label-text">${item.title ? sanitizeRichText(item.title) : 'Tab'}</span>${showVisitedBadge ? `<span class="tab-visited-badge" hidden>${visitedCheckIconSvg} Visited</span>` : ''}</button>${sequential ? `<span class="sr-only tab-lock-note" id="${instanceId}-tab-lock-note-${index}" ${locked ? '' : 'hidden'}>Locked. Select the previous tab first.</span>` : ''}`;
   }).join('');
 
   const tabPanels = config.items.map((item, index) => `<div class="tab-panel ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-panel-${index}" role="tabpanel" aria-labelledby="${instanceId}-tab-${index}" tabindex="0" ${index === 0 ? '' : 'hidden'}><p>${sanitizeRichText(item.content || '')}</p></div>`).join('');
@@ -89,7 +89,7 @@ export function generateHTML(config, instanceId) {
         ${config.items.map((item, index) => `
           <label class="tabs-compare-check-item">
             <input type="checkbox" class="tabs-compare-checkbox" data-idx="${index}">
-            <span>${escapeHTML(item.title || 'Tab')}</span>
+            <span>${item.title ? sanitizeRichText(item.title) : 'Tab'}</span>
           </label>
         `).join('')}
       </div>

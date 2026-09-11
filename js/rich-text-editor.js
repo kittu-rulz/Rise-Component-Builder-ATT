@@ -25,8 +25,44 @@ export const FONT_SIZES = [
   { label: 'Normal (16px)', size: '16px' },
   { label: 'Medium (18px)', size: '18px' },
   { label: 'Large (22px)', size: '22px' },
-  { label: 'X-Large (26px)', size: '26px' }
+  { label: 'X-Large (26px)', size: '26px' },
+  { label: 'XX-Large (32px)', size: '32px' }
 ];
+
+export const LINE_HEIGHTS = [
+  { label: 'Tight (1.1)', height: '1.1' },
+  { label: 'Compact (1.3)', height: '1.3' },
+  { label: 'Normal (1.5)', height: '1.5' },
+  { label: 'Relaxed (1.8)', height: '1.8' },
+  { label: 'Loose (2.0)', height: '2.0' }
+];
+
+export const LETTER_SPACINGS = [
+  { label: 'Tight (-0.5px)', spacing: '-0.5px' },
+  { label: 'Normal (0px)', spacing: '0px' },
+  { label: 'Wide (1px)', spacing: '1px' },
+  { label: 'Wider (2px)', spacing: '2px' }
+];
+
+/**
+ * Propagates inner styled text properties to enclosing <li> elements so bullet markers match text formatting.
+ * @param {HTMLElement} editorEl 
+ */
+export function syncListBulletStyles(editorEl) {
+  if (!editorEl) return;
+  const listItems = editorEl.querySelectorAll('li');
+  listItems.forEach(li => {
+    const styledChild = li.querySelector('span[style], p[style], strong[style], em[style], [style]');
+    if (styledChild) {
+      if (styledChild.style.color && !li.style.color) li.style.color = styledChild.style.color;
+      if (styledChild.style.fontSize && !li.style.fontSize) li.style.fontSize = styledChild.style.fontSize;
+      if (styledChild.style.lineHeight && !li.style.lineHeight) li.style.lineHeight = styledChild.style.lineHeight;
+      if (styledChild.style.letterSpacing && !li.style.letterSpacing) li.style.letterSpacing = styledChild.style.letterSpacing;
+      if (styledChild.style.fontWeight && !li.style.fontWeight) li.style.fontWeight = styledChild.style.fontWeight;
+      if (styledChild.style.fontStyle && !li.style.fontStyle) li.style.fontStyle = styledChild.style.fontStyle;
+    }
+  });
+}
 
 /**
  * Executes a formatting action on the current DOM selection or applies custom style wrapper.
@@ -39,27 +75,47 @@ export function executeFormatting(command, value = null, editorEl = null) {
 
   if (command === 'fontSizeStyle' && value) {
     applyInlineStyle('font-size', value, editorEl);
+  } else if (command === 'lineHeightStyle' && value) {
+    applyInlineStyle('line-height', value, editorEl);
+  } else if (command === 'letterSpacingStyle' && value) {
+    applyInlineStyle('letter-spacing', value, editorEl);
   } else if (command === 'textColor' && value) {
     applyInlineStyle('color', value, editorEl);
   } else if (command === 'highlightColor' && value) {
     applyInlineStyle('background-color', value, editorEl);
   } else if (command === 'clearHighlight') {
     applyInlineStyle('background-color', 'transparent', editorEl);
+  } else if (command === 'formatBlock' && value) {
+    document.execCommand('formatBlock', false, value);
   } else {
     document.execCommand(command, false, value);
+    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+      syncListBulletStyles(editorEl);
+    }
   }
 }
 
 /**
  * Wraps selection in a span with inline style or updates existing parent span.
+ * Also synchronizes style with enclosing <li> elements so bullet markers inherit formatting.
  * @param {string} property 
  * @param {string} value 
- * @param {HTMLElement} [_editorEl] 
+ * @param {HTMLElement} [editorEl] 
  */
-function applyInlineStyle(property, value, _editorEl) {
+export function applyInlineStyle(property, value, editorEl) {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return;
   const range = selection.getRangeAt(0);
+
+  // Sync to enclosing <li> if inside a list
+  let node = range.commonAncestorContainer;
+  while (node && node !== editorEl) {
+    if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'li') {
+      node.style[property] = value;
+      break;
+    }
+    node = node.parentNode;
+  }
 
   if (range.collapsed) {
     // If no text is selected, create an empty styled span and place cursor inside
@@ -84,6 +140,8 @@ function applyInlineStyle(property, value, _editorEl) {
   range.selectNodeContents(span);
   selection.removeAllRanges();
   selection.addRange(range);
+
+  if (editorEl) syncListBulletStyles(editorEl);
 }
 
 /**
@@ -106,7 +164,7 @@ export function createRichTextEditor({
   onChange
 }) {
   const container = document.createElement('div');
-  container.className = 'rich-text-editor-container';
+  container.className = `rich-text-editor-container ${isSingleLine ? 'is-single-line' : ''}`;
 
   // 1. Toolbar Shell
   const toolbar = document.createElement('div');
@@ -124,7 +182,19 @@ export function createRichTextEditor({
   editor.setAttribute('role', 'textbox');
   editor.setAttribute('aria-multiline', isSingleLine ? 'false' : 'true');
   if (placeholder) editor.dataset.placeholder = placeholder;
+  editor.maxLength = -1;
   editor.innerHTML = sanitizeRichText(value || '');
+
+  // Define value property proxy for seamless compatibility
+  Object.defineProperty(editor, 'value', {
+    get() {
+      return sanitizeRichText(editor.innerHTML);
+    },
+    set(newVal) {
+      editor.innerHTML = sanitizeRichText(newVal || '');
+    },
+    configurable: true
+  });
 
   let activePopover = null;
 
@@ -165,10 +235,19 @@ export function createRichTextEditor({
     return btn;
   }
 
+  let isTriggering = false;
   function triggerChange() {
-    const rawHTML = editor.innerHTML;
-    const sanitized = sanitizeRichText(rawHTML);
-    onChange(sanitized);
+    if (isTriggering) return;
+    isTriggering = true;
+    try {
+      syncListBulletStyles(editor);
+      const rawHTML = editor.innerHTML;
+      const sanitized = sanitizeRichText(rawHTML);
+      if (typeof onChange === 'function') onChange(sanitized);
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+    } finally {
+      isTriggering = false;
+    }
   }
 
   // --- Toolbar Items ---
@@ -208,6 +287,24 @@ export function createRichTextEditor({
     true
   );
   toolbar.appendChild(strikeBtn);
+
+  // Subscript
+  const subBtn = createToolbarButton(
+    'Subscript', 'Subscript',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 5 8 8"></path><path d="m12 5-8 8"></path><path d="M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path></svg>',
+    () => executeFormatting('subscript', null, editor),
+    true
+  );
+  toolbar.appendChild(subBtn);
+
+  // Superscript
+  const supBtn = createToolbarButton(
+    'Superscript', 'Superscript',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 19 8-8"></path><path d="m12 19-8-8"></path><path d="M20 11h-4c0-1.5.44-2 1.5-2.5S20 7.33 20 6c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path></svg>',
+    () => executeFormatting('superscript', null, editor),
+    true
+  );
+  toolbar.appendChild(supBtn);
 
   // Hyperlink Popover & Action
   const linkWrapper = document.createElement('div');
@@ -480,6 +577,104 @@ export function createRichTextEditor({
   sizeWrapper.appendChild(sizeBtn);
   toolbar.appendChild(sizeWrapper);
 
+  // Line Height Dropdown Popover
+  const lhWrapper = document.createElement('div');
+  lhWrapper.className = 'rt-dropdown-wrapper';
+  const lhBtn = createToolbarButton(
+    'Line Height', 'Line Height / Spacing',
+    '<span class="rt-btn-text">Line <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
+    () => {
+      if (activePopover && activePopover.dataset.popoverType === 'lineHeight') {
+        closePopovers();
+        return;
+      }
+      closePopovers();
+      const popover = document.createElement('div');
+      popover.className = 'rt-popover rt-size-popover';
+      popover.dataset.popoverType = 'lineHeight';
+
+      LINE_HEIGHTS.forEach(lh => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'rt-menu-item';
+        item.textContent = lh.label;
+        item.addEventListener('mousedown', e => e.preventDefault());
+        item.addEventListener('click', () => {
+          executeFormatting('lineHeightStyle', lh.height, editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(item);
+      });
+
+      const resetItem = document.createElement('button');
+      resetItem.type = 'button';
+      resetItem.className = 'rt-menu-item rt-menu-reset';
+      resetItem.textContent = 'Default Height';
+      resetItem.addEventListener('mousedown', e => e.preventDefault());
+      resetItem.addEventListener('click', () => {
+        executeFormatting('lineHeightStyle', 'inherit', editor);
+        closePopovers();
+        triggerChange();
+      });
+      popover.appendChild(resetItem);
+
+      lhWrapper.appendChild(popover);
+      activePopover = popover;
+    }
+  );
+  lhWrapper.appendChild(lhBtn);
+  toolbar.appendChild(lhWrapper);
+
+  // Letter Spacing Dropdown Popover
+  const spacingWrapper = document.createElement('div');
+  spacingWrapper.className = 'rt-dropdown-wrapper';
+  const spacingBtn = createToolbarButton(
+    'Letter Spacing', 'Letter Spacing',
+    '<span class="rt-btn-text">Spacing <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
+    () => {
+      if (activePopover && activePopover.dataset.popoverType === 'letterSpacing') {
+        closePopovers();
+        return;
+      }
+      closePopovers();
+      const popover = document.createElement('div');
+      popover.className = 'rt-popover rt-size-popover';
+      popover.dataset.popoverType = 'letterSpacing';
+
+      LETTER_SPACINGS.forEach(ls => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'rt-menu-item';
+        item.textContent = ls.label;
+        item.addEventListener('mousedown', e => e.preventDefault());
+        item.addEventListener('click', () => {
+          executeFormatting('letterSpacingStyle', ls.spacing, editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(item);
+      });
+
+      const resetItem = document.createElement('button');
+      resetItem.type = 'button';
+      resetItem.className = 'rt-menu-item rt-menu-reset';
+      resetItem.textContent = 'Default Spacing';
+      resetItem.addEventListener('mousedown', e => e.preventDefault());
+      resetItem.addEventListener('click', () => {
+        executeFormatting('letterSpacingStyle', 'inherit', editor);
+        closePopovers();
+        triggerChange();
+      });
+      popover.appendChild(resetItem);
+
+      spacingWrapper.appendChild(popover);
+      activePopover = popover;
+    }
+  );
+  spacingWrapper.appendChild(spacingBtn);
+  toolbar.appendChild(spacingWrapper);
+
   // Text Color Popover
   const colorWrapper = document.createElement('div');
   colorWrapper.className = 'rt-dropdown-wrapper';
@@ -614,7 +809,51 @@ export function createRichTextEditor({
   highlightWrapper.appendChild(highlightBtn);
   toolbar.appendChild(highlightWrapper);
 
-  // Lists (for multi-line fields)
+  // Text Alignment Popover
+  const alignWrapper = document.createElement('div');
+  alignWrapper.className = 'rt-dropdown-wrapper';
+  const alignBtn = createToolbarButton(
+    'Align', 'Text Alignment',
+    '<span class="rt-btn-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="6" x2="3" y2="6"></line><line x1="15" y1="12" x2="3" y2="12"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
+    () => {
+      if (activePopover && activePopover.dataset.popoverType === 'align') {
+        closePopovers();
+        return;
+      }
+      closePopovers();
+      const popover = document.createElement('div');
+      popover.className = 'rt-popover rt-align-popover';
+      popover.dataset.popoverType = 'align';
+
+      const alignments = [
+        { label: 'Align Left', cmd: 'justifyLeft' },
+        { label: 'Align Center', cmd: 'justifyCenter' },
+        { label: 'Align Right', cmd: 'justifyRight' },
+        { label: 'Justify', cmd: 'justifyFull' }
+      ];
+
+      alignments.forEach(al => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'rt-menu-item';
+        item.textContent = al.label;
+        item.addEventListener('mousedown', e => e.preventDefault());
+        item.addEventListener('click', () => {
+          executeFormatting(al.cmd, null, editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(item);
+      });
+
+      alignWrapper.appendChild(popover);
+      activePopover = popover;
+    }
+  );
+  alignWrapper.appendChild(alignBtn);
+  toolbar.appendChild(alignWrapper);
+
+  // Lists (Bullet & Numbered) - only for multi-line fields
   if (!isSingleLine) {
     const sep2 = document.createElement('span');
     sep2.className = 'rt-separator';
@@ -624,7 +863,10 @@ export function createRichTextEditor({
     const bulletBtn = createToolbarButton(
       'Bullet List', 'Bullet List',
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>',
-      () => executeFormatting('insertUnorderedList', null, editor)
+      () => {
+        executeFormatting('insertUnorderedList', null, editor);
+        syncListBulletStyles(editor);
+      }
     );
     toolbar.appendChild(bulletBtn);
 
@@ -632,7 +874,10 @@ export function createRichTextEditor({
     const numberBtn = createToolbarButton(
       'Numbered List', 'Numbered List',
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>',
-      () => executeFormatting('insertOrderedList', null, editor)
+      () => {
+        executeFormatting('insertOrderedList', null, editor);
+        syncListBulletStyles(editor);
+      }
     );
     toolbar.appendChild(numberBtn);
   }
@@ -645,7 +890,21 @@ export function createRichTextEditor({
   const clearBtn = createToolbarButton(
     'Clear Formatting', 'Clear Formatting (Reset text styles)',
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
-    () => executeFormatting('removeFormat', null, editor)
+    () => {
+      executeFormatting('removeFormat', null, editor);
+      // Also clear inline styles on current <li> if any
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        let node = sel.getRangeAt(0).commonAncestorContainer;
+        while (node && node !== editor) {
+          if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'li') {
+            node.removeAttribute('style');
+            break;
+          }
+          node = node.parentNode;
+        }
+      }
+    }
   );
   toolbar.appendChild(clearBtn);
 
@@ -686,9 +945,11 @@ export function createRichTextEditor({
       italicBtn.classList.toggle('is-active', document.queryCommandState('italic'));
       underlineBtn.classList.toggle('is-active', document.queryCommandState('underline'));
       strikeBtn.classList.toggle('is-active', document.queryCommandState('strikeThrough'));
+      subBtn.classList.toggle('is-active', document.queryCommandState('subscript'));
+      supBtn.classList.toggle('is-active', document.queryCommandState('superscript'));
       linkBtn.classList.toggle('is-active', Boolean(getSurroundingAnchor()));
     } catch {
-      // queryCommandState might fail in certain environments
+      // queryCommandState might fail in certain test/jsdom environments
     }
   }
 
@@ -703,6 +964,34 @@ export function createRichTextEditor({
     getValue: () => sanitizeRichText(editor.innerHTML),
     setValue: (val) => {
       editor.innerHTML = sanitizeRichText(val || '');
+      syncListBulletStyles(editor);
     }
   };
 }
+
+/**
+ * Replaces an existing <textarea> or <input> element with a full rich text editor,
+ * keeping the same id, placeholder, and initial value.
+ * @param {HTMLElement} targetElement 
+ * @param {Object} [options={}]
+ * @returns {{ element: HTMLElement, validationControl: HTMLElement, getValue: () => string, setValue: (val: string) => void } | null}
+ */
+export function upgradeTextareaToRichText(targetElement, { fieldId, isSingleLine = false, onChange = null } = {}) {
+  if (!targetElement) return null;
+  const controlId = targetElement.id;
+  const placeholder = targetElement.placeholder || targetElement.getAttribute('placeholder') || '';
+  const initialValue = targetElement.value || targetElement.innerHTML || '';
+
+  const rte = createRichTextEditor({
+    controlId,
+    fieldId: fieldId || controlId,
+    value: initialValue,
+    placeholder,
+    isSingleLine,
+    onChange
+  });
+
+  targetElement.replaceWith(rte.element);
+  return rte;
+}
+

@@ -209,6 +209,14 @@ export function sanitizeInlineStyle(styleText) {
       if (/^(?:[0-9]+(?:\.[0-9]+)?(?:px|pt|em|rem|%)|small|medium|large|x-large|xx-large|smaller|larger)$/i.test(val)) {
         safeStyles.push(`${prop}: ${val}`);
       }
+    } else if (prop === 'line-height') {
+      if (/^(?:[0-9]+(?:\.[0-9]+)?(?:px|pt|em|rem|%)?|normal|inherit|initial)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'letter-spacing') {
+      if (/^(?:-?[0-9]+(?:\.[0-9]+)?(?:px|pt|em|rem)|normal|inherit)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
     } else if (prop === 'font-weight') {
       if (/^(?:normal|bold|bolder|lighter|[1-9]00)$/i.test(val)) {
         safeStyles.push(`${prop}: ${val}`);
@@ -223,6 +231,14 @@ export function sanitizeInlineStyle(styleText) {
       }
     } else if (prop === 'text-align') {
       if (/^(?:left|right|center|justify)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'text-transform') {
+      if (/^(?:none|capitalize|uppercase|lowercase|inherit)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'list-style-type') {
+      if (/^(?:disc|circle|square|decimal|lower-alpha|upper-alpha|lower-roman|upper-roman|none)$/i.test(val)) {
         safeStyles.push(`${prop}: ${val}`);
       }
     }
@@ -257,8 +273,8 @@ export function sanitizeRichText(value) {
         output += `<${simple[1] ? '/' : ''}${name}>`;
       }
     } else {
-      const styledTag = /^<\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small)\s+style\s*=\s*(["'])(.*?)\2\s*\/?>$/i.exec(tag);
-      const closeStyled = /^<\s*\/\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small)\s*>$/i.exec(tag);
+      const styledTag = /^<\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small|sub|sup)\s+style\s*=\s*(["'])(.*?)\2\s*\/?>$/i.exec(tag);
+      const closeStyled = /^<\s*\/\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small|sub|sup)\s*>$/i.exec(tag);
       const fontTag = /^<\s*font\s+color\s*=\s*(["'])(.*?)\1\s*\/?>$/i.exec(tag);
       const closeFont = /^<\s*\/\s*font\s*>$/i.exec(tag);
       const anchor = /^<\s*a\s+([^>]*?)href\s*=\s*(["'])(.*?)\2([^>]*?)\/?>$/i.exec(tag);
@@ -304,6 +320,12 @@ export function sanitizeRichText(value) {
     cursor = match.index + tag.length;
   }
   output += escapeHTML(decodeEntities(input.slice(cursor)));
+
+  // If an <li> contains <span style="...">, propagate matching styling to the <li> so the bullet inherits it
+  output = output.replace(/<li>\s*<span\s+style="([^"]+)">([\s\S]*?)<\/span>\s*<\/li>/gi, (match, styleAttr, innerContent) => {
+    return `<li style="${styleAttr}"><span style="${styleAttr}">${innerContent}</span></li>`;
+  });
+
   return output;
 }
 
