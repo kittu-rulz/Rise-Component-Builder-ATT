@@ -596,7 +596,7 @@ export function generateJS(config, instanceId) {
   const total = items.length;
 
   return `
-    (function() {
+    function initComponent() {
       var root = document.getElementById('${instanceId}-matrix-card');
       var progressFill = document.getElementById('${instanceId}-progress-fill');
       var evaluatedCountEl = document.getElementById('${instanceId}-evaluated-count');
@@ -821,7 +821,7 @@ export function generateJS(config, instanceId) {
 
       // Initial state
       updateMatrixState();
-    })();
+    }
   `;
 }
 

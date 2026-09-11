@@ -539,8 +539,18 @@ function checkMediaRules(schema, config, settings) {
 
   const fields = mediaFields(schema);
   fields.forEach(field => checkOne(field, config[field.id], null));
-  (config.items || []).forEach((item, itemIndex) => fields.filter(field => (schema.itemFields || []).includes(field))
-    .forEach(field => checkOne(field, item[field.id], itemIndex)));
+  (config.items || []).forEach((item, itemIndex) => {
+    fields.filter(field => (schema.itemFields || []).includes(field)).forEach(field => checkOne(field, item[field.id], itemIndex));
+    if (item?.media && item.media.type && item.media.type !== 'none') {
+      const m = item.media;
+      const mediaVal = m.mediaId ? { mediaId: m.mediaId, kind: m.type, source: 'upload', name: m.fileName || 'uploaded media', mimeType: m.mimeType, schemaVersion: 1, size: 0, createdAt: new Date().toISOString() } : m.src;
+      checkOne({ id: 'media', label: `Item ${itemIndex + 1} media`, type: m.type }, mediaVal, itemIndex);
+      if (m.type === 'image' && !m.decorative && (!m.alt || !String(m.alt).trim())) {
+        issues.push(issue('general-missing-alt-text', SEVERITY.WARNING, CATEGORY.MEDIA,
+          `Item ${itemIndex + 1} image is missing alternative text. Add descriptive alt text or mark it decorative.`, { fieldId: 'media', itemIndex }));
+      }
+    }
+  });
   return issues;
 }
 
@@ -557,8 +567,13 @@ async function checkBrokenMediaReferences(schema, config, mediaStore) {
 
   const fields = mediaFields(schema);
   await Promise.all(fields.map(field => checkOne(field, config[field.id], null)));
-  await Promise.all((config.items || []).flatMap((item, itemIndex) =>
-    fields.filter(field => (schema.itemFields || []).includes(field)).map(field => checkOne(field, item[field.id], itemIndex))));
+  await Promise.all((config.items || []).flatMap((item, itemIndex) => {
+    const list = fields.filter(field => (schema.itemFields || []).includes(field)).map(field => checkOne(field, item[field.id], itemIndex));
+    if (item?.media?.mediaId) {
+      list.push(checkOne({ id: 'media', label: `Item ${itemIndex + 1} media`, type: item.media.type }, { mediaId: item.media.mediaId, name: item.media.fileName || 'uploaded media', source: 'upload', schemaVersion: 1, kind: item.media.type, mimeType: item.media.mimeType, size: 0, createdAt: new Date().toISOString() }, itemIndex));
+    }
+    return list;
+  }));
   return issues;
 }
 

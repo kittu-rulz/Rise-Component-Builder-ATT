@@ -11,7 +11,7 @@ import {
   saveFavorites, savePreviewDevice, saveProject, saveRecentlyUsed, saveSettings, saveUiTheme,
   withRecentlyUsedEntry
 } from './js/storage.js';
-import { componentCatalog, filterCatalog, createCatalogCard, showComponentDetailsModal, closeComponentDetailsModal } from './js/catalog.js';
+import { componentCatalog, filterCatalog, createCatalogCard, sortCatalog, renderFilterChips, showComponentDetailsModal, closeComponentDetailsModal } from './js/catalog.js';
 import { COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById, getDefaultConfig } from './js/component-registry.js';
 import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField, setupEditorTabKeyboardNavigation, jumpToEditorField, getFieldTabLocation } from './js/editor.js';
 import { writePreview, openPreview, generateIframeContent as compilePreview, COMPONENT_MAX_WIDTH } from './js/preview.js';
@@ -402,6 +402,243 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Sidebar toggle
+  const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+  const sidebar = document.querySelector('.sidebar');
+  const appWorkspace = document.querySelector('.app-workspace');
+
+  function toggleSidebar(collapsed) {
+    if (!sidebar) return;
+    const isCollapsed = collapsed !== undefined ? collapsed : !sidebar.classList.contains('sidebar-collapsed');
+    sidebar.classList.toggle('sidebar-collapsed', isCollapsed);
+    appState.sidebarCollapsed = isCollapsed;
+    if (btnToggleSidebar) {
+      const label = isCollapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation';
+      btnToggleSidebar.title = label;
+      btnToggleSidebar.setAttribute('aria-label', label);
+    }
+  }
+
+  if (btnToggleSidebar) {
+    btnToggleSidebar.addEventListener('click', () => toggleSidebar());
+  }
+
+  // Catalog Sort & View Density controls
+  const selectCatalogSort = document.getElementById('select-catalog-sort');
+  const btnDensityComfortable = document.getElementById('btn-density-comfortable');
+  const btnDensityCompact = document.getElementById('btn-density-compact');
+  const filterChipsContainer = document.getElementById('filter-chips-container');
+
+  if (selectCatalogSort) {
+    selectCatalogSort.addEventListener('change', (e) => {
+      appState.catalogSortMode = e.target.value;
+      renderCatalog();
+    });
+  }
+
+  if (btnDensityComfortable) {
+    btnDensityComfortable.addEventListener('click', () => {
+      appState.catalogViewDensity = 'comfortable';
+      try { localStorage.setItem('rise_builder_view_density', 'comfortable'); } catch { /* ignore */ }
+      renderCatalog();
+    });
+  }
+
+  if (btnDensityCompact) {
+    btnDensityCompact.addEventListener('click', () => {
+      appState.catalogViewDensity = 'compact';
+      try { localStorage.setItem('rise_builder_view_density', 'compact'); } catch { /* ignore */ }
+      renderCatalog();
+    });
+  }
+
+  // Resizer Divider & Panel proportions
+  const workspaceResizer = document.getElementById('workspace-resizer');
+  const configPanel = document.querySelector('.config-panel');
+  const previewPanel = document.getElementById('preview-panel');
+  let isResizing = false;
+
+  function setWorkspaceSplitRatio(ratio) {
+    const clamped = Math.min(0.8, Math.max(0.2, ratio));
+    appState.editorSplitRatio = clamped;
+    if (configPanel && previewPanel) {
+      configPanel.style.flex = `0 0 ${clamped * 100}%`;
+      configPanel.style.maxWidth = `${clamped * 100}%`;
+      previewPanel.style.flex = `1 1 ${(1 - clamped) * 100}%`;
+    }
+    if (workspaceResizer) {
+      workspaceResizer.setAttribute('aria-valuenow', String(Math.round(clamped * 100)));
+    }
+    try {
+      localStorage.setItem('rise_builder_layout_split', String(clamped));
+    } catch { /* ignore */ }
+  }
+
+  function resetWorkspaceSplitRatio() {
+    const isAuthoring = Boolean(appState.selectedComponent);
+    const defaultRatio = isAuthoring ? 0.52 : 0.68;
+    setWorkspaceSplitRatio(defaultRatio);
+  }
+
+  if (workspaceResizer) {
+    workspaceResizer.addEventListener('pointerdown', (e) => {
+      isResizing = true;
+      workspaceResizer.classList.add('is-dragging');
+      workspaceResizer.setPointerCapture(e.pointerId);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    workspaceResizer.addEventListener('pointermove', (e) => {
+      if (!isResizing || !appWorkspace) return;
+      const rect = appWorkspace.getBoundingClientRect();
+      const sidebarWidth = sidebar?.offsetWidth || 0;
+      const availableWidth = rect.width - sidebarWidth;
+      if (availableWidth <= 0) return;
+      const pointerOffset = e.clientX - rect.left - sidebarWidth;
+      const ratio = pointerOffset / availableWidth;
+      setWorkspaceSplitRatio(ratio);
+    });
+
+    const stopResizing = (e) => {
+      if (!isResizing) return;
+      isResizing = false;
+      workspaceResizer.classList.remove('is-dragging');
+      try { workspaceResizer.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    workspaceResizer.addEventListener('pointerup', stopResizing);
+    workspaceResizer.addEventListener('pointercancel', stopResizing);
+
+    workspaceResizer.addEventListener('dblclick', () => {
+      resetWorkspaceSplitRatio();
+      showToast('Restored default workspace layout.', 'info', 1500);
+    });
+
+    workspaceResizer.addEventListener('keydown', (e) => {
+      const current = appState.editorSplitRatio || 0.52;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setWorkspaceSplitRatio(current - 0.02);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setWorkspaceSplitRatio(current + 0.02);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        setWorkspaceSplitRatio(0.25);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        setWorkspaceSplitRatio(0.75);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        resetWorkspaceSplitRatio();
+      }
+    });
+  }
+
+  // Preview safe area, fullscreen, hide/show, and toast indicators
+  const btnPreviewSafeArea = document.getElementById('btn-preview-safe-area');
+  const previewSafeAreaOverlay = document.getElementById('preview-safe-area-overlay');
+  const btnPreviewFullscreen = document.getElementById('btn-preview-fullscreen');
+  const btnTogglePreview = document.getElementById('btn-toggle-preview');
+  const btnZoomFit = document.getElementById('btn-zoom-fit');
+  const previewSyncToast = document.getElementById('preview-sync-toast');
+  let previewToastTimer = null;
+
+  function showPreviewSyncToast(msg = 'Preview updated') {
+    if (!previewSyncToast) return;
+    const span = previewSyncToast.querySelector('span');
+    if (span) span.textContent = msg;
+    previewSyncToast.classList.add('is-visible');
+    window.clearTimeout(previewToastTimer);
+    previewToastTimer = window.setTimeout(() => {
+      previewSyncToast?.classList.remove('is-visible');
+    }, 1200);
+  }
+
+  if (btnPreviewSafeArea) {
+    btnPreviewSafeArea.addEventListener('click', () => {
+      appState.safeAreaOverlay = !appState.safeAreaOverlay;
+      if (previewSafeAreaOverlay) previewSafeAreaOverlay.hidden = !appState.safeAreaOverlay;
+      btnPreviewSafeArea.classList.toggle('active', appState.safeAreaOverlay);
+      btnPreviewSafeArea.setAttribute('aria-pressed', String(appState.safeAreaOverlay));
+      showToast(appState.safeAreaOverlay ? 'Rise Safe Area: Shown' : 'Rise Safe Area: Hidden', 'info', 1500);
+    });
+  }
+
+  if (btnPreviewFullscreen) {
+    btnPreviewFullscreen.addEventListener('click', () => {
+      appState.previewFullscreen = !appState.previewFullscreen;
+      document.body.classList.toggle('preview-fullscreen', appState.previewFullscreen);
+      btnPreviewFullscreen.classList.toggle('active', appState.previewFullscreen);
+      btnPreviewFullscreen.setAttribute('aria-pressed', String(appState.previewFullscreen));
+      if (appState.previewFullscreen) {
+        showToast('Fullscreen Preview (Press Esc or click again to exit)', 'info', 2500);
+      }
+    });
+  }
+
+  const btnShowPreviewHeader = document.getElementById('btn-show-preview-header');
+  const btnDockedShowPreview = document.getElementById('btn-docked-show-preview');
+
+  function setPreviewVisibility(visible) {
+    appState.previewVisible = Boolean(visible);
+    document.body.classList.toggle('preview-hidden', !appState.previewVisible);
+    if (btnTogglePreview) {
+      btnTogglePreview.classList.toggle('active', !appState.previewVisible);
+      btnTogglePreview.setAttribute('aria-pressed', String(!appState.previewVisible));
+      const label = appState.previewVisible ? 'Hide Preview Panel' : 'Show Preview Panel';
+      btnTogglePreview.title = label;
+      btnTogglePreview.setAttribute('aria-label', label);
+    }
+    showToast(appState.previewVisible ? 'Preview panel restored' : 'Preview panel hidden (Click "Show Preview" to restore)', 'info', 2000);
+  }
+
+  if (btnTogglePreview) {
+    btnTogglePreview.addEventListener('click', () => {
+      setPreviewVisibility(!appState.previewVisible);
+    });
+  }
+
+  if (btnShowPreviewHeader) {
+    btnShowPreviewHeader.addEventListener('click', () => {
+      setPreviewVisibility(true);
+    });
+  }
+
+  if (btnDockedShowPreview) {
+    btnDockedShowPreview.addEventListener('click', () => {
+      setPreviewVisibility(true);
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 'p' || e.key === 'P')) {
+      // Avoid intercepting if focus is in an input or textarea
+      if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      e.preventDefault();
+      setPreviewVisibility(!appState.previewVisible);
+    }
+  });
+
+  if (btnZoomFit) {
+    btnZoomFit.addEventListener('click', () => {
+      const container = document.querySelector('.preview-container');
+      const viewport = document.getElementById('preview-viewport');
+      if (!container || !viewport) return;
+      const availW = container.clientWidth - 48;
+      const availH = container.clientHeight - 48;
+      const targetW = viewport.offsetWidth || 1024;
+      const targetH = viewport.offsetHeight || 600;
+      if (targetW <= 0 || targetH <= 0) return;
+      const scale = Math.min(1.0, Math.min(availW / targetW, availH / targetH));
+      applyPreviewZoom(scale);
+      showToast(`Fit to space: ${Math.round(scale * 100)}%`, 'info', 1500);
+    });
+  }
+
   // Independent of the category sidebar — does not reset activeCategory/searchQuery, and
   // applies inside Favorites/Recent the same way search already does (js/catalog.js
   // #filterCatalog).
@@ -430,74 +667,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderCatalog();
     });
   });
-
-  function showState(state) {
-    if (state === 'catalog') {
-      catalogState.style.display = 'flex';
-      editorState.style.display = 'none';
-      const status = document.getElementById('project-status');
-      if (status) status.hidden = true; // no project context on the catalog screen
-    } else if (state === 'editor') {
-      catalogState.style.display = 'none';
-      editorState.style.display = 'flex';
-      // Switch editor tabs back to the first 'content' tab
-      switchEditorTab('content');
-    }
-    // P12: the single chokepoint every catalog<->editor transition passes through, so the
-    // toolbar's Save/Export availability and the preview panel's empty state never need a
-    // separate call site of their own to stay in sync with what's actually on screen.
-    updateToolbarActionAvailability();
-    updatePreviewEmptyState();
-  }
-
-  // P12 Requirement 3: there is no valid selected component to save or export while the
-  // catalog screen is showing — whether that's a fresh launch, "New Project," or "Back to
-  // Templates" (which also clears appState.selectedComponent, see performBackToCatalog).
-  // Explains why near the disabled action via `title`/`aria-label`, matching the existing
-  // pattern setExportActionsEnabled() uses for the Blocking-issues case inside the modal.
-  function updateToolbarActionAvailability() {
-    const hasSelection = Boolean(appState.selectedComponent);
-    const noSelectionReason = 'Select a component to enable this.';
-    [document.getElementById('btn-save'), document.getElementById('btn-export')].forEach(button => {
-      if (!button) return;
-      if (!button.dataset.defaultTitle) button.dataset.defaultTitle = button.title;
-      button.disabled = !hasSelection;
-      const title = hasSelection ? button.dataset.defaultTitle : noSelectionReason;
-      button.title = title;
-      button.setAttribute('aria-label', title);
-    });
-  }
-
-  // P12: the live preview panel is a permanent sibling of the catalog/editor screens (not
-  // hidden by showState() the way #catalog-state/#editor-state are), so without this it
-  // would keep silently rendering appState.config's leftover content — the sample
-  // accordion's own default data — even on a bare catalog screen where nothing is
-  // selected, contradicting what the catalog screen itself is showing.
-  function updatePreviewEmptyState() {
-    const emptyState = document.getElementById('preview-empty-state');
-    if (!emptyState || !livePreviewIframe) return;
-    const hasSelection = Boolean(appState.selectedComponent);
-    const wasHidden = livePreviewIframe.hidden;
-    livePreviewIframe.hidden = !hasSelection;
-    emptyState.hidden = hasSelection;
-    // Reported: the very first component selected in a session (iframe going from
-    // hidden -> visible) can render completely blank, unlike every subsequent switch
-    // between already-visible components (which writePreview()'s own srcdoc='' + srcdoc=
-    // html double-write already handles reliably). Root cause: removing `hidden` and
-    // writing the iframe's srcdoc land in the same synchronous tick immediately after
-    // (updateLivePreview() calls this, then writePreview(), back to back) — for a
-    // sandboxed (no allow-same-origin) iframe, some Chrome builds haven't run a layout
-    // pass for the newly-unhidden subtree yet when the srcdoc navigation starts, so its
-    // very first paint is silently dropped until an unrelated later reflow (resizing,
-    // switching components, anything that forces layout) happens to repaint it — which,
-    // for a small/fast component, resolves almost instantly and goes unnoticed, but for a
-    // larger payload with its own external media (e.g. Interactive Video) can leave the
-    // preview blank indefinitely, since nothing else naturally triggers a reflow while the
-    // author is just looking at it. Forcing a synchronous reflow here, before
-    // writePreview() runs immediately after, makes sure the browser has processed the
-    // visibility change first — a standard, minimal fix for this exact class of issue.
-    if (wasHidden && hasSelection) void livePreviewIframe.offsetHeight;
-  }
 
   // Header identity, inline rename, and save-status display
   const headerProjectName = document.getElementById('header-project-name');
@@ -619,19 +788,207 @@ document.addEventListener('DOMContentLoaded', async () => {
     return 'deferred';
   }
 
+  function showState(state) {
+    if (state === 'catalog') {
+      catalogState.style.display = 'flex';
+      editorState.style.display = 'none';
+      if (appWorkspace) {
+        appWorkspace.classList.add('is-browsing');
+        appWorkspace.classList.remove('is-authoring');
+      }
+      if (sidebar && sidebar.classList.contains('sidebar-collapsed')) {
+        toggleSidebar(false);
+      }
+      const status = document.getElementById('project-status');
+      if (status) status.hidden = true; // no project context on the catalog screen
+    } else if (state === 'editor') {
+      catalogState.style.display = 'none';
+      editorState.style.display = 'flex';
+      if (appWorkspace) {
+        appWorkspace.classList.add('is-authoring');
+        appWorkspace.classList.remove('is-browsing');
+      }
+      // Auto-collapse sidebar in editor mode
+      if (sidebar && !sidebar.classList.contains('sidebar-collapsed')) {
+        toggleSidebar(true);
+      }
+      // Switch editor tabs back to the first 'content' tab
+      switchEditorTab('content');
+    }
+    resetWorkspaceSplitRatio();
+    // P12: the single chokepoint every catalog<->editor transition passes through, so the
+    // toolbar's Save/Export availability and the preview panel's empty state never need a
+    // separate call site of their own to stay in sync with what's actually on screen.
+    updateToolbarActionAvailability();
+    updatePreviewEmptyState();
+  }
+
+  // P12 Requirement 3: there is no valid selected component to save or export while the
+  // catalog screen is showing — whether that's a fresh launch, "New Project," or "Back to
+  // Templates" (which also clears appState.selectedComponent, see performBackToCatalog).
+  // Explains why near the disabled action via `title`/`aria-label`, matching the existing
+  // pattern setExportActionsEnabled() uses for the Blocking-issues case inside the modal.
+  function updateToolbarActionAvailability() {
+    const hasSelection = Boolean(appState.selectedComponent);
+    const noSelectionReason = 'Select a component to enable this.';
+    [document.getElementById('btn-save'), document.getElementById('btn-export')].forEach(button => {
+      if (!button) return;
+      if (!button.dataset.defaultTitle) button.dataset.defaultTitle = button.title;
+      button.disabled = !hasSelection;
+      const title = hasSelection ? button.dataset.defaultTitle : noSelectionReason;
+      button.title = title;
+      button.setAttribute('aria-label', title);
+    });
+  }
+
+  // P12: the live preview panel is a permanent sibling of the catalog/editor screens (not
+  // hidden by showState() the way #catalog-state/#editor-state are), so without this it
+  // would keep silently rendering appState.config's leftover content — the sample
+  // accordion's own default data — even on a bare catalog screen where nothing is
+  // selected, contradicting what the catalog screen itself is showing.
+  function updatePreviewEmptyState() {
+    const emptyState = document.getElementById('preview-empty-state');
+    if (!emptyState || !livePreviewIframe) return;
+    const hasSelection = Boolean(appState.selectedComponent || appState.previewedComponent);
+    const wasHidden = livePreviewIframe.hidden;
+    livePreviewIframe.hidden = !hasSelection;
+    emptyState.hidden = hasSelection;
+    if (wasHidden && hasSelection) void livePreviewIframe.offsetHeight;
+  }
+
+  function quickPreviewComponent(component) {
+    appState.previewedComponent = component;
+    const registryEntry = getComponentById(COMPONENT_REGISTRY, component.id) || component;
+    const presets = getPresetsForComponent(component.id);
+    const preset = presets.length ? presets[0] : null;
+    const baseConfig = getDefaultConfig(registryEntry);
+    const sampleConfig = preset?.config
+      ? {
+          blockTitle: preset.config.blockTitle || (component.title || registryEntry.name || '').toUpperCase(),
+          blockHeadline: preset.config.blockHeadline || `Explore ${component.title || registryEntry.name}`,
+          blockDesc: preset.config.blockDesc || component.desc || registryEntry.description || '',
+          borderRadius: '12',
+          shadowDepth: 'soft',
+          borderOutline: true,
+          trackCompletion: false,
+          completionMsg: 'Complete!',
+          ...baseConfig,
+          ...preset.config
+        }
+      : {
+          blockTitle: (component.title || registryEntry.name || '').toUpperCase(),
+          blockHeadline: `Explore details about ${component.title || registryEntry.name}`,
+          blockDesc: component.desc || registryEntry.description || '',
+          borderRadius: '12',
+          shadowDepth: 'soft',
+          borderOutline: true,
+          trackCompletion: false,
+          completionMsg: 'Complete!',
+          ...baseConfig
+        };
+    const sampleState = {
+      selectedComponent: registryEntry,
+      config: sampleConfig,
+      activeTheme: appState.activeTheme || getBuiltInTheme(),
+      componentOverrides: {}
+    };
+    const html = compilePreview(sampleState, componentRegistry, colorToRgba);
+    if (livePreviewIframe) {
+      const emptyState = document.getElementById('preview-empty-state');
+      if (emptyState) emptyState.hidden = true;
+      livePreviewIframe.hidden = false;
+      writePreview(livePreviewIframe, html);
+      showPreviewSyncToast('Preview loaded');
+    }
+    renderCatalog();
+  }
+
   // ==========================================
   // CATALOG RENDERING
   // ==========================================
   function renderCatalog() {
     componentsGrid.innerHTML = '';
 
-    const filtered = filterCatalog(componentCatalog, appState);
+    let filtered = filterCatalog(componentCatalog, appState);
+    filtered = sortCatalog(filtered, appState.catalogSortMode || 'recommended', {
+      favorites: appState.favorites,
+      recentlyUsed: appState.recentlyUsed
+    });
+
+    if (componentsGrid) {
+      componentsGrid.classList.toggle('view-compact', appState.catalogViewDensity === 'compact');
+    }
+    if (btnDensityComfortable) {
+      btnDensityComfortable.classList.toggle('active', appState.catalogViewDensity !== 'compact');
+      btnDensityComfortable.setAttribute('aria-pressed', String(appState.catalogViewDensity !== 'compact'));
+    }
+    if (btnDensityCompact) {
+      btnDensityCompact.classList.toggle('active', appState.catalogViewDensity === 'compact');
+      btnDensityCompact.setAttribute('aria-pressed', String(appState.catalogViewDensity === 'compact'));
+    }
+    if (selectCatalogSort) {
+      selectCatalogSort.value = appState.catalogSortMode || 'recommended';
+    }
+
+    renderFilterChips(filterChipsContainer, appState, {
+      onRemoveChip: (key) => {
+        if (key === 'category') {
+          appState.activeCategory = 'interactive';
+          navItems.forEach(n => {
+            const isMatch = n.getAttribute('data-category') === 'interactive';
+            n.classList.toggle('active', isMatch);
+          });
+        } else if (key === 'classification') {
+          appState.activeClassification = 'all';
+          classificationFilterButtons.forEach(b => {
+            const isMatch = b.getAttribute('data-classification') === 'all';
+            b.classList.toggle('active', isMatch);
+            b.setAttribute('aria-pressed', String(isMatch));
+          });
+        } else if (key === 'purpose') {
+          appState.activePurpose = 'all';
+          purposeChips.forEach(c => {
+            const isMatch = c.getAttribute('data-purpose') === 'all';
+            c.classList.toggle('active', isMatch);
+            c.setAttribute('aria-pressed', String(isMatch));
+          });
+        } else if (key === 'query') {
+          appState.searchQuery = '';
+          if (searchInput) searchInput.value = '';
+          const btnClear = document.getElementById('btn-clear-search');
+          if (btnClear) btnClear.style.display = 'none';
+        }
+        renderCatalog();
+      },
+      onClearAll: () => {
+        appState.activeCategory = 'interactive';
+        appState.activeClassification = 'all';
+        appState.activePurpose = 'all';
+        appState.searchQuery = '';
+        if (searchInput) searchInput.value = '';
+        const btnClear = document.getElementById('btn-clear-search');
+        if (btnClear) btnClear.style.display = 'none';
+        navItems.forEach(n => {
+          const isMatch = n.getAttribute('data-category') === 'interactive';
+          n.classList.toggle('active', isMatch);
+        });
+        classificationFilterButtons.forEach(b => {
+          const isMatch = b.getAttribute('data-classification') === 'all';
+          b.classList.toggle('active', isMatch);
+          b.setAttribute('aria-pressed', String(isMatch));
+        });
+        purposeChips.forEach(c => {
+          const isMatch = c.getAttribute('data-purpose') === 'all';
+          c.classList.toggle('active', isMatch);
+          c.setAttribute('aria-pressed', String(isMatch));
+        });
+        renderCatalog();
+      }
+    });
 
     if (filtered.length === 0) {
       const query = appState.searchQuery.trim();
       if (query) {
-        // P11 Requirement 4: name the query back to the user and offer a one-click way out,
-        // rather than a generic "try something else" with no path forward.
         componentsGrid.innerHTML = `
           <div class="catalog-empty-state">
             <div class="catalog-empty-icon" aria-hidden="true">🔍</div>
@@ -647,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           searchInput.value = '';
           appState.searchQuery = '';
           renderCatalog();
-          searchInput.focus(); // P11 Requirement 8: this button is destroyed by the render() above it triggers — hand focus back to the search box rather than dropping it.
+          searchInput.focus();
         });
         componentsGrid.querySelector('.catalog-empty-state').appendChild(clearButton);
       } else if (appState.activeCategory === 'favorites') {
@@ -680,7 +1037,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     filtered.forEach(comp => {
       componentsGrid.appendChild(createCatalogCard(comp, {
+        isFavorited: appState.favorites.has(comp.id),
+        isPreviewed: appState.previewedComponent?.id === comp.id,
+        isSelected: appState.selectedComponent?.id === comp.id,
+        onPreview: (component) => quickPreviewComponent(component),
         onSelect: loadComponentToEditor,
+        onToggleFavorite: (id) => {
+          if (appState.favorites.has(id)) {
+            appState.favorites.delete(id);
+          } else {
+            appState.favorites.add(id);
+          }
+          updateFavoritesBadge();
+          try { saveFavorites(appState.favorites); }
+          catch (error) { showToast(error.message, 'error'); }
+          renderCatalog();
+        },
         onOpenDetails: (component) => {
           showComponentDetailsModal(component, loadComponentToEditor, (c) => {
             const registryEntry = getComponentById(COMPONENT_REGISTRY, c.id) || c;

@@ -26,7 +26,7 @@ async function uploadCanvasImage(fileInputLocator, { width, height, name = 'canv
 test('an oversized image is automatically downscaled to fit within the resize threshold', async ({ page, browserName }) => {
   test.skip(browserName === 'webkit', 'WebKit-on-Windows cannot store Blobs in IndexedDB in this test environment (see editor-preview.spec.js).');
   await page.goto('/');
-  await page.locator('.component-select-card').filter({ hasText: '3D Flip Cards' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
 
   await uploadCanvasImage(iconField.locator('input[type="file"]'), { width: 4000, height: 3000, name: 'oversized.png' });
@@ -46,7 +46,7 @@ test('an oversized image is automatically downscaled to fit within the resize th
 test('an image far beyond the maximum dimension is rejected with a clear error, not silently accepted', async ({ page, browserName }) => {
   test.skip(browserName === 'webkit', 'WebKit-on-Windows cannot store Blobs in IndexedDB in this test environment (see editor-preview.spec.js).');
   await page.goto('/');
-  await page.locator('.component-select-card').filter({ hasText: '3D Flip Cards' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
 
   await uploadCanvasImage(iconField.locator('input[type="file"]'), { width: 9000, height: 300, name: 'decompression-bomb-shaped.png' });
@@ -57,7 +57,7 @@ test('an image far beyond the maximum dimension is rejected with a clear error, 
 test('the media source badge reflects local vs. external vs. empty state', async ({ page }) => {
   await page.goto('/');
   await page.locator('.nav-item[data-category="media"]').click();
-  await page.locator('.component-select-card').filter({ hasText: 'Grid Photo Gallery' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Image Gallery' }).click();
   const sourceField = page.locator('#schema-0-content').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
   await expect(sourceField.locator('.media-source-badge')).toHaveText('External URL');
 

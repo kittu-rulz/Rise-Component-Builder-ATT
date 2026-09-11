@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 // docs/ARCHITECTURE.md "Initial selection state and export readiness (P12)".
 
 async function selectAccordion(page) {
-  await page.locator('.component-select-card').filter({ hasText: 'Responsive Accordion' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
 
@@ -88,8 +88,8 @@ test('a Warning-only issue does not disable the export actions', async ({ page }
   await selectAccordion(page);
   // Completion tracking on with no export format chosen yet fires
   // general-completion-iframe-format — a Warning, not Blocking (js/validation.js).
-  await page.locator('.editor-tab[data-tab="settings"]').click();
-  await page.locator('#input-track-completion').check();
+  await page.locator('.editor-tab[data-tab="completion"]').click();
+  await page.locator('#completion-mode-all-items').check();
 
   await page.locator('#btn-export').click();
   await expect(page.locator('#export-preflight-results')).not.toContainText(/blocking errors/i);

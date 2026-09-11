@@ -390,7 +390,7 @@ export function generateCSS() {
 
 export function generateJS(config, instanceId) {
   return `
-    (function() {
+    function initComponent() {
       var root = document.getElementById('${instanceId}-carousel-block');
       var track = document.getElementById('${instanceId}-track');
       var btnPrev = document.getElementById('${instanceId}-btn-prev');
@@ -549,7 +549,7 @@ export function generateJS(config, instanceId) {
 
       // Initial tracking
       updateSlide(0);
-    })();
+    }
   `;
 }
 

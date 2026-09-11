@@ -1,18 +1,25 @@
 import { expect, test } from '@playwright/test';
 
 const COMPONENTS = [
-  { name: 'Responsive Accordion', category: 'Interactive', rootSelector: '.accordion-group' },
-  { name: '3D Flip Cards', category: 'Interactive', rootSelector: '.flip-cards-grid' },
+  { name: 'Accordion', category: 'Interactive', rootSelector: '.accordion-group' },
+  { name: 'Study Cards', category: 'Interactive', rootSelector: '.flip-cards-grid' },
   { name: 'Horizontal Tabs', category: 'Interactive', rootSelector: '.tabs-container' },
-  { name: 'Interactive Hotspots', category: 'Interactive', rootSelector: '.hotspots-container' },
+  { name: 'Hotspots', category: 'Interactive', rootSelector: '.hotspots-container' },
   { name: 'Multiple Choice', category: 'Knowledge Checks', rootSelector: '.quiz-block' },
-  { name: 'Vertical Step Timeline', category: 'Timelines', rootSelector: '.vertical-timeline-container' },
-  { name: 'Grid Photo Gallery', category: 'Media Blocks', rootSelector: '.gallery-grid' }
+  { name: 'Guided Vertical Timeline', category: 'Timelines', rootSelector: '.vertical-timeline-container' },
+  { name: 'Image Gallery', category: 'Media Blocks', rootSelector: '.gallery-grid' }
 ];
+
+const CATEGORY_ID = {
+  Interactive: 'interactive', Navigation: 'navigation', 'Knowledge Checks': 'knowledge',
+  Timelines: 'timelines', 'Process Flows': 'process', 'Cards & Layouts': 'cards',
+  'Media Blocks': 'media', 'Advanced Interactions': 'advanced'
+};
 
 async function openComponent(page, name, category = 'Interactive') {
   await page.goto('/');
-  if (category !== 'Interactive') await page.getByText(category, { exact: true }).click();
+  const categoryId = CATEGORY_ID[category] || category;
+  if (categoryId !== 'interactive') await page.locator(`.nav-item[data-category="${categoryId}"]`).click();
   await page.locator('.component-select-card').filter({ hasText: name }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
@@ -89,8 +96,8 @@ for (const { name, category, rootSelector } of COMPONENTS) {
 
 test.describe('grid-based components reflow to fewer columns at mobile width', () => {
   for (const { name, category, itemSelector } of [
-    { name: '3D Flip Cards', category: 'Interactive', itemSelector: '.flip-card' },
-    { name: 'Grid Photo Gallery', category: 'Media Blocks', itemSelector: '.gallery-item-card' }
+    { name: 'Study Cards', category: 'Interactive', itemSelector: '.flip-card' },
+    { name: 'Image Gallery', category: 'Media Blocks', itemSelector: '.gallery-item-card' }
   ]) {
     test(`${name}: two-column desktop layout stacks to one column at mobile width`, async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
@@ -112,7 +119,7 @@ test.describe('grid-based components reflow to fewer columns at mobile width', (
 
 test.describe('device switcher accessibility', () => {
   test('device switcher exposes a labeled group with a single pressed control', async ({ page }) => {
-    await openComponent(page, 'Responsive Accordion');
+    await openComponent(page, 'Accordion');
     await expect(page.locator('.device-switcher')).toHaveAttribute('aria-label', /.+/);
     await expect(page.locator('.device-switcher')).toHaveAttribute('role', 'group');
 
@@ -129,7 +136,7 @@ test.describe('device switcher accessibility', () => {
   });
 
   test('the selected width is visible to the author', async ({ page }) => {
-    await openComponent(page, 'Responsive Accordion');
+    await openComponent(page, 'Accordion');
     const label = page.locator('#preview-width-label');
     await page.locator('[data-device="tablet"]').click();
     await expect(label).toHaveText('768px');
@@ -144,7 +151,7 @@ test.describe('device switcher accessibility', () => {
 
 test.describe('device mode persistence rules', () => {
   test('selected device mode survives a full page reload', async ({ page }) => {
-    await openComponent(page, 'Responsive Accordion');
+    await openComponent(page, 'Accordion');
     await page.locator('[data-device="mobile"]').click();
     await page.reload();
     await expect(page.locator('#preview-viewport')).toHaveClass(/mobile/);
@@ -152,10 +159,10 @@ test.describe('device mode persistence rules', () => {
   });
 
   test('selected device mode persists when switching to a different component', async ({ page }) => {
-    await openComponent(page, 'Responsive Accordion');
+    await openComponent(page, 'Accordion');
     await page.locator('[data-device="tablet"]').click();
     await page.locator('#btn-back-to-catalog').click();
-    await page.locator('.component-select-card').filter({ hasText: '3D Flip Cards' }).click();
+    await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
     await expect(page.locator('#preview-viewport')).toHaveClass(/tablet/);
     await expect(page.locator('[data-device="tablet"]')).toHaveAttribute('aria-pressed', 'true');
   });
@@ -164,7 +171,7 @@ test.describe('device mode persistence rules', () => {
 test.describe('narrow application window remains usable', () => {
   test('a narrow window clamps the preview without page-level horizontal scroll or breaking the sidebar', async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 800 });
-    await openComponent(page, 'Responsive Accordion');
+    await openComponent(page, 'Accordion');
     await page.locator('[data-device="tablet"]').click();
     await expect.poll(() => noPageHorizontalScroll(page)).toBe(true);
     const viewportWidth = await page.locator('#preview-viewport').evaluate(el => el.getBoundingClientRect().width);

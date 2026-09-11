@@ -2,6 +2,7 @@ import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeHTML, sanitizeRichText } from '../js/utilities.js';
 import { validateNonEmptyArray, combineValidationResults } from '../js/validation-utils.js';
 import { getAttIconSvg } from '../js/att-icons.js';
+import { wrapItemMediaContent, getItemMediaCSS, validateItemMedia } from '../js/item-media.js';
 
 /**
  * Accordion Component Configuration
@@ -15,7 +16,7 @@ import { getAttIconSvg } from '../js/att-icons.js';
  * @property {boolean} [accordionAllowReset] - Shows a "Reset" action clearing visited/opened/lock state
  * @property {boolean} [accordionSearch] - Shows a search input that filters panels by title/body text
  * @property {boolean} [accordionExpandCollapseAll] - Shows learner-facing Expand All/Collapse All controls (multi-open, non-sequential only)
- * @property {Array<{title: string, content: string}>} items - Array of accordion items
+ * @property {Array<{title: string, content: string, media?: any}>} items - Array of accordion items
  */
 
 export const id = 'accordion';
@@ -85,6 +86,9 @@ export function generateHTML(config, instanceId) {
 
   return `${toolbar}<div class="accordion-group" id="${instanceId}-accordion-group">${config.items.map((item, index) => {
     const locked = sequential && index > 0;
+    const rawBody = `<p>${sanitizeRichText(item.content || 'Customize accordion body descriptions.')}</p>`;
+    const bodyContent = wrapItemMediaContent(item.media, rawBody, instanceId, index);
+
     return `
     <div class="accordion-item${locked ? ' locked' : ''}" id="${instanceId}-item-${index}" data-idx="${index}">
       <h3><button class="accordion-trigger" id="${instanceId}-accordion-trigger-${index}" data-idx="${index}" aria-expanded="false" aria-controls="${instanceId}-accordion-panel-${index}" ${sequential ? `aria-describedby="${instanceId}-lock-note-${index}"` : ''} ${locked ? 'aria-disabled="true"' : ''}>
@@ -96,7 +100,7 @@ export function generateHTML(config, instanceId) {
         ${icon}
       </button></h3>
       ${sequential ? `<p class="accordion-lock-note" id="${instanceId}-lock-note-${index}" ${locked ? '' : 'hidden'}>Locked — open the previous section first.</p>` : ''}
-      <div class="accordion-content" id="${instanceId}-accordion-panel-${index}" role="region" aria-labelledby="${instanceId}-accordion-trigger-${index}" aria-hidden="true"><div class="accordion-body"><p>${sanitizeRichText(item.content || 'Customize accordion body descriptions.')}</p></div></div>
+      <div class="accordion-content" id="${instanceId}-accordion-panel-${index}" role="region" aria-labelledby="${instanceId}-accordion-trigger-${index}" aria-hidden="true"><div class="accordion-body">${bodyContent}</div></div>
     </div>`;
   }).join('')}</div>`;
 }
@@ -358,6 +362,7 @@ export function generateCSS() {
         transition: none !important;
         animation: none !important;
       }
+      ${getItemMediaCSS()}
     }`;
 }
 
@@ -365,7 +370,7 @@ export function generateJS(config, instanceId) {
   const sequential = config.accordionSequential === true;
   const showVisitedBadge = config.accordionShowVisitedBadge === true;
   const showProgress = config.accordionShowProgress === true;
-  const total = config.items.length;
+  const total = Array.isArray(config.items) ? config.items.length : (config.accordionTotal || 3);
 
   return `
     var multiOpen = ${Boolean(config.accordionMulti)};
@@ -374,6 +379,15 @@ export function generateJS(config, instanceId) {
     var showVisitedBadge = ${showVisitedBadge};
     var showProgress = ${showProgress};
     var accordionTotal = ${total};
+
+    function pauseMediaInPanel(panel) {
+      if (!panel) return;
+      panel.querySelectorAll('audio, video').forEach(function(mediaEl) {
+        if (!mediaEl.paused) {
+          mediaEl.pause();
+        }
+      });
+    }
 
     function isPanelLocked(index) {
       return sequentialMode && index > 0 && !viewedItems.has(index - 1);
@@ -421,14 +435,17 @@ export function generateJS(config, instanceId) {
 
       if (!multiOpen) {
         document.querySelectorAll('.accordion-item').forEach(function(el) {
-          el.classList.remove('active');
-          var panel = el.querySelector('.accordion-content');
-          var trigger = el.querySelector('.accordion-trigger');
-          if (panel) {
-            panel.style.maxHeight = null;
-            panel.setAttribute('aria-hidden', 'true');
+          if (el !== item) {
+            el.classList.remove('active');
+            var panel = el.querySelector('.accordion-content');
+            var trigger = el.querySelector('.accordion-trigger');
+            if (panel) {
+              panel.style.maxHeight = null;
+              panel.setAttribute('aria-hidden', 'true');
+              pauseMediaInPanel(panel);
+            }
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
           }
-          if (trigger) trigger.setAttribute('aria-expanded', 'false');
         });
       }
 
@@ -439,6 +456,7 @@ export function generateJS(config, instanceId) {
         contentPanel.style.maxHeight = null;
         contentPanel.setAttribute('aria-hidden', 'true');
         item.querySelector('.accordion-trigger').setAttribute('aria-expanded', 'false');
+        pauseMediaInPanel(contentPanel);
       } else {
         item.classList.add('active');
         contentPanel.style.maxHeight = contentPanel.scrollHeight + 'px';
@@ -489,7 +507,11 @@ export function generateJS(config, instanceId) {
         itemEl.hidden = false;
         var panel = itemEl.querySelector('.accordion-content');
         var trigger = itemEl.querySelector('.accordion-trigger');
-        if (panel) { panel.style.maxHeight = null; panel.setAttribute('aria-hidden', 'true'); }
+        if (panel) {
+          panel.style.maxHeight = null;
+          panel.setAttribute('aria-hidden', 'true');
+          pauseMediaInPanel(panel);
+        }
         if (trigger) trigger.setAttribute('aria-expanded', 'false');
         updateVisitedBadge(parseInt(itemEl.getAttribute('data-idx'), 10));
       });
@@ -552,6 +574,10 @@ export function validate(config) {
       }
       if (!item.content || !String(item.content).trim()) {
         results.push({ valid: false, error: `Item ${index + 1}: Content is required.` });
+      }
+      if (item.media && item.media.type && item.media.type !== 'none') {
+        const mediaVal = validateItemMedia(item.media, index);
+        mediaVal.errors.forEach(err => results.push({ valid: false, error: err }));
       }
     });
   }

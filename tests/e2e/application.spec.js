@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-async function openComponent(page, name, category = 'Interactive') {
+async function openComponent(page, name, categoryId = 'interactive') {
   await page.goto('/');
-  if (category !== 'Interactive') await page.getByText(category, { exact: true }).click();
+  if (categoryId !== 'interactive') await page.locator(`.nav-item[data-category="${categoryId}"]`).click();
   await page.locator('.component-select-card').filter({ hasText: name }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
@@ -13,7 +13,8 @@ test('application loads without console errors and renders the catalog', async (
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Component Builder' })).toBeVisible();
-  await expect(page.locator('.component-select-card')).toHaveCount(4);
+  // Default landing category is "Interactive" (6 components).
+  await expect(page.locator('.component-select-card')).toHaveCount(6);
   expect(errors).toEqual([]);
 });
 
@@ -126,29 +127,29 @@ test('sidebar storage meter reports measured browser storage usage', async ({ pa
 
 test('category switching and search filter the catalog', async ({ page }) => {
   await page.goto('/');
-  await page.getByText('Knowledge Checks', { exact: true }).click();
-  await expect(page.locator('.component-select-card')).toHaveCount(4);
+  await page.locator('.nav-item[data-category="knowledge"]').click();
+  await expect(page.locator('.component-select-card')).toHaveCount(5);
   await expect(page.locator('.component-select-card').filter({ hasText: 'Multiple Choice' })).toBeVisible();
   await page.locator('.nav-item[data-category="interactive"]').click();
   await page.locator('#search-components').fill('accordion');
   await expect(page.locator('.component-select-card')).toHaveCount(1);
-  await expect(page.locator('.component-select-card')).toContainText('Responsive Accordion');
+  await expect(page.locator('.component-select-card')).toContainText('Accordion');
 });
 
 test('catalog cards are native buttons reachable and activatable by keyboard', async ({ page }) => {
   await page.goto('/');
-  const card = page.locator('.component-select-card').filter({ hasText: 'Responsive Accordion' });
+  const card = page.locator('.component-select-card').filter({ hasText: 'Accordion' });
   await expect(card).toHaveRole('button');
   await card.focus();
   await expect(card).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('#editor-state')).toBeVisible();
-  await expect(page.locator('#active-component-title')).toHaveText('Responsive Accordion');
+  await expect(page.locator('#active-component-title')).toHaveText('Accordion');
 });
 
 test('component selection opens the editor and back returns to the catalog', async ({ page }) => {
-  await openComponent(page, 'Responsive Accordion');
-  await expect(page.locator('#active-component-title')).toHaveText('Responsive Accordion');
+  await openComponent(page, 'Accordion');
+  await expect(page.locator('#active-component-title')).toHaveText('Accordion');
   await page.locator('#btn-back-to-catalog').click();
   await expect(page.locator('#catalog-state')).toBeVisible();
   await expect(page.locator('#editor-state')).toBeHidden();
@@ -169,7 +170,7 @@ for (const viewport of [
 ]) {
   test(`key catalog and editor flow works at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await openComponent(page, 'Responsive Accordion');
+    await openComponent(page, 'Accordion');
     await expect(page.locator('#live-preview-iframe')).toBeVisible();
     await expect(page.frameLocator('#live-preview-iframe').locator('.accordion-group')).toBeVisible();
   });

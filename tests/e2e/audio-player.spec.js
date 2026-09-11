@@ -114,18 +114,14 @@ test.describe('Audio Player: core playback controls', () => {
     expect(time).toBeGreaterThan(5);
   });
 
-  test('speed cycles through 1x -> 1.25x -> 1.5x -> 2x -> 1x, and mute toggles aria-pressed/label', async ({ page }) => {
+  test('speed cycles through the AUD_SPEEDS list (1x -> 1.25x -> 1.5x -> 2x -> 0.75x -> 1x), and mute toggles aria-pressed/label', async ({ page }) => {
     await page.setContent(compileAudio());
     const speedBtn = page.locator('.aud-speed-btn');
     await expect(speedBtn).toHaveText('1x');
-    await speedBtn.click();
-    await expect(speedBtn).toHaveText('1.25x');
-    await speedBtn.click();
-    await expect(speedBtn).toHaveText('1.5x');
-    await speedBtn.click();
-    await expect(speedBtn).toHaveText('2x');
-    await speedBtn.click();
-    await expect(speedBtn).toHaveText('1x');
+    for (const label of ['1.25x', '1.5x', '2x', '0.75x', '1x']) {
+      await speedBtn.click();
+      await expect(speedBtn).toHaveText(label);
+    }
 
     const muteBtn = page.locator('.aud-mute-btn');
     await expect(muteBtn).toHaveAttribute('aria-pressed', 'false');

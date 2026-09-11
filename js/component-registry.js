@@ -39,17 +39,17 @@ export const CATEGORIES = [
 ];
 
 export const CLASSIFICATIONS = [
-  { id: 'enhanced', name: 'Enhanced Rise Alternative' },
-  { id: 'custom', name: 'Advanced Custom Interaction' }
+  { id: 'enhanced', name: 'Enhanced Rise Alternative', description: 'Similar to a Rise block but adds meaningful customization.' },
+  { id: 'custom', name: 'Advanced Custom Interaction', description: 'Provides an interaction not available as a standard Rise block.' }
 ];
 
-// Strategic component tiers (Prompt section 1)
+// Strategic component tiers (decision-oriented taxonomy)
 export const TIERS = [
-  { id: 'flagship', name: 'Flagship', description: 'Strongest reasons for the product to exist' },
-  { id: 'signature', name: 'Signature', description: 'Distinctive interactions with no strong native Rise equivalent' },
-  { id: 'strong-custom', name: 'Strong Custom', description: 'Valuable custom learning experiences' },
-  { id: 'enhanced-rise', name: 'Enhanced Rise', description: 'Native Rise concept with meaningful extra behavior' },
-  { id: 'rise-first', name: 'Rise First', description: 'Native Rise should normally be recommended unless the author needs explicitly listed advanced behavior' }
+  { id: 'flagship', name: 'Flagship', label: 'Flagship', description: 'Highest-impact custom interactive experience' },
+  { id: 'signature', name: 'No Rise Equivalent', label: 'No Rise Equivalent', description: 'Provides an interaction not available as a standard Rise block' },
+  { id: 'strong-custom', name: 'Custom Recommended', label: 'Custom Recommended', description: 'Custom version is recommended when its advanced behavior is required' },
+  { id: 'enhanced-rise', name: 'Enhanced Rise Alternative', label: 'Enhanced Rise Alternative', description: 'Similar to a Rise block but adds meaningful customization' },
+  { id: 'rise-first', name: 'Use Native Rise', label: 'Use Native Rise', description: 'Rise’s native block is preferable unless specific custom behavior is needed' }
 ];
 
 // Controlled learning purposes taxonomy (Prompt section 3)

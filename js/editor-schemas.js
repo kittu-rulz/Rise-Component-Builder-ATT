@@ -28,7 +28,7 @@ const visualIconFields = [
 
 export const editorSchemas = {
   accordion: {
-    itemLabel: 'Accordion Section', minItems: 1,
+    itemLabel: 'Accordion Section', minItems: 1, supportsItemMedia: true,
     itemFields: [field('title', 'Section Title', 'text', { required: true, default: 'New Section', maxLength: 120 }), field('content', 'Section Content', 'richtext', { required: true, default: 'Add section content.' })]
   },
   'tab-blocks': {

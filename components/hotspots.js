@@ -982,8 +982,11 @@ export function generateCSS() {
 }
 
 export function generateJS() {
+  // Must define initComponent() — the shared export bootstrap (js/export-shell.js
+  // #BOOTSTRAP_JS) calls it once the DOM is ready. A bare IIFE here throws
+  // "initComponent is not defined" in every standalone export.
   return `
-    (function() {
+    function initComponent() {
       var container = document.querySelector('.hotspots-container');
       if (!container) return;
 
@@ -1269,7 +1272,7 @@ export function generateJS() {
           deactivateAll();
         }
       });
-    })();
+    }
   `;
 }
 

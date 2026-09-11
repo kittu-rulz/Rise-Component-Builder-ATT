@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 
 async function openAccordion(page) {
   await page.goto('/');
-  await page.locator('.component-select-card').filter({ hasText: 'Responsive Accordion' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
+  await expect(page.locator('#editor-state')).toBeVisible();
 }
 
 async function saveNamedProject(page, name) {
@@ -35,7 +36,7 @@ test('favorites persist after browser reload', async ({ page }) => {
   await page.locator('#btn-favorite-toggle').click();
   await page.reload();
   await page.getByText('Favorites', { exact: true }).click();
-  await expect(page.locator('.component-select-card').filter({ hasText: 'Responsive Accordion' })).toBeVisible();
+  await expect(page.locator('.component-select-card').filter({ hasText: 'Accordion' })).toBeVisible();
 });
 
 test('export contains selected content and theme, excludes unsafe executable markup, and downloads runnable HTML', async ({ page, context }) => {
@@ -154,8 +155,8 @@ test('Export modal shows a compact size summary with code collapsed by default, 
 
 test('completion tracking blocks the Iframe Snippet and Web Package ZIP exports, and guides back to Copy for Rise', async ({ page }) => {
   await openAccordion(page);
-  await page.locator('.editor-tab[data-tab="settings"]').click();
-  await page.locator('#input-track-completion').check();
+  await page.locator('.editor-tab[data-tab="completion"]').click();
+  await page.locator('#completion-mode-all-items').check();
   await page.locator('#btn-export').click();
 
   // The primary "Copy for Rise" action is always the completion-compatible format —
@@ -176,7 +177,7 @@ test('completion tracking blocks the Iframe Snippet and Web Package ZIP exports,
 
   // Turning completion off releases both blocks.
   await page.locator('#modal-export .modal-close-btn').click();
-  await page.locator('#input-track-completion').uncheck();
+  await page.locator('#completion-mode-none').check();
   await page.locator('#btn-export').click();
   await page.locator('#export-advanced-options > summary').click();
   await expect(page.locator('#btn-copy-iframe')).toBeEnabled();

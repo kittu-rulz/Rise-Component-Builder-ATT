@@ -293,7 +293,7 @@ export function generateJS(config, instanceId) {
   const isVertical = config.orientation === 'vertical';
 
   return `
-    (function() {
+    function initComponent() {
       var root = document.getElementById('${instanceId}-slider-card');
       var stage = document.getElementById('${instanceId}-stage');
       var handle = document.getElementById('${instanceId}-handle');
@@ -382,7 +382,7 @@ export function generateJS(config, instanceId) {
           setPosition(currentPos - 15);
         }
       });
-    })();
+    }
   `;
 }
 

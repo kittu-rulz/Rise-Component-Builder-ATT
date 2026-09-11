@@ -119,8 +119,19 @@ export function createCatalogCard(component, optionsOrSelect) {
     .map(p => `<span class="card-purpose-chip">${escapeHTML(p)}</span>`)
     .join('');
 
-  const recIcon = component.riseRecommendation === 'custom-recommended' ? '✨' : (component.riseRecommendation === 'native-first' ? '📘' : '⚙️');
+  const recIcon = component.riseRecommendation === 'custom-recommended'
+    ? '<svg class="card-rise-rec-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+    : (component.riseRecommendation === 'native-first'
+      ? '<svg class="card-rise-rec-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>'
+      : '<svg class="card-rise-rec-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>');
   const riseRecSummary = component.riseRecommendationSummary || component.differentiator || '';
+  const isFavorited = typeof optionsOrSelect === 'object' && optionsOrSelect.isFavorited;
+  const isPreviewed = typeof optionsOrSelect === 'object' && optionsOrSelect.isPreviewed;
+  const isSelected = typeof optionsOrSelect === 'object' && optionsOrSelect.isSelected;
+
+  if (isPreviewed) card.classList.add('is-previewed');
+  if (isSelected) card.classList.add('is-selected');
+  if (isFavorited) card.classList.add('is-favorited');
 
   card.innerHTML = `
     <div class="card-top-header">
@@ -128,6 +139,9 @@ export function createCatalogCard(component, optionsOrSelect) {
       <div class="card-header-badges">
         <span class="card-tier-badge card-tier-${tierSlug}">${tierLabel}</span>
         ${statusBadge}
+        <span class="btn-card-favorite ${isFavorited ? 'is-active' : ''}" data-action="favorite" role="button" tabindex="0" aria-label="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}" title="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="${isFavorited ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </span>
       </div>
     </div>
     <h3>${component.title}</h3>
@@ -154,22 +168,172 @@ export function createCatalogCard(component, optionsOrSelect) {
     </div>` : ''}
 
     <div class="card-quick-actions">
-      <span class="card-action-link" data-action="details">Preview &amp; Details &rarr;</span>
+      <span class="btn btn-sm btn-ghost btn-card-preview" data-action="preview" role="button" tabindex="0" aria-label="Preview ${escapeHTML(component.title)}">Preview</span>
+      <span class="btn btn-sm btn-primary btn-card-use" data-action="use" role="button" tabindex="0" aria-label="Use ${escapeHTML(component.title)}">Use Component</span>
+      <span class="card-action-link" data-action="details" role="button" tabindex="0" aria-label="View details and Rise guidance for ${escapeHTML(component.title)}">Details &rarr;</span>
     </div>
   `;
 
   card.addEventListener('click', (e) => {
     const target = e.target instanceof Element ? e.target : null;
+    const favoriteTrigger = target?.closest('[data-action="favorite"]');
     const detailsTrigger = target?.closest('[data-action="details"]');
-    if (detailsTrigger && onOpenDetails) {
+    const previewTrigger = target?.closest('[data-action="preview"]');
+    const useTrigger = target?.closest('[data-action="use"]');
+
+    if (favoriteTrigger) {
+      e.stopPropagation();
+      if (typeof optionsOrSelect === 'object' && typeof optionsOrSelect.onToggleFavorite === 'function') {
+        optionsOrSelect.onToggleFavorite(component.id);
+      }
+    } else if (detailsTrigger && onOpenDetails) {
       e.stopPropagation();
       onOpenDetails(component);
+    } else if (previewTrigger) {
+      e.stopPropagation();
+      if (typeof optionsOrSelect === 'object' && typeof optionsOrSelect.onPreview === 'function') {
+        optionsOrSelect.onPreview(component);
+      } else {
+        onSelect(component);
+      }
+    } else if (useTrigger) {
+      e.stopPropagation();
+      onSelect(component);
     } else {
       onSelect(component);
     }
   });
 
   return card;
+}
+
+/**
+ * @param {Array<any>} catalog
+ * @param {string} [sortMode]
+ * @param {{ favorites?: Set<string>, recentlyUsed?: string[] }} [options]
+ * @returns {Array<any>}
+ */
+export function sortCatalog(catalog, sortMode = 'recommended', { favorites: _favorites = new Set(), recentlyUsed = [] } = {}) {
+  const list = [...catalog];
+  switch (sortMode) {
+    case 'recent': {
+      const recIndex = new Map(recentlyUsed.map((id, i) => [id, i]));
+      return list.sort((a, b) => {
+        const aIdx = recIndex.has(a.id) ? recIndex.get(a.id) : 9999;
+        const bIdx = recIndex.has(b.id) ? recIndex.get(b.id) : 9999;
+        if (aIdx !== bIdx) return aIdx - bIdx;
+        return a.title.localeCompare(b.title);
+      });
+    }
+    case 'az':
+      return list.sort((a, b) => a.title.localeCompare(b.title));
+    case 'native-alt':
+      return list.sort((a, b) => {
+        const aScore = a.tier === 'enhanced-rise' ? 0 : 1;
+        const bScore = b.tier === 'enhanced-rise' ? 0 : 1;
+        if (aScore !== bScore) return aScore - bScore;
+        return a.title.localeCompare(b.title);
+      });
+    case 'no-rise':
+      return list.sort((a, b) => {
+        const aScore = a.tier === 'signature' || a.tier === 'flagship' ? 0 : 1;
+        const bScore = b.tier === 'signature' || b.tier === 'flagship' ? 0 : 1;
+        if (aScore !== bScore) return aScore - bScore;
+        return a.title.localeCompare(b.title);
+      });
+    case 'interactive': {
+      const compOrder = { 'Advanced': 0, 'Intermediate': 1, 'Basic': 2 };
+      return list.sort((a, b) => {
+        const aComp = compOrder[a.complexity] ?? 1;
+        const bComp = compOrder[b.complexity] ?? 1;
+        if (aComp !== bComp) return aComp - bComp;
+        return a.title.localeCompare(b.title);
+      });
+    }
+    case 'recommended':
+    default: {
+      const tierRank = { 'flagship': 0, 'signature': 1, 'strong-custom': 2, 'enhanced-rise': 3, 'rise-first': 4 };
+      return list.sort((a, b) => {
+        const aRank = tierRank[a.tier] ?? 3;
+        const bRank = tierRank[b.tier] ?? 3;
+        if (aRank !== bRank) return aRank - bRank;
+        return a.title.localeCompare(b.title);
+      });
+    }
+  }
+}
+
+/**
+ * @param {HTMLElement | null} container
+ * @param {any} activeState
+ * @param {{ onRemoveChip?: (key: string) => void, onClearAll?: () => void }} [options]
+ */
+export function renderFilterChips(container, activeState, { onRemoveChip = () => {}, onClearAll = () => {} } = {}) {
+  if (!container) return;
+  const chips = [];
+  if (activeState.category && activeState.category !== 'all') {
+    chips.push({
+      key: 'category',
+      label: `Category: ${activeState.categoryLabel || activeState.category}`,
+      type: 'category'
+    });
+  }
+  if (activeState.classification && activeState.classification !== 'all') {
+    chips.push({
+      key: 'classification',
+      label: `${activeState.classificationLabel || activeState.classification}`,
+      type: 'classification'
+    });
+  }
+  if (activeState.purpose && activeState.purpose !== 'all') {
+    chips.push({
+      key: 'purpose',
+      label: `Goal: ${activeState.purpose}`,
+      type: 'purpose'
+    });
+  }
+  if (activeState.query) {
+    chips.push({
+      key: 'query',
+      label: `"${activeState.query}"`,
+      type: 'query'
+    });
+  }
+
+  if (chips.length === 0) {
+    container.innerHTML = '';
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  container.innerHTML = `
+    <div class="filter-chips-list" role="list" aria-label="Active filters">
+      ${chips.map(chip => `
+        <span class="filter-chip" role="listitem">
+          <span class="filter-chip-label">${escapeHTML(chip.label)}</span>
+          <button type="button" class="filter-chip-remove" data-chip-key="${chip.key}" aria-label="Remove ${escapeHTML(chip.label)} filter">&times;</button>
+        </span>
+      `).join('')}
+      <button type="button" class="btn-clear-all-filters" id="btn-clear-all-filters">Clear all</button>
+    </div>
+  `;
+
+  container.querySelectorAll('.filter-chip-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const key = btn.getAttribute('data-chip-key');
+      if (typeof onRemoveChip === 'function') onRemoveChip(key);
+    });
+  });
+
+  const clearBtn = container.querySelector('#btn-clear-all-filters');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof onClearAll === 'function') onClearAll();
+    });
+  }
 }
 
 let lastFocusedElementBeforeModal = null;

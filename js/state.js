@@ -55,6 +55,16 @@ export const appState = {
   // P11: most-recently-used first, deduplicated, bounded — see js/storage.js's
   // RECENTLY_USED_LIMIT/withRecentlyUsedEntry.
   recentlyUsed: [],
+  // UI/UX Enhancement state
+  sidebarCollapsed: false,
+  catalogViewDensity: 'comfortable', // 'comfortable' | 'compact'
+  catalogSortMode: 'recommended', // 'recommended' | 'recent' | 'alphabetical' | 'enhanced' | 'custom' | 'interactive'
+  editorSplitRatio: 50, // Percentage width for editor panel in authoring mode (30 to 70)
+  previewVisible: true,
+  previewFullscreen: false,
+  previewZoom: 1.0,
+  safeAreaOverlay: false,
+  previewedComponent: null,
   settings: {
     defaultFont: 'Lato',
     exportFormat: 'web',

@@ -469,7 +469,7 @@ export function generateJS(config, instanceId) {
   const itemsJson = JSON.stringify(items);
 
   return `
-    (function() {
+    function initComponent() {
       var root = document.getElementById('${instanceId}-gauge-card');
       var slider = document.getElementById('${instanceId}-slider');
       var numberInput = document.getElementById('${instanceId}-number-input');
@@ -588,7 +588,7 @@ export function generateJS(config, instanceId) {
 
       // Initial layout sync
       updateDial(slider.value);
-    })();
+    }
   `;
 }
 

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 async function openAccordion(page) {
   await page.goto('/');
-  await page.locator('.component-select-card').filter({ hasText: 'Responsive Accordion' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
 
@@ -42,7 +42,7 @@ test('items can be added, duplicated, deleted, moved, and collapsed', async ({ p
 
 test('range sliders inside draggable item cards are not hijacked by drag-to-reorder', async ({ page }) => {
   await page.locator('#btn-back-to-catalog').click();
-  await page.locator('.component-select-card').filter({ hasText: 'Interactive Hotspots' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Hotspots' }).click();
 
   const input = page.locator('#schema-0-x');
   await expect(input).toHaveValue('25');
@@ -63,7 +63,7 @@ test('range sliders inside draggable item cards are not hijacked by drag-to-reor
 });
 
 test('behavior settings update accordion single-open behavior', async ({ page }) => {
-  await page.getByRole('button', { name: 'Behavior' }).click();
+  await page.locator('.editor-tab[data-tab="interaction"]').click();
   await page.locator('#input-behavior-accordion-multi').uncheck();
   const triggers = page.frameLocator('#live-preview-iframe').locator('.accordion-trigger');
   await triggers.nth(0).click();
@@ -122,7 +122,7 @@ test('flip-card custom artwork uploads per face and removal restores the built-i
   // environment limitation, not an app bug — real Safari is unaffected.
   test.skip(browserName === 'webkit', 'WebKit-on-Windows cannot store Blobs in IndexedDB in this test environment.');
   await page.locator('#btn-back-to-catalog').click();
-  await page.locator('.component-select-card').filter({ hasText: '3D Flip Cards' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
   await expect(iconField.locator('.media-upload-guidance')).toHaveText(
     'Supported formats: JPG, JPEG, PNG, WebP, SVG, GIF. Preferred dimensions: 256 × 256 px (square). Maximum file size: 10.0 MB; SVG: 2.0 MB.'
@@ -144,7 +144,7 @@ test('flip-card custom artwork uploads per face and removal restores the built-i
 test('Builder Settings shows a read-only AT&T Aleck Sans brand summary, not a font picker', async ({ page }) => {
   await page.locator('#btn-settings').click();
   await expect(page.locator('#modal-settings')).toContainText('Brand font: AT&T Aleck Sans');
-  await expect(page.locator('#modal-settings')).toContainText('Embedded automatically in exported components.');
+  await expect(page.locator('#modal-settings')).toContainText('Embedded automatically as self-hosted WOFF2 in all exported components');
   await expect(page.locator('#settings-default-font')).toHaveCount(0);
   await expect(page.locator('#modal-settings')).not.toContainText('Merriweather');
   await expect(page.locator('#modal-settings')).not.toContainText('Roboto');
@@ -158,7 +158,7 @@ test('media size-limit settings enforce a configurable maximum on image uploads'
   await expect(page.locator('#modal-settings')).toBeHidden();
 
   await page.locator('#btn-back-to-catalog').click();
-  await page.locator('.component-select-card').filter({ hasText: '3D Flip Cards' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
   await expect(iconField.locator('.media-upload-guidance')).toContainText('Maximum file size: 1.0 MB');
 

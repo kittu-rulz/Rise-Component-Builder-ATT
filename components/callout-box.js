@@ -313,7 +313,7 @@ export function generateCSS() {
 
 export function generateJS(config, instanceId) {
   return `
-    (function() {
+    function initComponent() {
       var root = document.getElementById('${instanceId}-matrix-card');
       if (!root) return;
 
@@ -346,7 +346,7 @@ export function generateJS(config, instanceId) {
         viewedItems.add(0);
         updateProgress();
       }
-    })();
+    }
   `;
 }
 

@@ -29,9 +29,9 @@ test('a full authoring session: create, edit, save, reopen, preflight, export, a
   // live preview instead of an author-chosen override.
   await expect.poll(() => previewFrame.locator('html').evaluate(el => getComputedStyle(el).getPropertyValue('--primary').trim())).toBe('#00388F');
 
-  // 5. Change behavior — enable completion tracking for this block.
-  await page.getByRole('button', { name: 'Behavior' }).click();
-  await page.locator('#input-track-completion').check();
+  // 5. Enable completion tracking for this block.
+  await page.locator('.editor-tab[data-tab="completion"]').click();
+  await page.locator('#completion-mode-all-items').check();
 
   // 6. Switch preview sizes.
   await page.locator('[data-device="mobile"]').click();
@@ -63,8 +63,9 @@ test('a full authoring session: create, edit, save, reopen, preflight, export, a
 
   // 10. Export the component.
   await page.locator('#btn-export').click();
+  await expect(page.locator('#modal-export')).toBeVisible();
   await expect(page.locator('#export-html-code')).toContainText('Full Journey Tabs');
-  await page.locator('#export-advanced-options > summary').click();
+  await page.locator('#export-advanced-options > summary').click({ force: true });
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#btn-download-html').click();
   const download = await downloadPromise;

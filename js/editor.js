@@ -3,6 +3,7 @@ import { formatItemLabel, sanitizeRichText } from './utilities.js';
 import { isMediaReference } from './media.js';
 import { createMediaUploadControl } from './media-upload.js';
 import { getAccessibilityWarning, getLengthGuidance, isEmpty, validateSchemaField } from './field-validation.js';
+import { createItemMediaControl } from './item-media.js';
 
 export { validateSchemaField } from './field-validation.js';
 
@@ -99,7 +100,8 @@ export function jumpToEditorField(fieldId, itemIndex, _options = {}) {
   let targetElem = null;
   if (fieldId) {
     if (itemIndex !== undefined && itemIndex !== null && itemIndex >= 0) {
-      targetElem = document.querySelector(`[data-field-id="${fieldId}"][data-item-index="${itemIndex}"]`)
+      targetElem = document.querySelector(`.dynamic-item-card[data-index="${itemIndex}"] [data-field-id="${fieldId}"]`)
+        || document.querySelector(`[data-field-id="${fieldId}"][data-item-index="${itemIndex}"]`)
         || document.getElementById(`schema-${itemIndex}-${fieldId}`)
         || document.getElementById(`schema-item-${itemIndex}-${fieldId}`);
     }
@@ -111,6 +113,12 @@ export function jumpToEditorField(fieldId, itemIndex, _options = {}) {
         || document.getElementById(`input-${kebabField}`)
         || document.getElementById(`select-${kebabField}`)
         || document.getElementById(fieldId);
+    }
+  } else if (itemIndex !== undefined && itemIndex !== null && itemIndex >= 0) {
+    const card = document.querySelector(`.dynamic-item-card[data-index="${itemIndex}"]`);
+    if (card instanceof HTMLElement) {
+      const btn = card.querySelector('.item-collapse-btn');
+      targetElem = btn instanceof HTMLElement ? btn : card;
     }
   }
 
@@ -478,6 +486,18 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
             }
           });
         });
+
+        if (schema.supportsItemMedia) {
+          const mediaControl = createItemMediaControl({
+            item,
+            index,
+            limits,
+            onChange: () => {
+              onChange();
+            }
+          });
+          body.appendChild(mediaControl);
+        }
       }
       card.appendChild(body);
 

@@ -108,3 +108,53 @@ Two independent things a component can depend on over the network, both already 
 - `tests/e2e/editor-preview.spec.js`: pre-existing coverage for per-item custom artwork upload/removal and configurable size-limit enforcement, unaffected by this pass (re-verified).
 - `tests/rise-zip.test.mjs` (prompt 12A): `index.html` at the ZIP root; an uploaded image and an uploaded audio file each resolve to and are packaged at their relative path; an asset no longer referenced by the config is excluded from the ZIP; two uploads sharing a sanitized filename don't collide (plus `createZip` itself rejecting a literal duplicate path outright); a missing/deleted required asset is reported via the dedicated `missing` list rather than shipping a dangling reference; the same project input compiles to byte-identical ZIP bytes on repeated exports; a media-free component still packages a valid ZIP; and `mode: 'inline'` behavior is unchanged by the `mode: 'package'` addition.
 - `tests/project-package.test.mjs` (prompt 12A): a project's uploaded media round-trips through a package into a *different, empty* IndexedDB store (simulating a different browser/profile) and comes back intact, byte-for-byte; importing a package doesn't re-fetch media already present locally; a package missing `project.json`, or with an invalid one, fails with the same readable-error posture as every other validation path here rather than throwing something opaque; a project referencing media present in neither the package nor local storage is reported via `missingMedia` without throwing; plain `.rise.json` import remains fully unaffected; and `isProjectPackageFile` correctly distinguishes by extension.
+- `tests/unit/item-media.test.js`: comprehensive unit test suite for `js/item-media.js` covering default media generation, legacy schema normalization, media activation checks, preflight QA validation, semantic HTML generation (images, audio, video, transcripts), CSS generation, responsive layout wrapping, and accordion interaction pausing scripts.
+- `tests/e2e/accordion-media.spec.js`: Playwright E2E browser tests validating item media attachment UI, live preview rendering, image captions, audio transcripts, video players, and responsive layouts.
+
+---
+
+## Reusable Item Media Attachment Architecture (`js/item-media.js`)
+
+The AT&T Rise Component Builder includes a reusable Media Attachment system designed for repeatable item cards across interactive components, debuted in the **Accordion** component.
+
+### 1. Data Schema and Safe Defaults
+Every item can optionally hold a `media` object with normalized defaults:
+```json
+{
+  "type": "none",
+  "sourceType": "upload",
+  "src": "",
+  "mediaId": "",
+  "fileName": "",
+  "mimeType": "",
+  "alt": "",
+  "decorative": false,
+  "caption": "",
+  "transcript": "",
+  "placement": "above",
+  "aspectRatio": "original",
+  "fit": "contain",
+  "focalPosition": "center center",
+  "posterSrc": "",
+  "posterMediaId": "",
+  "captionsSrc": "",
+  "preload": "metadata"
+}
+```
+Legacy projects or items missing a `media` property automatically normalize safely to `type: "none"` without mutating the saved project until modified by the user.
+
+### 2. Supported Formats and Validation
+- **Images**: JPG, PNG, WebP, SVG (sanitized), GIF. Supports aspect ratios (`16:9`, `4:3`, `1:1`, `3:2`, `original`), fits (`contain`, `cover`), alt text, decorative toggle, and visible captions.
+- **Audio**: MP3, WAV, OGG, M4A. Native HTML5 `<audio controls>` with `preload="metadata"` or `none"`, optional label, and accessible `<details>` transcript drawer. Autoplay is strictly disabled.
+- **Video**: MP4, WebM. Native HTML5 `<video controls>` with poster images, WebVTT caption tracks (`<track kind="captions">`), aspect ratio constraints, accessible transcript drawer, and `preload="metadata"` or `"none"`. Autoplay is strictly disabled.
+- **Validation**: Direct media file URLs are required for remote links (generic streaming web page links are flagged as warnings). Non-decorative images without alt text are flagged during pre-export QA.
+
+### 3. Responsive Layout & Media Lifecycle
+- **Placements**:
+  - `above`: Media renders full width above the item body text.
+  - `below`: Media renders full width below the item body text.
+  - `left`: Media renders side-by-side (40% media / 60% text) on desktop.
+  - `right`: Media renders side-by-side (60% text / 40% media) on desktop.
+  - Mobile breakpoint (`@media (max-width: 640px)`): Side-by-side layouts automatically stack vertically to guarantee readability and prevent content overflow.
+- **Playback Management**: Collapsing an accordion item (or switching panels in single-open mode) automatically invokes `pauseMediaInPanel(panel)` to immediately pause playing audio/video and avoid background noise leaks.
+- **Export Behavior**: Uploaded assets package into `assets/` with rewritten relative URLs in Web Package ZIP exports, or inline data URLs for small images in single-file formats. External HTTPS URLs are preserved.

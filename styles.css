@@ -374,7 +374,7 @@ a {
 
 .btn-primary {
   background-color: var(--cta);
-  color: var(--text-inverse);
+  color: #FFFFFF;
   box-shadow: 0 2px 4px rgba(0, 56, 143, 0.2);
 }
 
@@ -711,13 +711,13 @@ a {
 
 .components-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   grid-auto-rows: min-content;
-  align-items: start;
+  align-items: stretch;
   gap: 20px;
   overflow-y: auto;
   flex: 1;
-  padding-bottom: 20px;
+  padding: 4px 4px 24px 4px;
 }
 
 .catalog-empty-state {
@@ -762,94 +762,106 @@ a {
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-normal);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
   position: relative;
-  overflow: hidden;
 }
 
 .component-select-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: var(--primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.component-select-card.is-selected {
+  border-color: var(--cta);
+  background-color: rgba(0, 121, 177, 0.04);
+  box-shadow: 0 0 0 2px rgba(0, 121, 177, 0.18);
+}
+
+.card-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 12px;
 }
 
 .card-icon-container {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background-color: var(--att-grey-1, var(--bg-app));
-  color: var(--text-main);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: var(--primary-light, rgba(0, 121, 177, 0.08));
+  color: var(--primary-text, var(--primary));
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   transition: all var(--transition-fast);
 }
 
 .card-icon-container svg {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   stroke: currentColor;
-  stroke-width: 0.45px;
-  paint-order: stroke fill;
+  stroke-width: 1.5px;
+  fill: none;
   display: block;
 }
 
 .component-select-card:hover .card-icon-container {
-  background-color: var(--primary-light);
-  color: var(--primary);
+  background-color: var(--primary);
+  color: #FFFFFF;
+}
+
+.card-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .component-select-card h3 {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   margin-bottom: 6px;
   color: var(--text-main);
+  line-height: 1.3;
 }
 
 .component-select-card p {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
-  line-height: 1.4;
-  flex: 1;
+  line-height: 1.45;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-footer {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  /* flex-start, not center: .card-footer-badges can wrap to two lines at narrow widths
-     (long classification label + category tag together) while .card-arrow stays pinned to
-     the first line rather than re-centering against a taller wrapped sibling. */
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  margin-top: 16px;
-  padding-top: 12px;
+  margin-top: auto;
+  padding-top: 10px;
   border-top: 1px solid var(--border-color);
 }
 
 .card-footer-badges {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-  row-gap: 6px;
 }
 
+/* Hide repeated category label (INTERACTIVE) in cards to prevent clutter */
 .card-tag {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  letter-spacing: 0.4px;
+  display: none;
 }
 
-/* Classification badge: a filled/outlined chip, deliberately distinct from .card-tag's
-   plain uppercase text (P-series requirement: never distinguish the two by color alone —
-   .card-tag has no background at all, so the badge's pill shape alone already reads as a
-   different kind of label even before color is considered). */
 .card-classification-badge {
   font-size: 10px;
   font-weight: 700;
@@ -859,67 +871,93 @@ a {
   white-space: nowrap;
 }
 
-/* Enhanced Rise Alternative: restrained/neutral, blue-toned text on the app's own neutral
-   surface — --primary-text is this codebase's existing "colored text against a panel
-   background, contrast-checked in both themes" token (see docs/ACCESSIBILITY-CONFORMANCE.md
-   "What was fixed in this pass"), reused here rather than inventing a new pairing. */
 .card-classification-enhanced {
   background-color: var(--bg-app);
   color: var(--primary-text);
   border: 1px solid var(--border-color);
 }
 
-/* Advanced Custom Interaction: the stronger, solid AT&T brand-blue treatment. Text is a
-   hardcoded white, not var(--text-inverse) — that token flips to a near-black in dark mode
-   (tuned for --cta as a large filled *button* background), which only reaches 3.71:1
-   against dark mode's lighter --cta and fails WCAG AA for this badge's 10px text. White
-   passes comfortably against --cta in both themes (10.70:1 light, 4.81:1 dark — verified
-   via js/themes.js#contrastRatio). Same "deliberately not the theme-flipping token"
-   reasoning as .badge-accent above. */
 .card-classification-custom {
   background-color: var(--cta);
   color: #FFFFFF;
 }
 
 .card-arrow {
-  color: var(--primary);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: all var(--transition-fast);
-  flex-shrink: 0;
+  display: none;
 }
 
-.component-select-card:hover .card-arrow {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-/* "Why use it?" — always-visible (not a hover tooltip or a click-to-reveal disclosure),
-   since every differentiator string is already a single short sentence: showing it plainly
-   avoids both silent truncation and the keyboard/nested-interactive complexity a real
-   disclosure control would add inside an already-clickable card (P-series: never nest an
-   interactive control inside another interactive control). */
+/* "Why use it" is accessible in the details modal & SR description; hidden in default card for clean scannability */
 .card-why {
-  width: 100%;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border-color);
+  display: none;
 }
 
 .card-why-label {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
+  display: none;
 }
 
 .card-why-text {
-  font-size: 12px;
-  line-height: 1.4;
+  display: none;
+}
+
+.card-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-card-preview {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-app);
   color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-card-preview:hover {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+  color: var(--primary-text);
+}
+
+.btn-card-use {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--cta);
+  background-color: var(--cta);
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-card-use:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.card-action-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-left: auto;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.card-action-link:hover {
+  text-decoration: underline;
+  background-color: var(--primary-light);
 }
 
 /* Purpose-led Learning Discovery (Section 3) */
@@ -981,24 +1019,23 @@ a {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 12px;
 }
 
 .card-header-badges {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 
 .card-tier-badge {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 7px;
-  border-radius: 4px;
+  letter-spacing: 0.3px;
+  padding: 3px 8px;
+  border-radius: 999px;
   white-space: nowrap;
 }
 
@@ -1009,13 +1046,15 @@ a {
 }
 
 .card-tier-signature {
-  background-color: #005A9C;
+  background-color: #00388F;
   color: #FFFFFF;
 }
 
+/* AT&T Blue with BLACK text — white on #009FDB is only ~3:1 and fails AA at this
+   badge's 9px size; black on #009FDB is ~7:1. */
 .card-tier-strong-custom {
   background-color: #009FDB;
-  color: #FFFFFF;
+  color: #000000;
 }
 
 .card-tier-enhanced-rise {
@@ -1030,35 +1069,38 @@ a {
   border: 1px dashed var(--border-color);
 }
 
+/* AT&T has no amber; a Cobalt outline reads as "in progress / caution" and passes
+   contrast (Cobalt text on the app surface). */
 .badge-beta {
-  background-color: #F59E0B;
-  color: #FFFFFF;
-  font-size: 9px;
+  background-color: var(--bg-app);
+  color: var(--cta);
+  border: 1px solid var(--cta);
+  font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
 }
 
 .card-purpose-chip {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
   background-color: var(--bg-app);
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
   border: 1px solid var(--border-color);
 }
 
 .card-rise-rec {
   width: 100%;
-  margin-top: 10px;
-  padding: 6px 8px;
+  margin-top: 8px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
   border-radius: 6px;
   font-size: 11px;
-  line-height: 1.35;
+  line-height: 1.4;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
   border: 1px solid transparent;
 }
@@ -1067,6 +1109,12 @@ a {
   background-color: rgba(0, 159, 219, 0.08);
   border-color: rgba(0, 159, 219, 0.25);
   color: var(--primary-text);
+}
+
+[data-theme="dark"] .card-rise-rec-custom-recommended {
+  background-color: #0A2540;
+  border-color: rgba(0, 159, 219, 0.35);
+  color: #38BDF8;
 }
 
 .card-rise-rec-conditional {
@@ -1085,25 +1133,7 @@ a {
   color: #FBBF24;
 }
 
-.card-quick-actions {
-  width: 100%;
-  margin-top: 10px;
-  padding-top: 8px;
-  display: flex;
-  justify-content: flex-end;
-}
 
-.card-action-link {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--primary-text);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.card-action-link:hover {
-  color: var(--primary);
-}
 
 /* Component Details Modal (Section 5) */
 .modal-xl {
@@ -4101,6 +4131,631 @@ input[type="number"]:focus::-webkit-inner-spin-button {
 @keyframes toastCountdown {
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
+}
+
+/* Layout States: Browsing vs Authoring */
+.app-workspace.is-browsing .config-panel {
+  flex: 0 0 68%;
+  max-width: 70%;
+}
+.app-workspace.is-browsing .preview-panel {
+  flex: 1 1 32%;
+  min-width: 320px;
+}
+.app-workspace.is-authoring .config-panel {
+  flex: 1 1 52%;
+}
+.app-workspace.is-authoring .preview-panel {
+  flex: 1 1 48%;
+}
+
+/* Sidebar Collapsed (Icon Rail 56-64px) */
+.sidebar {
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color var(--transition-fast);
+}
+.sidebar.sidebar-collapsed {
+  width: 58px;
+  min-width: 58px;
+}
+.sidebar.sidebar-collapsed .search-box input,
+.sidebar.sidebar-collapsed .search-kbd,
+.sidebar.sidebar-collapsed .clear-search-btn,
+.sidebar.sidebar-collapsed .nav-label,
+.sidebar.sidebar-collapsed .nav-section-title,
+.sidebar.sidebar-collapsed .sidebar-footer .storage-text,
+.sidebar.sidebar-collapsed .sidebar-footer .storage-hint,
+.sidebar.sidebar-collapsed .nav-item .badge {
+  display: none !important;
+}
+.sidebar.sidebar-collapsed .search-container {
+  padding: 12px 8px;
+  display: flex;
+  justify-content: center;
+}
+.sidebar.sidebar-collapsed .search-box {
+  width: 38px;
+  justify-content: center;
+}
+.sidebar.sidebar-collapsed .search-icon {
+  position: static;
+}
+.sidebar.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  border-radius: 8px;
+}
+.sidebar.sidebar-collapsed .nav-icon {
+  margin-right: 0;
+}
+.sidebar-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-right: 8px;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+.sidebar.sidebar-collapsed .sidebar-toggle-btn {
+  margin-right: 0;
+}
+.sidebar-toggle-btn:hover {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  border-color: var(--border-hover);
+}
+
+/* Workspace Resizer Divider */
+.workspace-resizer {
+  width: 6px;
+  background-color: var(--border-color);
+  cursor: col-resize;
+  position: relative;
+  transition: background-color var(--transition-fast);
+  flex-shrink: 0;
+  user-select: none;
+  z-index: 10;
+}
+.workspace-resizer:hover,
+.workspace-resizer.is-dragging,
+.workspace-resizer:focus-visible {
+  background-color: var(--primary);
+  outline: none;
+}
+.workspace-resizer .resizer-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 36px;
+  border-radius: 2px;
+  background-color: var(--text-muted);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.workspace-resizer:hover .resizer-handle,
+.workspace-resizer.is-dragging .resizer-handle {
+  background-color: #FFFFFF;
+  opacity: 1;
+}
+
+/* Preview Visibility & Fullscreen Modes */
+.preview-hidden #preview-panel,
+.preview-hidden #workspace-resizer {
+  display: none !important;
+}
+.preview-hidden .config-panel {
+  flex: 1 1 100% !important;
+  max-width: 100% !important;
+  border-right: none;
+}
+.preview-hidden .btn-show-preview-header {
+  display: inline-flex !important;
+}
+
+.btn-docked-show-preview {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--cta);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+.btn-docked-show-preview:hover {
+  background-color: var(--primary-hover);
+  padding-right: 18px;
+}
+.btn-docked-show-preview svg {
+  stroke: currentColor;
+}
+.preview-hidden .btn-docked-show-preview {
+  display: flex !important;
+}
+
+.preview-fullscreen #preview-panel {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  box-shadow: none !important;
+}
+
+/* Filter Toolbar & Chips */
+.catalog-filter-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+.catalog-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sort-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.catalog-sort-select {
+  appearance: none;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 28px 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234B5563' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  transition: all var(--transition-fast);
+}
+.catalog-sort-select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+.view-density-toggle {
+  display: flex;
+  background-color: var(--bg-app);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.density-btn {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+.density-btn:hover {
+  color: var(--text-main);
+}
+.density-btn.active {
+  background-color: var(--bg-panel);
+  color: var(--primary-text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Filter Chips Container */
+.filter-chips-container {
+  margin-top: 10px;
+}
+.filter-chips-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--primary-light);
+  color: var(--primary-text);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.filter-chip-remove {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--primary-text);
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.75;
+  transition: opacity var(--transition-fast);
+}
+.filter-chip-remove:hover {
+  opacity: 1;
+}
+.btn-clear-all-filters {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.btn-clear-all-filters:hover {
+  color: var(--primary-text);
+}
+
+/* Component Selector Card Progressive Disclosure & Action Controls */
+.component-select-card {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.component-select-card.is-previewed {
+  border-color: var(--primary) !important;
+  background-color: color-mix(in srgb, var(--primary-light) 30%, var(--bg-panel)) !important;
+  box-shadow: 0 0 0 2px var(--primary) !important;
+}
+.component-select-card.is-selected {
+  border-color: var(--cta) !important;
+  background-color: color-mix(in srgb, var(--primary-light) 50%, var(--bg-panel)) !important;
+  box-shadow: 0 0 0 2px var(--cta) !important;
+}
+.btn-card-favorite {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+.btn-card-favorite:hover,
+.btn-card-favorite.is-active {
+  color: var(--warning);
+}
+.card-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+.btn-card-preview {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+.btn-card-preview:hover {
+  background-color: var(--bg-app);
+  border-color: var(--border-hover);
+}
+.btn-card-use {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background-color: var(--cta);
+  color: #FFFFFF !important;
+  border: 1px solid transparent;
+}
+.btn-card-use:hover {
+  background-color: var(--cta-hover);
+  color: #FFFFFF !important;
+}
+
+/* Compact List View for Component Library */
+.components-grid.view-compact {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.components-grid.view-compact .component-select-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+}
+.components-grid.view-compact .card-top-header {
+  margin-bottom: 0;
+  gap: 10px;
+}
+.components-grid.view-compact .card-icon-container {
+  margin-bottom: 0;
+  width: 36px;
+  height: 36px;
+}
+.components-grid.view-compact .card-rise-rec,
+.components-grid.view-compact .card-why {
+  display: none;
+}
+.components-grid.view-compact .card-footer {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.components-grid.view-compact .card-quick-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  width: auto;
+}
+
+/* Empty State Onboarding */
+.preview-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+}
+.empty-state-card {
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.empty-state-icon-shell {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background-color: var(--primary-light);
+  color: var(--primary-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.empty-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.empty-state-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.empty-workflow-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+.workflow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--cta);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.step-sub {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+.workflow-arrow {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Safe Area Overlay & Preview Toast */
+.preview-safe-area-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  padding: 40px 30px;
+}
+.safe-area-guide {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(0, 159, 219, 0.45);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 8px;
+}
+.safe-area-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 159, 219, 0.3);
+}
+.preview-sync-toast {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  color: var(--primary-text);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 30;
+}
+.preview-sync-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Sticky Editor Tabs with Status Badges */
+.editor-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: var(--bg-panel);
+}
+.tab-badge-error,
+.tab-badge-warning,
+.tab-badge-success {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+.tab-badge-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+.tab-badge-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #B45309;
+}
+.tab-badge-success {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.zoom-fit-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.zoom-fit-btn:hover {
+  background-color: var(--bg-panel);
+  color: var(--text-main);
+}
+
+/* Reusable Item Media Attachment Controls in Editor */
+.item-media-attachment-container {
+  margin-top: 12px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+}
+.item-media-details-shell {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+.item-media-details-shell[open] {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-hover, var(--primary));
+}
+.item-media-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  background-color: var(--bg-panel);
+}
+.item-media-summary-header:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-text);
+}
+.item-media-type-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background-color: var(--bg-app);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+.item-media-editor-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.item-media-layout-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
 }
 
 /* Accessibility: reduced motion and forced-colors support for the builder's own

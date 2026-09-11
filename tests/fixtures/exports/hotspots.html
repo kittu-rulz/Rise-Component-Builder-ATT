@@ -1371,7 +1371,7 @@
       return { notifyComplete: notifyComplete, hasCompleted: hasCompleted, adapterName: adapterName };
     })();
 
-    (function() {
+    function initComponent() {
       var container = document.querySelector('.hotspots-container');
       if (!container) return;
 
@@ -1657,7 +1657,7 @@
           deactivateAll();
         }
       });
-    })();
+    }
   
 
     if (document.readyState === 'loading') {

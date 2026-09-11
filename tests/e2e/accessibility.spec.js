@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 
 async function openAccordion(page) {
   await page.goto('/');
-  await page.locator('.component-select-card').filter({ hasText: 'Responsive Accordion' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   return page.frameLocator('#live-preview-iframe');
 }
 
@@ -125,7 +125,7 @@ test('keyboard focus has a visible indicator and reduced motion is honored', asy
 test('image authoring surfaces missing-alt warnings', async ({ page }) => {
   await page.goto('/');
   await page.locator('.nav-item[data-category="media"]').click();
-  await page.locator('.component-select-card').filter({ hasText: 'Grid Photo Gallery' }).click();
+  await page.locator('.component-select-card').filter({ hasText: 'Image Gallery' }).click();
   await expect(page.locator('.field-warning').filter({ hasText: /alternative text/i }).first()).toBeVisible();
 });
 
