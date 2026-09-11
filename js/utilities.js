@@ -261,62 +261,91 @@ export function sanitizeRichText(value) {
   for (const match of input.matchAll(tagPattern)) {
     output += escapeHTML(decodeEntities(input.slice(cursor, match.index)));
     const tag = match[0];
-    const simple = /^<\s*(\/?)\s*([a-z0-9]+)\s*\/?>$/i.exec(tag);
 
-    if (simple && allowedSimpleTags.has(simple[2].toLowerCase())) {
-      const name = simple[2].toLowerCase();
-      if (name === 'br') {
-        output += '<br>';
-      } else if (name === 'hr') {
-        output += '<hr>';
-      } else {
-        output += `<${simple[1] ? '/' : ''}${name}>`;
-      }
-    } else {
-      const styledTag = /^<\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small|sub|sup)\s+style\s*=\s*(["'])(.*?)\2\s*\/?>$/i.exec(tag);
-      const closeStyled = /^<\s*\/\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small|sub|sup)\s*>$/i.exec(tag);
-      const fontTag = /^<\s*font\s+color\s*=\s*(["'])(.*?)\1\s*\/?>$/i.exec(tag);
-      const closeFont = /^<\s*\/\s*font\s*>$/i.exec(tag);
-      const anchor = /^<\s*a\s+([^>]*?)href\s*=\s*(["'])(.*?)\2([^>]*?)\/?>$/i.exec(tag);
-      const closeAnchor = /^<\s*\/\s*a\s*>$/i.exec(tag);
-
-      if (styledTag) {
-        const tagName = styledTag[1].toLowerCase();
-        const rawStyle = decodeEntities(styledTag[3]);
-        const cleanStyle = sanitizeInlineStyle(rawStyle);
-        output += cleanStyle ? `<${tagName} style="${escapeAttribute(cleanStyle)}">` : `<${tagName}>`;
-      } else if (closeStyled) {
-        output += `</${closeStyled[1].toLowerCase()}>`;
-      } else if (fontTag) {
-        const colorVal = decodeEntities(fontTag[2]);
-        const safeColor = sanitizeCSSColor(colorVal, '') || (/^(?:#[0-9a-f]{3,8}|rgba?\s*\([^)]+\)|[a-z]+)$/i.test(colorVal) ? colorVal : '');
-        output += safeColor ? `<span style="color: ${escapeAttribute(safeColor)}">` : '<span>';
-      } else if (closeFont) {
-        output += '</span>';
-      } else if (anchor) {
-        const combinedAttrs = `${anchor[1]} ${anchor[4]}`;
-        const hasHostileAttr = /(?:\bon\w+\s*=|\bid\s*=|\bname\s*=|\bdata-\w+\s*=)/i.test(combinedAttrs);
-        if (hasHostileAttr) {
-          output += escapeHTML(decodeEntities(tag));
-        } else {
-          const href = sanitizeURL(decodeEntities(anchor[3]), { allowRelative: true });
-          if (href) {
-            const isTargetBlank = /\btarget\s*=\s*(["'])_blank\1/i.test(combinedAttrs);
-            const styleMatch = /\bstyle\s*=\s*(["'])(.*?)\1/i.exec(combinedAttrs);
-            const safeStyle = styleMatch ? sanitizeInlineStyle(decodeEntities(styleMatch[2])) : '';
-            const targetAttr = isTargetBlank ? ' target="_blank" rel="noopener noreferrer"' : '';
-            const styleAttr = safeStyle ? ` style="${escapeAttribute(safeStyle)}"` : '';
-            output += `<a href="${escapeAttribute(href)}"${targetAttr}${styleAttr}>`;
-          } else {
-            output += '&lt;a&gt;';
-          }
-        }
-      } else if (closeAnchor) {
+    // 1. Closing tags
+    const closeMatch = /^<\s*\/\s*([a-z0-9]+)\s*>$/i.exec(tag);
+    if (closeMatch) {
+      const closeName = closeMatch[1].toLowerCase();
+      if (allowedSimpleTags.has(closeName)) {
+        output += `</${closeName}>`;
+      } else if (closeName === 'a') {
         output += '</a>';
+      } else if (closeName === 'font') {
+        output += '</span>';
       } else {
         output += escapeHTML(decodeEntities(tag));
       }
+      cursor = match.index + tag.length;
+      continue;
     }
+
+    // 2. <font color="..."> legacy tag support
+    const fontMatch = /^<\s*font\b([^>]*)>$/i.exec(tag);
+    if (fontMatch) {
+      const colorMatch = /\bcolor\s*=\s*(["'])([\s\S]*?)\1/i.exec(fontMatch[1]);
+      if (colorMatch) {
+        const colorVal = decodeEntities(colorMatch[2]);
+        const safeColor = sanitizeCSSColor(colorVal, '') || (/^(?:#[0-9a-f]{3,8}|rgba?\s*\([^)]+\)|[a-z]+)$/i.test(colorVal) ? colorVal : '');
+        output += safeColor ? `<span style="color: ${escapeAttribute(safeColor)}">` : '<span>';
+      } else {
+        output += '<span>';
+      }
+      cursor = match.index + tag.length;
+      continue;
+    }
+
+    // 3. Anchor <a> tags
+    const anchorMatch = /^<\s*a\b([^>]*)>$/i.exec(tag);
+    if (anchorMatch) {
+      const attrString = anchorMatch[1];
+      const hasHostileAttr = /(?:\bon\w+\s*=|\bid\s*=|\bname\s*=)/i.test(attrString);
+      if (hasHostileAttr) {
+        output += escapeHTML(decodeEntities(tag));
+      } else {
+        const hrefMatch = /\bhref\s*=\s*(["'])([\s\S]*?)\1/i.exec(attrString);
+        const rawHref = hrefMatch ? decodeEntities(hrefMatch[2]) : '';
+        const href = rawHref ? sanitizeURL(rawHref, { allowRelative: true }) : '';
+
+        if (href) {
+          const isTargetBlank = /\btarget\s*=\s*(["'])_blank\1/i.test(attrString);
+          const styleMatch = /\bstyle\s*=\s*(["'])([\s\S]*?)\1/i.exec(attrString);
+          const safeStyle = styleMatch ? sanitizeInlineStyle(decodeEntities(styleMatch[2])) : '';
+          const targetAttr = isTargetBlank ? ' target="_blank" rel="noopener noreferrer"' : '';
+          const styleAttr = safeStyle ? ` style="${escapeAttribute(safeStyle)}"` : '';
+          output += `<a href="${escapeAttribute(href)}"${targetAttr}${styleAttr}>`;
+        } else {
+          output += '&lt;a&gt;';
+        }
+      }
+      cursor = match.index + tag.length;
+      continue;
+    }
+
+    // 4. Allowed element opening tags (e.g. p, span, div, li, strong, etc.)
+    const openMatch = /^<\s*([a-z0-9]+)\b([^>]*)\/?>$/i.exec(tag);
+    if (openMatch) {
+      const tagName = openMatch[1].toLowerCase();
+      if (allowedSimpleTags.has(tagName)) {
+        const attrString = openMatch[2] || '';
+        const hasHostileAttr = /(?:\bon\w+\s*=|\bjavascript:|\bvbscript:|\bid\s*=|\bname\s*=)/i.test(attrString);
+        if (hasHostileAttr) {
+          output += escapeHTML(decodeEntities(tag));
+        } else if (tagName === 'br') {
+          output += '<br>';
+        } else if (tagName === 'hr') {
+          output += '<hr>';
+        } else {
+          const styleMatch = /\bstyle\s*=\s*(["'])([\s\S]*?)\1/i.exec(attrString);
+          const safeStyle = styleMatch ? sanitizeInlineStyle(decodeEntities(styleMatch[2])) : '';
+          output += safeStyle ? `<${tagName} style="${escapeAttribute(safeStyle)}">` : `<${tagName}>`;
+        }
+        cursor = match.index + tag.length;
+        continue;
+      }
+    }
+
+    // 5. Any disallowed / unrecognized tag (e.g. <script>, <img onerror...>, <iframe>)
+    output += escapeHTML(decodeEntities(tag));
     cursor = match.index + tag.length;
   }
   output += escapeHTML(decodeEntities(input.slice(cursor)));

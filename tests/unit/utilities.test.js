@@ -97,6 +97,15 @@ describe('context-specific utilities', () => {
     expect(result).not.toContain('javascript:');
   });
 
+  test('sanitizeRichText cleans external rich-editor attributes like ProseMirror data-pm-slice', () => {
+    const pasted = '<p data-pm-slice="1 1 []">Focus: Get aligned and identify risks early.</p><p data-pm-slice="1 1 []">Review and prioritize emails using Copilot.</p>';
+    const result = sanitizeRichText(pasted);
+    expect(result).not.toContain('data-pm-slice');
+    expect(result).not.toContain('&lt;p');
+    expect(result).toContain('<p>Focus: Get aligned and identify risks early.</p>');
+    expect(result).toContain('<p>Review and prioritize emails using Copilot.</p>');
+  });
+
   test('color conversion accepts hex and safely falls back', () => {
     expect(toRgba('#2563EB', 0.5)).toBe('rgba(37, 99, 235, 0.5)');
     expect(toRgba('bad', 1, 'fallback')).toBe('fallback');

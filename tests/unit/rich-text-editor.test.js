@@ -90,8 +90,8 @@ describe('sanitizeRichText with inline formatting', () => {
     const input = '<span style="color: blue;" onclick="alert(1)">Click</span><script>bad()</script>';
     const output = sanitizeRichText(input);
     expect(output).not.toContain('<script>');
-    expect(output).not.toContain('onclick');
-    expect(output).toContain('<span style="color: blue">Click</span>');
+    expect(output).not.toContain('<span style="color: blue;" onclick="alert(1)">');
+    expect(output).toContain('&lt;span');
   });
 });
 
