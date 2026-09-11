@@ -52,6 +52,20 @@ describe('sanitizeRichText with inline formatting', () => {
     expect(output).toBe('<ul><li>Item 1</li><li>Item 2</li></ul>');
   });
 
+  test('preserves div and paragraph line containers from contenteditable', () => {
+    const input = '<div>ORCA (time management and approvals)</div><div></div><div>Compass (documentation and compliance)</div>';
+    const output = sanitizeRichText(input);
+    expect(output).toBe('<div>ORCA (time management and approvals)</div><div></div><div>Compass (documentation and compliance)</div>');
+    expect(output).not.toContain('&lt;div&gt;');
+  });
+
+  test('preserves styled div and p elements', () => {
+    const input = '<div style="text-align: center; color: #0057B8;">Centered Text</div><p style="font-size: 18px;">Large</p>';
+    const output = sanitizeRichText(input);
+    expect(output).toContain('<div style="text-align: center; color: #0057B8">Centered Text</div>');
+    expect(output).toContain('<p style="font-size: 18px">Large</p>');
+  });
+
   test('neutralizes scripts, event handlers and disallowed styles', () => {
     const input = '<span style="color: blue;" onclick="alert(1)">Click</span><script>bad()</script>';
     const output = sanitizeRichText(input);

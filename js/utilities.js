@@ -227,7 +227,11 @@ export function sanitizeInlineStyle(styleText) {
 
 export function sanitizeRichText(value) {
   const input = String(value ?? '');
-  const allowedSimpleTags = new Set(['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'span', 'mark', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+  const allowedSimpleTags = new Set([
+    'p', 'div', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del',
+    'span', 'mark', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'blockquote', 'code', 'pre', 'small', 'sub', 'sup', 'hr'
+  ]);
   const tagPattern = /<[^>]*>/g;
   let output = '';
   let cursor = 0;
@@ -236,12 +240,21 @@ export function sanitizeRichText(value) {
     output += escapeHTML(decodeEntities(input.slice(cursor, match.index)));
     const tag = match[0];
     const simple = /^<\s*(\/?)\s*([a-z0-9]+)\s*\/?>$/i.exec(tag);
+
     if (simple && allowedSimpleTags.has(simple[2].toLowerCase())) {
       const name = simple[2].toLowerCase();
-      output += name === 'br' ? '<br>' : `<${simple[1] ? '/' : ''}${name}>`;
+      if (name === 'br') {
+        output += '<br>';
+      } else if (name === 'hr') {
+        output += '<hr>';
+      } else {
+        output += `<${simple[1] ? '/' : ''}${name}>`;
+      }
     } else {
-      const styledTag = /^<\s*(span|mark)\s+style\s*=\s*(["'])(.*?)\2\s*\/?>$/i.exec(tag);
-      const closeStyled = /^<\s*\/\s*(span|mark)\s*>$/i.exec(tag);
+      const styledTag = /^<\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small)\s+style\s*=\s*(["'])(.*?)\2\s*\/?>$/i.exec(tag);
+      const closeStyled = /^<\s*\/\s*(span|mark|p|div|li|ul|ol|h[1-6]|blockquote|pre|code|small)\s*>$/i.exec(tag);
+      const fontTag = /^<\s*font\s+color\s*=\s*(["'])(.*?)\1\s*\/?>$/i.exec(tag);
+      const closeFont = /^<\s*\/\s*font\s*>$/i.exec(tag);
       const anchor = /^<\s*a\s+href\s*=\s*(["'])(.*?)\1(?:\s+target\s*=\s*(["'])_blank\3)?\s*>$/i.exec(tag);
       const closeAnchor = /^<\s*\/\s*a\s*>$/i.exec(tag);
 
@@ -252,8 +265,14 @@ export function sanitizeRichText(value) {
         output += cleanStyle ? `<${tagName} style="${escapeAttribute(cleanStyle)}">` : `<${tagName}>`;
       } else if (closeStyled) {
         output += `</${closeStyled[1].toLowerCase()}>`;
+      } else if (fontTag) {
+        const colorVal = decodeEntities(fontTag[2]);
+        const safeColor = sanitizeCSSColor(colorVal, '') || (/^(?:#[0-9a-f]{3,8}|rgba?\s*\([^)]+\)|[a-z]+)$/i.test(colorVal) ? colorVal : '');
+        output += safeColor ? `<span style="color: ${escapeAttribute(safeColor)}">` : '<span>';
+      } else if (closeFont) {
+        output += '</span>';
       } else if (anchor) {
-        const href = sanitizeURL(decodeEntities(anchor[2]));
+        const href = sanitizeURL(decodeEntities(anchor[2]), { allowRelative: true });
         output += href ? `<a href="${escapeAttribute(href)}"${anchor[3] ? ' target="_blank" rel="noopener noreferrer"' : ''}>` : '&lt;a&gt;';
       } else if (closeAnchor) {
         output += '</a>';
