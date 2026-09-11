@@ -1,5 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeAttribute, escapeHTML, sanitizeRichText, sanitizeURL } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, sanitizeCSSColor, sanitizeRichText, sanitizeURL } from '../js/utilities.js';
 import { getAttIconSvg } from '../js/att-icons.js';
 
 /**
@@ -11,6 +11,7 @@ import { getAttIconSvg } from '../js/att-icons.js';
  * @property {string} [orientation] - 'horizontal' or 'vertical'
  * @property {string} [aspectRatio] - '16/9', '4/3', '3/2', '1/1', '3/4', '9/16', '2/1'
  * @property {string} [imageFit] - 'cover' or 'contain'
+ * @property {string} [stageBgColor] - Background color fill for image stage/panes (default '#FFFFFF')
  * @property {boolean} [showLabels] - Whether to show Before/After floating badges
  * @property {Array<{beforeImage?: string, afterImage?: string, beforeLabel?: string, afterLabel?: string, beforeAltText?: string, afterAltText?: string, imageFit?: string}>} items
  */
@@ -27,6 +28,7 @@ export const defaultConfig = {
   orientation: 'horizontal',
   aspectRatio: '16/9',
   imageFit: 'cover',
+  stageBgColor: '#FFFFFF',
   showLabels: true,
   items: [
     {
@@ -87,6 +89,7 @@ export function generateHTML(config, instanceId) {
   const afterLabel = item.afterLabel || 'After';
 
   const imageFit = (item.imageFit === 'contain' || config.imageFit === 'contain') ? 'contain' : 'cover';
+  const stageBgColor = sanitizeCSSColor(config.stageBgColor, '#FFFFFF');
   const aspectMap = {
     '16/9': '16 / 9',
     '4/3': '4 / 3',
@@ -113,7 +116,7 @@ export function generateHTML(config, instanceId) {
     <div class="comparison-slider-card ${isVertical ? 'orientation-vertical' : 'orientation-horizontal'}" id="${instanceId}-slider-card" style="--slider-pos: ${initialPos}%;">
       ${config.title ? `<h3 class="comparison-title">${escapeHTML(config.title)}</h3>` : ''}
       ${config.content ? `<p class="comparison-description">${sanitizeRichText(config.content)}</p>` : ''}
-      <div class="comparison-stage" id="${instanceId}-stage" role="region" aria-label="Before and after visual comparison" style="--comparison-aspect-ratio: ${aspectCss}; --comparison-img-fit: ${imageFit};">
+      <div class="comparison-stage" id="${instanceId}-stage" role="region" aria-label="Before and after visual comparison" style="--comparison-aspect-ratio: ${aspectCss}; --comparison-img-fit: ${imageFit}; --comparison-stage-bg: ${stageBgColor};">
         <div class="comparison-pane pane-after">
           ${afterMedia}
           ${showLabels ? `<span class="comparison-badge badge-after">${escapeHTML(afterLabel)}</span>` : ''}
@@ -177,7 +180,7 @@ export function generateCSS() {
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
-      background-color: var(--bg-body);
+      background-color: var(--comparison-stage-bg, #FFFFFF);
       border: 1px solid var(--border-color);
     }
     .comparison-pane {
@@ -186,6 +189,7 @@ export function generateCSS() {
       width: 100%;
       height: 100%;
       overflow: hidden;
+      background-color: var(--comparison-stage-bg, #FFFFFF);
     }
     .pane-after {
       z-index: 1;

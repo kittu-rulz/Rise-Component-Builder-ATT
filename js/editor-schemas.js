@@ -490,6 +490,10 @@ export const editorSchemas = {
           { value: 'contain', label: 'Contain (Fit entire image, no crop)' }
         ]
       }),
+      field('stageBgColor', 'Image Background Fill Color', 'color', {
+        required: false,
+        default: '#FFFFFF'
+      }),
       field('initialPosition', 'Initial Slider Position (%)', 'range', { default: 50, min: 0, max: 100, step: 1, suffix: '%' }),
       field('showLabels', 'Show Floating Before/After Badges', 'checkbox', { default: true })
     ],

@@ -155,4 +155,16 @@ describe('comparison slider component', () => {
     expect(html).toContain('src="assets/router-before.jpg"');
     expect(html).toContain('src="assets/router-after.jpg"');
   });
+
+  test('applies custom stageBgColor variable to the stage', () => {
+    const html = comparisonSlider.generateHTML({
+      stageBgColor: '#00388F',
+      items: [{
+        beforeImage: 'https://example.com/b.jpg',
+        afterImage: 'https://example.com/a.jpg'
+      }]
+    }, INSTANCE_ID);
+
+    expect(html).toContain('--comparison-stage-bg: #00388F');
+  });
 });

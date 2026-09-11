@@ -527,6 +527,9 @@ export function sanitizePreviewConfig(config, componentId) {
   if (config.imageFit !== undefined) {
     result.imageFit = config.imageFit === 'contain' ? 'contain' : 'cover';
   }
+  if (config.stageBgColor !== undefined) {
+    result.stageBgColor = sanitizeCSSColor(config.stageBgColor, '#FFFFFF');
+  }
   result.backgroundImage = sanitizeURL(result.backgroundImage, { allowDataImage: true, allowBlob: true, allowRelative: true });
   result.backgroundAltText = String(result.backgroundAltText || '');
   result.backgroundDecorative = Boolean(result.backgroundDecorative);
