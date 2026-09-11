@@ -233,6 +233,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ==========================================
+  // DYNAMIC ITEM EDITING
+  // ==========================================
+  const schemaItemEditor = createSchemaItemEditor({
+    container: dynamicItemsContainer,
+    onChange: () => {
+      history.pushDebouncedState(appState.config);
+      updateLivePreview();
+    },
+    focusFallback: btnAddItem
+  });
+
+  function computeIssuesByItem(issues) {
+    const map = new Map();
+    issues.forEach(item => {
+      if (!Number.isInteger(item.itemIndex)) return;
+      const entry = map.get(item.itemIndex) || { blocking: 0, warning: 0 };
+      if (item.severity === 'blocking') entry.blocking += 1; else entry.warning += 1;
+      map.set(item.itemIndex, entry);
+    });
+    return map;
+  }
+
+  function renderDynamicItems() {
+    const schema = appState.selectedComponent?.editorSchema || componentCatalog[0].editorSchema;
+    schemaItemEditor.render({ schema, items: appState.config.items, config: appState.config, limits: resolveMediaLimits(appState.settings.mediaLimitsMb) });
+    refreshItemIssueBadges();
+    updateAddItemButtonState(schema);
+  }
+
+  function updateAddItemButtonState(schema) {
+    const itemsCountBadge = document.getElementById('items-count-badge');
+    if (itemsCountBadge) {
+      const count = appState.config.items?.length || 0;
+      const label = schema.itemLabel ? schema.itemLabel.toLowerCase() : 'item';
+      let rangeText = '';
+      if (schema.minItems && schema.maxItems) {
+        rangeText = ` (min ${schema.minItems}, max ${schema.maxItems})`;
+      } else if (schema.minItems) {
+        rangeText = ` (min ${schema.minItems})`;
+      } else if (schema.maxItems) {
+        rangeText = ` (max ${schema.maxItems})`;
+      }
+      itemsCountBadge.textContent = `${count} ${label}${count === 1 ? '' : 's'}${rangeText}`;
+    }
+
+    const atMaxItems = Number.isInteger(schema.maxItems) && appState.config.items.length >= schema.maxItems;
+    if (btnAddItem) {
+      btnAddItem.disabled = atMaxItems;
+      const title = atMaxItems
+        ? `This component only supports ${schema.maxItems} ${schema.itemLabel.toLowerCase()}${schema.maxItems === 1 ? '' : 's'}.`
+        : '';
+      btnAddItem.title = title;
+      if (title) btnAddItem.setAttribute('aria-label', `Add Item — ${title}`); else btnAddItem.removeAttribute('aria-label');
+    }
+  }
+
+  function refreshItemIssueBadges() {
+    const context = buildPreflightContext();
+    schemaItemEditor.refreshIssueBadges(context ? computeIssuesByItem(collectSyncIssues(context)) : new Map());
+  }
+
+  if (btnAddItem) {
+    btnAddItem.addEventListener('click', () => {
+      history.pushState(appState.config);
+      const schema = appState.selectedComponent?.editorSchema || componentCatalog[0].editorSchema;
+      addEditorItem(appState, schema);
+      renderDynamicItems();
+      updateLivePreview();
+    });
+  }
+
+  if (btnExpandAllItems) {
+    btnExpandAllItems.addEventListener('click', () => schemaItemEditor.expandAll());
+  }
+  if (btnCollapseAllItems) {
+    btnCollapseAllItems.addEventListener('click', () => schemaItemEditor.collapseAll());
+  }
+
   function performUndo() {
     if (!history.canUndo()) return;
     const previousConfig = history.undo(appState.config);
@@ -790,6 +869,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function showState(state) {
     if (state === 'catalog') {
+      catalogState.hidden = false;
+      editorState.hidden = true;
       catalogState.style.display = 'flex';
       editorState.style.display = 'none';
       if (appWorkspace) {
@@ -802,6 +883,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const status = document.getElementById('project-status');
       if (status) status.hidden = true; // no project context on the catalog screen
     } else if (state === 'editor') {
+      catalogState.hidden = true;
+      editorState.hidden = false;
       catalogState.style.display = 'none';
       editorState.style.display = 'flex';
       if (appWorkspace) {
@@ -1103,6 +1186,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // untouched here. It reflects the author's current testing intent ("check every block
   // at mobile width this session"), not a per-component default, so it persists across
   // component switches rather than resetting to Desktop.
+  function updateComponentSpecificOptions(id) {
+    if (accordionBehaviorGroup) accordionBehaviorGroup.style.display = id === 'accordion' ? 'block' : 'none';
+    if (flipCardsBehaviorGroup) flipCardsBehaviorGroup.style.display = id === 'flip-cards' ? 'block' : 'none';
+    if (tabsBehaviorGroup) tabsBehaviorGroup.style.display = id === 'tabs' ? 'block' : 'none';
+    if (timelineBehaviorGroup) timelineBehaviorGroup.style.display = id === 'vertical-timeline' || id === 'horizontal-timeline' ? 'block' : 'none';
+    if (ivTimelineAuthoringGroup) ivTimelineAuthoringGroup.style.display = id === 'interactive-video' ? 'block' : 'none';
+    if (ivBehaviorGroup) ivBehaviorGroup.style.display = id === 'interactive-video' ? 'block' : 'none';
+    if (mcBehaviorGroup) mcBehaviorGroup.style.display = id === 'multiple-choice' ? 'block' : 'none';
+  }
+
   function loadComponentToEditor(component) {
     appState.currentProjectId = null;
     appState.currentProjectName = '';
@@ -1471,77 +1564,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputIvAllowRestart, 'allowRestart');
   }
 
-  // ==========================================
-  // DYNAMIC ITEM EDITING
-  // ==========================================
-  const schemaItemEditor = createSchemaItemEditor({
-    container: dynamicItemsContainer,
-    onChange: () => {
-      history.pushDebouncedState(appState.config);
-      updateLivePreview();
-    },
-    focusFallback: btnAddItem
-  });
 
-  function computeIssuesByItem(issues) {
-    const map = new Map();
-    issues.forEach(item => {
-      if (!Number.isInteger(item.itemIndex)) return;
-      const entry = map.get(item.itemIndex) || { blocking: 0, warning: 0 };
-      if (item.severity === 'blocking') entry.blocking += 1; else entry.warning += 1;
-      map.set(item.itemIndex, entry);
-    });
-    return map;
-  }
-
-  function renderDynamicItems() {
-    const schema = appState.selectedComponent?.editorSchema || componentCatalog[0].editorSchema;
-    schemaItemEditor.render({ schema, items: appState.config.items, config: appState.config, limits: resolveMediaLimits(appState.settings.mediaLimitsMb) });
-    refreshItemIssueBadges();
-    updateAddItemButtonState(schema);
-  }
-
-  function updateAddItemButtonState(schema) {
-    const itemsCountBadge = document.getElementById('items-count-badge');
-    if (itemsCountBadge) {
-      const count = appState.config.items?.length || 0;
-      const label = schema.itemLabel ? schema.itemLabel.toLowerCase() : 'item';
-      let rangeText = '';
-      if (schema.minItems && schema.maxItems) {
-        rangeText = ` (min ${schema.minItems}, max ${schema.maxItems})`;
-      } else if (schema.minItems) {
-        rangeText = ` (min ${schema.minItems})`;
-      } else if (schema.maxItems) {
-        rangeText = ` (max ${schema.maxItems})`;
-      }
-      itemsCountBadge.textContent = `${count} ${label}${count === 1 ? '' : 's'}${rangeText}`;
-    }
-
-    const atMaxItems = Number.isInteger(schema.maxItems) && appState.config.items.length >= schema.maxItems;
-    btnAddItem.disabled = atMaxItems;
-    const title = atMaxItems
-      ? `This component only supports ${schema.maxItems} ${schema.itemLabel.toLowerCase()}${schema.maxItems === 1 ? '' : 's'}.`
-      : '';
-    btnAddItem.title = title;
-    if (title) btnAddItem.setAttribute('aria-label', `Add Item — ${title}`); else btnAddItem.removeAttribute('aria-label');
-  }
-
-  function refreshItemIssueBadges() {
-    const context = buildPreflightContext();
-    schemaItemEditor.refreshIssueBadges(context ? computeIssuesByItem(collectSyncIssues(context)) : new Map());
-  }
-
-  btnAddItem.addEventListener('click', () => {
-    history.pushState(appState.config);
-    const schema = appState.selectedComponent?.editorSchema || componentCatalog[0].editorSchema;
-    addEditorItem(appState, schema);
-    renderDynamicItems();
-    updateLivePreview();
-  });
-
-  // P11 Requirement 2: keyboard-accessible bulk expand/collapse near the item list.
-  btnExpandAllItems.addEventListener('click', () => schemaItemEditor.expandAll());
-  btnCollapseAllItems.addEventListener('click', () => schemaItemEditor.collapseAll());
 
   // ==========================================
   // INTERACTIVE VIDEO: AUTHORING TIMELINE (Phase 2)

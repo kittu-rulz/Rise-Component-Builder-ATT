@@ -4758,6 +4758,255 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   gap: 10px;
 }
 
+/* Rich Text Formatting Toolbar & Editor Controls */
+.rich-text-editor-container {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background-color: var(--input-bg);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  overflow: visible;
+  position: relative;
+}
+
+.rich-text-editor-container:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 159, 219, 0.15);
+}
+
+.has-error .rich-text-editor-container {
+  border-color: var(--danger);
+}
+
+.rich-text-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px;
+  background-color: var(--bg-app);
+  border-bottom: 1px solid var(--border-color);
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  position: relative;
+  z-index: 5;
+}
+
+.rt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-main);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.rt-btn:hover {
+  background-color: var(--bg-panel);
+  border-color: var(--border-color);
+}
+
+.rt-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.rt-btn.is-active {
+  background-color: var(--primary-light);
+  color: var(--primary-text);
+  border-color: var(--primary);
+}
+
+.rt-btn-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.rt-btn-color-icon {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rt-color-bar {
+  display: block;
+  width: 13px;
+  height: 3px;
+  background-color: #0057B8;
+  border-radius: 1px;
+  margin-top: 1px;
+}
+
+.rt-highlight-bar {
+  background-color: #FFF3CD;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.rt-separator {
+  display: block;
+  width: 1px;
+  height: 16px;
+  background-color: var(--border-color);
+  margin: 0 3px;
+}
+
+.rt-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.rt-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  padding: 8px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: rtPopoverFadeIn 0.12s ease;
+}
+
+@keyframes rtPopoverFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rt-popover-heading {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.rt-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.rt-menu-item:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-text);
+}
+
+.rt-menu-reset {
+  margin-top: 4px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--border-color) !important;
+  font-size: 11px !important;
+  color: var(--text-muted) !important;
+}
+
+.rt-menu-reset:hover {
+  color: var(--danger) !important;
+  background-color: rgba(239, 68, 68, 0.08) !important;
+}
+
+.rt-color-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 24px);
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.rt-color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.rt-color-swatch:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.rt-custom-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 3px 0;
+}
+
+.rt-color-input {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.rich-text-contenteditable {
+  min-height: 80px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-main);
+  background-color: transparent;
+  outline: none;
+  word-break: break-word;
+}
+
+.rich-text-contenteditable[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.rich-text-contenteditable p {
+  margin-bottom: 0.5em;
+}
+
+.rich-text-contenteditable p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-contenteditable ul,
+.rich-text-contenteditable ol {
+  padding-left: 20px;
+  margin-bottom: 0.5em;
+}
+
 /* Accessibility: reduced motion and forced-colors support for the builder's own
    chrome (the exported components carry an equivalent block via js/export-shell.js
    #SHARED_A11Y_CSS — this one is scoped to the authoring UI itself). */

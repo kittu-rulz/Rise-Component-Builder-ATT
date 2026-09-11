@@ -101,6 +101,7 @@ export function createCatalogCard(component, optionsOrSelect) {
   const card = document.createElement('button');
   card.type = 'button';
   card.className = 'component-select-card';
+  card.dataset.componentId = component.id;
   const classificationBadgeId = `card-classification-${component.id}`;
   const whyTextId = `card-why-${component.id}`;
   card.setAttribute('aria-label', `${component.title}: ${component.desc}`);

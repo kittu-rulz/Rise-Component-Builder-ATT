@@ -4,6 +4,7 @@ import { isMediaReference } from './media.js';
 import { createMediaUploadControl } from './media-upload.js';
 import { getAccessibilityWarning, getLengthGuidance, isEmpty, validateSchemaField } from './field-validation.js';
 import { createItemMediaControl } from './item-media.js';
+import { createRichTextEditor } from './rich-text-editor.js';
 
 export { validateSchemaField } from './field-validation.js';
 
@@ -282,37 +283,27 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
         }
       });
       fieldElement = media.element;
-      control = media.validationControl;
+    } else if (field.type === 'richtext') {
+      const rte = createRichTextEditor({
+        controlId,
+        fieldId: field.id,
+        value: model[field.id],
+        isSingleLine: false,
+        onChange: (sanitizedVal) => {
+          updateValue(sanitizedVal, rte.validationControl);
+        }
+      });
+      fieldElement = rte.element;
+      control = rte.validationControl;
     } else {
       control = createBasicControl(field, controlId, model[field.id]);
       fieldElement = control;
       if (field.type === 'radio') control.name = `schema-radio-${field.id}`;
-      if (field.type === 'richtext') {
-        const shell = document.createElement('div');
-        shell.className = 'schema-richtext-shell';
-        const toolbar = document.createElement('div');
-        toolbar.className = 'schema-richtext-toolbar';
-        [['Bold', 'bold'], ['Italic', 'italic'], ['List', 'insertUnorderedList']].forEach(([label, command]) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = label;
-          button.setAttribute('aria-label', `${label} formatting`);
-          button.addEventListener('mousedown', event => {
-            event.preventDefault();
-            control.focus();
-            document.execCommand(command, false);
-            updateValue(control.innerHTML, control);
-          });
-          toolbar.appendChild(button);
-        });
-        shell.append(toolbar, control);
-        fieldElement = shell;
-      }
       const eventName = ['select', 'checkbox', 'radio', 'color'].includes(field.type) ? 'change' : 'input';
       control.addEventListener(eventName, () => {
         const nextValue = field.type === 'checkbox' || field.type === 'radio'
           ? control.checked
-          : field.type === 'richtext' ? control.innerHTML : control.value;
+          : control.value;
         updateValue(nextValue, control);
         if (field.type === 'range') rangeValue.textContent = `${control.value}${field.suffix || ''}`;
         if (field.type === 'radio' && field.groupAcrossItems) render(lastRender);

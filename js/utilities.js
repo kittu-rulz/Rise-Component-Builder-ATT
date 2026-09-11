@@ -179,9 +179,55 @@ function decodeEntities(value) {
     .replace(/&amp;/gi, '&');
 }
 
+export function sanitizeInlineStyle(styleText) {
+  if (!styleText || typeof styleText !== 'string') return '';
+  const declarations = styleText.split(';');
+  const safeStyles = [];
+
+  for (const decl of declarations) {
+    const colonIdx = decl.indexOf(':');
+    if (colonIdx === -1) continue;
+    const prop = decl.slice(0, colonIdx).trim().toLowerCase();
+    const val = decl.slice(colonIdx + 1).trim();
+
+    // Check dangerous patterns in value
+    if (!val || /[<>"'`\\]/.test(val) || /(?:javascript|expression|url|behavior|@import|-moz-|-webkit-)/i.test(val)) {
+      continue;
+    }
+
+    if (prop === 'color' || prop === 'background-color' || prop === 'background') {
+      if (/^(?:#[0-9a-f]{3,8}|rgba?\s*\([^)]+\)|hsla?\s*\([^)]+\)|transparent|[a-z]+)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'font-size') {
+      if (/^(?:[0-9]+(?:\.[0-9]+)?(?:px|pt|em|rem|%)|small|medium|large|x-large|xx-large|smaller|larger)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'font-weight') {
+      if (/^(?:normal|bold|bolder|lighter|[1-9]00)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'font-style') {
+      if (/^(?:normal|italic|oblique)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'text-decoration') {
+      if (/^(?:none|underline|line-through|overline)(?:\s+(?:solid|double|dotted|dashed|wavy))?(?:\s+(?:#[0-9a-f]{3,8}|rgba?\s*\([^)]+\)|[a-z]+))?$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    } else if (prop === 'text-align') {
+      if (/^(?:left|right|center|justify)$/i.test(val)) {
+        safeStyles.push(`${prop}: ${val}`);
+      }
+    }
+  }
+
+  return safeStyles.join('; ');
+}
+
 export function sanitizeRichText(value) {
   const input = String(value ?? '');
-  const allowedSimpleTags = new Set(['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li']);
+  const allowedSimpleTags = new Set(['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'span', 'mark', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
   const tagPattern = /<[^>]*>/g;
   let output = '';
   let cursor = 0;
@@ -194,11 +240,22 @@ export function sanitizeRichText(value) {
       const name = simple[2].toLowerCase();
       output += name === 'br' ? '<br>' : `<${simple[1] ? '/' : ''}${name}>`;
     } else {
+      const styledTag = /^<\s*(span|mark)\s+style\s*=\s*(["'])(.*?)\2\s*\/?>$/i.exec(tag);
+      const closeStyled = /^<\s*\/\s*(span|mark)\s*>$/i.exec(tag);
       const anchor = /^<\s*a\s+href\s*=\s*(["'])(.*?)\1(?:\s+target\s*=\s*(["'])_blank\3)?\s*>$/i.exec(tag);
-      if (anchor) {
+      const closeAnchor = /^<\s*\/\s*a\s*>$/i.exec(tag);
+
+      if (styledTag) {
+        const tagName = styledTag[1].toLowerCase();
+        const rawStyle = decodeEntities(styledTag[3]);
+        const cleanStyle = sanitizeInlineStyle(rawStyle);
+        output += cleanStyle ? `<${tagName} style="${escapeAttribute(cleanStyle)}">` : `<${tagName}>`;
+      } else if (closeStyled) {
+        output += `</${closeStyled[1].toLowerCase()}>`;
+      } else if (anchor) {
         const href = sanitizeURL(decodeEntities(anchor[2]));
         output += href ? `<a href="${escapeAttribute(href)}"${anchor[3] ? ' target="_blank" rel="noopener noreferrer"' : ''}>` : '&lt;a&gt;';
-      } else if (/^<\s*\/\s*a\s*>$/i.test(tag)) {
+      } else if (closeAnchor) {
         output += '</a>';
       } else {
         output += escapeHTML(decodeEntities(tag));
