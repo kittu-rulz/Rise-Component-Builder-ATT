@@ -1,6 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { isEmpty } from '../js/field-validation.js';
-import { escapeAttribute, escapeHTML } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, normalizeDelimitedLines } from '../js/utilities.js';
 import { getAttIconSvg } from '../js/att-icons.js';
 
 export const id = 'audio-player';
@@ -79,7 +79,8 @@ export function formatSecondsLabel(seconds) {
 // audio-player comment for why this is a delimited field rather than a nested repeatable
 // schema list. Always returned in chronological order regardless of authoring order.
 export function parseChapters(raw) {
-  const chapters = String(raw ?? '').split('\n').reduce((list, line) => {
+  const normalized = normalizeDelimitedLines(raw);
+  const chapters = normalized.split('\n').reduce((list, line) => {
     if (!line.trim()) return list;
     const parts = line.split('|');
     const timestamp = parseTimestampToSeconds(parts[0]);
@@ -96,7 +97,8 @@ export function parseChapters(raw) {
 // line ("timestamp | Text", no speaker column) is also accepted so authors aren't forced
 // to type an empty speaker column when nobody needs one.
 export function parseTranscriptSegments(raw) {
-  const segments = String(raw ?? '').split('\n').reduce((list, line) => {
+  const normalized = normalizeDelimitedLines(raw);
+  const segments = normalized.split('\n').reduce((list, line) => {
     if (!line.trim()) return list;
     const parts = line.split('|');
     const timestamp = parseTimestampToSeconds(parts[0]);
@@ -114,7 +116,8 @@ export function parseTranscriptSegments(raw) {
 // entry" convention as the two parsers above, at its simplest since a takeaway has no
 // timestamp or sub-fields.
 export function parseTakeaways(raw) {
-  return String(raw ?? '').split('\n').map(line => line.trim()).filter(Boolean);
+  const normalized = normalizeDelimitedLines(raw);
+  return normalized.split('\n').map(line => line.trim()).filter(Boolean);
 }
 
 export function generateHTML(config, instanceId) {

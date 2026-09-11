@@ -367,6 +367,21 @@ export function serializeForInlineScript(value) {
     .replace(/\u2029/g, '\\u2029');
 }
 
+export function normalizeDelimitedLines(raw) {
+  if (!raw) return '';
+  return String(raw)
+    .replace(/<\/?(?:div|p|br|tr|li|section|article)[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
+}
+
 export function sanitizeCSSColor(value, fallback) {
   return /^#[0-9a-f]{6}$/i.test(String(value ?? '')) ? String(value).toUpperCase() : fallback;
 }

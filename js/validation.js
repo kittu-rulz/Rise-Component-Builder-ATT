@@ -32,7 +32,7 @@
 import { RECOMMENDED_RICH_LENGTH, RECOMMENDED_TEXT_LENGTH, validateSchemaField } from './field-validation.js';
 import { isMediaReference, resolveMediaLimits, validateMediaAccessibility } from './media.js';
 import { getMediaRecord } from './media-storage.js';
-import { formatItemLabel, sanitizeRichText, sanitizeURL } from './utilities.js';
+import { formatItemLabel, normalizeDelimitedLines, sanitizeRichText, sanitizeURL } from './utilities.js';
 import { contrastRatio, resolveThemeTokens } from './themes.js';
 import { isExportFormatCompletionCompatible } from './compatibility.js';
 import { formatExportedFileSize } from './export.js';
@@ -1027,7 +1027,8 @@ function auParseTimestamp(raw) {
 function checkMediaChapterAndTranscriptRules(componentId, config) {
   const category = componentId === 'video-frame' ? CATEGORY.VIDEO_FRAME : CATEGORY.AUDIO_PLAYER;
   const issues = [];
-  const chapterLines = String(config.chapters ?? '').split('\n');
+  const normalizedChapters = normalizeDelimitedLines(config.chapters);
+  const chapterLines = normalizedChapters.split('\n');
   const seenChapterTimestamps = new Map();
   chapterLines.forEach((line, lineIndex) => {
     if (!line.trim()) return;
@@ -1049,7 +1050,8 @@ function checkMediaChapterAndTranscriptRules(componentId, config) {
     }
   });
 
-  const segmentLines = String(config.transcriptSegments ?? '').split('\n');
+  const normalizedSegments = normalizeDelimitedLines(config.transcriptSegments);
+  const segmentLines = normalizedSegments.split('\n');
   segmentLines.forEach((line, lineIndex) => {
     if (!line.trim()) return;
     const parts = line.split('|');

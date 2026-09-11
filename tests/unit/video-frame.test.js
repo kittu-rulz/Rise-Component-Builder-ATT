@@ -84,6 +84,15 @@ describe('parseChapters', () => {
     expect(videoFrame.parseChapters('')).toEqual([]);
     expect(videoFrame.parseChapters(undefined)).toEqual([]);
   });
+
+  test('cleans HTML div/p/br tags when authored with enter/paragraphs', () => {
+    const raw = '0:01 | Chapter 01<div>00:25 | Chapter 02</div><div>01:00 | Chapter 03</div>';
+    expect(videoFrame.parseChapters(raw)).toEqual([
+      { timestamp: 1, title: 'Chapter 01', description: '' },
+      { timestamp: 25, title: 'Chapter 02', description: '' },
+      { timestamp: 60, title: 'Chapter 03', description: '' }
+    ]);
+  });
 });
 
 describe('parseTranscriptSegments', () => {

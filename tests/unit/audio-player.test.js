@@ -87,6 +87,14 @@ describe('parseChapters', () => {
     // What matters is that it degrades to *something* parseable, never throws.
     expect(() => audioPlayer.parseChapters('0:00 | Title with | pipe | extra')).not.toThrow();
   });
+
+  test('cleans HTML div/p/br tags when authored with enter/paragraphs', () => {
+    const raw = '0:00 | Intro<div>0:45 | Getting started | Details</div>';
+    expect(audioPlayer.parseChapters(raw)).toEqual([
+      { timestamp: 0, title: 'Intro', description: '' },
+      { timestamp: 45, title: 'Getting started', description: 'Details' }
+    ]);
+  });
 });
 
 describe('parseTranscriptSegments', () => {

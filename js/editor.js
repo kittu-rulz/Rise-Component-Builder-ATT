@@ -288,7 +288,7 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
       });
       fieldElement = media.element;
       control = media.validationControl;
-    } else if (field.type === 'richtext' || field.type === 'textarea' || field.type === 'text') {
+    } else if (field.type === 'richtext' || field.type === 'text') {
       const rte = createRichTextEditor({
         controlId,
         fieldId: field.id,

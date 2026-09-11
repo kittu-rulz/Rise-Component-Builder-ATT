@@ -1,6 +1,6 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { isEmpty } from '../js/field-validation.js';
-import { escapeAttribute, escapeHTML } from '../js/utilities.js';
+import { escapeAttribute, escapeHTML, normalizeDelimitedLines } from '../js/utilities.js';
 import { getAttIconSvg } from '../js/att-icons.js';
 
 export const id = 'video-frame';
@@ -67,7 +67,8 @@ export function formatSecondsLabel(seconds) {
 // Chapters/transcript segments/takeaways: same delimited-text parsers as
 // components/audio-player.js — see js/editor-schemas.js's video-frame comment for why.
 export function parseChapters(raw) {
-  const chapters = String(raw ?? '').split('\n').reduce((list, line) => {
+  const normalized = normalizeDelimitedLines(raw);
+  const chapters = normalized.split('\n').reduce((list, line) => {
     if (!line.trim()) return list;
     const parts = line.split('|');
     const timestamp = parseTimestampToSeconds(parts[0]);
@@ -81,7 +82,8 @@ export function parseChapters(raw) {
 }
 
 export function parseTranscriptSegments(raw) {
-  const segments = String(raw ?? '').split('\n').reduce((list, line) => {
+  const normalized = normalizeDelimitedLines(raw);
+  const segments = normalized.split('\n').reduce((list, line) => {
     if (!line.trim()) return list;
     const parts = line.split('|');
     const timestamp = parseTimestampToSeconds(parts[0]);
@@ -96,7 +98,8 @@ export function parseTranscriptSegments(raw) {
 }
 
 export function parseTakeaways(raw) {
-  return String(raw ?? '').split('\n').map(line => line.trim()).filter(Boolean);
+  const normalized = normalizeDelimitedLines(raw);
+  return normalized.split('\n').map(line => line.trim()).filter(Boolean);
 }
 
 export function generateHTML(config, instanceId) {
