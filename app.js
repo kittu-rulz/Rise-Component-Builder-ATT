@@ -42,7 +42,7 @@ import { ProjectOverviewView } from './js/dashboard/project-overview.js';
 import { ProjectMediaView } from './js/dashboard/project-media.js';
 import { CoursePreviewView } from './js/dashboard/course-preview.js';
 import { ProjectQaView } from './js/dashboard/project-qa.js';
-import { downloadCourseProjectZip } from './js/dashboard/project-export.js';
+import { downloadCourseProjectZip, showPreExportReviewDialog } from './js/dashboard/project-export.js';
 // app.js is the composition root and is explicitly allowed to depend on any module,
 // including one specific component's own file (docs/ARCHITECTURE.md "Important
 // dependencies") — reused here only for its MM:SS/H:MM:SS formatter, so the builder's own
@@ -791,7 +791,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputHeaderProjectName = document.getElementById('input-header-project-name');
   const projectTitleEditor = document.getElementById('project-title-editor');
 
-  function updateProjectStatusDisplay() {
+  function updateProjectStatusDisplay(stateOverride = null) {
     const status = document.getElementById('project-status');
     const hasComponent = Boolean(appState.selectedComponent);
 
@@ -807,18 +807,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const name = appState.currentProjectName || appState.selectedComponent.title || 'Untitled Component';
     if (headerProjectName && headerProjectName.textContent !== name) {
       headerProjectName.textContent = name;
-      headerProjectName.title = `Project: ${name} (Click or press F2 to rename)`;
+      headerProjectName.title = `Component: ${name} (Click or press F2 to rename)`;
     }
 
     if (status) {
       status.hidden = false;
-      const isSaved = Boolean(appState.currentProjectId) && !appState.isDirty;
       const statusText = document.getElementById('project-status-text');
-      if (statusText) {
-        statusText.textContent = isSaved ? 'Saved' : 'Unsaved changes';
+      status.classList.remove('is-saved', 'is-unsaved', 'is-saving', 'is-failed');
+
+      if (stateOverride === 'saving') {
+        if (statusText) statusText.textContent = 'Saving…';
+        status.classList.add('is-saving');
+      } else if (stateOverride === 'failed') {
+        if (statusText) statusText.textContent = 'Save failed';
+        status.classList.add('is-failed');
+      } else {
+        const isSaved = (Boolean(appState.currentProjectId) || Boolean(appState.activeProject)) && !appState.isDirty;
+        if (statusText) {
+          statusText.textContent = isSaved ? 'Saved just now' : 'Unsaved changes';
+        }
+        status.classList.toggle('is-saved', isSaved);
+        status.classList.toggle('is-unsaved', !isSaved);
       }
-      status.classList.toggle('is-saved', isSaved);
-      status.classList.toggle('is-unsaved', !isSaved);
     }
   }
 
@@ -966,13 +976,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             onOpenPreview: (id) => showState('course-preview', { projectId: id }),
             onOpenMedia: (id) => showState('project-media', { projectId: id }),
             onOpenQa: (id) => showState('project-qa', { projectId: id }),
-            onExportProject: async (id) => {
-              try {
-                await downloadCourseProjectZip(id);
-                showToast('Course package exported successfully!', 'success');
-              } catch (err) {
-                showToast(`Export failed: ${err.message}`, 'error');
-              }
+            onExportProject: (id) => {
+              showPreExportReviewDialog({
+                projectId: id,
+                onViewQa: (projId) => showState('project-qa', { projectId: projId }),
+                onProceed: async (projId) => {
+                  try {
+                    await downloadCourseProjectZip(projId);
+                    showToast('Course package exported successfully!', 'success');
+                  } catch (err) {
+                    showToast(`Export failed: ${err.message}`, 'error');
+                  }
+                }
+              });
             }
           });
           projectOverviewInstance.mount();
@@ -1059,6 +1075,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (appWorkspace) {
           appWorkspace.classList.add('is-authoring');
           appWorkspace.classList.remove('is-browsing');
+        }
+        // Context-sensitive back navigation label
+        if (btnBackToCatalog) {
+          const backSpan = btnBackToCatalog.querySelector('span');
+          if (backSpan) {
+            backSpan.textContent = appState.activeProject ? 'Back to Course' : 'Back to Templates';
+          }
+          btnBackToCatalog.title = appState.activeProject ? 'Return to Course Workspace' : 'Back to Component Templates';
         }
         // Auto-collapse sidebar in editor mode
         if (sidebar && !sidebar.classList.contains('sidebar-collapsed')) {
@@ -2763,6 +2787,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       switchEditorTab('content');
       showToast(validationErrors[0], 'error', 6000);
       return;
+    }
+
+    if (appState.activeProject && appState.activeComponentInstance) {
+      updateProjectStatusDisplay('saving');
+      try {
+        const proj = getProject(appState.activeProject.id) || appState.activeProject;
+        if (proj.components && proj.components[appState.activeComponentInstance.id]) {
+          proj.components[appState.activeComponentInstance.id].config = structuredClone(appState.config);
+          proj.components[appState.activeComponentInstance.id].styleOverrides = structuredClone(appState.componentOverrides);
+          proj.updatedAt = new Date().toISOString();
+          saveProject(proj);
+          appState.activeProject = proj;
+          appState.isDirty = false;
+          saveDraft(buildCurrentProject(appState.currentProjectName, false));
+          updateProjectStatusDisplay();
+          showToast(`Saved component “${appState.activeComponentInstance.name}” to ${proj.name}.`, 'success');
+          return;
+        }
+      } catch (error) {
+        updateProjectStatusDisplay('failed');
+        showToast(`Save failed: ${error.message}`, 'error', 5000);
+        return;
+      }
     }
     openSaveDialog('save');
   });

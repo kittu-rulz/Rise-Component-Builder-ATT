@@ -3793,6 +3793,27 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   color: #FBBF24;
 }
 
+.project-status.is-saving .status-dot {
+  background-color: var(--att-blue, #009FDB);
+  animation: statusPulse 1s infinite ease-in-out;
+}
+
+.project-status.is-saving {
+  color: var(--att-blue, #009FDB);
+  background-color: rgba(0, 159, 219, 0.1);
+  border-color: rgba(0, 159, 219, 0.25);
+}
+
+.project-status.is-failed .status-dot {
+  background-color: #EF4444;
+}
+
+.project-status.is-failed {
+  color: #DC2626;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
 @keyframes statusPulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(0.85); }

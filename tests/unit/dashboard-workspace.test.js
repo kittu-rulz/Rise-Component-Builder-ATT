@@ -2,8 +2,8 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { DashboardView } from '../../js/dashboard/dashboard-view.js';
 import { ProjectOverviewView } from '../../js/dashboard/project-overview.js';
-import { ProjectQaView } from '../../js/dashboard/project-qa.js';
-import { buildCourseProjectZip } from '../../js/dashboard/project-export.js';
+import { ProjectQaView, auditCourseProject } from '../../js/dashboard/project-qa.js';
+import { buildCourseProjectZip, showPreExportReviewDialog } from '../../js/dashboard/project-export.js';
 import {
   buildProjectSchemaV3, createComponentInstance, createSection
 } from '../../js/project-schema.js';
@@ -164,5 +164,81 @@ describe('Project Dashboard & Workspace Controller Tests', () => {
     const htmlText = new TextDecoder().decode(compEntry.data);
     expect(htmlText).toContain('<!DOCTYPE html>');
     expect(htmlText).toContain('Welcome');
+  });
+
+  test('auditCourseProject separates technical score from editorial draft status', () => {
+    const comp1 = createComponentInstance({
+      id: 'c1',
+      name: 'Module 1 Interaction',
+      type: 'accordion',
+      status: 'draft',
+      config: {
+        blockTitle: 'Title 1',
+        blockHeadline: 'Headline 1',
+        items: [{ title: 'Step 1', content: 'Details' }]
+      }
+    });
+    const comp2 = createComponentInstance({
+      id: 'c2',
+      name: 'Module 2 Interaction',
+      type: 'accordion',
+      status: 'draft',
+      config: {
+        blockTitle: 'Title 2',
+        blockHeadline: 'Headline 2',
+        items: [{ title: 'Step 2', content: 'Details' }]
+      }
+    });
+    const project = buildProjectSchemaV3({
+      name: 'Draft Only Course',
+      unsectionedComponentOrder: ['c1', 'c2'],
+      components: { c1: comp1, c2: comp2 }
+    });
+
+    const report = auditCourseProject(project);
+
+    // Technical checks should pass 100% since items and headers exist
+    expect(report.technicalScore).toBe(100);
+    // Editorial draft status must prevent Ready to Export
+    expect(report.editorial.draftCount).toBe(2);
+    expect(report.editorial.readyCount).toBe(0);
+    expect(report.overallStatus).toBe('Not Ready');
+    expect(report.counts.warnings).toBe(2); // 2 draft warnings
+    expect(report.counts.blockers).toBe(0);
+  });
+
+  test('showPreExportReviewDialog renders review modal with blocker gating', async () => {
+    const comp1 = createComponentInstance({
+      id: 'c1',
+      name: 'Broken Component',
+      type: 'accordion',
+      status: 'draft',
+      config: { items: [] } // Zero items causes blocker
+    });
+    const project = buildProjectSchemaV3({
+      name: 'Blocked Course',
+      unsectionedComponentOrder: ['c1'],
+      components: { c1: comp1 }
+    });
+    saveProject(project);
+
+    let viewedQaId = null;
+    showPreExportReviewDialog({
+      projectId: project.id,
+      onViewQa: (id) => { viewedQaId = id; }
+    });
+
+    const overlay = document.getElementById('att-export-review-modal-overlay');
+    expect(overlay).not.toBeNull();
+    expect(overlay.innerHTML).toContain('Pre-Export Package Review');
+    expect(overlay.innerHTML).toContain('Export Blocked');
+
+    const proceedBtn = overlay.querySelector('#att-export-review-proceed-btn');
+    expect(proceedBtn.disabled).toBe(true);
+
+    const qaBtn = overlay.querySelector('#att-export-review-qa-btn');
+    qaBtn.click();
+    expect(viewedQaId).toBe(project.id);
+    expect(document.getElementById('att-export-review-modal-overlay')).toBeNull();
   });
 });

@@ -400,9 +400,9 @@ export function createPostPublishWorkflow() {
         </div>
       ` : `
         <div class="ppt-export-action-box">
-          <button type="button" class="btn btn-primary btn-lg" id="btn-run-enhancement">
+          <button type="button" class="btn btn-primary btn-lg" id="btn-run-enhancement" aria-label="Download Enhanced Rise Package">
             <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor"><path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z"/><path d="M15 3v16.17l-4.59-4.58L9 16l7 7 7-7-1.41-1.41L17 19.17V3h-2z"/></svg>
-            <span>Download Enhanced Course ZIP</span>
+            <span>Download Enhanced Rise Package</span>
           </button>
           <div id="ppt-enhancement-status" class="ppt-enhancement-status" style="display:none;"></div>
         </div>
