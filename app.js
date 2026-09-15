@@ -1096,9 +1096,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     // P12: the single chokepoint every catalog<->editor transition passes through, so the
     // toolbar's Save/Export availability and the preview panel's empty state never need a
     // separate call site of their own to stay in sync with what's actually on screen.
+    updateHeaderContext(state, context);
     updateToolbarActionAvailability();
     updatePreviewEmptyState();
   }
+
+  function updateHeaderContext(state, context = {}) {
+    const toolbarActions = document.querySelector('.toolbar-actions');
+    const projectTitleEditor = document.getElementById('project-title-editor');
+    const status = document.getElementById('project-status');
+    const btnProjectsDashboard = document.getElementById('btn-projects-dashboard');
+
+    if (btnProjectsDashboard) {
+      const isDashboardOrCourse = ['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa'].includes(state);
+      btnProjectsDashboard.classList.toggle('active', isDashboardOrCourse);
+    }
+
+    if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
+      if (toolbarActions) toolbarActions.style.display = 'none';
+      if (projectTitleEditor) projectTitleEditor.style.display = 'none';
+      if (status) status.hidden = true;
+    } else if (state === 'editor') {
+      if (toolbarActions) toolbarActions.style.display = 'flex';
+      if (projectTitleEditor) projectTitleEditor.style.display = 'flex';
+      updateToolbarActionAvailability();
+      updateProjectStatusDisplay();
+    } else {
+      // catalog
+      if (toolbarActions) toolbarActions.style.display = 'flex';
+      if (projectTitleEditor) projectTitleEditor.style.display = 'none';
+      if (status) status.hidden = true;
+      updateToolbarActionAvailability();
+    }
+  }
+
 
   // P12 Requirement 3: there is no valid selected component to save or export while the
   // catalog screen is showing — whether that's a fresh launch, "New Project," or "Back to
@@ -1458,10 +1489,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       appState.activeProject = null;
       appState.activeComponentInstance = null;
       appState.selectedComponent = null;
+      appState.currentProjectId = null;
+      appState.currentProjectName = '';
       showState('project-overview', { projectId: projId });
       return;
     }
     appState.selectedComponent = null;
+    appState.currentProjectId = null;
+    appState.currentProjectName = '';
     showState('catalog');
     renderCatalog();
   }

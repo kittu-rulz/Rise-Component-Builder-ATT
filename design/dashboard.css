@@ -522,3 +522,66 @@
   border-color: var(--att-blue, #009FDB);
   box-shadow: 0 0 0 3px rgba(0, 159, 219, 0.2);
 }
+
+/* Course Preview Advanced Controls */
+.preview-fullscreen-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-canvas, #F4F6F9);
+  overflow-y: auto;
+}
+
+.course-preview-block.outline-boundary {
+  outline: 2px dashed var(--att-blue, #009FDB);
+  outline-offset: 4px;
+}
+
+.course-preview-canvas.with-safe-area-overlay {
+  position: relative;
+}
+
+.course-preview-canvas.with-safe-area-overlay::before {
+  content: "Rise Authored Safe Area (740px)";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 740px;
+  border-left: 2px dashed rgba(0, 56, 143, 0.4);
+  border-right: 2px dashed rgba(0, 56, 143, 0.4);
+  pointer-events: none;
+  z-index: 10;
+  color: var(--att-cobalt, #00388F);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  padding-top: 4px;
+  background: rgba(0, 56, 143, 0.02);
+}
+
+.preview-mode-pill-group {
+  display: flex;
+  align-items: center;
+  background: #EFEFEF;
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.preview-mode-pill-group .filter-chip {
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border: none;
+  background: transparent;
+}
+
+.preview-mode-pill-group .filter-chip.active {
+  background: #FFFFFF;
+  color: var(--att-cobalt, #00388F);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 700;
+}
+

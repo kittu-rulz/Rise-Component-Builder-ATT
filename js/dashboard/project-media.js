@@ -16,7 +16,8 @@ export class ProjectMediaView {
 
     this.state = {
       mediaList: [],
-      filterKind: 'all', // 'all' | 'image' | 'video' | 'audio'
+      filterKind: 'all', // 'all' | 'image' | 'video' | 'audio' | 'used' | 'unused'
+      searchQuery: '',
       isLoading: true
     };
   }
@@ -63,9 +64,23 @@ export class ProjectMediaView {
     const project = getProject(this.projectId);
     let items = this.state.mediaList;
 
-    if (this.state.filterKind !== 'all') {
+    // Filter by kind or reference state
+    if (this.state.filterKind === 'image' || this.state.filterKind === 'video' || this.state.filterKind === 'audio') {
       items = items.filter(m => m.kind === this.state.filterKind);
+    } else if (this.state.filterKind === 'used') {
+      items = items.filter(m => this.getComponentReferences(m.id).length > 0);
+    } else if (this.state.filterKind === 'unused') {
+      items = items.filter(m => this.getComponentReferences(m.id).length === 0);
     }
+
+    // Filter by search query
+    if (this.state.searchQuery.trim()) {
+      const q = this.state.searchQuery.toLowerCase();
+      items = items.filter(m => m.name?.toLowerCase().includes(q) || m.kind?.toLowerCase().includes(q));
+    }
+
+    const totalBytes = this.state.mediaList.reduce((acc, m) => acc + (m.size || 0), 0);
+    const totalMb = (totalBytes / (1024 * 1024)).toFixed(2);
 
     this.container.innerHTML = `
       <div class="project-workspace-view">
@@ -95,12 +110,32 @@ export class ProjectMediaView {
         </header>
 
         <main class="workspace-container">
-          <div class="dashboard-controls">
-            <div class="dashboard-filters-group">
+          <!-- Quota and Media Storage Info Banner -->
+          <div class="workspace-banner" style="margin-bottom: 20px;">
+            <div class="workspace-banner-info">
+              <h2 class="workspace-title">Course Media Library</h2>
+              <p class="workspace-desc">
+                High-performance offline assets stored in browser IndexedDB. Stored assets can be referenced across any course component.
+              </p>
+              <div style="margin-top: 8px; font-size: 0.8125rem; color: #555555; display: flex; gap: 16px;">
+                <span>Total Assets: <strong>${this.state.mediaList.length}</strong></span>
+                <span>Storage Footprint: <strong>${totalMb} MB</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-controls" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div class="dashboard-filters-group" style="display: flex; gap: 6px; flex-wrap: wrap;">
               <button class="filter-chip ${this.state.filterKind === 'all' ? 'active' : ''}" data-kind="all">All Assets (${this.state.mediaList.length})</button>
               <button class="filter-chip ${this.state.filterKind === 'image' ? 'active' : ''}" data-kind="image">Images</button>
               <button class="filter-chip ${this.state.filterKind === 'video' ? 'active' : ''}" data-kind="video">Videos</button>
               <button class="filter-chip ${this.state.filterKind === 'audio' ? 'active' : ''}" data-kind="audio">Audio</button>
+              <button class="filter-chip ${this.state.filterKind === 'used' ? 'active' : ''}" data-kind="used">In Use</button>
+              <button class="filter-chip ${this.state.filterKind === 'unused' ? 'active' : ''}" data-kind="unused">Unused</button>
+            </div>
+
+            <div class="dashboard-search-wrap" style="width: 260px;">
+              <input type="text" id="media-search-input" class="dashboard-search-input" placeholder="Search media by name..." value="${this.escapeHtml(this.state.searchQuery)}" style="width: 100%;" />
             </div>
           </div>
 
@@ -112,9 +147,9 @@ export class ProjectMediaView {
             </div>
           ` : `
             <div class="dashboard-empty-state">
-              <h3 class="empty-state-title">No media assets in library</h3>
+              <h3 class="empty-state-title">No matching media assets found</h3>
               <p class="empty-state-subtitle">Upload graphics, audio files, or videos to share across this course project.</p>
-              <button id="media-empty-upload-btn" class="btn-att-primary">Upload Media File</button>
+              <button id="media-empty-upload-btn" class="btn-att-primary" style="margin-top: 12px;">Upload Media File</button>
             </div>
           `}
         </main>
@@ -167,6 +202,19 @@ export class ProjectMediaView {
         this.render();
       });
     });
+
+    const searchInput = this.container.querySelector('#media-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.state.searchQuery = e.target.value;
+        this.render();
+        const newSearch = this.container.querySelector('#media-search-input');
+        if (newSearch) {
+          newSearch.focus();
+          newSearch.setSelectionRange(newSearch.value.length, newSearch.value.length);
+        }
+      });
+    }
 
     const fileInput = this.container.querySelector('#media-upload-input');
     const uploadBtn = this.container.querySelector('#media-upload-btn');

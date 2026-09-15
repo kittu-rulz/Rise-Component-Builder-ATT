@@ -505,13 +505,60 @@ export class DashboardView {
 
   createNewProjectFromTemplate({ name, client, desc, template }) {
     if (template === 'standard') {
-      const sec1 = createSection({ name: 'Module 1: Introduction' });
-      const sec2 = createSection({ name: 'Module 2: Deep Dive' });
-      const sec3 = createSection({ name: 'Module 3: Assessment' });
+      const sec1 = createSection({ name: 'Module 1: Introduction', description: 'Foundational concepts and course overview' });
+      const sec2 = createSection({ name: 'Module 2: Deep Dive', description: 'Core technical pillars and deep exploration' });
+      const sec3 = createSection({ name: 'Module 3: Assessment', description: 'Interactive knowledge check and synthesis' });
 
-      const comp1 = createComponentInstance({ name: 'Overview Accordion', type: 'accordion' });
-      const comp2 = createComponentInstance({ name: 'Key Concepts Tabs', type: 'tabs' });
-      const comp3 = createComponentInstance({ name: 'Knowledge Check', type: 'multiple-choice' });
+      const comp1 = createComponentInstance({
+        name: 'Overview Accordion',
+        type: 'accordion',
+        status: 'draft',
+        config: {
+          title: 'Module 1: Introduction to Course Foundations',
+          description: 'Explore the core principles and learning objectives.',
+          accordionMulti: true,
+          accordionAnimation: true,
+          iconStyle: 'chevron',
+          items: [
+            { title: 'Understanding User Intent & Objectives', content: 'Instructional design begins by identifying core learning objectives and alignment with business outcomes.' },
+            { title: 'Designing for Modern Engagement', content: 'Modern eLearning relies on micro-interactions, clean visual layouts, and bite-sized chunks of information.' },
+            { title: 'SCORM and Tracking Analytics', content: 'Export clean standard elements to trace course completion, custom interaction states, and score cards.' }
+          ]
+        }
+      });
+
+      const comp2 = createComponentInstance({
+        name: 'Key Concepts Tabs',
+        type: 'tabs',
+        status: 'draft',
+        config: {
+          title: 'Deep Dive into Core Pillars',
+          description: 'Navigate through key modules and practical methodologies.',
+          tabsOrientation: 'horizontal',
+          items: [
+            { title: 'Architecture', content: 'Layered component architecture separating state management, preview compilers, and export pipelines.' },
+            { title: 'Integration', content: 'Seamless embedding inside Rise 360 blocks via iframe snippets, HTML fragments, or Web Package ZIPs.' },
+            { title: 'Governance', content: 'Rigorous preflight validation ensuring WCAG 2.2 AA accessibility, contrast compliance, and responsive fidelity.' }
+          ]
+        }
+      });
+
+      const comp3 = createComponentInstance({
+        name: 'Knowledge Check',
+        type: 'multiple-choice',
+        status: 'draft',
+        config: {
+          title: 'Module Assessment: Core Principles',
+          description: 'Test your understanding of the foundational principles covered in this module.',
+          mcSubmitButtonText: 'Submit Answer',
+          mcMaxAttempts: 1,
+          items: [
+            { label: 'Option A', content: 'Components should be monolithic with hardcoded global variables.', correct: false },
+            { label: 'Option B (Correct)', content: 'Components must use deterministic instance scoping and strict isolation contracts.', correct: true },
+            { label: 'Option C', content: 'Accessibility requirements can be deferred to post-production.', correct: false }
+          ]
+        }
+      });
 
       sec1.componentOrder = [comp1.id];
       sec2.componentOrder = [comp2.id];
@@ -528,7 +575,24 @@ export class DashboardView {
     }
 
     if (template === 'single') {
-      const comp = createComponentInstance({ name: `${name} Component`, type: 'accordion' });
+      const comp = createComponentInstance({
+        name: `${name} Accordion`,
+        type: 'accordion',
+        status: 'draft',
+        config: {
+          title: `${name} Overview`,
+          description: 'Interactive expandable accordion with sample demonstration items.',
+          accordionMulti: true,
+          accordionAnimation: true,
+          iconStyle: 'chevron',
+          items: [
+            { title: 'Getting Started', content: 'Customize this accordion panel with your course content in the editor.' },
+            { title: 'Key Information', content: 'Add supporting media, rich text formatting, or extra interactive items.' },
+            { title: 'Summary & Takeaways', content: 'Reinforce learning outcomes before continuing to the next lesson.' }
+          ]
+        }
+      });
+
       return buildProjectSchemaV3({
         name,
         clientLabel: client,

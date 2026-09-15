@@ -873,3 +873,8 @@ export function searchComponents(registry, query, categories = CATEGORIES, class
 export function getDefaultConfig(entry) {
   return structuredClone({ ...entry.defaultDesign, ...entry.defaultBehaviour, ...entry.defaultContent });
 }
+
+export const COMPONENT_MODULES = Object.fromEntries(
+  COMPONENT_REGISTRY.map(entry => [entry.id, { ...entry.renderer, validate: entry.validate, version: entry.version }])
+);
+

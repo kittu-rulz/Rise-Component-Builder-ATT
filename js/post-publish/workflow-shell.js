@@ -70,12 +70,17 @@ export function createPostPublishWorkflow() {
   footerNav.className = 'ppt-workflow-footer-nav';
 
   function renderFooter() {
+    const isStep1Blocked = currentStep === 1 && (!uploadedFile || !packageDetection || !packageDetection.valid);
     footerNav.innerHTML = `
       <div class="ppt-footer-left">
         ${currentStep > 1 ? `<button type="button" class="btn btn-secondary" id="btn-ppt-prev">← Previous Step</button>` : ''}
       </div>
       <div class="ppt-footer-right">
-        ${currentStep < 6 ? `<button type="button" class="btn btn-primary" id="btn-ppt-next">Next Step →</button>` : ''}
+        ${currentStep < 6 ? `
+          <button type="button" class="btn btn-primary" id="btn-ppt-next" ${isStep1Blocked ? 'disabled title="Upload and validate a Rise ZIP package before continuing"' : ''}>
+            Next Step →
+          </button>
+        ` : ''}
       </div>
     `;
 
@@ -85,7 +90,7 @@ export function createPostPublishWorkflow() {
     const nextBtn = footerNav.querySelector('#btn-ppt-next');
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
-        if (currentStep === 1 && !uploadedFile) {
+        if (currentStep === 1 && (!uploadedFile || !packageDetection || !packageDetection.valid)) {
           alert('Please upload a valid Rise course ZIP package before continuing.');
           return;
         }
@@ -133,7 +138,7 @@ export function createPostPublishWorkflow() {
         <svg class="ppt-dropzone-icon" width="48" height="48" viewBox="0 0 32 32" fill="currentColor"><path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z"/><path d="M15 3v16.17l-4.59-4.58L9 16l7 7 7-7-1.41-1.41L17 19.17V3h-2z"/></svg>
         <h3>${uploadedFile ? escapeHTML(uploadedFile.name) : 'Drag and drop your Rise .zip package here'}</h3>
         <p class="field-hint">${uploadedFile ? `Package Size: ${formatStorageBytes(uploadedFile.size)}` : 'or click to browse local files'}</p>
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-zip">Browse .zip File</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-zip">${uploadedFile ? 'Change .zip File' : 'Browse .zip File'}</button>
         <input type="file" id="ppt-zip-input" accept=".zip,application/zip" style="display:none;">
       </div>
 
@@ -148,6 +153,11 @@ export function createPostPublishWorkflow() {
             </div>
           ` : ''}
           ${packageDetection.error ? `<p class="ppt-error-text">${escapeHTML(packageDetection.error)}</p>` : ''}
+          
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-replace-pkg">Replace Package</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-remove-pkg">Remove Package</button>
+          </div>
         </div>
       ` : ''}
 
@@ -159,10 +169,22 @@ export function createPostPublishWorkflow() {
     const dropzone = box.querySelector('#ppt-zip-dropzone');
     const fileInput = box.querySelector('#ppt-zip-input');
     const browseBtn = box.querySelector('#btn-browse-zip');
+    const replaceBtn = box.querySelector('#btn-replace-pkg');
+    const removeBtn = box.querySelector('#btn-remove-pkg');
 
     browseBtn.addEventListener('click', () => fileInput.click());
+    if (replaceBtn) replaceBtn.addEventListener('click', () => fileInput.click());
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        uploadedFile = null;
+        packageDetection = null;
+        renderStepContent();
+        renderFooter();
+      });
+    }
+
     dropzone.addEventListener('click', (e) => {
-      if (e.target !== browseBtn) fileInput.click();
+      if (e.target !== browseBtn && !e.target.closest('button')) fileInput.click();
     });
 
     dropzone.addEventListener('dragover', (e) => {
@@ -193,6 +215,7 @@ export function createPostPublishWorkflow() {
         currentConfig = normalizePostPublishConfig(packageDetection.previousConfig);
       }
       renderStepContent();
+      renderFooter();
     }
 
     stepContentContainer.appendChild(box);

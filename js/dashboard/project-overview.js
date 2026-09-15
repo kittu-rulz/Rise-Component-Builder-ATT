@@ -1,6 +1,6 @@
 /**
- * Project Overview & Multi-Component Workspace Controller
- * Manages course sections, component instances, organization, and links to course tools.
+ * Rise Component Builder AT&T — Project Overview & Multi-Component Workspace Controller
+ * Manages course sections, component instances, editorial lifecycle, component picker, and navigation.
  */
 
 import {
@@ -9,8 +9,11 @@ import {
 import {
   createComponentInstance, createSection
 } from '../project-schema.js';
-import { COMPONENT_REGISTRY, getDefaultConfig } from '../component-registry.js';
+import {
+  COMPONENT_REGISTRY, CATEGORIES, getDefaultConfig, getComponentById, searchComponents
+} from '../component-registry.js';
 import { showPromptDialog, showConfirmDialog } from './att-modal.js';
+import { escapeHTML } from '../utilities.js';
 
 export class ProjectOverviewView {
   constructor({
@@ -36,7 +39,11 @@ export class ProjectOverviewView {
       isPickerOpen: false,
       pickerTargetSectionId: null, // null means unsectioned
       pickerSearch: '',
-      activeMenuId: null
+      pickerCategory: 'all',
+      previewDetailsComp: null,
+      activeMenuId: null,
+      courseStructureSearch: '',
+      courseStructureFilter: 'all' // 'all' | 'draft' | 'in_review' | 'ready'
     };
 
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
@@ -81,9 +88,9 @@ export class ProjectOverviewView {
     if (!project) {
       this.container.innerHTML = `
         <div class="project-workspace-view">
-          <div class="workspace-container">
-            <p>Project not found.</p>
-            <button id="wp-back-btn" class="btn-att-primary">Back to Projects</button>
+          <div class="workspace-container" style="padding: 40px; text-align: center;">
+            <p style="font-size: 1.125rem; color: #666; margin-bottom: 16px;">Course project not found.</p>
+            <button id="wp-back-btn" class="btn btn-primary">Back to Projects</button>
           </div>
         </div>
       `;
@@ -96,124 +103,140 @@ export class ProjectOverviewView {
     const totalComponents = Object.keys(project.components || {}).length;
     const totalSections = Object.keys(project.sections || {}).length;
 
+    // Filter components according to course structure search & status filter
+    const activeFilter = this.state.courseStructureFilter;
+    const searchFilter = this.state.courseStructureSearch.toLowerCase().trim();
+
     this.container.innerHTML = `
       <div class="project-workspace-view">
-        <!-- Top Nav -->
+        <!-- Top Workspace Bar -->
         <header class="workspace-header">
           <div class="workspace-breadcrumbs">
-            <button id="wp-back-btn" class="breadcrumb-back-btn">
+            <button id="wp-back-btn" class="breadcrumb-back-btn" title="Back to Projects Dashboard">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
-              Projects
+              Course Projects
             </button>
             <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">${this.escapeHtml(project.name)}</span>
+            <span class="breadcrumb-current">${escapeHTML(project.name)}</span>
           </div>
 
           <div class="workspace-header-actions">
-            <button id="wp-preview-btn" class="btn-att-secondary" aria-label="Preview Full Course">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
+            <button id="wp-preview-btn" class="btn btn-secondary btn-sm" title="Preview complete course flow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               Course Preview
             </button>
-            <button id="wp-media-btn" class="btn-att-secondary" aria-label="Manage Course Media">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
+            <button id="wp-media-btn" class="btn btn-secondary btn-sm" title="Project media library">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
               Media Library
             </button>
-            <button id="wp-qa-btn" class="btn-att-secondary" aria-label="Course QA Checklist">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
+            <button id="wp-qa-btn" class="btn btn-secondary btn-sm" title="Course-level QA and readiness report">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
               Course QA
             </button>
-            <button id="wp-export-btn" class="btn-att-primary" aria-label="Export Course Package">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              Export Package
+            <button id="wp-export-btn" class="btn btn-primary btn-sm" title="Export Course Project Package">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Export Course
             </button>
           </div>
         </header>
 
-        <!-- Container -->
         <main class="workspace-container">
           <!-- Course Banner -->
-          <div class="workspace-banner">
+          <div class="workspace-banner" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 16px; padding: 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
             <div class="workspace-banner-info">
-              <div class="workspace-banner-tags">
-                <span class="project-client-badge">${this.escapeHtml(project.clientLabel || 'AT&T')}</span>
+              <div class="workspace-banner-tags" style="margin-bottom: 8px;">
+                <span class="project-client-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">${escapeHTML(project.clientLabel || 'AT&T')}</span>
               </div>
-              <h1 class="workspace-title">
-                ${this.escapeHtml(project.name)}
-                <button id="wp-rename-title-btn" class="project-fav-btn" title="Rename course">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              <h1 class="workspace-title" style="font-size: 1.5rem; font-weight: 700; color: #111; margin: 0 0 6px 0; display: flex; align-items: center; gap: 8px;">
+                ${escapeHTML(project.name)}
+                <button id="wp-rename-title-btn" class="project-menu-btn" title="Rename course title" style="width: 28px; height: 28px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                 </button>
               </h1>
-              <p class="workspace-desc">${this.escapeHtml(project.description || 'No description provided. Click edit to add course details.')}</p>
+              <p class="workspace-desc" style="font-size: 0.875rem; color: #555; margin: 0; max-width: 650px;">${escapeHTML(project.description || 'No description provided. Click to add course objectives and metadata.')}</p>
             </div>
-            <div class="workspace-banner-metrics">
-              <div class="metric-card">
-                <p class="metric-value">${totalSections}</p>
-                <p class="metric-label">Sections</p>
+            <div class="workspace-banner-metrics" style="display: flex; gap: 16px;">
+              <div class="metric-card" style="text-align: center; padding: 12px 20px; background: #F8F9FA; border-radius: 12px; border: 1px solid #EFEFEF;">
+                <p class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--att-cobalt, #00388F); margin: 0;">${totalSections}</p>
+                <p class="metric-label" style="font-size: 0.75rem; color: #666; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Sections</p>
               </div>
-              <div class="metric-card">
-                <p class="metric-value">${totalComponents}</p>
-                <p class="metric-label">Components</p>
+              <div class="metric-card" style="text-align: center; padding: 12px 20px; background: #F8F9FA; border-radius: 12px; border: 1px solid #EFEFEF;">
+                <p class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--att-cobalt, #00388F); margin: 0;">${totalComponents}</p>
+                <p class="metric-label" style="font-size: 0.75rem; color: #666; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Components</p>
               </div>
             </div>
           </div>
 
-          <!-- Toolbar -->
-          <div class="workspace-toolbar">
-            <h2 class="workspace-toolbar-title">Course Structure</h2>
-            <div class="workspace-toolbar-actions">
-              <button id="wp-add-unsectioned-comp-btn" class="btn-att-secondary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add Component
+          <!-- Course Structure Filter & Controls -->
+          <div class="workspace-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <h2 class="workspace-toolbar-title" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Course Structure</h2>
+              
+              <!-- Quick Filter Chips -->
+              <div class="filter-group" style="display: flex; gap: 4px;">
+                <button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" data-cs-filter="all">All</button>
+                <button class="filter-chip ${activeFilter === 'draft' ? 'active' : ''}" data-cs-filter="draft">Draft</button>
+                <button class="filter-chip ${activeFilter === 'in_review' ? 'active' : ''}" data-cs-filter="in_review">In Review</button>
+                <button class="filter-chip ${activeFilter === 'ready' ? 'active' : ''}" data-cs-filter="ready">Ready</button>
+              </div>
+
+              <!-- Search within course -->
+              <input 
+                type="search" 
+                id="cs-search-input" 
+                class="form-input" 
+                placeholder="Filter components in course…" 
+                value="${escapeHTML(this.state.courseStructureSearch)}"
+                style="padding: 4px 10px; font-size: 0.8125rem; width: 200px;"
+              />
+            </div>
+
+            <div class="workspace-toolbar-actions" style="display: flex; align-items: center; gap: 8px;">
+              <button id="wp-expand-all-btn" class="btn btn-secondary btn-sm" title="Expand all sections">Expand All</button>
+              <button id="wp-collapse-all-btn" class="btn btn-secondary btn-sm" title="Collapse all sections">Collapse All</button>
+              <button id="wp-add-unsectioned-comp-btn" class="btn btn-secondary btn-sm">
+                + Add Component
               </button>
-              <button id="wp-add-section-btn" class="btn-att-primary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add Section
+              <button id="wp-add-section-btn" class="btn btn-primary btn-sm">
+                + Add Section
               </button>
             </div>
           </div>
 
           <!-- Sections List -->
-          <div class="sections-list">
-            ${(project.sectionOrder || []).map((secId, idx) => this.renderSectionCard(project, secId, idx)).join('')}
+          <div class="sections-list" style="display: flex; flex-direction: column; gap: 16px;">
+            ${(project.sectionOrder || []).map((secId, idx) => this.renderSectionCard(project, secId, idx, activeFilter, searchFilter)).join('')}
 
             <!-- Unsectioned Components Section (if any) -->
             ${(project.unsectionedComponentOrder && project.unsectionedComponentOrder.length > 0) ? `
-              <div class="section-card">
-                <div class="section-card-header">
-                  <div class="section-header-left">
-                    <h3 class="section-title">Standalone / Unsectioned Components</h3>
-                    <span class="section-component-badge">${project.unsectionedComponentOrder.length}</span>
+              <div class="section-card" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; overflow: hidden;">
+                <div class="section-card-header" style="background: #FAFAFA; border-bottom: 1px solid #EFEFEF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
+                  <div class="section-header-left" style="display: flex; align-items: center; gap: 8px;">
+                    <h3 class="section-title" style="font-size: 1rem; font-weight: 700; margin: 0;">Unsectioned Components</h3>
+                    <span class="section-component-badge" style="background: #E4E7EC; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${project.unsectionedComponentOrder.length}</span>
+                  </div>
+                  <div>
+                    <button class="btn btn-secondary btn-sm" data-action="add-comp-unsectioned" style="padding: 3px 8px; font-size: 0.75rem;">+ Add Component</button>
                   </div>
                 </div>
-                <div class="section-card-body">
-                  ${project.unsectionedComponentOrder.map(cId => this.renderComponentRow(project, cId, null)).join('')}
+                <div class="section-card-body" style="padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;">
+                  ${project.unsectionedComponentOrder
+                    .filter(cId => this.matchesFilter(project.components?.[cId], activeFilter, searchFilter))
+                    .map((cId, idx) => this.renderComponentRow(project, cId, null, idx, project.unsectionedComponentOrder.length))
+                    .join('')}
                 </div>
               </div>
             ` : ''}
 
             ${(project.sectionOrder || []).length === 0 && (!project.unsectionedComponentOrder || project.unsectionedComponentOrder.length === 0) ? `
-              <div class="dashboard-empty-state">
-                <h3 class="empty-state-title">This project is currently empty</h3>
-                <p class="empty-state-subtitle">Start by creating a section to group your course modules or add a component directly.</p>
-                <div style="display:flex; justify-content:center; gap:12px;">
-                  <button id="wp-empty-add-sec-btn" class="btn-att-primary">Add First Section</button>
-                  <button id="wp-empty-add-comp-btn" class="btn-att-secondary">Add Component</button>
+              <div class="dashboard-empty-state" style="text-align: center; padding: 48px 24px; background: #ffffff; border: 1px dashed #DCDFE3; border-radius: 16px;">
+                <h3 class="empty-state-title" style="font-size: 1.25rem; font-weight: 700; margin: 0 0 8px 0;">This course project is currently empty</h3>
+                <p class="empty-state-subtitle" style="color: #666; margin: 0 0 20px 0;">Start by adding structured modules or individual interactive components.</p>
+                <div style="display: flex; justify-content: center; gap: 12px;">
+                  <button id="wp-empty-add-sec-btn" class="btn btn-primary">Add First Section</button>
+                  <button id="wp-empty-add-comp-btn" class="btn btn-secondary">Add Component</button>
                 </div>
               </div>
             ` : ''}
@@ -221,54 +244,72 @@ export class ProjectOverviewView {
         </main>
 
         <!-- Component Picker Modal -->
-        ${this.state.isPickerOpen ? this.renderComponentPicker() : ''}
+        ${this.state.isPickerOpen ? this.renderComponentPicker(project) : ''}
+
+        <!-- Component Details Preview Modal -->
+        ${this.state.previewDetailsComp ? this.renderDetailsModal(this.state.previewDetailsComp, project) : ''}
       </div>
     `;
 
     this.attachEventListeners();
   }
 
-  renderSectionCard(project, sectionId, index) {
+  matchesFilter(comp, activeFilter, searchFilter) {
+    if (!comp) return false;
+    if (activeFilter !== 'all' && (comp.status || 'draft') !== activeFilter) {
+      return false;
+    }
+    if (searchFilter) {
+      const matchName = comp.name.toLowerCase().includes(searchFilter);
+      const matchType = comp.type.toLowerCase().includes(searchFilter);
+      if (!matchName && !matchType) return false;
+    }
+    return true;
+  }
+
+  renderSectionCard(project, sectionId, index, activeFilter, searchFilter) {
     const section = project.sections?.[sectionId];
     if (!section) return '';
 
-    const compCount = (section.componentOrder || []).length;
+    const allCompIds = section.componentOrder || [];
+    const filteredCompIds = allCompIds.filter(cId => this.matchesFilter(project.components?.[cId], activeFilter, searchFilter));
     const isMenuOpen = this.state.activeMenuId === sectionId;
 
     return `
-      <div class="section-card" data-section-id="${sectionId}">
-        <div class="section-card-header" data-toggle-sec="${sectionId}">
-          <div class="section-header-left">
-            <svg class="section-toggle-icon ${section.collapsed ? 'collapsed' : ''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="section-card" data-section-id="${sectionId}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <div class="section-card-header" data-toggle-sec="${sectionId}" style="background: #FAFAFA; border-bottom: 1px solid #EFEFEF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+          <div class="section-header-left" style="display: flex; align-items: center; gap: 10px;">
+            <svg class="section-toggle-icon ${section.collapsed ? 'collapsed' : ''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s ease; transform: ${section.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-            <h3 class="section-title">${this.escapeHtml(section.name)}</h3>
-            <span class="section-component-badge">${compCount} ${compCount === 1 ? 'component' : 'components'}</span>
+            <h3 class="section-title" style="font-size: 1rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(section.name)}</h3>
+            <span class="section-component-badge" style="background: #E4E7EC; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${allCompIds.length} component${allCompIds.length === 1 ? '' : 's'}</span>
           </div>
 
-          <div class="section-header-right">
-            <button class="btn-att-secondary" data-action="add-comp-to-sec" data-sec-id="${sectionId}" style="padding: 4px 10px; font-size: 0.75rem;">
+          <div class="section-header-right" style="display: flex; align-items: center; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" data-action="add-comp-to-sec" data-sec-id="${sectionId}" style="padding: 3px 8px; font-size: 0.75rem;">
               + Add Component
             </button>
-            <button class="project-menu-btn" data-action="section-menu" data-sec-id="${sectionId}" aria-label="Section options">
+            <button class="project-menu-btn" data-action="section-menu" data-sec-id="${sectionId}" aria-label="Section options" style="width: 28px; height: 28px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
             </button>
           </div>
         </div>
 
-        <div class="section-card-body ${section.collapsed ? 'collapsed' : ''}">
-          ${compCount > 0 ? `
-            ${section.componentOrder.map(cId => this.renderComponentRow(project, cId, sectionId)).join('')}
+        <div class="section-card-body ${section.collapsed ? 'collapsed' : ''}" style="padding: 12px 16px; display: ${section.collapsed ? 'none' : 'flex'}; flex-direction: column; gap: 8px;">
+          ${filteredCompIds.length > 0 ? `
+            ${filteredCompIds.map((cId, idx) => this.renderComponentRow(project, cId, sectionId, idx, filteredCompIds.length)).join('')}
           ` : `
-            <div class="section-empty-hint">
-              No components in this section yet. Click "+ Add Component" to add your first interactive block.
+            <div class="section-empty-hint" style="font-size: 0.8125rem; color: #777; padding: 12px 8px;">
+              ${allCompIds.length === 0 ? 'No components in this section yet. Click "+ Add Component" to add your first interactive block.' : 'No components match the current filter.'}
             </div>
           `}
         </div>
 
         ${isMenuOpen ? `
-          <div class="project-action-menu" style="top: 40px; right: 24px;">
+          <div class="project-action-menu" style="top: 40px; right: 24px; position: absolute; z-index: 20; background: #fff; border: 1px solid #DCDFE3; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 4px 0; min-width: 150px;">
             <button class="project-menu-item" data-action="rename-sec" data-sec-id="${sectionId}">Rename Section</button>
+            <button class="project-menu-item" data-action="duplicate-sec" data-sec-id="${sectionId}">Duplicate Section</button>
             ${index > 0 ? `<button class="project-menu-item" data-action="move-sec-up" data-sec-id="${sectionId}">Move Up</button>` : ''}
             ${index < (project.sectionOrder.length - 1) ? `<button class="project-menu-item" data-action="move-sec-down" data-sec-id="${sectionId}">Move Down</button>` : ''}
             <button class="project-menu-item text-danger" data-action="delete-sec" data-sec-id="${sectionId}">Delete Section</button>
@@ -278,32 +319,49 @@ export class ProjectOverviewView {
     `;
   }
 
-  renderComponentRow(project, compId, sectionId) {
+  renderComponentRow(project, compId, sectionId, index, totalInGroup) {
     const comp = project.components?.[compId];
     if (!comp) return '';
 
     const isMenuOpen = this.state.activeMenuId === compId;
+    const registryEntry = COMPONENT_REGISTRY.find(r => r.id === comp.type);
+    const typeLabel = registryEntry?.name || comp.type;
+    const statusLabel = comp.status === 'ready' ? 'Ready' : comp.status === 'in_review' ? 'In Review' : 'Draft';
+    const statusClass = comp.status === 'ready' ? 'status-ready' : comp.status === 'in_review' ? 'status-review' : 'status-draft';
 
     return `
-      <div class="component-row" data-comp-id="${compId}">
-        <div class="component-row-left">
-          <span class="component-type-badge">${this.escapeHtml(comp.type)}</span>
-          <h4 class="component-name">${this.escapeHtml(comp.name)}</h4>
-          <span class="component-status-badge ${comp.status || 'draft'}">${(comp.status || 'draft').replace('_', ' ')}</span>
+      <div class="component-row" data-comp-id="${compId}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #FAFAFA; border: 1px solid #EAEAEA; border-radius: 8px; position: relative;">
+        <div class="component-row-left" style="display: flex; align-items: center; gap: 10px;">
+          <span class="component-drag-handle" title="Position in section" style="color: #999; font-size: 0.75rem; font-weight: 700;">#${index + 1}</span>
+          <span class="component-type-badge" style="font-size: 0.75rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 8px; border-radius: 4px;">${escapeHTML(typeLabel)}</span>
+          <h4 class="component-name" style="font-size: 0.875rem; font-weight: 600; color: #111; margin: 0;">${escapeHTML(comp.name)}</h4>
+          
+          <!-- Editorial Status Badge -->
+          <div class="editorial-status-dropdown-wrapper" style="display: inline-block;">
+            <select class="component-status-select ${statusClass}" data-action="change-status" data-comp-id="${compId}" style="font-size: 0.6875rem; font-weight: 700; padding: 2px 6px; border-radius: 12px; border: 1px solid #DCDFE3; cursor: pointer;">
+              <option value="draft" ${comp.status === 'draft' ? 'selected' : ''}>Draft</option>
+              <option value="in_review" ${comp.status === 'in_review' ? 'selected' : ''}>In Review</option>
+              <option value="ready" ${comp.status === 'ready' ? 'selected' : ''}>Ready</option>
+            </select>
+          </div>
         </div>
 
-        <div class="component-row-right">
-          <button class="component-edit-btn" data-action="edit-comp" data-comp-id="${compId}">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-            Edit
+        <div class="component-row-right" style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn btn-secondary btn-sm" data-action="edit-comp" data-comp-id="${compId}" style="padding: 3px 8px; font-size: 0.75rem;">
+            ✎ Edit
           </button>
-          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+          
+          <!-- Keyboard Move buttons -->
+          ${index > 0 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-up" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Up" style="padding: 2px 6px;">↑</button>` : ''}
+          ${index < totalInGroup - 1 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-down" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Down" style="padding: 2px 6px;">↓</button>` : ''}
+
+          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options" style="width: 26px; height: 26px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
           </button>
         </div>
 
         ${isMenuOpen ? `
-          <div class="project-action-menu" style="top: 36px; right: 16px;">
+          <div class="project-action-menu" style="top: 36px; right: 16px; position: absolute; z-index: 20; background: #fff; border: 1px solid #DCDFE3; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 4px 0; min-width: 140px;">
             <button class="project-menu-item" data-action="duplicate-comp" data-comp-id="${compId}">Duplicate</button>
             <button class="project-menu-item" data-action="rename-comp" data-comp-id="${compId}">Rename</button>
             <button class="project-menu-item text-danger" data-action="delete-comp" data-comp-id="${compId}" data-sec-id="${sectionId || ''}">Delete</button>
@@ -313,47 +371,158 @@ export class ProjectOverviewView {
     `;
   }
 
-  renderComponentPicker() {
+  renderComponentPicker(project) {
     let list = COMPONENT_REGISTRY || [];
-    if (this.state.pickerSearch.trim()) {
-      const q = this.state.pickerSearch.toLowerCase().trim();
-      list = list.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        (c.description && c.description.toLowerCase().includes(q)) ||
-        (c.category && c.category.toLowerCase().includes(q))
-      );
+    
+    // Category Filter
+    if (this.state.pickerCategory && this.state.pickerCategory !== 'all') {
+      list = list.filter(c => c.categoryId === this.state.pickerCategory || c.category === this.state.pickerCategory);
     }
 
+    // Search Query
+    if (this.state.pickerSearch.trim()) {
+      list = searchComponents(list, this.state.pickerSearch);
+    }
+
+    const sections = project.sections || {};
+    const sectionOrder = project.sectionOrder || [];
+
     return `
-      <div class="modal-overlay" id="picker-modal-overlay">
-        <div class="modal-card" style="max-width: 680px;">
-          <div class="modal-header">
-            <h2 class="modal-title">Select Component Type</h2>
+      <div class="modal-overlay is-active" id="picker-modal-overlay" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; padding: 20px;">
+        <div class="modal-card" style="max-width: 880px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); overflow: hidden;">
+          <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid #EAEAEA; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 class="modal-title" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Add Component to Course</h2>
+              <p style="font-size: 0.8125rem; color: #666; margin: 2px 0 0 0;">Choose an interactive block to add to your course project.</p>
+            </div>
             <button id="picker-close-btn" class="project-menu-btn" aria-label="Close modal">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
-          <div class="modal-body">
-            <input
-              id="picker-search-input"
-              class="form-input"
-              type="search"
-              placeholder="Search components (e.g. accordion, video, quiz)..."
-              value="${this.escapeHtml(this.state.pickerSearch)}"
-              autofocus
-            />
-            <div class="picker-grid">
+
+          <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+            <!-- Target Section Chooser & Search -->
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 240px;">
+                <input
+                  id="picker-search-input"
+                  class="form-input"
+                  type="search"
+                  placeholder="Search components by name, feature, or keyword…"
+                  value="${escapeHTML(this.state.pickerSearch)}"
+                  autofocus
+                />
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="picker-section-select" style="font-size: 0.8125rem; font-weight: 600; color: #444;">Add into:</label>
+                <select id="picker-section-select" class="form-select" style="padding: 6px 12px; font-size: 0.8125rem;">
+                  <option value="" ${!this.state.pickerTargetSectionId ? 'selected' : ''}>Unsectioned Area</option>
+                  ${sectionOrder.map(sId => `
+                    <option value="${sId}" ${this.state.pickerTargetSectionId === sId ? 'selected' : ''}>${escapeHTML(sections[sId]?.name || 'Section')}</option>
+                  `).join('')}
+                </select>
+              </div>
+            </div>
+
+            <!-- Category Filter Tabs -->
+            <div class="picker-category-tabs" style="display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #EFEFEF; padding-bottom: 10px;">
+              <button class="filter-chip ${this.state.pickerCategory === 'all' ? 'active' : ''}" data-picker-cat="all">All (${COMPONENT_REGISTRY.length})</button>
+              ${CATEGORIES.map(cat => {
+                const count = COMPONENT_REGISTRY.filter(c => c.categoryId === cat.id || c.category === cat.id).length;
+                return `
+                  <button class="filter-chip ${this.state.pickerCategory === cat.id ? 'active' : ''}" data-picker-cat="${cat.id}">
+                    ${escapeHTML(cat.name)} (${count})
+                  </button>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- Components Grid -->
+            <div class="picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px;">
               ${list.map(c => `
-                <div class="picker-item-card" data-comp-type="${c.id}">
-                  <span class="component-type-badge" style="align-self: flex-start;">${this.escapeHtml(c.category || 'Component')}</span>
-                  <h4 class="picker-item-title">${this.escapeHtml(c.name)}</h4>
-                  <p class="picker-item-desc">${this.escapeHtml(c.description || '')}</p>
+                <div class="picker-item-card" data-comp-type="${c.id}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span class="component-type-badge" style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
+                    ${c.tierLabel ? `<span class="component-tier-badge" style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.tierLabel)}</span>` : ''}
+                  </div>
+                  
+                  <h4 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h4>
+                  <p class="picker-item-desc" style="font-size: 0.8125rem; color: #555; margin: 0; flex: 1; line-height: 1.4;">${escapeHTML(c.description || '')}</p>
+
+                  ${c.differentiator ? `
+                    <div style="font-size: 0.6875rem; color: #007A3E; font-weight: 600; background: #E6F4EA; padding: 3px 6px; border-radius: 4px;">
+                      ✦ ${escapeHTML(c.differentiator)}
+                    </div>
+                  ` : ''}
+
+                  <div style="display: flex; gap: 8px; margin-top: 6px;">
+                    <button type="button" class="btn btn-secondary btn-sm" data-action="preview-picker-item" data-comp-type="${c.id}" style="flex: 1; padding: 4px 6px; font-size: 0.75rem;">
+                      Preview
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" data-action="select-picker-item" data-comp-type="${c.id}" style="flex: 1; padding: 4px 6px; font-size: 0.75rem;">
+                      + Add
+                    </button>
+                  </div>
                 </div>
               `).join('')}
+
+              ${list.length === 0 ? `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 32px 16px; color: #666;">
+                  <p>No components match your search. Try a different query or category.</p>
+                </div>
+              ` : ''}
             </div>
           </div>
-          <div class="modal-footer">
-            <button id="picker-cancel-btn" class="btn-att-secondary">Cancel</button>
+
+          <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid #EAEAEA; display: flex; justify-content: flex-end;">
+            <button id="picker-cancel-btn" class="btn btn-secondary btn-sm">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderDetailsModal(comp, project) {
+    return `
+      <div class="modal-overlay is-active" id="details-modal-overlay" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; padding: 20px;">
+        <div class="modal-card" style="max-width: 650px; width: 100%; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column;">
+          <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #EFEFEF; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.125rem; font-weight: 700;">${escapeHTML(comp.name)} Details</h3>
+            <button id="details-close-btn" class="project-menu-btn" aria-label="Close details">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+          <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: #333;">Description & Purpose</h4>
+              <p style="margin: 0; font-size: 0.8125rem; color: #555; line-height: 1.4;">${escapeHTML(comp.description)}</p>
+            </div>
+
+            ${comp.bestWhen ? `
+              <div>
+                <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: #333;">Best Use Cases</h4>
+                <p style="margin: 0; font-size: 0.8125rem; color: #555; line-height: 1.4;">${escapeHTML(comp.bestWhen)}</p>
+              </div>
+            ` : ''}
+
+            ${comp.differentiator ? `
+              <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 10px 14px; border-radius: 8px;">
+                <h4 style="margin: 0 0 2px 0; font-size: 0.8125rem; font-weight: 700; color: #15803D;">Why Choose This Custom Component:</h4>
+                <p style="margin: 0; font-size: 0.75rem; color: #166534;">${escapeHTML(comp.differentiator)}</p>
+              </div>
+            ` : ''}
+
+            ${comp.riseEquivalent ? `
+              <div>
+                <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: #333;">Rise Comparison</h4>
+                <p style="margin: 0; font-size: 0.8125rem; color: #555;">${escapeHTML(comp.riseEquivalent)}</p>
+              </div>
+            ` : ''}
+          </div>
+          <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid #EFEFEF; display: flex; justify-content: flex-end; gap: 8px;">
+            <button id="details-cancel-btn" class="btn btn-secondary btn-sm">Close</button>
+            <button id="details-add-btn" class="btn btn-primary btn-sm" data-comp-type="${comp.id}">+ Add Component</button>
           </div>
         </div>
       </div>
@@ -395,6 +564,39 @@ export class ProjectOverviewView {
       }
     });
 
+    // Course structure search & filter
+    const csSearchInput = this.container.querySelector('#cs-search-input');
+    if (csSearchInput) {
+      csSearchInput.addEventListener('input', (e) => {
+        this.state.courseStructureSearch = e.target.value;
+        this.render();
+      });
+    }
+
+    this.container.querySelectorAll('[data-cs-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.state.courseStructureFilter = btn.dataset.csFilter;
+        this.render();
+      });
+    });
+
+    // Expand all / Collapse all sections
+    this.container.querySelector('#wp-expand-all-btn')?.addEventListener('click', () => {
+      this.updateProject(p => {
+        for (const s of Object.values(p.sections || {})) {
+          s.collapsed = false;
+        }
+      });
+    });
+
+    this.container.querySelector('#wp-collapse-all-btn')?.addEventListener('click', () => {
+      this.updateProject(p => {
+        for (const s of Object.values(p.sections || {})) {
+          s.collapsed = true;
+        }
+      });
+    });
+
     // Add Section button
     const addSectionHandler = async () => {
       const name = await showPromptDialog({
@@ -426,6 +628,7 @@ export class ProjectOverviewView {
 
     this.container.querySelector('#wp-add-unsectioned-comp-btn')?.addEventListener('click', () => openPickerHandler(null));
     this.container.querySelector('#wp-empty-add-comp-btn')?.addEventListener('click', () => openPickerHandler(null));
+    this.container.querySelector('[data-action="add-comp-unsectioned"]')?.addEventListener('click', () => openPickerHandler(null));
 
     this.container.querySelectorAll('[data-action="add-comp-to-sec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -473,6 +676,41 @@ export class ProjectOverviewView {
         if (newName && newName.trim()) {
           this.updateProject(p => { p.sections[secId].name = newName.trim(); });
         }
+      });
+    });
+
+    this.container.querySelectorAll('[data-action="duplicate-sec"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const secId = btn.dataset.secId;
+        const project = this.getProject();
+        const sec = project.sections?.[secId];
+        if (!sec) return;
+
+        const newSec = createSection({
+          name: `${sec.name} (Copy)`,
+          description: sec.description
+        });
+
+        // Duplicate components in this section
+        const newCompIds = [];
+        const newComps = {};
+        for (const cId of sec.componentOrder || []) {
+          const comp = project.components?.[cId];
+          if (comp) {
+            const dup = createComponentInstance({ ...comp, id: null, name: `${comp.name} Copy` });
+            newComps[dup.id] = dup;
+            newCompIds.push(dup.id);
+          }
+        }
+        newSec.componentOrder = newCompIds;
+
+        this.updateProject(p => {
+          p.sections[newSec.id] = newSec;
+          Object.assign(p.components, newComps);
+          const idx = p.sectionOrder.indexOf(secId);
+          p.sectionOrder.splice(idx + 1, 0, newSec.id);
+        });
       });
     });
 
@@ -544,6 +782,55 @@ export class ProjectOverviewView {
       });
     });
 
+    // Component Status Change select
+    this.container.querySelectorAll('[data-action="change-status"]').forEach(select => {
+      select.addEventListener('change', (e) => {
+        e.stopPropagation();
+        const compId = select.dataset.compId;
+        const newStatus = select.value;
+        this.updateProject(p => {
+          if (p.components?.[compId]) {
+            p.components[compId].status = newStatus;
+          }
+        });
+      });
+    });
+
+    // Component Move Up / Move Down
+    this.container.querySelectorAll('[data-action="move-comp-up"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const compId = btn.dataset.compId;
+        const secId = btn.dataset.secId;
+        this.updateProject(p => {
+          const order = secId && p.sections?.[secId] ? p.sections[secId].componentOrder : p.unsectionedComponentOrder;
+          const idx = order.indexOf(compId);
+          if (idx > 0) {
+            const temp = order[idx - 1];
+            order[idx - 1] = compId;
+            order[idx] = temp;
+          }
+        });
+      });
+    });
+
+    this.container.querySelectorAll('[data-action="move-comp-down"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const compId = btn.dataset.compId;
+        const secId = btn.dataset.secId;
+        this.updateProject(p => {
+          const order = secId && p.sections?.[secId] ? p.sections[secId].componentOrder : p.unsectionedComponentOrder;
+          const idx = order.indexOf(compId);
+          if (idx < order.length - 1) {
+            const temp = order[idx + 1];
+            order[idx + 1] = compId;
+            order[idx] = temp;
+          }
+        });
+      });
+    });
+
     // Component Action Menus
     this.container.querySelectorAll('[data-action="comp-menu"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -589,7 +876,6 @@ export class ProjectOverviewView {
 
         this.updateProject(p => {
           p.components[dup.id] = dup;
-          // Place in same section or unsectioned
           let placed = false;
           for (const sec of Object.values(p.sections || {})) {
             if (sec.componentOrder && sec.componentOrder.includes(compId)) {
@@ -615,30 +901,30 @@ export class ProjectOverviewView {
         const comp = project.components?.[compId];
         const ok = await showConfirmDialog({
           title: 'Delete Component',
-          message: `Are you sure you want to delete "${comp?.name}"?`,
-          confirmText: 'Delete Component',
+          message: `Are you sure you want to delete "${comp?.name || 'this component'}"?`,
+          confirmText: 'Delete',
           isDanger: true
         });
         if (ok) {
           this.updateProject(p => {
-            delete p.components[compId];
-            if (secId && p.sections?.[secId]?.componentOrder) {
-              p.sections[secId].componentOrder = p.sections[secId].componentOrder.filter(id => id !== compId);
-            }
-            if (p.unsectionedComponentOrder) {
+            if (secId && p.sections?.[secId]) {
+              p.sections[secId].componentOrder = (p.sections[secId].componentOrder || []).filter(id => id !== compId);
+            } else if (p.unsectionedComponentOrder) {
               p.unsectionedComponentOrder = p.unsectionedComponentOrder.filter(id => id !== compId);
             }
+            delete p.components[compId];
           });
         }
       });
     });
 
-    // Picker Modal events
+    // Modal Picker handlers
     if (this.state.isPickerOpen) {
       const modalOverlay = this.container.querySelector('#picker-modal-overlay');
       const closeBtn = this.container.querySelector('#picker-close-btn');
       const cancelBtn = this.container.querySelector('#picker-cancel-btn');
       const searchInput = this.container.querySelector('#picker-search-input');
+      const sectionSelect = this.container.querySelector('#picker-section-select');
 
       const closePicker = () => {
         this.state.isPickerOpen = false;
@@ -660,15 +946,99 @@ export class ProjectOverviewView {
         });
       }
 
-      this.container.querySelectorAll('.picker-item-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const type = card.dataset.compType;
-          const regEntry = COMPONENT_REGISTRY.find(r => r.id === type);
+      if (sectionSelect) {
+        sectionSelect.addEventListener('change', (e) => {
+          this.state.pickerTargetSectionId = e.target.value || null;
+        });
+      }
+
+      this.container.querySelectorAll('[data-picker-cat]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.state.pickerCategory = btn.dataset.pickerCat;
+          this.render();
+        });
+      });
+
+      this.container.querySelectorAll('[data-action="preview-picker-item"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const compType = btn.dataset.compType;
+          this.state.previewDetailsComp = getComponentById(COMPONENT_REGISTRY, compType);
+          this.render();
+        });
+      });
+
+      const handleAddComponent = (type) => {
+        const regEntry = getComponentById(COMPONENT_REGISTRY, type);
+        const defaultCfg = regEntry ? getDefaultConfig(regEntry) : {};
+
+        const newComp = createComponentInstance({
+          name: regEntry?.name || 'New Component',
+          type,
+          status: 'draft',
+          config: defaultCfg
+        });
+
+        const targetSecId = this.state.pickerTargetSectionId;
+        this.updateProject(p => {
+          if (!p.components) p.components = {};
+          p.components[newComp.id] = newComp;
+          if (targetSecId && p.sections?.[targetSecId]) {
+            if (!p.sections[targetSecId].componentOrder) p.sections[targetSecId].componentOrder = [];
+            p.sections[targetSecId].componentOrder.push(newComp.id);
+          } else {
+            if (!p.unsectionedComponentOrder) p.unsectionedComponentOrder = [];
+            p.unsectionedComponentOrder.push(newComp.id);
+          }
+        });
+
+        this.state.isPickerOpen = false;
+        this.state.previewDetailsComp = null;
+        this.render();
+
+        if (this.onEditComponent) {
+          this.onEditComponent(this.getProject(), newComp);
+        }
+      };
+
+      this.container.querySelectorAll('[data-action="select-picker-item"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleAddComponent(btn.dataset.compType);
+        });
+      });
+    }
+
+    // Component details modal handlers
+    if (this.state.previewDetailsComp) {
+      const detailsOverlay = this.container.querySelector('#details-modal-overlay');
+      const detailsCloseBtn = this.container.querySelector('#details-close-btn');
+      const detailsCancelBtn = this.container.querySelector('#details-cancel-btn');
+      const detailsAddBtn = this.container.querySelector('#details-add-btn');
+
+      const closeDetails = () => {
+        this.state.previewDetailsComp = null;
+        this.render();
+      };
+
+      if (detailsCloseBtn) detailsCloseBtn.addEventListener('click', closeDetails);
+      if (detailsCancelBtn) detailsCancelBtn.addEventListener('click', closeDetails);
+      if (detailsOverlay) {
+        detailsOverlay.addEventListener('click', (e) => {
+          if (e.target === detailsOverlay) closeDetails();
+        });
+      }
+
+      if (detailsAddBtn) {
+        detailsAddBtn.addEventListener('click', () => {
+          const type = detailsAddBtn.dataset.compType;
+          const regEntry = getComponentById(COMPONENT_REGISTRY, type);
           const defaultCfg = regEntry ? getDefaultConfig(regEntry) : {};
 
           const newComp = createComponentInstance({
             name: regEntry?.name || 'New Component',
             type,
+            status: 'draft',
             config: defaultCfg
           });
 
@@ -686,24 +1056,14 @@ export class ProjectOverviewView {
           });
 
           this.state.isPickerOpen = false;
+          this.state.previewDetailsComp = null;
           this.render();
 
-          // Immediately open editor for newly added component
           if (this.onEditComponent) {
             this.onEditComponent(this.getProject(), newComp);
           }
         });
-      });
+      }
     }
-  }
-
-  escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
   }
 }

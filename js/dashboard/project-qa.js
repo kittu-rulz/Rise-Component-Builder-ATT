@@ -191,6 +191,11 @@ export class ProjectQaView {
     this.projectId = projectId;
     this.onBack = onBack;
     this.onEditComponent = onEditComponent;
+
+    this.state = {
+      filterSeverity: 'all', // 'all' | 'blocker' | 'error' | 'warning' | 'recommendation' | 'passed'
+      searchQuery: ''
+    };
   }
 
   mount() {
@@ -219,6 +224,31 @@ export class ProjectQaView {
     const project = getProject(this.projectId);
     const audit = auditCourseProject(project || {});
 
+    // Filter reports based on active severity and search query
+    let filteredReports = audit.componentReports;
+
+    if (this.state.searchQuery.trim()) {
+      const q = this.state.searchQuery.toLowerCase();
+      filteredReports = filteredReports.filter(cr => {
+        const nameMatch = cr.component.name?.toLowerCase().includes(q);
+        const typeMatch = cr.component.type?.toLowerCase().includes(q);
+        const issueMatch = cr.issues.some(iss => iss.title.toLowerCase().includes(q) || iss.message.toLowerCase().includes(q));
+        return nameMatch || typeMatch || issueMatch;
+      });
+    }
+
+    if (this.state.filterSeverity === 'blocker') {
+      filteredReports = filteredReports.filter(cr => cr.issues.some(i => i.severity === 'blocker'));
+    } else if (this.state.filterSeverity === 'error') {
+      filteredReports = filteredReports.filter(cr => cr.issues.some(i => i.severity === 'error'));
+    } else if (this.state.filterSeverity === 'warning') {
+      filteredReports = filteredReports.filter(cr => cr.issues.some(i => i.severity === 'warning'));
+    } else if (this.state.filterSeverity === 'recommendation') {
+      filteredReports = filteredReports.filter(cr => cr.issues.some(i => i.severity === 'recommendation'));
+    } else if (this.state.filterSeverity === 'passed') {
+      filteredReports = filteredReports.filter(cr => cr.issues.length === 0 || cr.issues.every(i => i.severity === 'recommendation'));
+    }
+
     this.container.innerHTML = `
       <div class="project-workspace-view">
         <header class="workspace-header">
@@ -230,7 +260,12 @@ export class ProjectQaView {
               ${this.escapeHtml(project?.name || 'Project')}
             </button>
             <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-current">Course QA Audit</span>
+            <span class="breadcrumb-current">Course Quality & Compliance QA</span>
+          </div>
+          <div class="workspace-header-actions">
+            <button id="qa-return-structure-btn" class="btn-att-secondary">
+              Back to Course Structure
+            </button>
           </div>
         </header>
 
@@ -240,10 +275,10 @@ export class ProjectQaView {
               <h2 class="workspace-title">Course Quality & Compliance Audit</h2>
               <p class="workspace-desc">
                 Technical checks: <strong>${audit.technicalScore}% passed</strong> · 
-                Editorial status: <strong>${audit.editorial.draftCount} in Draft</strong>, <strong>${audit.editorial.readyCount} Ready</strong> · 
+                Editorial status: <strong>${audit.editorial.readyCount} Ready</strong>, <strong>${audit.editorial.inReviewCount} In Review</strong>, <strong>${audit.editorial.draftCount} Draft</strong> · 
                 Overall: <strong>${audit.overallStatus}</strong>
               </p>
-              <div style="margin-top: 8px; font-size: 0.8125rem; color: #555555; display: flex; gap: 16px; flex-wrap: wrap;">
+              <div style="margin-top: 10px; font-size: 0.8125rem; color: #555555; display: flex; gap: 14px; flex-wrap: wrap;">
                 <span>🛑 <strong>${audit.counts.blockers}</strong> blockers</span>
                 <span>⚠️ <strong>${audit.counts.errors}</strong> errors</span>
                 <span>📋 <strong>${audit.counts.warnings}</strong> warnings</span>
@@ -261,43 +296,73 @@ export class ProjectQaView {
             </div>
           </div>
 
+          <!-- Controls: Severity Filter Chips + Search Filter -->
+          <div class="dashboard-controls" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div class="dashboard-filters-group" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="filter-chip ${this.state.filterSeverity === 'all' ? 'active' : ''}" data-sev="all">
+                All Components (${audit.componentReports.length})
+              </button>
+              <button class="filter-chip ${this.state.filterSeverity === 'blocker' ? 'active' : ''}" data-sev="blocker" style="${audit.counts.blockers > 0 ? 'color: #D32F2F; font-weight: 700;' : ''}">
+                🛑 Blockers (${audit.counts.blockers})
+              </button>
+              <button class="filter-chip ${this.state.filterSeverity === 'error' ? 'active' : ''}" data-sev="error">
+                ⚠️ Errors (${audit.counts.errors})
+              </button>
+              <button class="filter-chip ${this.state.filterSeverity === 'warning' ? 'active' : ''}" data-sev="warning">
+                📋 Warnings (${audit.counts.warnings})
+              </button>
+              <button class="filter-chip ${this.state.filterSeverity === 'recommendation' ? 'active' : ''}" data-sev="recommendation">
+                💡 Suggestions (${audit.counts.recommendations})
+              </button>
+              <button class="filter-chip ${this.state.filterSeverity === 'passed' ? 'active' : ''}" data-sev="passed">
+                ✅ Passed Checks
+              </button>
+            </div>
+
+            <div class="dashboard-search-wrap" style="width: 260px;">
+              <input type="text" id="qa-search-input" class="dashboard-search-input" placeholder="Search audited checks..." value="${this.escapeHtml(this.state.searchQuery)}" style="width: 100%;" />
+            </div>
+          </div>
+
           <div class="sections-list">
-            ${audit.componentReports.length > 0 ? audit.componentReports.map(item => `
-              <div class="section-card">
-                <div class="section-card-header">
-                  <div class="section-header-left">
+            ${filteredReports.length > 0 ? filteredReports.map(item => `
+              <div class="section-card" style="margin-bottom: 16px;">
+                <div class="section-card-header" style="background: var(--att-grey-1, #F8F9FA); padding: 14px 20px; border-bottom: 1px solid var(--att-border, #E5E7EB); display: flex; justify-content: space-between; align-items: center;">
+                  <div class="section-header-left" style="display: flex; align-items: center; gap: 12px;">
                     <span class="component-type-badge">${this.escapeHtml(item.component.type)}</span>
-                    <h3 class="section-title">${this.escapeHtml(item.component.name)}</h3>
-                    <span class="component-status-pill ${item.component.status === 'ready' ? 'status-ready' : 'status-draft'}">
+                    <h3 class="section-title" style="margin: 0; font-size: 1.05rem;">${this.escapeHtml(item.component.name)}</h3>
+                    <span class="component-status-pill ${item.component.status === 'ready' ? 'status-ready' : item.component.status === 'in-review' ? 'status-in-progress' : 'status-draft'}">
                       ${this.escapeHtml(item.component.status || 'draft')}
                     </span>
                   </div>
-                  <button class="component-edit-btn" data-action="edit-audited" data-comp-id="${item.component.id}">
-                    Fix in Editor
+                  <button class="btn-att-secondary" data-action="edit-audited" data-comp-id="${item.component.id}" title="Edit ${this.escapeHtml(item.component.name)} in Single Component Builder" style="font-size: 0.8125rem; padding: 6px 14px;">
+                    Open ${this.escapeHtml(item.component.name)}
                   </button>
                 </div>
-                <div class="section-card-body">
+                <div class="section-card-body" style="padding: 16px 20px;">
                   ${item.issues.length > 0 ? item.issues.map(iss => `
-                    <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.875rem; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px; font-size: 0.875rem; margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; ${this.getSeverityRowStyle(iss.severity)}">
                       <span style="font-weight: 700; text-transform: uppercase; font-size: 11px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; ${this.getSeverityBadgeStyle(iss.severity)}">
                         ${iss.severity}
                       </span>
-                      <div>
-                        <strong>${this.escapeHtml(iss.title)}:</strong>
-                        <span style="color: #444444;">${this.escapeHtml(iss.message)}</span>
+                      <div style="flex: 1;">
+                        <strong style="color: var(--att-heading-contrast, #111);">${this.escapeHtml(iss.title)}:</strong>
+                        <span style="color: var(--att-text, #333); margin-left: 4px;">${this.escapeHtml(iss.message)}</span>
+                        ${iss.preventsExport ? `<span style="display: block; font-size: 0.75rem; color: #D32F2F; font-weight: 600; margin-top: 2px;">🛑 Prevents package export</span>` : ''}
                       </div>
                     </div>
                   `).join('') : `
-                    <p style="margin: 0; font-size: 0.875rem; color: #10B981; display: flex; align-items: center; gap: 6px;">
-                      <span>✓</span> All quality and metadata checks pass.
+                    <p style="margin: 0; font-size: 0.875rem; color: #10B981; display: flex; align-items: center; gap: 8px; font-weight: 500;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      All technical, content, and metadata quality checks pass.
                     </p>
                   `}
                 </div>
               </div>
             `).join('') : `
               <div class="dashboard-empty-state">
-                <h3 class="empty-state-title" style="color: #2E7D32;">All components pass quality checks!</h3>
-                <p class="empty-state-subtitle">No missing titles, content errors, or broken configurations were found across this course.</p>
+                <h3 class="empty-state-title" style="color: #2E7D32;">No components match the selected QA filter!</h3>
+                <p class="empty-state-subtitle">Adjust your filter chips or search query above to review other findings.</p>
               </div>
             `}
           </div>
@@ -306,6 +371,21 @@ export class ProjectQaView {
     `;
 
     this.attachEventListeners();
+  }
+
+  getSeverityRowStyle(severity) {
+    switch (severity) {
+      case 'blocker':
+        return 'background: rgba(224, 88, 77, 0.05); border-left: 3px solid #D32F2F;';
+      case 'error':
+        return 'background: rgba(216, 67, 21, 0.05); border-left: 3px solid #D84315;';
+      case 'warning':
+        return 'background: rgba(245, 127, 23, 0.05); border-left: 3px solid #F57F17;';
+      case 'recommendation':
+        return 'background: rgba(2, 119, 189, 0.05); border-left: 3px solid #0277BD;';
+      default:
+        return 'background: rgba(46, 125, 50, 0.05); border-left: 3px solid #2E7D32;';
+    }
   }
 
   getSeverityBadgeStyle(severity) {
@@ -327,6 +407,31 @@ export class ProjectQaView {
     this.container.querySelector('#qa-back-btn')?.addEventListener('click', () => {
       if (this.onBack) this.onBack();
     });
+
+    this.container.querySelector('#qa-return-structure-btn')?.addEventListener('click', () => {
+      if (this.onBack) this.onBack();
+    });
+
+    this.container.querySelectorAll('.filter-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.state.filterSeverity = btn.dataset.sev || 'all';
+        this.render();
+      });
+    });
+
+    const searchInput = this.container.querySelector('#qa-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.state.searchQuery = e.target.value;
+        this.render();
+        // Restore focus to search input
+        const newSearch = this.container.querySelector('#qa-search-input');
+        if (newSearch) {
+          newSearch.focus();
+          newSearch.setSelectionRange(newSearch.value.length, newSearch.value.length);
+        }
+      });
+    }
 
     this.container.querySelectorAll('[data-action="edit-audited"]').forEach(btn => {
       btn.addEventListener('click', () => {
