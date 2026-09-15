@@ -870,11 +870,35 @@ export function searchComponents(registry, query, categories = CATEGORIES, class
   );
 }
 
+export function normalizeComponentType(idOrAlias) {
+  if (!idOrAlias) return 'accordion';
+  const entry = getComponentById(COMPONENT_REGISTRY, idOrAlias);
+  return entry ? entry.id : String(idOrAlias).trim().toLowerCase();
+}
+
 export function getDefaultConfig(entry) {
   return structuredClone({ ...entry.defaultDesign, ...entry.defaultBehaviour, ...entry.defaultContent });
 }
 
-export const COMPONENT_MODULES = Object.fromEntries(
-  COMPONENT_REGISTRY.map(entry => [entry.id, { ...entry.renderer, validate: entry.validate, version: entry.version }])
-);
+// Canonical modules mapping indexed by canonical ID with Proxy alias fallback
+const baseModuleMap = {};
+for (const entry of COMPONENT_REGISTRY) {
+  baseModuleMap[entry.id] = { ...entry.renderer, validate: entry.validate, version: entry.version };
+}
+
+export const COMPONENT_MODULES = new Proxy(baseModuleMap, {
+  get(target, prop) {
+    if (typeof prop === 'string') {
+      if (prop in target) return target[prop];
+      const canonical = normalizeComponentType(prop);
+      if (canonical in target) return target[canonical];
+    }
+    return target[prop];
+  }
+});
+
+export function getComponentModule(id) {
+  const canonical = normalizeComponentType(id);
+  return COMPONENT_MODULES[canonical] || COMPONENT_MODULES[id] || null;
+}
 

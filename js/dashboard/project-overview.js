@@ -188,6 +188,7 @@ export class ProjectOverviewView {
                 id="cs-search-input" 
                 class="form-input" 
                 placeholder="Filter components in course…" 
+                aria-label="Search components in course structure"
                 value="${escapeHTML(this.state.courseStructureSearch)}"
                 style="padding: 4px 10px; font-size: 0.8125rem; width: 200px;"
               />
@@ -326,7 +327,6 @@ export class ProjectOverviewView {
     const isMenuOpen = this.state.activeMenuId === compId;
     const registryEntry = COMPONENT_REGISTRY.find(r => r.id === comp.type);
     const typeLabel = registryEntry?.name || comp.type;
-    const statusLabel = comp.status === 'ready' ? 'Ready' : comp.status === 'in_review' ? 'In Review' : 'Draft';
     const statusClass = comp.status === 'ready' ? 'status-ready' : comp.status === 'in_review' ? 'status-review' : 'status-draft';
 
     return `
@@ -338,7 +338,7 @@ export class ProjectOverviewView {
           
           <!-- Editorial Status Badge -->
           <div class="editorial-status-dropdown-wrapper" style="display: inline-block;">
-            <select class="component-status-select ${statusClass}" data-action="change-status" data-comp-id="${compId}" style="font-size: 0.6875rem; font-weight: 700; padding: 2px 6px; border-radius: 12px; border: 1px solid #DCDFE3; cursor: pointer;">
+            <select class="component-status-select ${statusClass}" data-action="change-status" data-comp-id="${compId}" aria-label="Status for ${escapeHTML(comp.name)}" style="font-size: 0.6875rem; font-weight: 700; padding: 2px 6px; border-radius: 12px; border: 1px solid #DCDFE3; cursor: pointer;">
               <option value="draft" ${comp.status === 'draft' ? 'selected' : ''}>Draft</option>
               <option value="in_review" ${comp.status === 'in_review' ? 'selected' : ''}>In Review</option>
               <option value="ready" ${comp.status === 'ready' ? 'selected' : ''}>Ready</option>
@@ -388,14 +388,14 @@ export class ProjectOverviewView {
     const sectionOrder = project.sectionOrder || [];
 
     return `
-      <div class="modal-overlay is-active" id="picker-modal-overlay" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; padding: 20px;">
+      <div class="modal-overlay is-active" id="picker-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; padding: 20px;">
         <div class="modal-card" style="max-width: 880px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); overflow: hidden;">
           <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid #EAEAEA; display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <h2 class="modal-title" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Add Component to Course</h2>
+              <h2 id="picker-modal-title" class="modal-title" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Add Component to Course</h2>
               <p style="font-size: 0.8125rem; color: #666; margin: 2px 0 0 0;">Choose an interactive block to add to your course project.</p>
             </div>
-            <button id="picker-close-btn" class="project-menu-btn" aria-label="Close modal">
+            <button id="picker-close-btn" class="project-menu-btn" aria-label="Close component picker">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
@@ -409,6 +409,7 @@ export class ProjectOverviewView {
                   class="form-input"
                   type="search"
                   placeholder="Search components by name, feature, or keyword…"
+                  aria-label="Search components in picker"
                   value="${escapeHTML(this.state.pickerSearch)}"
                   autofocus
                 />
@@ -416,11 +417,11 @@ export class ProjectOverviewView {
 
               <div style="display: flex; align-items: center; gap: 8px;">
                 <label for="picker-section-select" style="font-size: 0.8125rem; font-weight: 600; color: #444;">Add into:</label>
-                <select id="picker-section-select" class="form-select" style="padding: 6px 12px; font-size: 0.8125rem;">
-                  <option value="" ${!this.state.pickerTargetSectionId ? 'selected' : ''}>Unsectioned Area</option>
+                <select id="picker-section-select" class="form-select" aria-label="Destination section" style="padding: 6px 12px; font-size: 0.8125rem;">
                   ${sectionOrder.map(sId => `
                     <option value="${sId}" ${this.state.pickerTargetSectionId === sId ? 'selected' : ''}>${escapeHTML(sections[sId]?.name || 'Section')}</option>
                   `).join('')}
+                  <option value="" ${!this.state.pickerTargetSectionId ? 'selected' : ''}>Unsectioned Area (Standalone)</option>
                 </select>
               </div>
             </div>
@@ -439,29 +440,37 @@ export class ProjectOverviewView {
             </div>
 
             <!-- Components Grid -->
-            <div class="picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px;">
+            <div class="picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
               ${list.map(c => `
-                <div class="picker-item-card" data-comp-type="${c.id}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                <div class="picker-item-card" data-comp-type="${c.id}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
                   <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <span class="component-type-badge" style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="picker-item-thumbnail" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 56, 143, 0.08); display: flex; align-items: center; justify-content: center; color: var(--att-cobalt, #00388F);">
+                        ${c.icon || '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>'}
+                      </div>
+                      <div>
+                        <h4 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h4>
+                        <span class="component-type-badge" style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 5px; border-radius: 4px;">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
+                      </div>
+                    </div>
                     ${c.tierLabel ? `<span class="component-tier-badge" style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.tierLabel)}</span>` : ''}
                   </div>
                   
-                  <h4 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h4>
-                  <p class="picker-item-desc" style="font-size: 0.8125rem; color: #555; margin: 0; flex: 1; line-height: 1.4;">${escapeHTML(c.description || '')}</p>
+                  <p class="picker-item-desc" style="font-size: 0.8125rem; color: #555; margin: 0; line-height: 1.45;" title="${escapeHTML(c.description || '')}">
+                    ${escapeHTML(c.description || '')}
+                  </p>
 
-                  ${c.differentiator ? `
-                    <div style="font-size: 0.6875rem; color: #007A3E; font-weight: 600; background: #E6F4EA; padding: 3px 6px; border-radius: 4px;">
-                      ✦ ${escapeHTML(c.differentiator)}
-                    </div>
-                  ` : ''}
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    <span class="picker-card-chip" style="font-size: 0.6875rem; background: #E8F5E9; color: #2E7D32; padding: 2px 6px; border-radius: 4px; font-weight: 600;">WCAG 2.2 AA</span>
+                    ${c.complexity ? `<span class="picker-card-chip" style="font-size: 0.6875rem; background: #F3F4F5; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.complexity)}</span>` : ''}
+                  </div>
 
-                  <div style="display: flex; gap: 8px; margin-top: 6px;">
-                    <button type="button" class="btn btn-secondary btn-sm" data-action="preview-picker-item" data-comp-type="${c.id}" style="flex: 1; padding: 4px 6px; font-size: 0.75rem;">
-                      Preview
+                  <div style="margin-top: auto; display: flex; gap: 8px; pt: 4px;">
+                    <button class="btn btn-secondary btn-sm" data-action="preview-picker-item" data-comp-type="${c.id}" style="flex: 1; font-size: 0.75rem;">
+                      Details &amp; Preview
                     </button>
-                    <button type="button" class="btn btn-primary btn-sm" data-action="select-picker-item" data-comp-type="${c.id}" style="flex: 1; padding: 4px 6px; font-size: 0.75rem;">
-                      + Add
+                    <button class="btn btn-primary btn-sm" data-action="select-picker-item" data-comp-type="${c.id}" style="flex: 1; font-size: 0.75rem;">
+                      + Add Block
                     </button>
                   </div>
                 </div>
@@ -483,7 +492,7 @@ export class ProjectOverviewView {
     `;
   }
 
-  renderDetailsModal(comp, project) {
+  renderDetailsModal(comp, _project) {
     return `
       <div class="modal-overlay is-active" id="details-modal-overlay" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; padding: 20px;">
         <div class="modal-card" style="max-width: 650px; width: 100%; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column;">

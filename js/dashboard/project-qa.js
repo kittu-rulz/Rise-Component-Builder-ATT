@@ -93,7 +93,10 @@ export function auditCourseProject(project) {
 
     // 4. Blank Item Titles Check
     if (items.length > 0) {
-      const emptyTitles = items.filter(item => !item.title || !String(item.title).trim());
+      const emptyTitles = items.filter(item => {
+        const titleVal = item.title || item.label || item.text || item.prompt || item.heading || item.name;
+        return !titleVal || !String(titleVal).trim();
+      });
       if (emptyTitles.length > 0) {
         compIssues.push({
           severity: 'error',
@@ -110,7 +113,7 @@ export function auditCourseProject(project) {
     }
 
     // 5. Block Header Check
-    if (!cfg.blockTitle && !cfg.blockHeadline) {
+    if (!cfg.blockTitle && !cfg.blockHeadline && !cfg.title && !cfg.headline) {
       compIssues.push({
         severity: 'recommendation',
         category: 'Structure',

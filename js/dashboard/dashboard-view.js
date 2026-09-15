@@ -13,7 +13,7 @@ import {
 import { showPromptDialog, showConfirmDialog } from './att-modal.js';
 
 export class DashboardView {
-  constructor({ container, onOpenProject, onCreateNewComponent }) {
+  constructor({ container = null, onOpenProject = null, onCreateNewComponent = null } = {}) {
     this.container = container;
     this.onOpenProject = onOpenProject;
     this.onCreateNewComponent = onCreateNewComponent;
@@ -505,57 +505,68 @@ export class DashboardView {
 
   createNewProjectFromTemplate({ name, client, desc, template }) {
     if (template === 'standard') {
-      const sec1 = createSection({ name: 'Module 1: Introduction', description: 'Foundational concepts and course overview' });
-      const sec2 = createSection({ name: 'Module 2: Deep Dive', description: 'Core technical pillars and deep exploration' });
-      const sec3 = createSection({ name: 'Module 3: Assessment', description: 'Interactive knowledge check and synthesis' });
+      const sec1 = createSection({ name: 'Module 1: Fiber Deployment', description: 'Foundational concepts and physical infrastructure rollout' });
+      const sec2 = createSection({ name: 'Module 2: 5G Architecture', description: 'Core technical pillars, RAN, and mobile edge topology' });
+      const sec3 = createSection({ name: 'Module 3: Compliance & Safety', description: 'Interactive knowledge check and optical safety standards' });
 
       const comp1 = createComponentInstance({
-        name: 'Overview Accordion',
+        name: 'Fiber Deployment Process',
         type: 'accordion',
         status: 'draft',
         config: {
-          title: 'Module 1: Introduction to Course Foundations',
-          description: 'Explore the core principles and learning objectives.',
+          blockTitle: 'Fiber Network Deployment',
+          blockHeadline: 'Enterprise Fiber Rollout',
+          blockSubtext: 'Explore the key technical phases and engineering standards for enterprise fiber optic deployment.',
+          title: 'Fiber Network Deployment',
+          description: 'Explore the key technical phases and engineering standards for enterprise fiber optic deployment.',
           accordionMulti: true,
           accordionAnimation: true,
           iconStyle: 'chevron',
           items: [
-            { title: 'Understanding User Intent & Objectives', content: 'Instructional design begins by identifying core learning objectives and alignment with business outcomes.' },
-            { title: 'Designing for Modern Engagement', content: 'Modern eLearning relies on micro-interactions, clean visual layouts, and bite-sized chunks of information.' },
-            { title: 'SCORM and Tracking Analytics', content: 'Export clean standard elements to trace course completion, custom interaction states, and score cards.' }
+            { title: 'Permitting & Right-of-Way', content: 'Secure municipal permits, utility pole attachment agreements, and environmental clearances prior to construction.' },
+            { title: 'Trenching & Conduit Placement', content: 'Execute directional boring and trenching to place heavy-duty HDPE micro-duct conduits following strict depth standards.' },
+            { title: 'Fiber Splicing & Optical Testing', content: 'Perform precision fusion splicing, OTDR trace analysis, and power meter testing to certify optical signal loss under 0.2 dB/km.' }
           ]
         }
       });
 
       const comp2 = createComponentInstance({
-        name: 'Key Concepts Tabs',
-        type: 'tabs',
+        name: '5G Architecture & Core Pillars',
+        type: 'tab-blocks',
         status: 'draft',
         config: {
-          title: 'Deep Dive into Core Pillars',
-          description: 'Navigate through key modules and practical methodologies.',
+          blockTitle: 'Next-Gen 5G Architecture',
+          blockHeadline: 'Network Core & Edge Topology',
+          blockSubtext: 'Examine the multi-tier architectural components delivering ultra-reliable low-latency connectivity.',
+          title: 'Next-Gen 5G Architecture',
+          description: 'Examine the multi-tier architectural components delivering ultra-reliable low-latency connectivity.',
           tabsOrientation: 'horizontal',
           items: [
-            { title: 'Architecture', content: 'Layered component architecture separating state management, preview compilers, and export pipelines.' },
-            { title: 'Integration', content: 'Seamless embedding inside Rise 360 blocks via iframe snippets, HTML fragments, or Web Package ZIPs.' },
-            { title: 'Governance', content: 'Rigorous preflight validation ensuring WCAG 2.2 AA accessibility, contrast compliance, and responsive fidelity.' }
+            { title: 'Radio Access Network (RAN)', content: 'Massive MIMO active antenna units and baseband units dynamically allocate cellular spectrum across mmWave and sub-6GHz bands.' },
+            { title: '5G Standalone Core', content: 'Cloud-native service-based architecture (SBA) featuring User Plane Function (UPF) routing and granular network slicing.' },
+            { title: 'Multi-Access Edge Computing (MEC)', content: 'Distributed compute nodes co-located near cell towers reduce round-trip application latency to single-digit milliseconds.' }
           ]
         }
       });
 
       const comp3 = createComponentInstance({
-        name: 'Knowledge Check',
+        name: 'Fiber Safety & Compliance Check',
         type: 'multiple-choice',
         status: 'draft',
         config: {
-          title: 'Module Assessment: Core Principles',
-          description: 'Test your understanding of the foundational principles covered in this module.',
+          blockTitle: 'Optical Safety & Compliance',
+          blockHeadline: 'Knowledge Check: Field Protocols',
+          blockSubtext: 'Test your understanding of laser safety standards and optical field splicing protocols.',
+          title: 'Optical Safety & Compliance',
+          description: 'Test your understanding of laser safety standards and optical field splicing protocols.',
+          mcQuestionPrompt: 'Which optical test must be completed and certified before connecting customer terminal equipment to a newly spliced fiber run?',
           mcSubmitButtonText: 'Submit Answer',
           mcMaxAttempts: 1,
+          mcConfidenceMode: false,
           items: [
-            { label: 'Option A', content: 'Components should be monolithic with hardcoded global variables.', correct: false },
-            { label: 'Option B (Correct)', content: 'Components must use deterministic instance scoping and strict isolation contracts.', correct: true },
-            { label: 'Option C', content: 'Accessibility requirements can be deferred to post-production.', correct: false }
+            { title: 'Visual Fault Locator (VFL) Red Light Check Only', label: 'Visual Fault Locator (VFL) Red Light Check Only', content: 'VFL is a quick continuity indicator, not an insertion-loss certification tool.', correct: false },
+            { title: 'OTDR Trace & Power Meter Loss Certification', label: 'OTDR Trace & Power Meter Loss Certification (Required)', content: 'Optical Time-Domain Reflectometry (OTDR) and calibrated optical power loss measurements certify that insertion loss meets enterprise dB specifications.', correct: true },
+            { title: 'Standard Ethernet Loopback Ping', label: 'Standard Ethernet Loopback Ping', content: 'Ethernet loopback checks Layer 2 data links after active electronics are powered, not physical fiber cable integrity.', correct: false }
           ]
         }
       });
@@ -576,19 +587,22 @@ export class DashboardView {
 
     if (template === 'single') {
       const comp = createComponentInstance({
-        name: `${name} Accordion`,
+        name: `${name} Overview`,
         type: 'accordion',
         status: 'draft',
         config: {
+          blockTitle: `${name} Overview`,
+          blockHeadline: 'Interactive Module',
+          blockSubtext: 'Review essential guidance and interactive reference topics.',
           title: `${name} Overview`,
-          description: 'Interactive expandable accordion with sample demonstration items.',
+          description: 'Review essential guidance and interactive reference topics.',
           accordionMulti: true,
           accordionAnimation: true,
           iconStyle: 'chevron',
           items: [
-            { title: 'Getting Started', content: 'Customize this accordion panel with your course content in the editor.' },
-            { title: 'Key Information', content: 'Add supporting media, rich text formatting, or extra interactive items.' },
-            { title: 'Summary & Takeaways', content: 'Reinforce learning outcomes before continuing to the next lesson.' }
+            { title: 'Project Overview & Objectives', content: 'Explore core learning objectives, system architecture, and operational expectations.' },
+            { title: 'Technical Specifications & Guidelines', content: 'Review standard operating procedures, API contracts, and engineering constraints.' },
+            { title: 'Summary & Best Practices', content: 'Reinforce essential takeaways and compliance checkpoints before proceeding.' }
           ]
         }
       });
@@ -643,3 +657,15 @@ export class DashboardView {
       .replace(/'/g, '&#039;');
   }
 }
+
+export function createNewProjectFromTemplate(options = 'standard') {
+  const opts = typeof options === 'string' ? { template: options } : options;
+  const view = new DashboardView({});
+  return view.createNewProjectFromTemplate({
+    name: opts.name || 'Demo Course',
+    client: opts.client || 'AT&T',
+    desc: opts.desc || 'Interactive demonstration course',
+    template: opts.template || 'standard'
+  });
+}
+

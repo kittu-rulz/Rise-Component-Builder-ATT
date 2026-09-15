@@ -5,11 +5,11 @@
 
 import { getProject } from '../storage.js';
 import { generateIframeContent } from '../preview.js';
-import { COMPONENT_MODULES, COMPONENT_REGISTRY } from '../component-registry.js';
+import { COMPONENT_MODULES, COMPONENT_REGISTRY, normalizeComponentType } from '../component-registry.js';
 import { toRgba as colorToRgba, escapeHTML } from '../utilities.js';
 
 export class CoursePreviewView {
-  constructor({ container, projectId, onBack, onEditComponent }) {
+  constructor({ container = null, projectId = null, onBack = null, onEditComponent = null } = {}) {
     this.container = container;
     this.projectId = projectId;
     this.onBack = onBack;
@@ -82,8 +82,9 @@ export class CoursePreviewView {
 
   compileComponentHtml(project, comp) {
     try {
+      const canonicalType = normalizeComponentType(comp.type);
       const appState = {
-        selectedComponent: { id: comp.type },
+        selectedComponent: { id: canonicalType },
         config: comp.config || {},
         componentOverrides: comp.styleOverrides || {},
         currentProjectId: comp.id,
@@ -325,3 +326,25 @@ export class CoursePreviewView {
     });
   }
 }
+
+export function compileCoursePreview(project) {
+  if (!project) return '';
+  const view = new CoursePreviewView({ projectId: project.id });
+  const orderedItems = view.getOrderedComponents(project);
+  let outputHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHTML(project.name || 'Course Preview')}</title></head><body>`;
+  for (const item of orderedItems) {
+    if (item.type === 'section-header') {
+      outputHtml += `<h2>${escapeHTML(item.title)}</h2>`;
+    } else if (item.type === 'component') {
+      const res = view.compileComponentHtml(project, item.component);
+      if (res.success) {
+        outputHtml += `<div class="preview-item"><h3>${escapeHTML(item.component.name)}</h3>${res.html}</div>`;
+      } else {
+        outputHtml += `<div class="preview-error">Could not render ${escapeHTML(item.component.name)}: ${res.error}</div>`;
+      }
+    }
+  }
+  outputHtml += `</body></html>`;
+  return outputHtml;
+}
+

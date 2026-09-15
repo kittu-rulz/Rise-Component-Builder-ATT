@@ -17,8 +17,8 @@ import { auditCourseProject, ProjectQaView } from '../../js/dashboard/project-qa
 import { CoursePreviewView } from '../../js/dashboard/course-preview.js';
 import { ProjectMediaView } from '../../js/dashboard/project-media.js';
 import { createPostPublishWorkflow } from '../../js/post-publish/workflow-shell.js';
-import { saveProject, getProject } from '../../js/storage.js';
-import { buildProjectSchemaV3, createComponentInstance, createSection } from '../../js/project-schema.js';
+import { saveProject } from '../../js/storage.js';
+import { buildProjectSchemaV3 } from '../../js/project-schema.js';
 import { memoryLocalStorage } from '../fixtures/index.js';
 
 describe('Rise Component Builder AT&T 10/10 Production-Readiness Standards', () => {

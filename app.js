@@ -1101,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updatePreviewEmptyState();
   }
 
-  function updateHeaderContext(state, context = {}) {
+  function updateHeaderContext(state, _context = {}) {
     const toolbarActions = document.querySelector('.toolbar-actions');
     const projectTitleEditor = document.getElementById('project-title-editor');
     const status = document.getElementById('project-status');
@@ -2408,7 +2408,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function applyProject(project, isDraft = false) {
-    const component = componentCatalog.find(item => item.id === project.componentId);
+    if (window.migrateProject) {
+      project = window.migrateProject(project);
+    }
+    const compId = window.normalizeComponentType ? window.normalizeComponentType(project.componentId) : project.componentId;
+    const component = componentCatalog.find(item => item.id === compId || item.id === project.componentId)
+      || (typeof getComponentById === 'function' ? getComponentById(componentCatalog, compId) : null);
     if (!component) {
       showToast(`Cannot open “${project.name}”: its component is not available.`, 'error');
       return false;
@@ -2449,7 +2454,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function applyComponentInstance(project, comp) {
-    const component = componentCatalog.find(item => item.id === comp.type);
+    if (window.migrateProject) {
+      project = window.migrateProject(project);
+      comp = project.components?.[comp.id] || comp;
+    }
+    const compType = window.normalizeComponentType ? window.normalizeComponentType(comp.type) : comp.type;
+    const component = componentCatalog.find(item => item.id === compType || item.id === comp.type)
+      || (typeof getComponentById === 'function' ? getComponentById(componentCatalog, compType) : null);
     if (!component) {
       showToast(`Cannot open component type "${comp.type}".`, 'error');
       return false;
@@ -2459,7 +2470,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     appState.activeProject = project;
     appState.activeComponentInstance = comp;
     appState.currentProjectId = project.id;
-    appState.currentProjectName = `${project.name} / ${comp.name}`;
+    
+    // Compute full breadcrumb path: Course Projects / [Course Name] / [Section Name] / [Component Name]
+    let sectionName = 'Unsectioned';
+    if (project.structure && Array.isArray(project.structure.sections)) {
+      const foundSec = project.structure.sections.find(s => (s.componentIds || []).includes(comp.id));
+      if (foundSec && foundSec.name) {
+        sectionName = foundSec.name;
+      }
+    }
+    appState.currentProjectName = `Course Projects / ${project.name} / ${sectionName} / ${comp.name}`;
     appState.selectedComponent = component;
     applyMissingSchemaDefaults(component);
     await restoreMediaReferences(appState.config);

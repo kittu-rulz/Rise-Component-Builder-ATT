@@ -271,41 +271,17 @@ export function createRichTextEditor({
   );
   toolbar.appendChild(italicBtn);
 
-  // Underline
-  const underlineBtn = createToolbarButton(
-    'Underline', 'Underline (Ctrl+U)',
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg>',
-    () => executeFormatting('underline', null, editor),
-    true
-  );
-  toolbar.appendChild(underlineBtn);
-
-  // Strikethrough
-  const strikeBtn = createToolbarButton(
-    'Strikethrough', 'Strikethrough',
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4H9a3 3 0 0 0-2.83 4"></path><path d="M14 12a4 4 0 0 1 0 8H6"></path><line x1="4" y1="12" x2="20" y2="12"></line></svg>',
-    () => executeFormatting('strikeThrough', null, editor),
-    true
-  );
-  toolbar.appendChild(strikeBtn);
-
-  // Subscript
-  const subBtn = createToolbarButton(
-    'Subscript', 'Subscript',
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 5 8 8"></path><path d="m12 5-8 8"></path><path d="M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path></svg>',
-    () => executeFormatting('subscript', null, editor),
-    true
-  );
-  toolbar.appendChild(subBtn);
-
-  // Superscript
-  const supBtn = createToolbarButton(
-    'Superscript', 'Superscript',
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 19 8-8"></path><path d="m12 19-8-8"></path><path d="M20 11h-4c0-1.5.44-2 1.5-2.5S20 7.33 20 6c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path></svg>',
-    () => executeFormatting('superscript', null, editor),
-    true
-  );
-  toolbar.appendChild(supBtn);
+  let underlineBtn = null;
+  if (!isSingleLine) {
+    // Underline
+    underlineBtn = createToolbarButton(
+      'Underline', 'Underline (Ctrl+U)',
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="21" x2="20" y2="21"></line></svg>',
+      () => executeFormatting('underline', null, editor),
+      true
+    );
+    toolbar.appendChild(underlineBtn);
+  }
 
   // Hyperlink Popover & Action
   const linkWrapper = document.createElement('div');
@@ -524,293 +500,38 @@ export function createRichTextEditor({
   linkWrapper.appendChild(linkBtn);
   toolbar.appendChild(linkWrapper);
 
-  // Separator
-  const sep1 = document.createElement('span');
-  sep1.className = 'rt-separator';
-  toolbar.appendChild(sep1);
+  // Lists (Bullet & Numbered) - for body fields
+  if (!isSingleLine) {
+    const sepLists = document.createElement('span');
+    sepLists.className = 'rt-separator';
+    toolbar.appendChild(sepLists);
 
-  // Font Size Dropdown Popover
-  const sizeWrapper = document.createElement('div');
-  sizeWrapper.className = 'rt-dropdown-wrapper';
-  const sizeBtn = createToolbarButton(
-    'Font Size', 'Font Size',
-    '<span class="rt-btn-text">Size <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
-    () => {
-      if (activePopover && activePopover.dataset.popoverType === 'size') {
-        closePopovers();
-        return;
+    const bulletBtn = createToolbarButton(
+      'Bullet List', 'Bullet List',
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>',
+      () => {
+        executeFormatting('insertUnorderedList', null, editor);
+        syncListBulletStyles(editor);
       }
-      closePopovers();
-      const popover = document.createElement('div');
-      popover.className = 'rt-popover rt-size-popover';
-      popover.dataset.popoverType = 'size';
-      
-      FONT_SIZES.forEach(fs => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'rt-menu-item';
-        item.textContent = fs.label;
-        item.addEventListener('mousedown', e => e.preventDefault());
-        item.addEventListener('click', () => {
-          executeFormatting('fontSizeStyle', fs.size, editor);
-          closePopovers();
-          triggerChange();
-        });
-        popover.appendChild(item);
-      });
+    );
+    toolbar.appendChild(bulletBtn);
 
-      const resetItem = document.createElement('button');
-      resetItem.type = 'button';
-      resetItem.className = 'rt-menu-item rt-menu-reset';
-      resetItem.textContent = 'Default Size';
-      resetItem.addEventListener('mousedown', e => e.preventDefault());
-      resetItem.addEventListener('click', () => {
-        executeFormatting('fontSizeStyle', 'inherit', editor);
-        closePopovers();
-        triggerChange();
-      });
-      popover.appendChild(resetItem);
-
-      sizeWrapper.appendChild(popover);
-      activePopover = popover;
-    }
-  );
-  sizeWrapper.appendChild(sizeBtn);
-  toolbar.appendChild(sizeWrapper);
-
-  // Line Height Dropdown Popover
-  const lhWrapper = document.createElement('div');
-  lhWrapper.className = 'rt-dropdown-wrapper';
-  const lhBtn = createToolbarButton(
-    'Line Height', 'Line Height / Spacing',
-    '<span class="rt-btn-text">Line <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
-    () => {
-      if (activePopover && activePopover.dataset.popoverType === 'lineHeight') {
-        closePopovers();
-        return;
+    const numberBtn = createToolbarButton(
+      'Numbered List', 'Numbered List',
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>',
+      () => {
+        executeFormatting('insertOrderedList', null, editor);
+        syncListBulletStyles(editor);
       }
-      closePopovers();
-      const popover = document.createElement('div');
-      popover.className = 'rt-popover rt-size-popover';
-      popover.dataset.popoverType = 'lineHeight';
-
-      LINE_HEIGHTS.forEach(lh => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'rt-menu-item';
-        item.textContent = lh.label;
-        item.addEventListener('mousedown', e => e.preventDefault());
-        item.addEventListener('click', () => {
-          executeFormatting('lineHeightStyle', lh.height, editor);
-          closePopovers();
-          triggerChange();
-        });
-        popover.appendChild(item);
-      });
-
-      const resetItem = document.createElement('button');
-      resetItem.type = 'button';
-      resetItem.className = 'rt-menu-item rt-menu-reset';
-      resetItem.textContent = 'Default Height';
-      resetItem.addEventListener('mousedown', e => e.preventDefault());
-      resetItem.addEventListener('click', () => {
-        executeFormatting('lineHeightStyle', 'inherit', editor);
-        closePopovers();
-        triggerChange();
-      });
-      popover.appendChild(resetItem);
-
-      lhWrapper.appendChild(popover);
-      activePopover = popover;
-    }
-  );
-  lhWrapper.appendChild(lhBtn);
-  toolbar.appendChild(lhWrapper);
-
-  // Letter Spacing Dropdown Popover
-  const spacingWrapper = document.createElement('div');
-  spacingWrapper.className = 'rt-dropdown-wrapper';
-  const spacingBtn = createToolbarButton(
-    'Letter Spacing', 'Letter Spacing',
-    '<span class="rt-btn-text">Spacing <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
-    () => {
-      if (activePopover && activePopover.dataset.popoverType === 'letterSpacing') {
-        closePopovers();
-        return;
-      }
-      closePopovers();
-      const popover = document.createElement('div');
-      popover.className = 'rt-popover rt-size-popover';
-      popover.dataset.popoverType = 'letterSpacing';
-
-      LETTER_SPACINGS.forEach(ls => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'rt-menu-item';
-        item.textContent = ls.label;
-        item.addEventListener('mousedown', e => e.preventDefault());
-        item.addEventListener('click', () => {
-          executeFormatting('letterSpacingStyle', ls.spacing, editor);
-          closePopovers();
-          triggerChange();
-        });
-        popover.appendChild(item);
-      });
-
-      const resetItem = document.createElement('button');
-      resetItem.type = 'button';
-      resetItem.className = 'rt-menu-item rt-menu-reset';
-      resetItem.textContent = 'Default Spacing';
-      resetItem.addEventListener('mousedown', e => e.preventDefault());
-      resetItem.addEventListener('click', () => {
-        executeFormatting('letterSpacingStyle', 'inherit', editor);
-        closePopovers();
-        triggerChange();
-      });
-      popover.appendChild(resetItem);
-
-      spacingWrapper.appendChild(popover);
-      activePopover = popover;
-    }
-  );
-  spacingWrapper.appendChild(spacingBtn);
-  toolbar.appendChild(spacingWrapper);
-
-  // Text Color Popover
-  const colorWrapper = document.createElement('div');
-  colorWrapper.className = 'rt-dropdown-wrapper';
-  const colorBtn = createToolbarButton(
-    'Text Color', 'Text Color',
-    '<span class="rt-btn-color-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16"></path><path d="m6 16 6-12 6 12"></path><path d="M8 12h8"></path></svg><span class="rt-color-bar" id="rt-color-indicator-' + controlId + '"></span></span>',
-    () => {
-      if (activePopover && activePopover.dataset.popoverType === 'color') {
-        closePopovers();
-        return;
-      }
-      closePopovers();
-      const popover = document.createElement('div');
-      popover.className = 'rt-popover rt-color-popover';
-      popover.dataset.popoverType = 'color';
-
-      const title = document.createElement('div');
-      title.className = 'rt-popover-heading';
-      title.textContent = 'Text Color';
-      popover.appendChild(title);
-
-      const grid = document.createElement('div');
-      grid.className = 'rt-color-grid';
-      ATT_BRAND_COLORS.forEach(c => {
-        const swatch = document.createElement('button');
-        swatch.type = 'button';
-        swatch.className = 'rt-color-swatch';
-        swatch.style.backgroundColor = c.hex;
-        swatch.title = `${c.name} (${c.hex})`;
-        swatch.setAttribute('aria-label', `${c.name} (${c.hex})`);
-        swatch.addEventListener('mousedown', e => e.preventDefault());
-        swatch.addEventListener('click', () => {
-          executeFormatting('textColor', c.hex, editor);
-          closePopovers();
-          triggerChange();
-        });
-        grid.appendChild(swatch);
-      });
-      popover.appendChild(grid);
-
-      // Custom color row
-      const customRow = document.createElement('div');
-      customRow.className = 'rt-custom-color-row';
-      const customLabel = document.createElement('label');
-      customLabel.textContent = 'Custom:';
-      const customInput = document.createElement('input');
-      customInput.type = 'color';
-      customInput.className = 'rt-color-input';
-      customInput.value = '#0057B8';
-      customInput.addEventListener('input', () => {
-        executeFormatting('textColor', customInput.value, editor);
-        triggerChange();
-      });
-      customRow.append(customLabel, customInput);
-      popover.appendChild(customRow);
-
-      const resetBtn = document.createElement('button');
-      resetBtn.type = 'button';
-      resetBtn.className = 'rt-menu-item rt-menu-reset';
-      resetBtn.textContent = 'Default Color';
-      resetBtn.addEventListener('mousedown', e => e.preventDefault());
-      resetBtn.addEventListener('click', () => {
-        executeFormatting('textColor', 'inherit', editor);
-        closePopovers();
-        triggerChange();
-      });
-      popover.appendChild(resetBtn);
-
-      colorWrapper.appendChild(popover);
-      activePopover = popover;
-    }
-  );
-  colorWrapper.appendChild(colorBtn);
-  toolbar.appendChild(colorWrapper);
-
-  // Highlight / Background Color Popover
-  const highlightWrapper = document.createElement('div');
-  highlightWrapper.className = 'rt-dropdown-wrapper';
-  const highlightBtn = createToolbarButton(
-    'Highlight', 'Text Highlight Color',
-    '<span class="rt-btn-color-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"></path><path d="m22 2-4.5 4.5"></path><path d="m14 6 4 4"></path></svg><span class="rt-color-bar rt-highlight-bar"></span></span>',
-    () => {
-      if (activePopover && activePopover.dataset.popoverType === 'highlight') {
-        closePopovers();
-        return;
-      }
-      closePopovers();
-      const popover = document.createElement('div');
-      popover.className = 'rt-popover rt-color-popover';
-      popover.dataset.popoverType = 'highlight';
-
-      const title = document.createElement('div');
-      title.className = 'rt-popover-heading';
-      title.textContent = 'Highlight Color';
-      popover.appendChild(title);
-
-      const grid = document.createElement('div');
-      grid.className = 'rt-color-grid';
-      HIGHLIGHT_COLORS.forEach(c => {
-        const swatch = document.createElement('button');
-        swatch.type = 'button';
-        swatch.className = 'rt-color-swatch';
-        swatch.style.backgroundColor = c.hex;
-        swatch.title = `${c.name} (${c.hex})`;
-        swatch.setAttribute('aria-label', `${c.name} (${c.hex})`);
-        swatch.addEventListener('mousedown', e => e.preventDefault());
-        swatch.addEventListener('click', () => {
-          executeFormatting('highlightColor', c.hex, editor);
-          closePopovers();
-          triggerChange();
-        });
-        grid.appendChild(swatch);
-      });
-      popover.appendChild(grid);
-
-      const resetBtn = document.createElement('button');
-      resetBtn.type = 'button';
-      resetBtn.className = 'rt-menu-item rt-menu-reset';
-      resetBtn.textContent = 'Clear Highlight';
-      resetBtn.addEventListener('mousedown', e => e.preventDefault());
-      resetBtn.addEventListener('click', () => {
-        executeFormatting('clearHighlight', null, editor);
-        closePopovers();
-        triggerChange();
-      });
-      popover.appendChild(resetBtn);
-
-      highlightWrapper.appendChild(popover);
-      activePopover = popover;
-    }
-  );
-  highlightWrapper.appendChild(highlightBtn);
-  toolbar.appendChild(highlightWrapper);
+    );
+    toolbar.appendChild(numberBtn);
+  }
 
   // Text Alignment Popover
+  const sepAlign = document.createElement('span');
+  sepAlign.className = 'rt-separator';
+  toolbar.appendChild(sepAlign);
+
   const alignWrapper = document.createElement('div');
   alignWrapper.className = 'rt-dropdown-wrapper';
   const alignBtn = createToolbarButton(
@@ -854,46 +575,16 @@ export function createRichTextEditor({
   alignWrapper.appendChild(alignBtn);
   toolbar.appendChild(alignWrapper);
 
-  // Lists (Bullet & Numbered) - only for multi-line fields
-  if (!isSingleLine) {
-    const sep2 = document.createElement('span');
-    sep2.className = 'rt-separator';
-    toolbar.appendChild(sep2);
-
-    // Bullet List
-    const bulletBtn = createToolbarButton(
-      'Bullet List', 'Bullet List',
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>',
-      () => {
-        executeFormatting('insertUnorderedList', null, editor);
-        syncListBulletStyles(editor);
-      }
-    );
-    toolbar.appendChild(bulletBtn);
-
-    // Numbered List
-    const numberBtn = createToolbarButton(
-      'Numbered List', 'Numbered List',
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>',
-      () => {
-        executeFormatting('insertOrderedList', null, editor);
-        syncListBulletStyles(editor);
-      }
-    );
-    toolbar.appendChild(numberBtn);
-  }
-
   // Separator & Clear Formatting
-  const sep3 = document.createElement('span');
-  sep3.className = 'rt-separator';
-  toolbar.appendChild(sep3);
+  const sepClear = document.createElement('span');
+  sepClear.className = 'rt-separator';
+  toolbar.appendChild(sepClear);
 
   const clearBtn = createToolbarButton(
     'Clear Formatting', 'Clear Formatting (Reset text styles)',
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
     () => {
       executeFormatting('removeFormat', null, editor);
-      // Also clear inline styles on current <li> if any
       const sel = window.getSelection();
       if (sel && sel.rangeCount > 0) {
         let node = sel.getRangeAt(0).commonAncestorContainer;
@@ -908,6 +599,349 @@ export function createRichTextEditor({
     }
   );
   toolbar.appendChild(clearBtn);
+
+  // Advanced formatting elements (only for body fields)
+  let strikeBtn = null;
+  let subBtn = null;
+  let supBtn = null;
+  let advancedToolbar = null;
+
+  if (!isSingleLine) {
+    advancedToolbar = document.createElement('div');
+    advancedToolbar.className = 'rt-advanced-toolbar';
+    advancedToolbar.style.display = 'none';
+
+    // Strikethrough
+    strikeBtn = createToolbarButton(
+      'Strikethrough', 'Strikethrough',
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4H9a3 3 0 0 0-2.83 4"></path><path d="M14 12a4 4 0 0 1 0 8H6"></path><line x1="4" y1="12" x2="20" y2="12"></line></svg>',
+      () => executeFormatting('strikeThrough', null, editor),
+      true
+    );
+    advancedToolbar.appendChild(strikeBtn);
+
+    // Subscript
+    subBtn = createToolbarButton(
+      'Subscript', 'Subscript',
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 5 8 8"></path><path d="m12 5-8 8"></path><path d="M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path></svg>',
+      () => executeFormatting('subscript', null, editor),
+      true
+    );
+    advancedToolbar.appendChild(subBtn);
+
+    // Superscript
+    supBtn = createToolbarButton(
+      'Superscript', 'Superscript',
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 19 8-8"></path><path d="m12 19-8-8"></path><path d="M20 11h-4c0-1.5.44-2 1.5-2.5S20 7.33 20 6c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"></path></svg>',
+      () => executeFormatting('superscript', null, editor),
+      true
+    );
+    advancedToolbar.appendChild(supBtn);
+
+    const advSep1 = document.createElement('span');
+    advSep1.className = 'rt-separator';
+    advancedToolbar.appendChild(advSep1);
+
+    // Font Size Dropdown Popover
+    const sizeWrapper = document.createElement('div');
+    sizeWrapper.className = 'rt-dropdown-wrapper';
+    const sizeBtn = createToolbarButton(
+      'Font Size', 'Font Size',
+      '<span class="rt-btn-text">Size <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
+      () => {
+        if (activePopover && activePopover.dataset.popoverType === 'size') {
+          closePopovers();
+          return;
+        }
+        closePopovers();
+        const popover = document.createElement('div');
+        popover.className = 'rt-popover rt-size-popover';
+        popover.dataset.popoverType = 'size';
+        
+        FONT_SIZES.forEach(fs => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'rt-menu-item';
+          item.textContent = fs.label;
+          item.addEventListener('mousedown', e => e.preventDefault());
+          item.addEventListener('click', () => {
+            executeFormatting('fontSizeStyle', fs.size, editor);
+            closePopovers();
+            triggerChange();
+          });
+          popover.appendChild(item);
+        });
+
+        const resetItem = document.createElement('button');
+        resetItem.type = 'button';
+        resetItem.className = 'rt-menu-item rt-menu-reset';
+        resetItem.textContent = 'Default Size';
+        resetItem.addEventListener('mousedown', e => e.preventDefault());
+        resetItem.addEventListener('click', () => {
+          executeFormatting('fontSizeStyle', 'inherit', editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(resetItem);
+
+        sizeWrapper.appendChild(popover);
+        activePopover = popover;
+      }
+    );
+    sizeWrapper.appendChild(sizeBtn);
+    advancedToolbar.appendChild(sizeWrapper);
+
+    // Line Height Dropdown Popover
+    const lhWrapper = document.createElement('div');
+    lhWrapper.className = 'rt-dropdown-wrapper';
+    const lhBtn = createToolbarButton(
+      'Line Height', 'Line Height / Spacing',
+      '<span class="rt-btn-text">Line <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
+      () => {
+        if (activePopover && activePopover.dataset.popoverType === 'lineHeight') {
+          closePopovers();
+          return;
+        }
+        closePopovers();
+        const popover = document.createElement('div');
+        popover.className = 'rt-popover rt-size-popover';
+        popover.dataset.popoverType = 'lineHeight';
+
+        LINE_HEIGHTS.forEach(lh => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'rt-menu-item';
+          item.textContent = lh.label;
+          item.addEventListener('mousedown', e => e.preventDefault());
+          item.addEventListener('click', () => {
+            executeFormatting('lineHeightStyle', lh.height, editor);
+            closePopovers();
+            triggerChange();
+          });
+          popover.appendChild(item);
+        });
+
+        const resetItem = document.createElement('button');
+        resetItem.type = 'button';
+        resetItem.className = 'rt-menu-item rt-menu-reset';
+        resetItem.textContent = 'Default Height';
+        resetItem.addEventListener('mousedown', e => e.preventDefault());
+        resetItem.addEventListener('click', () => {
+          executeFormatting('lineHeightStyle', 'inherit', editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(resetItem);
+
+        lhWrapper.appendChild(popover);
+        activePopover = popover;
+      }
+    );
+    lhWrapper.appendChild(lhBtn);
+    advancedToolbar.appendChild(lhWrapper);
+
+    // Letter Spacing Dropdown Popover
+    const spacingWrapper = document.createElement('div');
+    spacingWrapper.className = 'rt-dropdown-wrapper';
+    const spacingBtn = createToolbarButton(
+      'Letter Spacing', 'Letter Spacing',
+      '<span class="rt-btn-text">Spacing <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>',
+      () => {
+        if (activePopover && activePopover.dataset.popoverType === 'letterSpacing') {
+          closePopovers();
+          return;
+        }
+        closePopovers();
+        const popover = document.createElement('div');
+        popover.className = 'rt-popover rt-size-popover';
+        popover.dataset.popoverType = 'letterSpacing';
+
+        LETTER_SPACINGS.forEach(ls => {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'rt-menu-item';
+          item.textContent = ls.label;
+          item.addEventListener('mousedown', e => e.preventDefault());
+          item.addEventListener('click', () => {
+            executeFormatting('letterSpacingStyle', ls.spacing, editor);
+            closePopovers();
+            triggerChange();
+          });
+          popover.appendChild(item);
+        });
+
+        const resetItem = document.createElement('button');
+        resetItem.type = 'button';
+        resetItem.className = 'rt-menu-item rt-menu-reset';
+        resetItem.textContent = 'Default Spacing';
+        resetItem.addEventListener('mousedown', e => e.preventDefault());
+        resetItem.addEventListener('click', () => {
+          executeFormatting('letterSpacingStyle', 'inherit', editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(resetItem);
+
+        spacingWrapper.appendChild(popover);
+        activePopover = popover;
+      }
+    );
+    spacingWrapper.appendChild(spacingBtn);
+    advancedToolbar.appendChild(spacingWrapper);
+
+    const advSep2 = document.createElement('span');
+    advSep2.className = 'rt-separator';
+    advancedToolbar.appendChild(advSep2);
+
+    // Text Color Popover
+    const colorWrapper = document.createElement('div');
+    colorWrapper.className = 'rt-dropdown-wrapper';
+    const colorBtn = createToolbarButton(
+      'Text Color', 'Text Color',
+      '<span class="rt-btn-color-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16"></path><path d="m6 16 6-12 6 12"></path><path d="M8 12h8"></path></svg><span class="rt-color-bar" id="rt-color-indicator-' + controlId + '"></span></span>',
+      () => {
+        if (activePopover && activePopover.dataset.popoverType === 'color') {
+          closePopovers();
+          return;
+        }
+        closePopovers();
+        const popover = document.createElement('div');
+        popover.className = 'rt-popover rt-color-popover';
+        popover.dataset.popoverType = 'color';
+
+        const title = document.createElement('div');
+        title.className = 'rt-popover-heading';
+        title.textContent = 'Text Color';
+        popover.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'rt-color-grid';
+        ATT_BRAND_COLORS.forEach(c => {
+          const swatch = document.createElement('button');
+          swatch.type = 'button';
+          swatch.className = 'rt-color-swatch';
+          swatch.style.backgroundColor = c.hex;
+          swatch.title = `${c.name} (${c.hex})`;
+          swatch.setAttribute('aria-label', `${c.name} (${c.hex})`);
+          swatch.addEventListener('mousedown', e => e.preventDefault());
+          swatch.addEventListener('click', () => {
+            executeFormatting('textColor', c.hex, editor);
+            closePopovers();
+            triggerChange();
+          });
+          grid.appendChild(swatch);
+        });
+        popover.appendChild(grid);
+
+        // Custom color row
+        const customRow = document.createElement('div');
+        customRow.className = 'rt-custom-color-row';
+        const customLabel = document.createElement('label');
+        customLabel.textContent = 'Custom:';
+        const customInput = document.createElement('input');
+        customInput.type = 'color';
+        customInput.className = 'rt-color-input';
+        customInput.value = '#0057B8';
+        customInput.addEventListener('input', () => {
+          executeFormatting('textColor', customInput.value, editor);
+          triggerChange();
+        });
+        customRow.append(customLabel, customInput);
+        popover.appendChild(customRow);
+
+        const resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.className = 'rt-menu-item rt-menu-reset';
+        resetBtn.textContent = 'Default Color';
+        resetBtn.addEventListener('mousedown', e => e.preventDefault());
+        resetBtn.addEventListener('click', () => {
+          executeFormatting('textColor', 'inherit', editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(resetBtn);
+
+        colorWrapper.appendChild(popover);
+        activePopover = popover;
+      }
+    );
+    colorWrapper.appendChild(colorBtn);
+    advancedToolbar.appendChild(colorWrapper);
+
+    // Highlight / Background Color Popover
+    const highlightWrapper = document.createElement('div');
+    highlightWrapper.className = 'rt-dropdown-wrapper';
+    const highlightBtn = createToolbarButton(
+      'Highlight', 'Text Highlight Color',
+      '<span class="rt-btn-color-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"></path><path d="m22 2-4.5 4.5"></path><path d="m14 6 4 4"></path></svg><span class="rt-color-bar rt-highlight-bar"></span></span>',
+      () => {
+        if (activePopover && activePopover.dataset.popoverType === 'highlight') {
+          closePopovers();
+          return;
+        }
+        closePopovers();
+        const popover = document.createElement('div');
+        popover.className = 'rt-popover rt-color-popover';
+        popover.dataset.popoverType = 'highlight';
+
+        const title = document.createElement('div');
+        title.className = 'rt-popover-heading';
+        title.textContent = 'Highlight Color';
+        popover.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'rt-color-grid';
+        HIGHLIGHT_COLORS.forEach(c => {
+          const swatch = document.createElement('button');
+          swatch.type = 'button';
+          swatch.className = 'rt-color-swatch';
+          swatch.style.backgroundColor = c.hex;
+          swatch.title = `${c.name} (${c.hex})`;
+          swatch.setAttribute('aria-label', `${c.name} (${c.hex})`);
+          swatch.addEventListener('mousedown', e => e.preventDefault());
+          swatch.addEventListener('click', () => {
+            executeFormatting('highlightColor', c.hex, editor);
+            closePopovers();
+            triggerChange();
+          });
+          grid.appendChild(swatch);
+        });
+        popover.appendChild(grid);
+
+        const resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.className = 'rt-menu-item rt-menu-reset';
+        resetBtn.textContent = 'Clear Highlight';
+        resetBtn.addEventListener('mousedown', e => e.preventDefault());
+        resetBtn.addEventListener('click', () => {
+          executeFormatting('clearHighlight', null, editor);
+          closePopovers();
+          triggerChange();
+        });
+        popover.appendChild(resetBtn);
+
+        highlightWrapper.appendChild(popover);
+        activePopover = popover;
+      }
+    );
+    highlightWrapper.appendChild(highlightBtn);
+    advancedToolbar.appendChild(highlightWrapper);
+
+    // Advanced disclosure button on primary toolbar
+    const advToggleBtn = createToolbarButton(
+      'Advanced', 'More formatting options (Font size, colors, subscript...)',
+      '<span class="rt-btn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg> Advanced</span>',
+      () => {
+        const isHidden = advancedToolbar.style.display === 'none';
+        advancedToolbar.style.display = isHidden ? 'flex' : 'none';
+        advToggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        advToggleBtn.classList.toggle('is-active', isHidden);
+      }
+    );
+    advToggleBtn.classList.add('rt-btn-advanced');
+    advToggleBtn.setAttribute('aria-expanded', 'false');
+    toolbar.appendChild(advToggleBtn);
+  }
 
   // 2. Editor Event Handlers
   editor.addEventListener('input', () => {
@@ -942,13 +976,13 @@ export function createRichTextEditor({
   // Track active selection state for toolbar buttons
   function updateToolbarState() {
     try {
-      boldBtn.classList.toggle('is-active', document.queryCommandState('bold'));
-      italicBtn.classList.toggle('is-active', document.queryCommandState('italic'));
-      underlineBtn.classList.toggle('is-active', document.queryCommandState('underline'));
-      strikeBtn.classList.toggle('is-active', document.queryCommandState('strikeThrough'));
-      subBtn.classList.toggle('is-active', document.queryCommandState('subscript'));
-      supBtn.classList.toggle('is-active', document.queryCommandState('superscript'));
-      linkBtn.classList.toggle('is-active', Boolean(getSurroundingAnchor()));
+      if (boldBtn) boldBtn.classList.toggle('is-active', document.queryCommandState('bold'));
+      if (italicBtn) italicBtn.classList.toggle('is-active', document.queryCommandState('italic'));
+      if (underlineBtn) underlineBtn.classList.toggle('is-active', document.queryCommandState('underline'));
+      if (strikeBtn) strikeBtn.classList.toggle('is-active', document.queryCommandState('strikeThrough'));
+      if (subBtn) subBtn.classList.toggle('is-active', document.queryCommandState('subscript'));
+      if (supBtn) supBtn.classList.toggle('is-active', document.queryCommandState('superscript'));
+      if (linkBtn) linkBtn.classList.toggle('is-active', Boolean(getSurroundingAnchor()));
     } catch {
       // queryCommandState might fail in certain test/jsdom environments
     }
@@ -957,7 +991,11 @@ export function createRichTextEditor({
   editor.addEventListener('keyup', updateToolbarState);
   editor.addEventListener('mouseup', updateToolbarState);
 
-  container.append(toolbar, editor);
+  container.appendChild(toolbar);
+  if (advancedToolbar) {
+    container.appendChild(advancedToolbar);
+  }
+  container.appendChild(editor);
 
   return {
     element: container,

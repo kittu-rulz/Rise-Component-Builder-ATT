@@ -215,11 +215,14 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
       return;
     }
 
+    const previouslyFocused = document.activeElement;
     const qaReport = auditCourseProject(project);
     const totalSecs = (project.sectionOrder || []).length;
     const totalComps = qaReport.totalComponents;
     const hasBlockers = qaReport.counts.blockers > 0;
-    const hasWarningsOrDrafts = qaReport.counts.warnings > 0 || qaReport.counts.errors > 0 || qaReport.editorial.draftCount > 0;
+    const hasErrors = qaReport.counts.errors > 0;
+    const hasWarnings = qaReport.counts.warnings > 0;
+    const hasDrafts = qaReport.editorial.draftCount > 0;
 
     const existing = document.getElementById('att-export-review-modal-overlay');
     if (existing) existing.remove();
@@ -231,21 +234,25 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'att-export-review-title');
 
+    // Make main background inert for accessibility
+    const mainWorkspace = document.querySelector('.project-workspace-view, .project-dashboard-view, main');
+    if (mainWorkspace) mainWorkspace.setAttribute('inert', '');
+
     const escapeHtml = (str) => {
       if (typeof str !== 'string') return '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     };
 
     overlay.innerHTML = `
-      <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-card" style="max-width: 640px;">
         <div class="modal-header">
           <div>
             <h2 id="att-export-review-title" class="modal-title">Pre-Export Package Review</h2>
             <p style="margin: 4px 0 0 0; font-size: 0.8125rem; color: var(--att-text-muted, #707780);">
-              Review package contents and readiness status before generating ZIP
+              Review package contents, QA findings, and readiness status before generating ZIP
             </p>
           </div>
-          <button id="att-export-review-close-btn" class="project-menu-btn" aria-label="Close dialog" type="button">
+          <button id="att-export-review-close-btn" class="project-menu-btn" aria-label="Close review dialog" type="button">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -280,18 +287,28 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
             </div>
           </div>
 
-          <!-- QA Notice Box -->
+          <!-- Canonical QA Status Notice Box -->
           ${hasBlockers ? `
             <div style="background: rgba(224, 88, 77, 0.08); border: 1px solid rgba(224, 88, 77, 0.3); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E0584D" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
               <div>
                 <div style="font-weight: 700; font-size: 0.875rem; color: #E0584D; margin-bottom: 4px;">Export Blocked (${qaReport.counts.blockers} Blocker${qaReport.counts.blockers > 1 ? 's' : ''})</div>
                 <p style="margin: 0; font-size: 0.8125rem; color: var(--att-text, #000); line-height: 1.4;">
-                  One or more components have critical blockers (such as zero content items) that prevent generating functional web packages. Please resolve them in Course QA before exporting.
+                  One or more components have critical blockers that prevent generating functional web packages. Please resolve them in Course QA before exporting.
                 </p>
               </div>
             </div>
-          ` : hasWarningsOrDrafts ? `
+          ` : hasErrors ? `
+            <div style="background: rgba(216, 67, 21, 0.08); border: 1px solid rgba(216, 67, 21, 0.3); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D84315" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <div>
+                <div style="font-weight: 700; font-size: 0.875rem; color: #D84315; margin-bottom: 4px;">Technical Errors Detected (${qaReport.counts.errors} Error${qaReport.counts.errors > 1 ? 's' : ''}, ${qaReport.counts.warnings} Warning${qaReport.counts.warnings > 1 ? 's' : ''})</div>
+                <p style="margin: 0; font-size: 0.8125rem; color: var(--att-text, #000); line-height: 1.4;">
+                  Technical quality errors exist (such as missing item titles). Exporting now is intended only for development drafts.
+                </p>
+              </div>
+            </div>
+          ` : (hasWarnings || hasDrafts) ? `
             <div style="background: rgba(255, 153, 0, 0.08); border: 1px solid rgba(255, 153, 0, 0.3); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
               <div>
@@ -337,7 +354,11 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
               <button id="att-export-review-proceed-btn" class="btn-att-primary" type="button" disabled title="Fix blockers before export" style="opacity: 0.5; cursor: not-allowed;">
                 Export Blocked
               </button>
-            ` : hasWarningsOrDrafts ? `
+            ` : hasErrors ? `
+              <button id="att-export-review-proceed-btn" class="btn-att-primary" type="button" style="background: #D84315;">
+                Export Draft Package With Known Errors
+              </button>
+            ` : (hasWarnings || hasDrafts) ? `
               <button id="att-export-review-proceed-btn" class="btn-att-primary" type="button">
                 Export Anyway
               </button>
@@ -358,9 +379,21 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
     const qaBtn = overlay.querySelector('#att-export-review-qa-btn');
     const proceedBtn = overlay.querySelector('#att-export-review-proceed-btn');
 
+    // Focus management inside modal
+    /** @type {HTMLElement[]} */
+    // @ts-ignore
+    const focusableElements = Array.from(overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => el instanceof HTMLElement);
+    if (focusableElements.length > 0) {
+      focusableElements[0].focus();
+    }
+
     const cleanup = () => {
       document.removeEventListener('keydown', handleKeydown);
+      if (mainWorkspace) mainWorkspace.removeAttribute('inert');
       overlay.remove();
+      if (previouslyFocused instanceof HTMLElement) {
+        previouslyFocused.focus();
+      }
     };
 
     const handleKeydown = (e) => {
@@ -368,6 +401,18 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
         e.preventDefault();
         cleanup();
         resolve(false);
+      } else if (e.key === 'Tab') {
+        if (focusableElements.length === 0) return;
+        const first = focusableElements[0];
+        const last = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -408,3 +453,4 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
     });
   });
 }
+

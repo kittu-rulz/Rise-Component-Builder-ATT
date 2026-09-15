@@ -4832,6 +4832,32 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   transition: all var(--transition-fast);
 }
 
+.rt-btn-advanced {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  gap: 4px;
+}
+
+.rt-btn-advanced.is-active,
+.rt-btn-advanced:hover {
+  background-color: var(--primary-light, rgba(0, 87, 184, 0.08));
+  color: var(--primary, #0057b8);
+  border-color: var(--primary, #0057b8);
+}
+
+.rt-advanced-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px;
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.03));
+  border-bottom: 1px solid var(--border-color);
+  width: 100%;
+}
+
 .rt-btn:hover {
   background-color: var(--bg-panel);
   border-color: var(--border-color);
