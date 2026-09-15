@@ -1,5 +1,6 @@
 import { getEditorSchema } from './editor-schemas.js';
 import { getAttIconSvg } from './att-icons.js';
+import { getComponentThumbnailSvg } from './dashboard/component-thumbnails.js';
 import * as accordion from '../components/accordion.js';
 import * as tabs from '../components/tabs.js';
 import * as flipCards from '../components/flip-cards.js';
@@ -135,6 +136,7 @@ function fromModule(componentModule, {
     keywords,
     version: '1.0.0',
     icon,
+    thumbnail: getComponentThumbnailSvg(componentModule.id),
     editorSchema,
     defaultContent: { items },
     defaultDesign,

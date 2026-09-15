@@ -932,8 +932,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       editorState.hidden = true;
       catalogState.style.display = 'none';
       editorState.style.display = 'none';
-      if (configPanel) configPanel.style.display = 'none';
-      if (previewPanel) previewPanel.style.display = 'none';
+      if (configPanel) {
+        configPanel.hidden = true;
+        configPanel.style.display = 'none';
+      }
+      if (previewPanel) {
+        previewPanel.hidden = true;
+        previewPanel.style.display = 'none';
+      }
       if (workspaceResizer) workspaceResizer.style.display = 'none';
       const btnDocked = document.getElementById('btn-docked-show-preview');
       if (btnDocked) btnDocked.style.display = 'none';
@@ -1047,8 +1053,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     } else {
-      if (configPanel) configPanel.style.display = '';
-      if (previewPanel) previewPanel.style.display = '';
+      if (configPanel) {
+        configPanel.hidden = false;
+        configPanel.style.display = '';
+      }
+      if (previewPanel) {
+        previewPanel.hidden = false;
+        previewPanel.style.display = '';
+      }
       if (workspaceResizer) workspaceResizer.style.display = '';
       const btnDocked = document.getElementById('btn-docked-show-preview');
       if (btnDocked) btnDocked.style.display = '';
@@ -2472,8 +2484,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     appState.currentProjectId = project.id;
     
     // Compute full breadcrumb path: Course Projects / [Course Name] / [Section Name] / [Component Name]
-    let sectionName = 'Unsectioned';
-    if (project.structure && Array.isArray(project.structure.sections)) {
+    let sectionName = 'Unsectioned Area';
+    if (project.sections && typeof project.sections === 'object') {
+      for (const sec of Object.values(project.sections)) {
+        if (sec.componentOrder && Array.isArray(sec.componentOrder) && sec.componentOrder.includes(comp.id)) {
+          sectionName = sec.name || 'Section';
+          break;
+        }
+      }
+    } else if (project.structure && Array.isArray(project.structure.sections)) {
       const foundSec = project.structure.sections.find(s => (s.componentIds || []).includes(comp.id));
       if (foundSec && foundSec.name) {
         sectionName = foundSec.name;

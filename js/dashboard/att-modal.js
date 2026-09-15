@@ -1,6 +1,8 @@
 /**
  * @file att-modal.js
- * Accessible, AT&T Brand styled Promise-based modal dialogs for prompts and confirmations.
+ * Accessible, AT&T Brand styled Promise-based modal dialogs and modal isolation utilities.
+ * Handles role="dialog", aria-modal="true", background inert isolation, Tab focus trapping,
+ * Escape key dismissal, and trigger focus restoration.
  */
 
 /**
@@ -18,6 +20,93 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+
+/**
+ * Isolates a modal dialog by:
+ * 1. Setting `inert` on background application containers
+ * 2. Trapping keyboard Tab / Shift+Tab focus inside the modal
+ * 3. Listening for Escape key to trigger dismissCallback
+ * 4. Restoring focus to the triggerElement when unmounted
+ *
+ * @param {HTMLElement} modalElement - The modal container/overlay
+ * @param {Object} [options]
+ * @param {Element|null} [options.triggerElement] - Element that opened the modal (for focus restoration)
+ * @param {Function} [options.onDismiss] - Callback when user presses Escape or clicks outside
+ * @returns {Function} cleanup - Function to call when modal is closed
+ */
+export function isolateModal(modalElement, { triggerElement = null, onDismiss = null } = {}) {
+  if (!modalElement) return () => {};
+
+  const backgroundRoots = Array.from(document.querySelectorAll('.app-container, .app-workspace, #app-root, .dashboard-container, .workspace-container'))
+    .filter(el => !el.contains(modalElement) && el !== modalElement);
+
+  // Apply inert to background roots
+  backgroundRoots.forEach(el => {
+    try {
+      el.setAttribute('inert', '');
+      el.setAttribute('aria-hidden', 'true');
+    } catch {
+      // ignore
+    }
+  });
+
+  const handleKeydown = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (typeof onDismiss === 'function') onDismiss();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      const focusable = Array.from(modalElement.querySelectorAll(FOCUSABLE_SELECTOR)).filter((el) => {
+        const htmlEl = /** @type {HTMLElement} */ (el);
+        return htmlEl.offsetParent !== null || htmlEl.offsetWidth > 0 || htmlEl.offsetHeight > 0;
+      });
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = /** @type {HTMLElement} */ (focusable[0]);
+      const last = /** @type {HTMLElement} */ (focusable[focusable.length - 1]);
+
+      if (e.shiftKey) {
+        if (document.activeElement === first || !modalElement.contains(document.activeElement)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last || !modalElement.contains(document.activeElement)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  };
+
+  document.addEventListener('keydown', handleKeydown, true);
+
+  return function cleanupModalIsolation() {
+    document.removeEventListener('keydown', handleKeydown, true);
+    backgroundRoots.forEach(el => {
+      try {
+        el.removeAttribute('inert');
+        el.removeAttribute('aria-hidden');
+      } catch {
+        // ignore
+      }
+    });
+
+    if (triggerElement && typeof /** @type {HTMLElement} */ (triggerElement).focus === 'function') {
+      try {
+        /** @type {HTMLElement} */ (triggerElement).focus();
+      } catch {
+        // ignore
+      }
+    }
+  };
+}
+
 /**
  * Shows an accessible AT&T styled text input prompt modal dialog.
  * @param {Object} options
@@ -28,6 +117,7 @@ function escapeHtml(str) {
  * @param {string} [options.confirmText] - Label for the confirm button
  * @param {string} [options.cancelText] - Label for the cancel button
  * @param {boolean} [options.required] - If true, cannot be submitted empty
+ * @param {Element|null} [options.triggerElement] - Element to restore focus to
  * @returns {Promise<string|null>} Resolves with trimmed input value, or null if cancelled
  */
 export function showPromptDialog({
@@ -37,7 +127,8 @@ export function showPromptDialog({
   defaultValue = '',
   confirmText = 'Save',
   cancelText = 'Cancel',
-  required = false
+  required = false,
+  triggerElement = (typeof document !== 'undefined' ? document.activeElement : null)
 }) {
   return new Promise((resolve) => {
     const existing = document.getElementById('att-dynamic-modal-overlay');
@@ -45,7 +136,7 @@ export function showPromptDialog({
 
     const overlay = document.createElement('div');
     overlay.id = 'att-dynamic-modal-overlay';
-    overlay.className = 'modal-overlay';
+    overlay.className = 'modal-overlay is-active';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'att-modal-prompt-title');
@@ -86,26 +177,24 @@ export function showPromptDialog({
 
     document.body.appendChild(overlay);
 
+    let cleanupIsolation = null;
+    const cleanup = () => {
+      if (cleanupIsolation) cleanupIsolation();
+      overlay.remove();
+    };
+
+    cleanupIsolation = isolateModal(overlay, {
+      triggerElement,
+      onDismiss: () => {
+        cleanup();
+        resolve(null);
+      }
+    });
+
     const input = /** @type {HTMLInputElement|null} */ (overlay.querySelector('#att-modal-prompt-input'));
     const form = overlay.querySelector('#att-modal-prompt-form');
     const closeBtn = overlay.querySelector('#att-modal-close-btn');
     const cancelBtn = overlay.querySelector('#att-modal-cancel-btn');
-
-    const cleanup = () => {
-      document.removeEventListener('keydown', handleKeydown);
-      overlay.remove();
-    };
-
-    /** @param {KeyboardEvent} e */
-    const handleKeydown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        cleanup();
-        resolve(null);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeydown);
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
@@ -149,6 +238,7 @@ export function showPromptDialog({
  * @param {string} [options.confirmText] - Label for confirm button
  * @param {string} [options.cancelText] - Label for cancel button
  * @param {boolean} [options.isDanger] - If true, confirm button has destructive styling
+ * @param {Element|null} [options.triggerElement] - Element to restore focus to
  * @returns {Promise<boolean>} Resolves true on confirm, false on cancel
  */
 export function showConfirmDialog({
@@ -156,7 +246,8 @@ export function showConfirmDialog({
   message = 'Are you sure you want to proceed?',
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  isDanger = false
+  isDanger = false,
+  triggerElement = (typeof document !== 'undefined' ? document.activeElement : null)
 }) {
   return new Promise((resolve) => {
     const existing = document.getElementById('att-dynamic-modal-overlay');
@@ -164,7 +255,7 @@ export function showConfirmDialog({
 
     const overlay = document.createElement('div');
     overlay.id = 'att-dynamic-modal-overlay';
-    overlay.className = 'modal-overlay';
+    overlay.className = 'modal-overlay is-active';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'att-modal-confirm-title');
@@ -194,25 +285,23 @@ export function showConfirmDialog({
 
     document.body.appendChild(overlay);
 
-    const closeBtn = overlay.querySelector('#att-modal-close-btn');
-    const cancelBtn = overlay.querySelector('#att-modal-cancel-btn');
-    const confirmBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector('#att-modal-confirm-btn'));
-
+    let cleanupIsolation = null;
     const cleanup = () => {
-      document.removeEventListener('keydown', handleKeydown);
+      if (cleanupIsolation) cleanupIsolation();
       overlay.remove();
     };
 
-    /** @param {KeyboardEvent} e */
-    const handleKeydown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
+    cleanupIsolation = isolateModal(overlay, {
+      triggerElement,
+      onDismiss: () => {
         cleanup();
         resolve(false);
       }
-    };
+    });
 
-    document.addEventListener('keydown', handleKeydown);
+    const closeBtn = overlay.querySelector('#att-modal-close-btn');
+    const cancelBtn = overlay.querySelector('#att-modal-cancel-btn');
+    const confirmBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector('#att-modal-confirm-btn'));
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {

@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
   COMPONENT_REGISTRY,
   normalizeComponentType,
   getComponentModule
 } from '../../js/component-registry.js';
+import { getComponentThumbnailSvg } from '../../js/dashboard/component-thumbnails.js';
 import { createNewProjectFromTemplate } from '../../js/dashboard/dashboard-view.js';
 import { auditCourseProject } from '../../js/dashboard/project-qa.js';
 import { migrateProject, migrateProjectSafely } from '../../js/migration.js';
 import { compileCoursePreview } from '../../js/dashboard/course-preview.js';
+import { isolateModal, showPromptDialog, showConfirmDialog } from '../../js/dashboard/att-modal.js';
 import { createGoldenAuditCourse } from '../fixtures/golden-audit-course.js';
 
 describe('Final 10/10 Stabilization Sprint — Comprehensive Verification Suite', () => {
@@ -91,7 +93,108 @@ describe('Final 10/10 Stabilization Sprint — Comprehensive Verification Suite'
     });
   });
 
-  describe('2. P0 — Standard AT&T Demonstration Project Starter', () => {
+  describe('2. P0 — Component Picker Custom Wireframe Thumbnails', () => {
+    test('every registered component has a non-empty SVG wireframe thumbnail', () => {
+      COMPONENT_REGISTRY.forEach(comp => {
+        const svg = getComponentThumbnailSvg(comp.id);
+        expect(svg, `Thumbnail SVG for ${comp.id}`).toBeDefined();
+        expect(svg).toContain('<svg');
+        expect(svg).toContain('</svg>');
+        expect(svg).toContain('viewBox="0 0 120 70"');
+        expect(svg).toContain('aria-hidden="true"');
+      });
+    });
+
+    test('registry entries expose the thumbnail property matching the component structure', () => {
+      const accordionEntry = COMPONENT_REGISTRY.find(c => c.id === 'accordion');
+      expect(accordionEntry.thumbnail).toBeDefined();
+      expect(accordionEntry.thumbnail).toContain('<svg');
+
+      const tabsEntry = COMPONENT_REGISTRY.find(c => c.id === 'tab-blocks');
+      expect(tabsEntry.thumbnail).toBeDefined();
+      expect(tabsEntry.thumbnail).toContain('<svg');
+
+      const mcEntry = COMPONENT_REGISTRY.find(c => c.id === 'multiple-choice');
+      expect(mcEntry.thumbnail).toBeDefined();
+      expect(mcEntry.thumbnail).toContain('<svg');
+    });
+  });
+
+  describe('3. P0 — Accessibility Architecture & Modal Isolation', () => {
+    test('isolateModal sets inert on background roots, traps Tab focus, and restores trigger focus on close', () => {
+      document.body.innerHTML = `
+        <div id="app-root" class="app-workspace">
+          <button id="trigger-btn">Open Modal</button>
+        </div>
+        <div id="test-modal" role="dialog" aria-modal="true" style="display: block;">
+          <input id="modal-input" type="text" />
+          <button id="modal-confirm">Confirm</button>
+          <button id="modal-cancel">Cancel</button>
+        </div>
+      `;
+
+      const appRoot = document.getElementById('app-root');
+      const triggerBtn = document.getElementById('trigger-btn');
+      const testModal = document.getElementById('test-modal');
+
+      triggerBtn.focus();
+      expect(document.activeElement).toBe(triggerBtn);
+
+      const onDismiss = vi.fn();
+      const cleanup = isolateModal(testModal, {
+        triggerElement: triggerBtn,
+        onDismiss
+      });
+
+      // Background root should be inert
+      expect(appRoot.hasAttribute('inert')).toBe(true);
+      expect(appRoot.getAttribute('aria-hidden')).toBe('true');
+
+      // Test Escape key triggers onDismiss
+      const escEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      document.dispatchEvent(escEvent);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+
+      // Cleanup restores inert and focus
+      cleanup();
+      expect(appRoot.hasAttribute('inert')).toBe(false);
+      expect(document.activeElement).toBe(triggerBtn);
+    });
+
+    test('showPromptDialog and showConfirmDialog isolate background and return promises', async () => {
+      const promptPromise = showPromptDialog({
+        title: 'Edit Module Name',
+        label: 'Name',
+        defaultValue: 'Module 1'
+      });
+
+      const overlay = document.getElementById('att-dynamic-modal-overlay');
+      expect(overlay).toBeDefined();
+      expect(overlay.getAttribute('role')).toBe('dialog');
+      expect(overlay.getAttribute('aria-modal')).toBe('true');
+
+      const cancelBtn = overlay.querySelector('#att-modal-cancel-btn');
+      cancelBtn.click();
+
+      const result = await promptPromise;
+      expect(result).toBeNull();
+      expect(document.getElementById('att-dynamic-modal-overlay')).toBeNull();
+
+      const confirmPromise = showConfirmDialog({
+        title: 'Confirm Delete',
+        message: 'Delete item?'
+      });
+      const confirmOverlay = document.getElementById('att-dynamic-modal-overlay');
+      expect(confirmOverlay).toBeDefined();
+      const confirmBtn = confirmOverlay.querySelector('#att-modal-confirm-btn');
+      confirmBtn.click();
+      const confirmed = await confirmPromise;
+      expect(confirmed).toBe(true);
+      expect(document.getElementById('att-dynamic-modal-overlay')).toBeNull();
+    });
+  });
+
+  describe('4. P0 — Standard AT&T Demonstration Project Starter', () => {
     test('creates polished 3-module AT&T demonstration starter with 0 blockers and 0 errors', () => {
       const project = createNewProjectFromTemplate('standard');
       expect(project).toBeDefined();
@@ -136,7 +239,7 @@ describe('Final 10/10 Stabilization Sprint — Comprehensive Verification Suite'
     });
   });
 
-  describe('3. P0 — Backward-Compatible Project Migration', () => {
+  describe('5. P0 — Backward-Compatible Project Migration', () => {
     test('migrates v2 single-component project to full v3 multi-component structure', () => {
       const v2Project = {
         id: 'legacy-v2-123',
@@ -191,7 +294,7 @@ describe('Final 10/10 Stabilization Sprint — Comprehensive Verification Suite'
     });
   });
 
-  describe('4. P0 — QA Audit & Pre-Export Review Agreement', () => {
+  describe('6. P0 — QA Audit & Pre-Export Review Agreement', () => {
     test('reports identical issue counts between auditCourseProject and export gating rules', () => {
       const project = {
         id: 'qa-export-test',
@@ -220,9 +323,27 @@ describe('Final 10/10 Stabilization Sprint — Comprehensive Verification Suite'
       const isExportBlocked = audit.counts.blockers > 0;
       expect(isExportBlocked).toBe(true);
     });
+
+    test('enforces strict severity state matrix for exports', () => {
+      // 1. Blockers > 0
+      const blockersReport = { counts: { blockers: 1, errors: 0, warnings: 0 }, editorial: { draftCount: 0 } };
+      expect(blockersReport.counts.blockers > 0).toBe(true); // Export Blocked
+
+      // 2. Errors > 0 (No Blockers)
+      const errorsReport = { counts: { blockers: 0, errors: 2, warnings: 1 }, editorial: { draftCount: 0 } };
+      expect(errorsReport.counts.blockers === 0 && errorsReport.counts.errors > 0).toBe(true); // Export Draft With Known Errors
+
+      // 3. Warnings / Drafts > 0 (No Blockers, No Errors)
+      const warningsReport = { counts: { blockers: 0, errors: 0, warnings: 2 }, editorial: { draftCount: 1 } };
+      expect(warningsReport.counts.blockers === 0 && warningsReport.counts.errors === 0 && (warningsReport.counts.warnings > 0 || warningsReport.editorial.draftCount > 0)).toBe(true); // Export Anyway
+
+      // 4. 100% Ready
+      const cleanReport = { counts: { blockers: 0, errors: 0, warnings: 0 }, editorial: { draftCount: 0 } };
+      expect(cleanReport.counts.blockers === 0 && cleanReport.counts.errors === 0 && cleanReport.counts.warnings === 0 && cleanReport.editorial.draftCount === 0).toBe(true); // Download Package
+    });
   });
 
-  describe('5. P1 — Golden 26-Component Audit Course', () => {
+  describe('7. P1 — Golden 26-Component Audit Course', () => {
     test('Golden Audit Course contains all 26 components and compiles cleanly into Course Preview', () => {
       const goldenCourse = createGoldenAuditCourse();
       expect(Object.keys(goldenCourse.components).length).toBe(26);

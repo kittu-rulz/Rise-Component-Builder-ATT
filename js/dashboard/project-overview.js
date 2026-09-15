@@ -12,7 +12,8 @@ import {
 import {
   COMPONENT_REGISTRY, CATEGORIES, getDefaultConfig, getComponentById, searchComponents
 } from '../component-registry.js';
-import { showPromptDialog, showConfirmDialog } from './att-modal.js';
+import { showPromptDialog, showConfirmDialog, isolateModal } from './att-modal.js';
+import { getComponentThumbnailSvg } from './component-thumbnails.js';
 import { escapeHTML } from '../utilities.js';
 
 export class ProjectOverviewView {
@@ -38,6 +39,7 @@ export class ProjectOverviewView {
     this.state = {
       isPickerOpen: false,
       pickerTargetSectionId: null, // null means unsectioned
+      lastActiveSectionId: null,
       pickerSearch: '',
       pickerCategory: 'all',
       previewDetailsComp: null,
@@ -46,6 +48,8 @@ export class ProjectOverviewView {
       courseStructureFilter: 'all' // 'all' | 'draft' | 'in_review' | 'ready'
     };
 
+    this.cleanupPickerIsolation = null;
+    this.cleanupDetailsIsolation = null;
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
   }
 
@@ -55,6 +59,14 @@ export class ProjectOverviewView {
   }
 
   unmount() {
+    if (this.cleanupPickerIsolation) {
+      this.cleanupPickerIsolation();
+      this.cleanupPickerIsolation = null;
+    }
+    if (this.cleanupDetailsIsolation) {
+      this.cleanupDetailsIsolation();
+      this.cleanupDetailsIsolation = null;
+    }
     document.removeEventListener('click', this.handleDocumentClick);
     if (this.container) {
       this.container.innerHTML = '';
@@ -442,21 +454,21 @@ export class ProjectOverviewView {
             <!-- Components Grid -->
             <div class="picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
               ${list.map(c => `
-                <div class="picker-item-card" data-comp-type="${c.id}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <div class="picker-item-thumbnail" style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 56, 143, 0.08); display: flex; align-items: center; justify-content: center; color: var(--att-cobalt, #00388F);">
-                        ${c.icon || '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>'}
-                      </div>
-                      <div>
-                        <h4 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h4>
-                        <span class="component-type-badge" style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 5px; border-radius: 4px;">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
-                      </div>
+                <div class="picker-item-card" data-comp-type="${c.id}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                  <!-- Wireframe Structural Illustration -->
+                  <div class="picker-item-wireframe-banner" style="background: #F4F6F9; border-radius: 8px; padding: 6px 10px; display: flex; justify-content: center; align-items: center; border: 1px solid #EAEAEA; height: 72px; overflow: hidden;">
+                    ${c.thumbnail || getComponentThumbnailSvg(c.id, { width: 110, height: 60 })}
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                    <div>
+                      <h4 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h4>
+                      <span class="component-type-badge" style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 5px; border-radius: 4px;">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
                     </div>
                     ${c.tierLabel ? `<span class="component-tier-badge" style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.tierLabel)}</span>` : ''}
                   </div>
                   
-                  <p class="picker-item-desc" style="font-size: 0.8125rem; color: #555; margin: 0; line-height: 1.45;" title="${escapeHTML(c.description || '')}">
+                  <p class="picker-item-desc" style="font-size: 0.8125rem; color: #555; margin: 0; line-height: 1.45; min-height: 2.8em;" title="${escapeHTML(c.description || '')}">
                     ${escapeHTML(c.description || '')}
                   </p>
 
@@ -465,9 +477,9 @@ export class ProjectOverviewView {
                     ${c.complexity ? `<span class="picker-card-chip" style="font-size: 0.6875rem; background: #F3F4F5; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.complexity)}</span>` : ''}
                   </div>
 
-                  <div style="margin-top: auto; display: flex; gap: 8px; pt: 4px;">
+                  <div style="margin-top: auto; display: flex; gap: 8px; padding-top: 4px;">
                     <button class="btn btn-secondary btn-sm" data-action="preview-picker-item" data-comp-type="${c.id}" style="flex: 1; font-size: 0.75rem;">
-                      Details &amp; Preview
+                      Details &amp; Info
                     </button>
                     <button class="btn btn-primary btn-sm" data-action="select-picker-item" data-comp-type="${c.id}" style="flex: 1; font-size: 0.75rem;">
                       + Add Block
@@ -629,15 +641,27 @@ export class ProjectOverviewView {
     this.container.querySelector('#wp-empty-add-sec-btn')?.addEventListener('click', addSectionHandler);
 
     // Add component buttons
-    const openPickerHandler = (secId) => {
+    const openPickerHandler = (secId = undefined, isExplicitStandalone = false) => {
+      const project = this.getProject();
       this.state.isPickerOpen = true;
-      this.state.pickerTargetSectionId = secId || null;
+      if (isExplicitStandalone) {
+        this.state.pickerTargetSectionId = null;
+      } else if (secId) {
+        this.state.pickerTargetSectionId = secId;
+        this.state.lastActiveSectionId = secId;
+      } else if (this.state.lastActiveSectionId && project?.sections?.[this.state.lastActiveSectionId]) {
+        this.state.pickerTargetSectionId = this.state.lastActiveSectionId;
+      } else if (project?.sectionOrder && project.sectionOrder.length > 0) {
+        this.state.pickerTargetSectionId = project.sectionOrder[0];
+      } else {
+        this.state.pickerTargetSectionId = null;
+      }
       this.render();
     };
 
-    this.container.querySelector('#wp-add-unsectioned-comp-btn')?.addEventListener('click', () => openPickerHandler(null));
-    this.container.querySelector('#wp-empty-add-comp-btn')?.addEventListener('click', () => openPickerHandler(null));
-    this.container.querySelector('[data-action="add-comp-unsectioned"]')?.addEventListener('click', () => openPickerHandler(null));
+    this.container.querySelector('#wp-add-unsectioned-comp-btn')?.addEventListener('click', () => openPickerHandler(undefined, true));
+    this.container.querySelector('#wp-empty-add-comp-btn')?.addEventListener('click', () => openPickerHandler());
+    this.container.querySelector('[data-action="add-comp-unsectioned"]')?.addEventListener('click', () => openPickerHandler(undefined, true));
 
     this.container.querySelectorAll('[data-action="add-comp-to-sec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -935,7 +959,28 @@ export class ProjectOverviewView {
       const searchInput = this.container.querySelector('#picker-search-input');
       const sectionSelect = this.container.querySelector('#picker-section-select');
 
+      if (this.cleanupPickerIsolation) {
+        this.cleanupPickerIsolation();
+        this.cleanupPickerIsolation = null;
+      }
+      if (modalOverlay) {
+        this.cleanupPickerIsolation = isolateModal(modalOverlay, {
+          onDismiss: () => {
+            if (this.cleanupPickerIsolation) {
+              this.cleanupPickerIsolation();
+              this.cleanupPickerIsolation = null;
+            }
+            this.state.isPickerOpen = false;
+            this.render();
+          }
+        });
+      }
+
       const closePicker = () => {
+        if (this.cleanupPickerIsolation) {
+          this.cleanupPickerIsolation();
+          this.cleanupPickerIsolation = null;
+        }
         this.state.isPickerOpen = false;
         this.render();
       };
@@ -1001,6 +1046,10 @@ export class ProjectOverviewView {
           }
         });
 
+        if (this.cleanupPickerIsolation) {
+          this.cleanupPickerIsolation();
+          this.cleanupPickerIsolation = null;
+        }
         this.state.isPickerOpen = false;
         this.state.previewDetailsComp = null;
         this.render();
@@ -1025,7 +1074,28 @@ export class ProjectOverviewView {
       const detailsCancelBtn = this.container.querySelector('#details-cancel-btn');
       const detailsAddBtn = this.container.querySelector('#details-add-btn');
 
+      if (this.cleanupDetailsIsolation) {
+        this.cleanupDetailsIsolation();
+        this.cleanupDetailsIsolation = null;
+      }
+      if (detailsOverlay) {
+        this.cleanupDetailsIsolation = isolateModal(detailsOverlay, {
+          onDismiss: () => {
+            if (this.cleanupDetailsIsolation) {
+              this.cleanupDetailsIsolation();
+              this.cleanupDetailsIsolation = null;
+            }
+            this.state.previewDetailsComp = null;
+            this.render();
+          }
+        });
+      }
+
       const closeDetails = () => {
+        if (this.cleanupDetailsIsolation) {
+          this.cleanupDetailsIsolation();
+          this.cleanupDetailsIsolation = null;
+        }
         this.state.previewDetailsComp = null;
         this.render();
       };
