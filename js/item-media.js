@@ -735,7 +735,7 @@ export function wrapItemMediaContent(media, contentHTML, instanceId = 'comp', it
     return contentHTML;
   }
 
-  const targetMedia = media && typeof media === 'object' && media.media ? media.media : media;
+  const targetMedia = media && typeof media === 'object' && 'media' in media ? media.media : media;
   const normalized = normalizeItemMedia({ media: targetMedia });
   const mediaHTML = renderItemMediaElement(normalized, instanceId, itemIndex);
   const placement = normalized.placement;

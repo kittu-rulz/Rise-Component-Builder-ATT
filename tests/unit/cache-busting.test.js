@@ -8,9 +8,19 @@ import { computeStampedIndex, deriveToken } from '../../scripts/stamp-cache-bust
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-async function moduleFiles(dir) {
-  const entries = await readdir(join(repoRoot, dir), { withFileTypes: true });
-  return entries.filter(e => e.isFile() && e.name.endsWith('.js')).map(e => `./${dir}/${e.name}`);
+async function moduleFiles(dir, currentRel = '') {
+  const full = currentRel ? join(repoRoot, dir, currentRel) : join(repoRoot, dir);
+  const entries = await readdir(full, { withFileTypes: true });
+  const results = [];
+  for (const entry of entries) {
+    const rel = currentRel ? `${currentRel}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      results.push(...await moduleFiles(dir, rel));
+    } else if (entry.isFile() && entry.name.endsWith('.js')) {
+      results.push(`./${dir}/${rel.replace(/\\/g, '/')}`);
+    }
+  }
+  return results;
 }
 
 describe('cache-busting stamper', () => {

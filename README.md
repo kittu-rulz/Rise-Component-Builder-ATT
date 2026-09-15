@@ -10,7 +10,15 @@ Rise Component Builder is a standalone browser-based authoring tool designed to 
 
 ---
 
-## Next-Level Architecture & Features (v2.2.0)
+## Next-Level Architecture & Features (v2.5.0)
+
+### 0. Course Projects Dashboard & Multi-Component Workspace (Schema v3)
+- **Projects Dashboard**: Centralized course management with search, filter chips (*All*, *Favorites*, *Recent*), sorting, and template creation (*Standard*, *Compliance*, *Microlearning*, *Blank*).
+- **Multi-Module Workspace**: Organize courses into sections/modules containing multiple component instances.
+- **Component Picker**: Browse and insert any of the 26 AT&T interactive components directly into course sections.
+- **Course Tools**: Full Course Preview (with Desktop/Tablet/Mobile viewports), Shared Media Library (with usage reference tracking), and Course QA Readiness Auditor.
+- **Structured Multi-Component Export**: Download structured ZIP packages containing all modules, HTML blocks, media assets, and course navigation.
+- *Detailed Architecture*: See [`docs/PROJECT-DASHBOARD.md`](docs/PROJECT-DASHBOARD.md).
 
 ### 1. Strategic Component Tiers
 Every component in the 26-archetype registry is categorized with an intentional strategic tier:

@@ -1,5 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeHTML, sanitizeRichText } from '../js/utilities.js';
+import { sanitizeRichText } from '../js/utilities.js';
 import { validateNonEmptyArray, combineValidationResults } from '../js/validation-utils.js';
 import { getAttIconSvg } from '../js/att-icons.js';
 import { wrapItemMediaContent, getItemMediaCSS, validateItemMedia } from '../js/item-media.js';

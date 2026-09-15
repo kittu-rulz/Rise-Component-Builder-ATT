@@ -27,7 +27,12 @@ const ROOT_DIRS = ['js', 'components'];
 
 // Individual files outside the repo root that index.html references and that must
 // ship in dist/ at the same relative path.
-const NESTED_FILES = ['design/att-tokens.css'];
+const NESTED_FILES = [
+  'design/att-tokens.css',
+  'design/post-publish.css',
+  'design/dashboard.css',
+  'design/project-overview.css'
+];
 
 async function exists(path) {
   try {

@@ -1,4 +1,4 @@
-import { escapeHTML, sanitizePreviewConfig, sanitizeRichText, serializeForInlineScript } from './utilities.js';
+import { sanitizePreviewConfig, sanitizeRichText, serializeForInlineScript } from './utilities.js';
 import { resolveMediaReferencesForPreview } from './media-storage.js';
 import { applyThemeToConfig, getBuiltInTheme, resolveThemeTokens } from './themes.js';
 import { renderCompletionTrackerHTML, renderSharedA11yScript, renderShell } from './export-shell.js';

@@ -1,5 +1,5 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
-import { escapeAttribute, escapeHTML, sanitizeRichText, sanitizeURL, serializeForInlineScript } from '../js/utilities.js';
+import { escapeAttribute, sanitizeRichText, sanitizeURL, serializeForInlineScript } from '../js/utilities.js';
 import { getAttIconSvg } from '../js/att-icons.js';
 
 /**

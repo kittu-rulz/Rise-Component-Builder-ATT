@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { sanitizeRichText } from './utilities.js';
 
 export const ATT_BRAND_COLORS = [

@@ -36,6 +36,13 @@ import { applyThemeToConfig, BUILT_IN_THEMES, DEFAULT_THEME_ID, getBuiltInTheme,
 import { createHistoryManager } from './js/history.js';
 import { getPresetsForComponent } from './js/presets.js';
 import { upgradeTextareaToRichText } from './js/rich-text-editor.js';
+import { createPostPublishWorkflow } from './js/post-publish/workflow-shell.js';
+import { DashboardView } from './js/dashboard/dashboard-view.js';
+import { ProjectOverviewView } from './js/dashboard/project-overview.js';
+import { ProjectMediaView } from './js/dashboard/project-media.js';
+import { CoursePreviewView } from './js/dashboard/course-preview.js';
+import { ProjectQaView } from './js/dashboard/project-qa.js';
+import { downloadCourseProjectZip } from './js/dashboard/project-export.js';
 // app.js is the composition root and is explicitly allowed to depend on any module,
 // including one specific component's own file (docs/ARCHITECTURE.md "Important
 // dependencies") — reused here only for its MM:SS/H:MM:SS formatter, so the builder's own
@@ -106,6 +113,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   const catalogState = document.getElementById('catalog-state');
   const editorState = document.getElementById('editor-state');
+  const postPublishWorkspace = document.getElementById('post-publish-workspace');
+  let postPublishWorkflowInstance = null;
+
+  const dashboardWorkspace = document.getElementById('dashboard-workspace');
+  const projectOverviewWorkspace = document.getElementById('project-overview-workspace');
+  const projectMediaWorkspace = document.getElementById('project-media-workspace');
+  const coursePreviewWorkspace = document.getElementById('course-preview-workspace');
+  const projectQaWorkspace = document.getElementById('project-qa-workspace');
+  const btnProjectsDashboard = document.getElementById('btn-projects-dashboard');
+
+  let activeProjectId = null;
+  let dashboardViewInstance = null;
+  let projectOverviewInstance = null;
+  let projectMediaInstance = null;
+  let coursePreviewInstance = null;
+  let projectQaInstance = null;
   
   const btnBackToCatalog = document.getElementById('btn-back-to-catalog');
   const activeComponentTitle = document.getElementById('active-component-title');
@@ -388,15 +411,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 5. Restore a valid draft, otherwise build the initial preview.
     syncSettingsControls();
     const draft = loadDraft();
-    if (draft && await applyProject(draft, true)) {
+    if (draft && !window.location.search.includes('dashboard') && await applyProject(draft, true)) {
       showToast(`Restored draft “${draft.name}”.`, 'success');
     } else {
-      // P12: a genuinely fresh launch (no draft) starts on the catalog with nothing
-      // selected — explicit rather than relying on index.html's static default markup, so
-      // updateToolbarActionAvailability()/updatePreviewEmptyState() run on this path too.
-      showState('catalog');
-      renderDynamicItems();
-      updateLivePreview();
+      showState('dashboard');
     }
 
     window.setInterval(saveCurrentDraft, 60000);
@@ -441,12 +459,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ROUTING & NAVIGATION
   // ==========================================
   navItems.forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', async () => {
+      const category = item.getAttribute('data-category');
+      if (category === 'post-publish') {
+        const guard = await guardUnsavedChanges(() => {
+          navItems.forEach(n => n.classList.remove('active'));
+          item.classList.add('active');
+          appState.activeCategory = category;
+          appState.selectedComponent = null;
+          showState('post-publish');
+        });
+        if (guard === true) {
+          navItems.forEach(n => n.classList.remove('active'));
+          item.classList.add('active');
+          appState.activeCategory = category;
+          appState.selectedComponent = null;
+          showState('post-publish');
+        }
+        return;
+      }
+
       navItems.forEach(n => n.classList.remove('active'));
       item.classList.add('active');
       
-      const category = item.getAttribute('data-category');
-      appState.activeCategory = category;
+      const categoryName = item.getAttribute('data-category');
+      appState.activeCategory = categoryName;
       
       // Clear search
       searchInput.value = '';
@@ -868,38 +905,170 @@ document.addEventListener('DOMContentLoaded', async () => {
     return 'deferred';
   }
 
-  function showState(state) {
-    if (state === 'catalog') {
-      catalogState.hidden = false;
+  function hideAllWorkspacePanels() {
+    [dashboardWorkspace, projectOverviewWorkspace, projectMediaWorkspace, coursePreviewWorkspace, projectQaWorkspace, postPublishWorkspace].forEach(panel => {
+      if (panel) {
+        panel.hidden = true;
+        panel.style.display = 'none';
+      }
+    });
+  }
+
+  function showState(state, context = {}) {
+    hideAllWorkspacePanels();
+
+    if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
+      catalogState.hidden = true;
       editorState.hidden = true;
-      catalogState.style.display = 'flex';
+      catalogState.style.display = 'none';
       editorState.style.display = 'none';
+      if (configPanel) configPanel.style.display = 'none';
+      if (previewPanel) previewPanel.style.display = 'none';
+      if (workspaceResizer) workspaceResizer.style.display = 'none';
+      const btnDocked = document.getElementById('btn-docked-show-preview');
+      if (btnDocked) btnDocked.style.display = 'none';
       if (appWorkspace) {
-        appWorkspace.classList.add('is-browsing');
+        appWorkspace.classList.remove('is-browsing');
         appWorkspace.classList.remove('is-authoring');
       }
-      if (sidebar && sidebar.classList.contains('sidebar-collapsed')) {
-        toggleSidebar(false);
-      }
       const status = document.getElementById('project-status');
-      if (status) status.hidden = true; // no project context on the catalog screen
-    } else if (state === 'editor') {
-      catalogState.hidden = true;
-      editorState.hidden = false;
-      catalogState.style.display = 'none';
-      editorState.style.display = 'flex';
-      if (appWorkspace) {
-        appWorkspace.classList.add('is-authoring');
-        appWorkspace.classList.remove('is-browsing');
+      if (status) status.hidden = true;
+
+      if (state === 'dashboard') {
+        if (dashboardWorkspace) {
+          dashboardWorkspace.hidden = false;
+          dashboardWorkspace.style.display = 'flex';
+          if (dashboardViewInstance) dashboardViewInstance.unmount();
+          dashboardViewInstance = new DashboardView({
+            container: dashboardWorkspace,
+            onOpenProject: (projId) => {
+              activeProjectId = projId;
+              showState('project-overview', { projectId: projId });
+            }
+          });
+          dashboardViewInstance.mount();
+        }
+      } else if (state === 'project-overview') {
+        const projId = context.projectId || activeProjectId;
+        activeProjectId = projId;
+        if (projectOverviewWorkspace) {
+          projectOverviewWorkspace.hidden = false;
+          projectOverviewWorkspace.style.display = 'flex';
+          if (projectOverviewInstance) projectOverviewInstance.unmount();
+          projectOverviewInstance = new ProjectOverviewView({
+            container: projectOverviewWorkspace,
+            projectId: projId,
+            onBackToDashboard: () => showState('dashboard'),
+            onEditComponent: (project, comp) => {
+              activeProjectId = project.id;
+              applyComponentInstance(project, comp);
+            },
+            onOpenPreview: (id) => showState('course-preview', { projectId: id }),
+            onOpenMedia: (id) => showState('project-media', { projectId: id }),
+            onOpenQa: (id) => showState('project-qa', { projectId: id }),
+            onExportProject: async (id) => {
+              try {
+                await downloadCourseProjectZip(id);
+                showToast('Course package exported successfully!', 'success');
+              } catch (err) {
+                showToast(`Export failed: ${err.message}`, 'error');
+              }
+            }
+          });
+          projectOverviewInstance.mount();
+        }
+      } else if (state === 'project-media') {
+        const projId = context.projectId || activeProjectId;
+        if (projectMediaWorkspace) {
+          projectMediaWorkspace.hidden = false;
+          projectMediaWorkspace.style.display = 'flex';
+          if (projectMediaInstance) projectMediaInstance.unmount();
+          projectMediaInstance = new ProjectMediaView({
+            container: projectMediaWorkspace,
+            projectId: projId,
+            onBack: () => showState('project-overview', { projectId: projId })
+          });
+          projectMediaInstance.mount();
+        }
+      } else if (state === 'course-preview') {
+        const projId = context.projectId || activeProjectId;
+        if (coursePreviewWorkspace) {
+          coursePreviewWorkspace.hidden = false;
+          coursePreviewWorkspace.style.display = 'flex';
+          if (coursePreviewInstance) coursePreviewInstance.unmount();
+          coursePreviewInstance = new CoursePreviewView({
+            container: coursePreviewWorkspace,
+            projectId: projId,
+            onBack: () => showState('project-overview', { projectId: projId })
+          });
+          coursePreviewInstance.mount();
+        }
+      } else if (state === 'project-qa') {
+        const projId = context.projectId || activeProjectId;
+        if (projectQaWorkspace) {
+          projectQaWorkspace.hidden = false;
+          projectQaWorkspace.style.display = 'flex';
+          if (projectQaInstance) projectQaInstance.unmount();
+          projectQaInstance = new ProjectQaView({
+            container: projectQaWorkspace,
+            projectId: projId,
+            onBack: () => showState('project-overview', { projectId: projId }),
+            onEditComponent: (project, comp) => {
+              activeProjectId = project.id;
+              applyComponentInstance(project, comp);
+            }
+          });
+          projectQaInstance.mount();
+        }
+      } else if (state === 'post-publish') {
+        if (postPublishWorkspace) {
+          postPublishWorkspace.hidden = false;
+          postPublishWorkspace.style.display = 'flex';
+          if (!postPublishWorkflowInstance) {
+            postPublishWorkflowInstance = createPostPublishWorkflow();
+            postPublishWorkspace.appendChild(postPublishWorkflowInstance);
+          }
+        }
       }
-      // Auto-collapse sidebar in editor mode
-      if (sidebar && !sidebar.classList.contains('sidebar-collapsed')) {
-        toggleSidebar(true);
+    } else {
+      if (configPanel) configPanel.style.display = '';
+      if (previewPanel) previewPanel.style.display = '';
+      if (workspaceResizer) workspaceResizer.style.display = '';
+      const btnDocked = document.getElementById('btn-docked-show-preview');
+      if (btnDocked) btnDocked.style.display = '';
+
+      if (state === 'catalog') {
+        catalogState.hidden = false;
+        editorState.hidden = true;
+        catalogState.style.display = 'flex';
+        editorState.style.display = 'none';
+        if (appWorkspace) {
+          appWorkspace.classList.add('is-browsing');
+          appWorkspace.classList.remove('is-authoring');
+        }
+        if (sidebar && sidebar.classList.contains('sidebar-collapsed')) {
+          toggleSidebar(false);
+        }
+        const status = document.getElementById('project-status');
+        if (status) status.hidden = true; // no project context on the catalog screen
+      } else if (state === 'editor') {
+        catalogState.hidden = true;
+        editorState.hidden = false;
+        catalogState.style.display = 'none';
+        editorState.style.display = 'flex';
+        if (appWorkspace) {
+          appWorkspace.classList.add('is-authoring');
+          appWorkspace.classList.remove('is-browsing');
+        }
+        // Auto-collapse sidebar in editor mode
+        if (sidebar && !sidebar.classList.contains('sidebar-collapsed')) {
+          toggleSidebar(true);
+        }
+        // Switch editor tabs back to the first 'content' tab
+        switchEditorTab('content');
       }
-      // Switch editor tabs back to the first 'content' tab
-      switchEditorTab('content');
+      resetWorkspaceSplitRatio();
     }
-    resetWorkspaceSplitRatio();
     // P12: the single chokepoint every catalog<->editor transition passes through, so the
     // toolbar's Save/Export availability and the preview panel's empty state never need a
     // separate call site of their own to stay in sync with what's actually on screen.
@@ -1187,15 +1356,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // untouched here. It reflects the author's current testing intent ("check every block
   // at mobile width this session"), not a per-component default, so it persists across
   // component switches rather than resetting to Desktop.
-  function updateComponentSpecificOptions(id) {
-    if (accordionBehaviorGroup) accordionBehaviorGroup.style.display = id === 'accordion' ? 'block' : 'none';
-    if (flipCardsBehaviorGroup) flipCardsBehaviorGroup.style.display = id === 'flip-cards' ? 'block' : 'none';
-    if (tabsBehaviorGroup) tabsBehaviorGroup.style.display = id === 'tabs' ? 'block' : 'none';
-    if (timelineBehaviorGroup) timelineBehaviorGroup.style.display = id === 'vertical-timeline' || id === 'horizontal-timeline' ? 'block' : 'none';
-    if (ivTimelineAuthoringGroup) ivTimelineAuthoringGroup.style.display = id === 'interactive-video' ? 'block' : 'none';
-    if (ivBehaviorGroup) ivBehaviorGroup.style.display = id === 'interactive-video' ? 'block' : 'none';
-    if (mcBehaviorGroup) mcBehaviorGroup.style.display = id === 'multiple-choice' ? 'block' : 'none';
-  }
 
   function loadComponentToEditor(component) {
     appState.currentProjectId = null;
@@ -1269,10 +1429,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function performBackToCatalog() {
-    // P12: "Back to Templates" is a deselection, not just a screen change — makes
-    // appState.selectedComponent the single source of truth for "is a component currently
-    // loaded," rather than needing callers to also check which screen is visible. Any
-    // unsaved edits were already resolved by guardUnsavedChanges() before this runs.
+    if (appState.activeProject) {
+      const projId = appState.activeProject.id;
+      appState.activeProject = null;
+      appState.activeComponentInstance = null;
+      appState.selectedComponent = null;
+      showState('project-overview', { projectId: projId });
+      return;
+    }
     appState.selectedComponent = null;
     showState('catalog');
     renderCatalog();
@@ -1282,6 +1446,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const guard = await guardUnsavedChanges(performBackToCatalog);
     if (guard === true) performBackToCatalog();
   });
+
+  if (btnProjectsDashboard) {
+    btnProjectsDashboard.addEventListener('click', async () => {
+      const guard = await guardUnsavedChanges(() => showState('dashboard'));
+      if (guard === true) showState('dashboard');
+    });
+  }
 
   // Favorite toggle
   function setFavoriteButtonState(isFavorited) {
@@ -2218,8 +2389,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     return true;
   }
 
+  async function applyComponentInstance(project, comp) {
+    const component = componentCatalog.find(item => item.id === comp.type);
+    if (!component) {
+      showToast(`Cannot open component type "${comp.type}".`, 'error');
+      return false;
+    }
+    resetConfig();
+    appState.config = { ...appState.config, ...structuredClone(comp.config), items: structuredClone(comp.config?.items || []) };
+    appState.activeProject = project;
+    appState.activeComponentInstance = comp;
+    appState.currentProjectId = project.id;
+    appState.currentProjectName = `${project.name} / ${comp.name}`;
+    appState.selectedComponent = component;
+    applyMissingSchemaDefaults(component);
+    await restoreMediaReferences(appState.config);
+    appState.settings = { ...project.settings };
+    appState.activeTheme = getBuiltInTheme(DEFAULT_THEME_ID);
+    appState.activeThemeId = appState.activeTheme.id;
+    appState.componentOverrides = normalizeComponentOverrides(comp.styleOverrides || project.componentOverrides);
+    appState.uiTheme = project.uiTheme || 'light';
+    syncResolvedThemeConfig();
+    setUiTheme(appState.uiTheme);
+    syncSettingsControls();
+    syncEditorControls();
+    showState('editor');
+    updateLivePreview();
+    history.reset(appState.config, appState.componentOverrides);
+    appState.isDirty = false;
+    updateProjectStatusDisplay();
+    return true;
+  }
+
   function buildCurrentProject(name, asNew = false) {
     if (!appState.selectedComponent) throw new Error('Choose a component before saving.');
+    if (appState.activeProject && appState.activeComponentInstance && !asNew) {
+      const proj = getProject(appState.activeProject.id) || appState.activeProject;
+      if (proj.components && proj.components[appState.activeComponentInstance.id]) {
+        proj.components[appState.activeComponentInstance.id].config = structuredClone(appState.config);
+        proj.components[appState.activeComponentInstance.id].styleOverrides = structuredClone(appState.componentOverrides);
+        proj.updatedAt = new Date().toISOString();
+        return proj;
+      }
+    }
     const existing = !asNew && appState.currentProjectId ? getProject(appState.currentProjectId) : null;
     return buildProject({
       id: existing?.id,

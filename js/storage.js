@@ -3,8 +3,11 @@ import {
   BUILT_IN_THEMES, DEFAULT_THEME_ID, getBuiltInTheme, normalizeComponentOverrides, validateTheme
 } from './themes.js';
 import { DEFAULT_DEVICE_MODE, isValidDeviceMode } from './device-preview.js';
+import {
+  buildProjectSchemaV3, validateProjectV3
+} from './project-schema.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const KEYS = {
   projects: 'rise-builder-projects-v1',
@@ -169,6 +172,15 @@ export function migrateProject(value) {
 
 export function validateProject(value) {
   try {
+    if (!isObject(value)) throw new Error('Project data must be a JSON object.');
+    const version = value.schemaVersion ?? 0;
+    if (!Number.isInteger(version) || version < 0) throw new Error('Invalid project schemaVersion.');
+    if (version > SCHEMA_VERSION) throw new Error(`This project uses schema version ${version}, but this builder supports version ${SCHEMA_VERSION}.`);
+
+    if (version === 3 || isObject(value.components)) {
+      return validateProjectV3(value);
+    }
+
     const project = migrateProject(value);
     if (typeof project.id !== 'string' || !project.id.trim()) throw new Error('Project id is missing.');
     if (typeof project.name !== 'string' || !project.name.trim()) throw new Error('Project name is missing.');
@@ -208,7 +220,7 @@ export function validateProject(value) {
       valid: true,
       project: {
         id: project.id.trim(),
-        schemaVersion: SCHEMA_VERSION,
+        schemaVersion: 2,
         name: project.name.trim(),
         componentId: project.componentId.trim(),
         createdAt: new Date(project.createdAt).toISOString(),
@@ -238,7 +250,7 @@ export function buildProject({
   if (!themeResult.valid) throw new Error(themeResult.error);
   return {
     id: id || createProjectId(),
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: 2,
     name: String(name || 'Untitled Project').trim() || 'Untitled Project',
     componentId: componentId || 'accordion',
     createdAt: createdAt || now,
@@ -282,6 +294,16 @@ export function renameProject(id, name) {
 export function duplicateProject(id) {
   const project = getProject(id);
   if (!project) throw new Error('Project not found.');
+  if (project.schemaVersion === 3) {
+    const cloneData = JSON.parse(JSON.stringify(project));
+    return saveProject(buildProjectSchemaV3({
+      ...cloneData,
+      id: null,
+      name: `${project.name} Copy`,
+      createdAt: null,
+      updatedAt: null
+    }));
+  }
   return saveProject(buildProject({ ...project, id: null, createdAt: null, name: `${project.name} Copy` }));
 }
 
@@ -293,11 +315,37 @@ export function deleteProject(id) {
   return true;
 }
 
+export function toggleFavoriteProject(id) {
+  const project = getProject(id);
+  if (!project) throw new Error('Project not found.');
+  return saveProject({
+    ...project,
+    favorite: !project.favorite,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+export function exportProjectJson(id) {
+  const project = getProject(id);
+  if (!project) throw new Error('Project not found.');
+  return JSON.stringify(project, null, 2);
+}
+
 export function importProjectJson(text) {
   let parsed;
   try { parsed = JSON.parse(text); } catch { throw new Error('The selected file is not valid JSON.'); }
   const result = validateProject(parsed);
   if (!result.valid) throw new Error(result.error);
+  if (result.project.schemaVersion === 3) {
+    const imported = buildProjectSchemaV3({
+      ...result.project,
+      id: null,
+      createdAt: null,
+      updatedAt: null,
+      name: result.project.name
+    });
+    return saveProject(imported);
+  }
   const imported = buildProject({ ...result.project, id: null, createdAt: null, name: result.project.name });
   return saveProject(imported);
 }

@@ -112,7 +112,7 @@ export function generateCSS() {
       border-radius: 999px;
     }
     .timeline-nodes-row::-webkit-scrollbar-thumb:hover {
-      background-color: var(--text-muted, #6B7280);
+      background-color: var(--text-muted);
     }
     .timeline-nodes-row::-webkit-scrollbar-button {
       display: none;

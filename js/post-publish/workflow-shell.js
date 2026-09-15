@@ -1,0 +1,471 @@
+// @ts-nocheck
+import { createDefaultPostPublishConfig, normalizePostPublishConfig } from './schema.js';
+import { detectRisePackage } from './package-detector.js';
+import { createGlossaryEditor } from './editors/glossary-editor.js';
+import { createResourcesEditor } from './editors/resources-editor.js';
+import { createHelpEditor } from './editors/help-editor.js';
+import { createSettingsEditor } from './editors/settings-editor.js';
+import { generateSimulatorPreviewHTML } from './preview.js';
+import { validatePostPublishConfig } from './validator.js';
+import { enhanceRisePackage } from './zip-enhancer.js';
+import { escapeHTML, formatStorageBytes } from '../utilities.js';
+
+export function createPostPublishWorkflow() {
+  const container = document.createElement('div');
+  container.className = 'ppt-workflow-container';
+
+  let currentStep = 1;
+  let uploadedFile = null;
+  let packageDetection = null;
+  let currentConfig = createDefaultPostPublishConfig();
+
+  // Top Stepper Navigation
+  const stepper = document.createElement('nav');
+  stepper.className = 'ppt-stepper-nav';
+  stepper.setAttribute('aria-label', 'Post-Publish Enhancement Steps');
+
+  const stepsMeta = [
+    { num: 1, title: 'Upload Package' },
+    { num: 2, title: 'Choose Tools' },
+    { num: 3, title: 'Add Content' },
+    { num: 4, title: 'Style & Position' },
+    { num: 5, title: 'Preview & Validate' },
+    { num: 6, title: 'Download ZIP' }
+  ];
+
+  function renderStepper() {
+    stepper.innerHTML = stepsMeta.map(s => {
+      const isCurrent = s.num === currentStep;
+      const isPast = s.num < currentStep;
+      return `
+        <button type="button" class="ppt-step-node ${isCurrent ? 'active' : ''} ${isPast ? 'completed' : ''}" data-step="${s.num}">
+          <span class="ppt-step-num">${isPast ? '✓' : s.num}</span>
+          <span class="ppt-step-title">${s.title}</span>
+        </button>
+      `;
+    }).join('<div class="ppt-step-connector"></div>');
+
+    stepper.querySelectorAll('.ppt-step-node').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const stepNum = parseInt(btn.getAttribute('data-step'), 10);
+        if (stepNum < currentStep || canNavigateToStep(stepNum)) {
+          goToStep(stepNum);
+        }
+      });
+    });
+  }
+
+  function canNavigateToStep(targetStep) {
+    if (targetStep > 1 && !uploadedFile) {
+      alert('Please upload a valid Rise course ZIP package first.');
+      return false;
+    }
+    return true;
+  }
+
+  const stepContentContainer = document.createElement('div');
+  stepContentContainer.className = 'ppt-step-content-area';
+
+  const footerNav = document.createElement('div');
+  footerNav.className = 'ppt-workflow-footer-nav';
+
+  function renderFooter() {
+    footerNav.innerHTML = `
+      <div class="ppt-footer-left">
+        ${currentStep > 1 ? `<button type="button" class="btn btn-secondary" id="btn-ppt-prev">← Previous Step</button>` : ''}
+      </div>
+      <div class="ppt-footer-right">
+        ${currentStep < 6 ? `<button type="button" class="btn btn-primary" id="btn-ppt-next">Next Step →</button>` : ''}
+      </div>
+    `;
+
+    const prevBtn = footerNav.querySelector('#btn-ppt-prev');
+    if (prevBtn) prevBtn.addEventListener('click', () => goToStep(currentStep - 1));
+
+    const nextBtn = footerNav.querySelector('#btn-ppt-next');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (currentStep === 1 && !uploadedFile) {
+          alert('Please upload a valid Rise course ZIP package before continuing.');
+          return;
+        }
+        if (currentStep === 2) {
+          const enabled = currentConfig.settings.enabledTools;
+          if (!enabled.glossary && !enabled.resources && !enabled.help) {
+            alert('Please select at least one tool to include.');
+            return;
+          }
+        }
+        goToStep(currentStep + 1);
+      });
+    }
+  }
+
+  function goToStep(stepNum) {
+    currentStep = stepNum;
+    renderStepper();
+    renderFooter();
+    renderStepContent();
+  }
+
+  function renderStepContent() {
+    stepContentContainer.innerHTML = '';
+
+    if (currentStep === 1) renderStep1Upload();
+    else if (currentStep === 2) renderStep2ChooseTools();
+    else if (currentStep === 3) renderStep3AddContent();
+    else if (currentStep === 4) renderStep4StylePosition();
+    else if (currentStep === 5) renderStep5PreviewValidate();
+    else if (currentStep === 6) renderStep6Download();
+  }
+
+  // --- STEP 1: Upload Package ---
+  function renderStep1Upload() {
+    const box = document.createElement('div');
+    box.className = 'ppt-step-panel';
+    box.innerHTML = `
+      <div class="ppt-step-header">
+        <h2>Step 1: Upload Published Rise Package</h2>
+        <p>Select the exported <strong>.zip</strong> package from Rise 360 (Web or SCORM LMS export). Processing is 100% private and runs offline inside your browser.</p>
+      </div>
+
+      <div class="ppt-upload-dropzone ${uploadedFile ? 'has-file' : ''}" id="ppt-zip-dropzone">
+        <svg class="ppt-dropzone-icon" width="48" height="48" viewBox="0 0 32 32" fill="currentColor"><path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z"/><path d="M15 3v16.17l-4.59-4.58L9 16l7 7 7-7-1.41-1.41L17 19.17V3h-2z"/></svg>
+        <h3>${uploadedFile ? escapeHTML(uploadedFile.name) : 'Drag and drop your Rise .zip package here'}</h3>
+        <p class="field-hint">${uploadedFile ? `Package Size: ${formatStorageBytes(uploadedFile.size)}` : 'or click to browse local files'}</p>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-zip">Browse .zip File</button>
+        <input type="file" id="ppt-zip-input" accept=".zip,application/zip" style="display:none;">
+      </div>
+
+      ${packageDetection ? `
+        <div class="ppt-package-detected-card ${packageDetection.valid ? 'success' : 'error'}">
+          <h4>${packageDetection.valid ? '✓ Package Detected Successfully' : '⚠️ Package Inspection Warning'}</h4>
+          <p><strong>Package Type:</strong> ${packageDetection.packageType ? packageDetection.packageType.toUpperCase() : 'Unknown'}</p>
+          <p><strong>Launch Document:</strong> ${packageDetection.launchHtmlPath || 'None'}</p>
+          ${packageDetection.isPreviouslyEnhanced ? `
+            <div class="ppt-prior-enhancement-alert">
+              <span>🌟 This package was previously enhanced. Its prior settings have been automatically loaded for you to update or modify.</span>
+            </div>
+          ` : ''}
+          ${packageDetection.error ? `<p class="ppt-error-text">${escapeHTML(packageDetection.error)}</p>` : ''}
+        </div>
+      ` : ''}
+
+      <div class="ppt-info-callout">
+        <strong>Important Note:</strong> Post-publish tools are applied to an exported Rise package. If the course is republished from Rise in the future, simply apply the tools again to the new export.
+      </div>
+    `;
+
+    const dropzone = box.querySelector('#ppt-zip-dropzone');
+    const fileInput = box.querySelector('#ppt-zip-input');
+    const browseBtn = box.querySelector('#btn-browse-zip');
+
+    browseBtn.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('click', (e) => {
+      if (e.target !== browseBtn) fileInput.click();
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files?.[0];
+      if (file) handleUploadedZip(file);
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (file) handleUploadedZip(file);
+    });
+
+    async function handleUploadedZip(file) {
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        alert('Please select a valid .zip archive file.');
+        return;
+      }
+      uploadedFile = file;
+      packageDetection = await detectRisePackage(file);
+      if (packageDetection.isPreviouslyEnhanced && packageDetection.previousConfig) {
+        currentConfig = normalizePostPublishConfig(packageDetection.previousConfig);
+      }
+      renderStepContent();
+    }
+
+    stepContentContainer.appendChild(box);
+  }
+
+  // --- STEP 2: Choose Tools ---
+  function renderStep2ChooseTools() {
+    const box = document.createElement('div');
+    box.className = 'ppt-step-panel';
+    const enabled = currentConfig.settings.enabledTools;
+
+    box.innerHTML = `
+      <div class="ppt-step-header">
+        <h2>Step 2: Choose Persistent Tools</h2>
+        <p>Select which tools will be included inside the persistent <strong>Course Tools</strong> learner launcher.</p>
+      </div>
+
+      <div class="ppt-tool-selection-grid">
+        <label class="ppt-tool-card ${enabled.glossary ? 'selected' : ''}">
+          <input type="checkbox" class="ppt-tool-chk" data-tool="glossary" ${enabled.glossary ? 'checked' : ''}>
+          <div class="ppt-tool-card-body">
+            <div class="ppt-tool-card-icon">📖</div>
+            <h3>Persistent Glossary</h3>
+            <p>Instant search, alphabetical A–Z browsing, category filtering, and rich definitions accessible from every lesson.</p>
+            <span class="ppt-badge">${currentConfig.glossary.entries.length} terms configured</span>
+          </div>
+        </label>
+
+        <label class="ppt-tool-card ${enabled.resources ? 'selected' : ''}">
+          <input type="checkbox" class="ppt-tool-chk" data-tool="resources" ${enabled.resources ? 'checked' : ''}>
+          <div class="ppt-tool-card-body">
+            <div class="ppt-tool-card-icon">📁</div>
+            <h3>Persistent Resources</h3>
+            <p>Reference documents, job aids, external links, and downloadable files packaged directly into the course ZIP.</p>
+            <span class="ppt-badge">${currentConfig.resources.items.length} items configured</span>
+          </div>
+        </label>
+
+        <label class="ppt-tool-card ${enabled.help ? 'selected' : ''}">
+          <input type="checkbox" class="ppt-tool-chk" data-tool="help" ${enabled.help ? 'checked' : ''}>
+          <div class="ppt-tool-card-body">
+            <div class="ppt-tool-card-icon">🛟</div>
+            <h3>Help & Support</h3>
+            <p>Course contacts (email, phone, support portal), office hours, response time, and an accessible FAQ troubleshooting accordion.</p>
+            <span class="ppt-badge">${currentConfig.help.faqItems.length} FAQs configured</span>
+          </div>
+        </label>
+      </div>
+    `;
+
+    box.querySelectorAll('.ppt-tool-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const toolKey = chk.getAttribute('data-tool');
+        currentConfig.settings.enabledTools[toolKey] = chk.checked;
+        renderStep2ChooseTools();
+      });
+    });
+
+    stepContentContainer.appendChild(box);
+  }
+
+  // --- STEP 3: Add Content ---
+  function renderStep3AddContent() {
+    const box = document.createElement('div');
+    box.className = 'ppt-step-panel';
+
+    const enabled = currentConfig.settings.enabledTools;
+    const availableTabs = [];
+    if (enabled.glossary) availableTabs.push({ key: 'glossary', label: '📖 Glossary' });
+    if (enabled.resources) availableTabs.push({ key: 'resources', label: '📁 Resources' });
+    if (enabled.help) availableTabs.push({ key: 'help', label: '🛟 Help & Support' });
+
+    let activeContentTab = availableTabs[0]?.key || 'glossary';
+
+    const tabNav = document.createElement('div');
+    tabNav.className = 'ppt-content-subtabs';
+    tabNav.innerHTML = availableTabs.map(t => `
+      <button type="button" class="ppt-subtab-btn ${t.key === activeContentTab ? 'active' : ''}" data-tab="${t.key}">
+        ${t.label}
+      </button>
+    `).join('');
+
+    const editorMount = document.createElement('div');
+    editorMount.className = 'ppt-editor-mount-point';
+
+    function renderEditorTab() {
+      editorMount.innerHTML = '';
+      tabNav.querySelectorAll('.ppt-subtab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === activeContentTab);
+      });
+
+      if (activeContentTab === 'glossary') {
+        editorMount.appendChild(createGlossaryEditor(currentConfig, () => {}));
+      } else if (activeContentTab === 'resources') {
+        editorMount.appendChild(createResourcesEditor(currentConfig, () => {}));
+      } else if (activeContentTab === 'help') {
+        editorMount.appendChild(createHelpEditor(currentConfig, () => {}));
+      }
+    }
+
+    tabNav.querySelectorAll('.ppt-subtab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeContentTab = btn.getAttribute('data-tab');
+        renderEditorTab();
+      });
+    });
+
+    box.appendChild(tabNav);
+    box.appendChild(editorMount);
+    renderEditorTab();
+
+    stepContentContainer.appendChild(box);
+  }
+
+  // --- STEP 4: Style & Position ---
+  function renderStep4StylePosition() {
+    const box = document.createElement('div');
+    box.className = 'ppt-step-panel';
+    box.appendChild(createSettingsEditor(currentConfig, () => {}));
+    stepContentContainer.appendChild(box);
+  }
+
+  // --- STEP 5: Preview & Validate ---
+  function renderStep5PreviewValidate() {
+    const box = document.createElement('div');
+    box.className = 'ppt-step-panel ppt-preview-validate-panel';
+
+    const validation = validatePostPublishConfig(currentConfig);
+
+    box.innerHTML = `
+      <div class="ppt-preview-header">
+        <div class="ppt-viewport-toolbar">
+          <span>Viewport Preview:</span>
+          <button type="button" class="btn btn-secondary btn-sm ppt-vp-btn active" data-width="100%">Desktop (100%)</button>
+          <button type="button" class="btn btn-secondary btn-sm ppt-vp-btn" data-width="768px">Tablet (768px)</button>
+          <button type="button" class="btn btn-secondary btn-sm ppt-vp-btn" data-width="375px">Mobile (375px)</button>
+        </div>
+      </div>
+
+      <div class="ppt-preview-frame-shell">
+        <iframe id="ppt-sim-iframe" class="ppt-sim-iframe" title="Rise Course Tools Live Simulator Preview"></iframe>
+      </div>
+
+      <div class="ppt-validation-report-card">
+        <h3>Pre-Export Quality & Accessibility Validation</h3>
+        <div class="ppt-val-groups">
+          <div class="ppt-val-group passed">
+            <h4>✓ Passed Checks (${validation.passed.length})</h4>
+            <ul>${validation.passed.map(p => `<li>${escapeHTML(p)}</li>`).join('')}</ul>
+          </div>
+          ${validation.warnings.length > 0 ? `
+            <div class="ppt-val-group warnings">
+              <h4>⚠️ Warnings (${validation.warnings.length})</h4>
+              <ul>${validation.warnings.map(w => `<li>${escapeHTML(w)}</li>`).join('')}</ul>
+            </div>
+          ` : ''}
+          ${validation.errors.length > 0 ? `
+            <div class="ppt-val-group errors">
+              <h4>⛔ Critical Errors Blocking Export (${validation.errors.length})</h4>
+              <ul>${validation.errors.map(e => `<li>${escapeHTML(e)}</li>`).join('')}</ul>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+
+    const iframe = box.querySelector('#ppt-sim-iframe');
+    generateSimulatorPreviewHTML(currentConfig).then(html => {
+      if (iframe) {
+        iframe.srcdoc = html;
+      }
+    }).catch(err => {
+      console.error('Failed to generate simulator preview:', err);
+    });
+
+    box.querySelectorAll('.ppt-vp-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        box.querySelectorAll('.ppt-vp-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        iframe.style.width = btn.getAttribute('data-width');
+      });
+    });
+
+    stepContentContainer.appendChild(box);
+  }
+
+  // --- STEP 6: Download Enhanced ZIP ---
+  function renderStep6Download() {
+    const box = document.createElement('div');
+    box.className = 'ppt-step-panel';
+
+    const validation = validatePostPublishConfig(currentConfig);
+
+    box.innerHTML = `
+      <div class="ppt-step-header">
+        <h2>Step 6: Download Enhanced Package</h2>
+        <p>Package your persistent course tools into the final distribution ZIP archive.</p>
+      </div>
+
+      ${validation.errors.length > 0 ? `
+        <div class="ppt-package-detected-card error">
+          <h4>Export Blocked by Validation Errors</h4>
+          <p>Please resolve the following errors before exporting:</p>
+          <ul>${validation.errors.map(e => `<li>${escapeHTML(e)}</li>`).join('')}</ul>
+        </div>
+      ` : `
+        <div class="ppt-export-action-box">
+          <button type="button" class="btn btn-primary btn-lg" id="btn-run-enhancement">
+            <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor"><path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z"/><path d="M15 3v16.17l-4.59-4.58L9 16l7 7 7-7-1.41-1.41L17 19.17V3h-2z"/></svg>
+            <span>Download Enhanced Course ZIP</span>
+          </button>
+          <div id="ppt-enhancement-status" class="ppt-enhancement-status" style="display:none;"></div>
+        </div>
+
+        <div class="ppt-report-preview-box" id="ppt-report-box" style="display:none;">
+          <h4>Enhancement Report Summary</h4>
+          <pre class="ppt-report-pre" id="ppt-report-text"></pre>
+        </div>
+      `}
+    `;
+
+    const dlBtn = box.querySelector('#btn-run-enhancement');
+    const statusEl = box.querySelector('#ppt-enhancement-status');
+    const reportBox = box.querySelector('#ppt-report-box');
+    const reportText = box.querySelector('#ppt-report-text');
+
+    if (dlBtn) {
+      dlBtn.addEventListener('click', async () => {
+        dlBtn.disabled = true;
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Generating enhanced course package...';
+
+        try {
+          const result = await enhanceRisePackage(uploadedFile, currentConfig);
+          if (!result.success) {
+            alert(`Enhancement failed: ${result.error}`);
+            statusEl.textContent = 'Enhancement failed.';
+            dlBtn.disabled = false;
+            return;
+          }
+
+          // Trigger browser download
+          const blobUrl = URL.createObjectURL(result.enhancedBlob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = result.downloadFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+
+          statusEl.textContent = `✓ Successfully downloaded "${result.downloadFilename}" (${formatStorageBytes(result.enhancedBlob.size)})`;
+          reportBox.style.display = 'block';
+          reportText.textContent = result.report;
+        } catch (err) {
+          alert(`Error generating enhanced package: ${err.message}`);
+          statusEl.textContent = 'Error during enhancement.';
+        } finally {
+          dlBtn.disabled = false;
+        }
+      });
+    }
+
+    stepContentContainer.appendChild(box);
+  }
+
+  container.appendChild(stepper);
+  container.appendChild(stepContentContainer);
+  container.appendChild(footerNav);
+
+  renderStepper();
+  renderFooter();
+  renderStepContent();
+
+  return container;
+}

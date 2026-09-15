@@ -155,4 +155,17 @@ export function getRuntimeMediaURLCount() {
   return runtimeObjectURLs.size;
 }
 
+export async function listMedia(store = defaultStore) {
+  return store.getAll();
+}
+
+export async function saveMedia(reference, blob, store = defaultStore) {
+  return saveMediaRecord({ ...reference, blob }, store);
+}
+
+export async function deleteMedia(id, store = defaultStore) {
+  releaseMediaObjectURL(id);
+  return store.delete(id);
+}
+
 export { defaultStore as mediaStore };

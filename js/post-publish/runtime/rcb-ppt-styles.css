@@ -1,0 +1,573 @@
+/**
+ * AT&T Rise Post-Publish Tools — Persistent Learner Runtime Styles
+ * Namespaced with rcb-ppt- to prevent style collisions with Rise or host LMS.
+ */
+
+:root {
+  --rcb-ppt-blue: #0057B8;
+  --rcb-ppt-cobalt: #00388F;
+  --rcb-ppt-navy: #002B66;
+  --rcb-ppt-cyan: #009FDB;
+  --rcb-ppt-dark-bg: #121824;
+  --rcb-ppt-dark-surface: #1E2638;
+  --rcb-ppt-dark-border: rgba(255, 255, 255, 0.12);
+  --rcb-ppt-dark-text: #F3F4F6;
+  --rcb-ppt-dark-muted: #9CA3AF;
+  --rcb-ppt-light-bg: #F8FAFC;
+  --rcb-ppt-light-surface: #FFFFFF;
+  --rcb-ppt-light-border: #E2E8F0;
+  --rcb-ppt-light-text: #0F172A;
+  --rcb-ppt-light-muted: #64748B;
+  --rcb-ppt-radius: 12px;
+  --rcb-ppt-zindex: 999999;
+}
+
+/* Floating Launcher Button */
+.rcb-ppt-launcher-btn {
+  position: fixed;
+  z-index: var(--rcb-ppt-zindex);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 56, 143, 0.28), 0 2px 6px rgba(0, 0, 0, 0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #FFFFFF;
+  background-color: var(--rcb-ppt-blue);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rcb-ppt-launcher-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 56, 143, 0.36), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.rcb-ppt-launcher-btn:active {
+  transform: translateY(0);
+}
+
+.rcb-ppt-launcher-btn:focus-visible {
+  outline: 3px solid var(--rcb-ppt-cyan) !important;
+  outline-offset: 3px !important;
+}
+
+.rcb-ppt-theme-cobalt .rcb-ppt-launcher-btn { background-color: var(--rcb-ppt-cobalt); }
+.rcb-ppt-theme-navy .rcb-ppt-launcher-btn { background-color: var(--rcb-ppt-navy); }
+.rcb-ppt-theme-cyan .rcb-ppt-launcher-btn { background-color: var(--rcb-ppt-cyan); color: #000; }
+
+.rcb-ppt-launcher-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Modal Backdrop */
+.rcb-ppt-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: var(--rcb-ppt-zindex);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.rcb-ppt-backdrop.rcb-ppt-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Slide-out Drawer */
+.rcb-ppt-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: 92vw;
+  z-index: calc(var(--rcb-ppt-zindex) + 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.rcb-ppt-pos-right .rcb-ppt-drawer {
+  right: 0;
+  transform: translateX(100%);
+}
+
+.rcb-ppt-pos-left .rcb-ppt-drawer {
+  left: 0;
+  transform: translateX(-100%);
+}
+
+.rcb-ppt-drawer.rcb-ppt-open {
+  transform: translateX(0);
+}
+
+/* Light Surface */
+.rcb-ppt-surface-light .rcb-ppt-drawer {
+  background-color: var(--rcb-ppt-light-surface);
+  color: var(--rcb-ppt-light-text);
+  border-left: 1px solid var(--rcb-ppt-light-border);
+}
+
+/* Dark Surface */
+.rcb-ppt-surface-dark .rcb-ppt-drawer {
+  background-color: var(--rcb-ppt-dark-surface);
+  color: var(--rcb-ppt-dark-text);
+  border-left: 1px solid var(--rcb-ppt-dark-border);
+}
+
+/* Drawer Header & Tabs */
+.rcb-ppt-drawer-header {
+  padding: 16px 20px 0;
+  border-bottom: 1px solid var(--rcb-ppt-light-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-drawer-header {
+  border-bottom-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rcb-ppt-header-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rcb-ppt-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  color: inherit;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rcb-ppt-close-btn:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Navigation Tabs */
+.rcb-ppt-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.rcb-ppt-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 8px 14px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.rcb-ppt-tab-btn:hover {
+  opacity: 1;
+}
+
+.rcb-ppt-tab-btn.rcb-ppt-active {
+  opacity: 1;
+  color: var(--rcb-ppt-blue);
+  border-bottom-color: var(--rcb-ppt-blue);
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-tab-btn.rcb-ppt-active {
+  color: var(--rcb-ppt-cyan);
+  border-bottom-color: var(--rcb-ppt-cyan);
+}
+
+/* Drawer Content Body */
+.rcb-ppt-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Search Box */
+.rcb-ppt-search-box {
+  position: relative;
+  width: 100%;
+}
+
+.rcb-ppt-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px 10px 38px;
+  font-size: 14px;
+  border-radius: var(--rcb-ppt-radius);
+  border: 1px solid var(--rcb-ppt-light-border);
+  background-color: var(--rcb-ppt-light-bg);
+  color: inherit;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-search-input {
+  background-color: var(--rcb-ppt-dark-bg);
+  border-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Alphabet Jump Pills */
+.rcb-ppt-az-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rcb-ppt-az-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--rcb-ppt-light-border);
+  background-color: var(--rcb-ppt-light-surface);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-az-btn {
+  background-color: var(--rcb-ppt-dark-bg);
+  border-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-az-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.rcb-ppt-az-btn.rcb-ppt-selected {
+  background-color: var(--rcb-ppt-blue);
+  color: #fff;
+  border-color: var(--rcb-ppt-blue);
+}
+
+/* Category Filter Pills */
+.rcb-ppt-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rcb-ppt-cat-pill {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rcb-ppt-light-border);
+  background-color: var(--rcb-ppt-light-bg);
+  color: inherit;
+  cursor: pointer;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-cat-pill {
+  background-color: var(--rcb-ppt-dark-bg);
+  border-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-cat-pill.rcb-ppt-selected {
+  background-color: var(--rcb-ppt-blue);
+  color: #fff;
+  border-color: var(--rcb-ppt-blue);
+}
+
+/* Glossary Cards */
+.rcb-ppt-gloss-card {
+  padding: 16px;
+  border-radius: var(--rcb-ppt-radius);
+  border: 1px solid var(--rcb-ppt-light-border);
+  background-color: var(--rcb-ppt-light-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-gloss-card {
+  background-color: var(--rcb-ppt-dark-bg);
+  border-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-gloss-term {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rcb-ppt-gloss-abbrev {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: rgba(0, 87, 184, 0.1);
+  color: var(--rcb-ppt-blue);
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-gloss-abbrev {
+  background-color: rgba(0, 159, 219, 0.15);
+  color: var(--rcb-ppt-cyan);
+}
+
+.rcb-ppt-gloss-def {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.rcb-ppt-gloss-def p { margin: 0 0 8px; }
+.rcb-ppt-gloss-def p:last-child { margin-bottom: 0; }
+
+.rcb-ppt-gloss-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rcb-ppt-blue);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-gloss-link {
+  color: var(--rcb-ppt-cyan);
+}
+
+/* Resources Cards */
+.rcb-ppt-res-card {
+  padding: 16px;
+  border-radius: var(--rcb-ppt-radius);
+  border: 1px solid var(--rcb-ppt-light-border);
+  background-color: var(--rcb-ppt-light-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-res-card {
+  background-color: var(--rcb-ppt-dark-bg);
+  border-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-res-card.rcb-ppt-featured {
+  border-left: 4px solid var(--rcb-ppt-blue);
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-res-card.rcb-ppt-featured {
+  border-left-color: var(--rcb-ppt-cyan);
+}
+
+.rcb-ppt-res-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rcb-ppt-res-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.rcb-ppt-res-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.85;
+  margin: 0;
+}
+
+.rcb-ppt-res-action-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background-color: var(--rcb-ppt-blue);
+  color: #fff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-res-action-btn {
+  background-color: var(--rcb-ppt-cyan);
+  color: #000;
+}
+
+/* Help & Support Cards */
+.rcb-ppt-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.rcb-ppt-contact-card {
+  padding: 14px;
+  border-radius: var(--rcb-ppt-radius);
+  border: 1px solid var(--rcb-ppt-light-border);
+  background-color: var(--rcb-ppt-light-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-contact-card {
+  background-color: var(--rcb-ppt-dark-bg);
+  border-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rcb-ppt-contact-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+}
+
+.rcb-ppt-contact-val {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rcb-ppt-contact-action {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: rgba(0, 87, 184, 0.1);
+  color: var(--rcb-ppt-blue);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-contact-action {
+  background-color: rgba(0, 159, 219, 0.15);
+  color: var(--rcb-ppt-cyan);
+}
+
+/* FAQ Accordion */
+.rcb-ppt-faq-item {
+  border-radius: 8px;
+  border: 1px solid var(--rcb-ppt-light-border);
+  overflow: hidden;
+  background-color: var(--rcb-ppt-light-surface);
+}
+
+.rcb-ppt-surface-dark .rcb-ppt-faq-item {
+  background-color: var(--rcb-ppt-dark-bg);
+  border-color: var(--rcb-ppt-dark-border);
+}
+
+.rcb-ppt-faq-trigger {
+  width: 100%;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rcb-ppt-faq-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease-out;
+  padding: 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rcb-ppt-faq-item.rcb-ppt-active .rcb-ppt-faq-body {
+  padding: 0 14px 14px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .rcb-ppt-launcher-btn,
+  .rcb-ppt-backdrop,
+  .rcb-ppt-drawer,
+  .rcb-ppt-faq-body {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Mobile full-screen / bottom sheet */
+@media (max-width: 600px) {
+  .rcb-ppt-drawer {
+    width: 100%;
+    max-width: 100%;
+  }
+}

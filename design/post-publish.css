@@ -1,0 +1,378 @@
+/* Rise Post-Publish Tools Authoring Workspace Styles */
+
+.ppt-workflow-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 24px;
+  background-color: var(--bg-app, #F8FAFC);
+  color: var(--text-main, #0F172A);
+  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+/* Stepper Navigation */
+.ppt-stepper-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--att-radius-lg, 16px);
+  padding: 12px 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+  overflow-x: auto;
+}
+
+.ppt-step-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ppt-step-node:hover {
+  background-color: rgba(0, 56, 143, 0.05);
+}
+
+.ppt-step-node.active {
+  color: var(--att-blue, #0057B8);
+  background-color: rgba(0, 87, 184, 0.08);
+}
+
+.ppt-step-node.completed {
+  color: var(--text-main, #0F172A);
+}
+
+.ppt-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--border-color, #E2E8F0);
+  color: var(--text-muted, #64748B);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ppt-step-node.active .ppt-step-num {
+  background-color: var(--att-blue, #0057B8);
+  color: #FFFFFF;
+}
+
+.ppt-step-node.completed .ppt-step-num {
+  background-color: #10B981;
+  color: #FFFFFF;
+}
+
+.ppt-step-connector {
+  flex: 1;
+  height: 2px;
+  background-color: var(--border-color, #E2E8F0);
+  margin: 0 8px;
+  min-width: 16px;
+}
+
+/* Step Content Area */
+.ppt-step-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ppt-step-panel {
+  background-color: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--att-radius-lg, 16px);
+  padding: 32px;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ppt-step-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--text-main, #0F172A);
+}
+
+.ppt-step-header p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted, #64748B);
+  line-height: 1.5;
+}
+
+/* Upload Dropzone */
+.ppt-upload-dropzone {
+  border: 2px dashed var(--border-color, #CBD5E1);
+  border-radius: var(--att-radius-lg, 16px);
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  background-color: rgba(0, 56, 143, 0.02);
+  transition: all 0.2s ease;
+}
+
+.ppt-upload-dropzone:hover, .ppt-upload-dropzone.dragover {
+  border-color: var(--att-blue, #0057B8);
+  background-color: rgba(0, 87, 184, 0.05);
+}
+
+.ppt-upload-dropzone.has-file {
+  border-color: #10B981;
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.ppt-dropzone-icon {
+  color: var(--att-blue, #0057B8);
+}
+
+/* Tool Selection Cards */
+.ppt-tool-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.ppt-tool-card {
+  border: 2px solid var(--border-color, #E2E8F0);
+  border-radius: var(--att-radius-md, 12px);
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  cursor: pointer;
+  background-color: var(--bg-card, #FFFFFF);
+  transition: all 0.2s ease;
+}
+
+.ppt-tool-card:hover {
+  border-color: var(--att-blue, #0057B8);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+}
+
+.ppt-tool-card.selected {
+  border-color: var(--att-blue, #0057B8);
+  background-color: rgba(0, 87, 184, 0.02);
+}
+
+.ppt-tool-card-icon {
+  font-size: 32px;
+}
+
+.ppt-tool-card-body h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ppt-tool-card-body p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted, #64748B);
+}
+
+/* Subtabs in Add Content */
+.ppt-content-subtabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--border-color, #E2E8F0);
+  padding-bottom: 4px;
+  margin-bottom: 20px;
+}
+
+.ppt-subtab-btn {
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #64748B);
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  margin-bottom: -6px;
+}
+
+.ppt-subtab-btn.active {
+  color: var(--att-blue, #0057B8);
+  border-bottom-color: var(--att-blue, #0057B8);
+}
+
+/* Entry Cards */
+.ppt-entry-card {
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--att-radius-md, 12px);
+  background-color: var(--bg-app, #F8FAFC);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.ppt-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ppt-card-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ppt-card-term-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ppt-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* Preview Shell */
+.ppt-preview-frame-shell {
+  width: 100%;
+  height: 600px;
+  background-color: #E2E8F0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.ppt-sim-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background-color: #FFFFFF;
+  transition: width 0.3s ease;
+}
+
+/* Validation Reports */
+.ppt-val-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.ppt-val-group {
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.ppt-val-group.passed {
+  background-color: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+}
+
+.ppt-val-group.warnings {
+  background-color: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+}
+
+.ppt-val-group.errors {
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+
+.ppt-val-group h4 { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+.ppt-val-group ul { margin: 0; padding-left: 20px; }
+.ppt-val-group li { margin-bottom: 4px; }
+
+/* Footer Navigation */
+.ppt-workflow-footer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 24px;
+}
+
+/* Workspace Integration */
+.post-publish-workspace-panel {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-item.post-publish-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-item.post-publish-nav-item .nav-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-item .badge.badge-published {
+  background-color: var(--att-blue, #0057B8);
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .ppt-workflow-container {
+  background-color: var(--bg-app, #0F172A);
+  color: var(--text-main, #F8FAFC);
+}
+
+[data-theme="dark"] .ppt-stepper-nav,
+[data-theme="dark"] .ppt-step-panel {
+  background-color: var(--bg-card, #1E293B);
+  border-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .ppt-upload-zone {
+  border-color: var(--border-color, #475569);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="dark"] .ppt-upload-zone:hover,
+[data-theme="dark"] .ppt-upload-zone.drag-over {
+  background-color: rgba(0, 87, 184, 0.15);
+}
+

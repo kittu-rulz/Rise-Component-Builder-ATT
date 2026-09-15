@@ -109,11 +109,44 @@ export function createZip(entries) {
 }
 
 /**
- * Reads a ZIP archive written by createZip() (STORE method only — this is not a
- * general-purpose unzip implementation; it exists solely to reopen the portable
- * project packages this app itself writes, see js/project-package.js).
+ * Validates that a ZIP entry path is safe against Zip Slip / path traversal attacks.
+ * @param {string} path
+ * @returns {boolean}
+ */
+export function isSafeZipPath(path) {
+  if (!path || typeof path !== 'string') return false;
+  const normalized = path.replace(/\\/g, '/');
+  if (normalized.startsWith('/') || /^[a-zA-Z]:/.test(normalized)) return false;
+  const segments = normalized.split('/');
+  if (segments.some(seg => seg === '..' || seg === '.')) return false;
+  return true;
+}
+
+/**
+ * Decompresses raw DEFLATE bytes using native Web Streams API.
+ * @param {Uint8Array} compressedBytes
+ * @returns {Promise<Uint8Array>}
+ */
+export async function inflateRaw(compressedBytes) {
+  if (typeof DecompressionStream !== 'undefined') {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(compressedBytes);
+        controller.close();
+      }
+    }).pipeThrough(new DecompressionStream('deflate-raw'));
+    const response = new Response(stream);
+    const buffer = await response.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+  throw new Error('DecompressionStream is not supported in this browser environment.');
+}
+
+/**
+ * Reads a ZIP archive supporting STORE (method 0) and DEFLATE (method 8) compression.
+ * Protects against Zip Slip path traversal and corrupt central directories.
  * @param {Blob} blob
- * @returns {Promise<{ path: string, data: Uint8Array }[]>}
+ * @returns {Promise<{ path: string, data: Uint8Array, isDirectory: boolean }[]>}
  */
 export async function readZip(blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -134,19 +167,43 @@ export async function readZip(blob) {
     if (view.getUint32(cursor, true) !== CENTRAL_DIRECTORY_SIGNATURE) throw new Error('Corrupt ZIP central directory.');
     const compressionMethod = view.getUint16(cursor + 10, true);
     const compressedSize = view.getUint32(cursor + 20, true);
+    const uncompressedSize = view.getUint32(cursor + 24, true);
     const nameLength = view.getUint16(cursor + 28, true);
     const extraLength = view.getUint16(cursor + 30, true);
     const commentLength = view.getUint16(cursor + 32, true);
     const localHeaderOffset = view.getUint32(cursor + 42, true);
-    const name = new TextDecoder().decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength));
-    if (compressionMethod !== 0) throw new Error(`ZIP entry "${name}" uses an unsupported compression method (only STORE is supported).`);
+    const rawName = new TextDecoder().decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength));
+    const normalizedName = rawName.replace(/\\/g, '/');
+
+    const isDirectory = normalizedName.endsWith('/');
+    const path = isDirectory ? normalizedName : normalizedName.replace(/^\/+/, '');
+
+    if (!isSafeZipPath(path)) {
+      throw new Error(`Insecure ZIP entry path detected (potential Zip Slip attack): "${rawName}".`);
+    }
 
     const localNameLength = view.getUint16(localHeaderOffset + 26, true);
     const localExtraLength = view.getUint16(localHeaderOffset + 28, true);
     const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
-    entries.push({ path: name, data: bytes.slice(dataStart, dataStart + compressedSize) });
+
+    let data;
+    if (isDirectory || uncompressedSize === 0) {
+      data = new Uint8Array(0);
+    } else if (compressionMethod === 0) {
+      // STORE
+      data = bytes.slice(dataStart, dataStart + compressedSize);
+    } else if (compressionMethod === 8) {
+      // DEFLATE
+      const compressedChunk = bytes.subarray(dataStart, dataStart + compressedSize);
+      data = await inflateRaw(compressedChunk);
+    } else {
+      throw new Error(`ZIP entry "${path}" uses unsupported compression method ${compressionMethod} (only STORE and DEFLATE are supported).`);
+    }
+
+    entries.push({ path, data, isDirectory });
 
     cursor += 46 + nameLength + extraLength + commentLength;
   }
   return entries;
 }
+
