@@ -9,6 +9,7 @@ import { COMPONENT_REGISTRY } from '../component-registry.js';
 import { generateIframeContent as compilePreview } from '../preview.js';
 import { toRgba as colorToRgba } from '../utilities.js';
 import { auditCourseProject } from './project-qa.js';
+import { isolateModal } from './att-modal.js';
 
 const componentRegistry = Object.fromEntries(
   COMPONENT_REGISTRY.map(entry => [entry.id, { ...entry.renderer, validate: entry.validate, version: entry.version }])
@@ -372,51 +373,34 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
       </div>
     `;
 
-    document.body.appendChild(overlay);
+    const modalRoot = document.getElementById('modal-root') || document.body;
+    modalRoot.appendChild(overlay);
 
     const closeBtn = overlay.querySelector('#att-export-review-close-btn');
     const cancelBtn = overlay.querySelector('#att-export-review-cancel-btn');
     const qaBtn = overlay.querySelector('#att-export-review-qa-btn');
     const proceedBtn = overlay.querySelector('#att-export-review-proceed-btn');
 
-    // Focus management inside modal
+    let cleanupIsolation = null;
+    const cleanup = () => {
+      if (cleanupIsolation) cleanupIsolation();
+      overlay.remove();
+    };
+
+    cleanupIsolation = isolateModal(overlay, {
+      triggerElement: previouslyFocused,
+      onDismiss: () => {
+        cleanup();
+        resolve(false);
+      }
+    });
+
     /** @type {HTMLElement[]} */
     // @ts-ignore
     const focusableElements = Array.from(overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => el instanceof HTMLElement);
     if (focusableElements.length > 0) {
       focusableElements[0].focus();
     }
-
-    const cleanup = () => {
-      document.removeEventListener('keydown', handleKeydown);
-      if (mainWorkspace) mainWorkspace.removeAttribute('inert');
-      overlay.remove();
-      if (previouslyFocused instanceof HTMLElement) {
-        previouslyFocused.focus();
-      }
-    };
-
-    const handleKeydown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        cleanup();
-        resolve(false);
-      } else if (e.key === 'Tab') {
-        if (focusableElements.length === 0) return;
-        const first = focusableElements[0];
-        const last = focusableElements[focusableElements.length - 1];
-
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeydown);
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {

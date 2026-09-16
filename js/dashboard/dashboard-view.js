@@ -10,7 +10,7 @@ import {
 import {
   buildProjectSchemaV3, createComponentInstance, createSection
 } from '../project-schema.js';
-import { showPromptDialog, showConfirmDialog } from './att-modal.js';
+import { showPromptDialog, showConfirmDialog, isolateModal } from './att-modal.js';
 
 export class DashboardView {
   constructor({ container = null, onOpenProject = null, onCreateNewComponent = null } = {}) {
@@ -302,11 +302,11 @@ export class DashboardView {
 
   renderCreateModal() {
     return `
-      <div class="modal-overlay" id="create-modal-overlay">
+      <div class="modal-overlay is-active" id="create-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="create-project-modal-title">
         <div class="modal-card">
           <div class="modal-header">
-            <h2 class="modal-title">Create Course Project</h2>
-            <button id="modal-close-btn" class="project-menu-btn" aria-label="Close modal">
+            <h2 id="create-project-modal-title" class="modal-title">Create Course Project</h2>
+            <button id="modal-close-btn" class="project-menu-btn" aria-label="Close dialog" type="button">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
@@ -373,7 +373,8 @@ export class DashboardView {
     // New Project buttons
     const createBtn = this.container.querySelector('#dash-create-btn');
     const emptyCreateBtn = this.container.querySelector('#dash-empty-create-btn');
-    const openModal = () => {
+    const openModal = (e) => {
+      this.lastCreateTrigger = e?.currentTarget || createBtn;
       this.state.isCreateModalOpen = true;
       this.render();
     };
@@ -469,10 +470,27 @@ export class DashboardView {
       const cancelBtn = this.container.querySelector('#modal-cancel-btn');
       const form = this.container.querySelector('#new-project-form');
 
+      if (this.cleanupCreateModalIsolation) {
+        this.cleanupCreateModalIsolation();
+        this.cleanupCreateModalIsolation = null;
+      }
+
       const closeModal = () => {
+        if (this.cleanupCreateModalIsolation) {
+          this.cleanupCreateModalIsolation();
+          this.cleanupCreateModalIsolation = null;
+        }
         this.state.isCreateModalOpen = false;
         this.render();
       };
+
+      if (modalOverlay) {
+        this.cleanupCreateModalIsolation = isolateModal(modalOverlay, {
+          triggerElement: this.lastCreateTrigger,
+          fallbackSelector: '#dash-create-btn',
+          onDismiss: closeModal
+        });
+      }
 
       if (closeBtn) closeBtn.addEventListener('click', closeModal);
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
@@ -492,6 +510,10 @@ export class DashboardView {
 
           const createdProject = this.createNewProjectFromTemplate({ name, client, desc, template });
           saveProject(createdProject);
+          if (this.cleanupCreateModalIsolation) {
+            this.cleanupCreateModalIsolation();
+            this.cleanupCreateModalIsolation = null;
+          }
           this.state.isCreateModalOpen = false;
           this.render();
 

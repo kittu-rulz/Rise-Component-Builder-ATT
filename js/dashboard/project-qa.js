@@ -275,7 +275,7 @@ export class ProjectQaView {
         <main class="workspace-container">
           <div class="workspace-banner" style="margin-bottom: 24px;">
             <div class="workspace-banner-info">
-              <h2 class="workspace-title">Course Quality & Compliance Audit</h2>
+              <h1 class="workspace-title">Course Quality & Compliance Audit</h1>
               <p class="workspace-desc">
                 Technical checks: <strong>${audit.technicalScore}% passed</strong> · 
                 Editorial status: <strong>${audit.editorial.readyCount} Ready</strong>, <strong>${audit.editorial.inReviewCount} In Review</strong>, <strong>${audit.editorial.draftCount} Draft</strong> · 

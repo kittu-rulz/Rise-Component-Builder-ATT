@@ -1,5 +1,6 @@
 import { CATEGORIES, CLASSIFICATIONS, TIERS, COMPONENT_REGISTRY } from './component-registry.js';
 import { escapeHTML } from './utilities.js';
+import { isolateModal } from './dashboard/att-modal.js';
 
 const categoryNameById = new Map(CATEGORIES.map(category => [category.id, category.name]));
 const classificationNameById = new Map(CLASSIFICATIONS.map(classification => [classification.id, classification.name]));
@@ -442,16 +443,43 @@ export function showComponentDetailsModal(component, onUseComponent, compilePrev
     });
   }
 
+  if (cleanupDetailsIsolation) {
+    cleanupDetailsIsolation();
+    cleanupDetailsIsolation = null;
+  }
+
   modal.style.display = 'flex';
+  modal.removeAttribute('inert');
+  modal.setAttribute('aria-hidden', 'false');
+
+  cleanupDetailsIsolation = isolateModal(modal, {
+    triggerElement: lastFocusedElementBeforeModal,
+    onDismiss: closeComponentDetailsModal
+  });
+
   const modalCard = modal.querySelector('.modal-card');
   if (modalCard instanceof HTMLElement) modalCard.focus();
 }
+
+let cleanupDetailsIsolation = null;
 
 export function closeComponentDetailsModal() {
   const modal = document.getElementById('modal-component-details');
   if (!modal) return;
   modal.style.display = 'none';
+  modal.setAttribute('inert', '');
+  modal.setAttribute('aria-hidden', 'true');
+
+  if (cleanupDetailsIsolation) {
+    cleanupDetailsIsolation();
+    cleanupDetailsIsolation = null;
+  }
+
   if (lastFocusedElementBeforeModal && typeof lastFocusedElementBeforeModal.focus === 'function') {
-    lastFocusedElementBeforeModal.focus();
+    try {
+      lastFocusedElementBeforeModal.focus();
+    } catch {
+      // ignore
+    }
   }
 }

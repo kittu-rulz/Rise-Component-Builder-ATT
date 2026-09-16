@@ -22,27 +22,62 @@ function escapeHtml(str) {
 
 const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
 
+const activeModalStack = [];
+
 /**
  * Isolates a modal dialog by:
- * 1. Setting `inert` on background application containers
+ * 1. Setting `inert` on background application containers (#app-shell)
  * 2. Trapping keyboard Tab / Shift+Tab focus inside the modal
  * 3. Listening for Escape key to trigger dismissCallback
- * 4. Restoring focus to the triggerElement when unmounted
+ * 4. Restoring focus to the triggerElement or fallback selector when unmounted
  *
  * @param {HTMLElement} modalElement - The modal container/overlay
  * @param {Object} [options]
  * @param {Element|null} [options.triggerElement] - Element that opened the modal (for focus restoration)
+ * @param {string|null} [options.fallbackSelector] - Fallback CSS selector if opener is re-rendered
  * @param {Function} [options.onDismiss] - Callback when user presses Escape or clicks outside
  * @returns {Function} cleanup - Function to call when modal is closed
  */
-export function isolateModal(modalElement, { triggerElement = null, onDismiss = null } = {}) {
+export function isolateModal(modalElement, { triggerElement = null, fallbackSelector = null, onDismiss = null } = {}) {
   if (!modalElement) return () => {};
 
-  const backgroundRoots = Array.from(document.querySelectorAll('.app-container, .app-workspace, #app-root, .dashboard-container, .workspace-container'))
-    .filter(el => !el.contains(modalElement) && el !== modalElement);
+  const opener = triggerElement || (typeof document !== 'undefined' ? document.activeElement : null);
+  const fallback = fallbackSelector || (opener?.id ? `#${opener.id}` : null);
 
-  // Apply inert to background roots
-  backgroundRoots.forEach(el => {
+  // If previous modal was active, make it inert
+  if (activeModalStack.length > 0) {
+    const parentModal = activeModalStack[activeModalStack.length - 1];
+    if (parentModal.element !== modalElement) {
+      try {
+        parentModal.element.setAttribute('inert', '');
+        parentModal.element.setAttribute('aria-hidden', 'true');
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // App shell background inertness
+  const appShell = typeof document !== 'undefined'
+    ? (document.getElementById('app-shell') || document.querySelector('.app-container'))
+    : null;
+
+  if (appShell && !modalElement.contains(appShell) && !appShell.contains(modalElement)) {
+    try {
+      appShell.setAttribute('inert', '');
+      appShell.setAttribute('aria-hidden', 'true');
+    } catch {
+      // ignore
+    }
+  }
+
+  // Also catch any other siblings outside modal root if not in app shell
+  const otherRoots = typeof document !== 'undefined'
+    ? Array.from(document.querySelectorAll('.app-workspace, #app-root, .dashboard-container, .workspace-container'))
+        .filter(el => !el.contains(modalElement) && el !== modalElement && el !== appShell)
+    : [];
+
+  otherRoots.forEach(el => {
     try {
       el.setAttribute('inert', '');
       el.setAttribute('aria-hidden', 'true');
@@ -50,6 +85,14 @@ export function isolateModal(modalElement, { triggerElement = null, onDismiss = 
       // ignore
     }
   });
+
+  if (typeof document !== 'undefined' && document.body) {
+    document.body.classList.add('has-open-modal');
+  }
+
+  // Record this modal in stack
+  const entry = { element: modalElement, opener, fallback, onDismiss };
+  activeModalStack.push(entry);
 
   const handleKeydown = (e) => {
     if (e.key === 'Escape') {
@@ -84,22 +127,66 @@ export function isolateModal(modalElement, { triggerElement = null, onDismiss = 
     }
   };
 
-  document.addEventListener('keydown', handleKeydown, true);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', handleKeydown, true);
+  }
 
   return function cleanupModalIsolation() {
-    document.removeEventListener('keydown', handleKeydown, true);
-    backgroundRoots.forEach(el => {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', handleKeydown, true);
+    }
+
+    // Remove this modal from stack
+    const idx = activeModalStack.findIndex(item => item.element === modalElement);
+    if (idx !== -1) {
+      activeModalStack.splice(idx, 1);
+    }
+
+    // If there is still a parent modal in stack, restore its active state
+    if (activeModalStack.length > 0) {
+      const currentTop = activeModalStack[activeModalStack.length - 1];
       try {
-        el.removeAttribute('inert');
-        el.removeAttribute('aria-hidden');
+        currentTop.element.removeAttribute('inert');
+        currentTop.element.removeAttribute('aria-hidden');
       } catch {
         // ignore
       }
-    });
+    } else {
+      // Remove inert from appShell and body class
+      if (appShell) {
+        try {
+          appShell.removeAttribute('inert');
+          appShell.removeAttribute('aria-hidden');
+        } catch {
+          // ignore
+        }
+      }
+      otherRoots.forEach(el => {
+        try {
+          el.removeAttribute('inert');
+          el.removeAttribute('aria-hidden');
+        } catch {
+          // ignore
+        }
+      });
+      if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.remove('has-open-modal');
+      }
+    }
 
-    if (triggerElement && typeof /** @type {HTMLElement} */ (triggerElement).focus === 'function') {
+    // Focus restoration: opener -> fallback -> nearest control
+    if (opener && typeof /** @type {HTMLElement} */ (opener).focus === 'function' && document.contains(opener) && !/** @type {HTMLElement} */ (opener).hasAttribute('disabled')) {
       try {
-        /** @type {HTMLElement} */ (triggerElement).focus();
+        /** @type {HTMLElement} */ (opener).focus();
+      } catch {
+        // ignore
+      }
+    } else if (fallback && typeof document !== 'undefined') {
+      try {
+        const fallbackEl = /** @type {HTMLElement|null} */ (document.querySelector(fallback));
+        if (fallbackEl && typeof fallbackEl.focus === 'function' && !fallbackEl.hasAttribute('disabled')) {
+          fallbackEl.focus();
+        }
       } catch {
         // ignore
       }
@@ -175,7 +262,8 @@ export function showPromptDialog({
       </div>
     `;
 
-    document.body.appendChild(overlay);
+    const modalRoot = document.getElementById('modal-root') || document.body;
+    modalRoot.appendChild(overlay);
 
     let cleanupIsolation = null;
     const cleanup = () => {
@@ -283,7 +371,8 @@ export function showConfirmDialog({
       </div>
     `;
 
-    document.body.appendChild(overlay);
+    const modalRoot = document.getElementById('modal-root') || document.body;
+    modalRoot.appendChild(overlay);
 
     let cleanupIsolation = null;
     const cleanup = () => {

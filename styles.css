@@ -660,11 +660,13 @@ a {
   margin-bottom: 24px;
 }
 
+.catalog-header h1,
 .catalog-header h2 {
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.4px;
   color: var(--text-main);
+  margin: 0;
 }
 
 .catalog-header p {
@@ -1387,6 +1389,7 @@ a {
   color: var(--primary-text);
 }
 
+.editor-title-container h1,
 .editor-title-container h2 {
   font-size: 20px;
   font-weight: 600;
@@ -1394,6 +1397,7 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  margin: 0;
 }
 
 .category-pill {
@@ -2802,9 +2806,11 @@ input[type="number"]:focus::-webkit-inner-spin-button {
   align-items: center;
 }
 
+.modal-header h2,
 .modal-header h3 {
   font-size: 16px;
   font-weight: 600;
+  margin: 0;
 }
 
 .modal-close-btn {

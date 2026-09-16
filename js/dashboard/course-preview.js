@@ -198,8 +198,11 @@ export class CoursePreviewView {
         </header>
 
         <main class="workspace-container course-preview-workspace-main" style="display: flex; flex-direction: column; align-items: center; background: var(--bg-canvas, #F4F6F9); min-height: calc(100vh - 120px); padding: 24px 16px;">
-          <div class="preview-viewport-info-banner" style="font-size: 0.8125rem; color: #555; margin-bottom: 12px;">
-            Showing: <strong>${deviceLabel}</strong> · ${orderedItems.filter(i => i.type === 'component').length} components in sequence
+          <div style="width: 100%; max-width: ${maxCanvasWidth}; transition: max-width 0.25s ease; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
+            <h1 class="workspace-title" style="font-size: 1.5rem; font-weight: 700; margin: 0; color: #111;">Course Preview</h1>
+            <div class="preview-viewport-info-banner" style="font-size: 0.8125rem; color: #555;">
+              Showing: <strong>${deviceLabel}</strong> · ${orderedItems.filter(i => i.type === 'component').length} components in sequence
+            </div>
           </div>
 
           <div class="course-preview-canvas ${this.state.showSafeArea ? 'with-safe-area-overlay' : ''}" 

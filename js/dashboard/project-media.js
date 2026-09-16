@@ -113,7 +113,7 @@ export class ProjectMediaView {
           <!-- Quota and Media Storage Info Banner -->
           <div class="workspace-banner" style="margin-bottom: 20px;">
             <div class="workspace-banner-info">
-              <h2 class="workspace-title">Course Media Library</h2>
+              <h1 class="workspace-title">Course Media Library</h1>
               <p class="workspace-desc">
                 High-performance offline assets stored in browser IndexedDB. Stored assets can be referenced across any course component.
               </p>

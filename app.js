@@ -43,6 +43,7 @@ import { ProjectMediaView } from './js/dashboard/project-media.js';
 import { CoursePreviewView } from './js/dashboard/course-preview.js';
 import { ProjectQaView } from './js/dashboard/project-qa.js';
 import { downloadCourseProjectZip, showPreExportReviewDialog } from './js/dashboard/project-export.js';
+import { isolateModal } from './js/dashboard/att-modal.js';
 // app.js is the composition root and is explicitly allowed to depend on any module,
 // including one specific component's own file (docs/ARCHITECTURE.md "Important
 // dependencies") — reused here only for its MM:SS/H:MM:SS formatter, so the builder's own
@@ -2014,14 +2015,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     )).filter(el => el.offsetParent !== null);
   }
 
-  function openModal(id) {
+  const modalIsolationCleanups = new Map();
+
+  function openModal(id, triggerElement = null) {
     const modal = document.getElementById(id);
     if (!modal) return;
-    if (!modalFocusReturn.has(id)) modalFocusReturn.set(id, document.activeElement);
+    const opener = triggerElement || (modalFocusReturn.get(id) || document.activeElement);
+    if (!modalFocusReturn.has(id)) modalFocusReturn.set(id, opener);
     modal.style.display = 'flex';
+    modal.removeAttribute('inert');
     modal.setAttribute('aria-hidden', 'false');
     modalStack = modalStack.filter(existing => existing !== id);
     modalStack.push(id);
+
+    if (modalIsolationCleanups.has(id)) {
+      modalIsolationCleanups.get(id)();
+      modalIsolationCleanups.delete(id);
+    }
+
+    const cleanup = isolateModal(modal, {
+      triggerElement: opener,
+      onDismiss: () => closeModal(id)
+    });
+    modalIsolationCleanups.set(id, cleanup);
+
     const focusable = getFocusableElements(modal.querySelector('.modal-card'));
     (focusable[0] || modal.querySelector('.modal-card'))?.focus();
   }
@@ -2030,11 +2047,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modal = document.getElementById(id);
     if (!modal) return;
     modal.style.display = 'none';
+    modal.setAttribute('inert', '');
     modal.setAttribute('aria-hidden', 'true');
     modalStack = modalStack.filter(existing => existing !== id);
+
+    if (modalIsolationCleanups.has(id)) {
+      modalIsolationCleanups.get(id)();
+      modalIsolationCleanups.delete(id);
+    }
+
     const trigger = modalFocusReturn.get(id);
     modalFocusReturn.delete(id);
-    if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) trigger.focus();
+    if (trigger && typeof trigger.focus === 'function' && document.contains(trigger) && !trigger.disabled) {
+      try {
+        trigger.focus();
+      } catch {
+        // ignore focus error
+      }
+    }
     const settleAsDismissed = modalDefaultSettlers.get(id);
     if (settleAsDismissed) {
       modalDefaultSettlers.delete(id);

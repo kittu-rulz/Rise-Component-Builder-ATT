@@ -15,6 +15,7 @@ import {
 import { showPromptDialog, showConfirmDialog, isolateModal } from './att-modal.js';
 import { getComponentThumbnailSvg } from './component-thumbnails.js';
 import { escapeHTML } from '../utilities.js';
+import { showToast } from '../toast.js';
 
 export class ProjectOverviewView {
   constructor({
@@ -209,7 +210,7 @@ export class ProjectOverviewView {
             <div class="workspace-toolbar-actions" style="display: flex; align-items: center; gap: 8px;">
               <button id="wp-expand-all-btn" class="btn btn-secondary btn-sm" title="Expand all sections">Expand All</button>
               <button id="wp-collapse-all-btn" class="btn btn-secondary btn-sm" title="Collapse all sections">Collapse All</button>
-              <button id="wp-add-unsectioned-comp-btn" class="btn btn-secondary btn-sm">
+              <button id="wp-header-add-comp-btn" class="btn btn-secondary btn-sm" title="Add component to course">
                 + Add Component
               </button>
               <button id="wp-add-section-btn" class="btn btn-primary btn-sm">
@@ -265,6 +266,24 @@ export class ProjectOverviewView {
     `;
 
     this.attachEventListeners();
+  }
+
+  resolveDestinationSectionId(project, secId = undefined, isExplicitStandalone = false) {
+    if (isExplicitStandalone) return null;
+    if (secId && project?.sections?.[secId]) return secId;
+
+    const remembered = project?.lastActiveSectionId || this.state.lastActiveSectionId;
+    if (remembered && project?.sections?.[remembered]) {
+      return remembered;
+    }
+
+    if (project?.sectionOrder && project.sectionOrder.length > 0) {
+      for (const sId of project.sectionOrder) {
+        if (project.sections?.[sId]) return sId;
+      }
+    }
+
+    return null;
   }
 
   matchesFilter(comp, activeFilter, searchFilter) {
@@ -641,32 +660,29 @@ export class ProjectOverviewView {
     this.container.querySelector('#wp-empty-add-sec-btn')?.addEventListener('click', addSectionHandler);
 
     // Add component buttons
-    const openPickerHandler = (secId = undefined, isExplicitStandalone = false) => {
+    const openPickerHandler = (secId = undefined, isExplicitStandalone = false, triggerBtn = null) => {
       const project = this.getProject();
+      this.lastPickerTrigger = triggerBtn || document.activeElement;
       this.state.isPickerOpen = true;
-      if (isExplicitStandalone) {
-        this.state.pickerTargetSectionId = null;
-      } else if (secId) {
-        this.state.pickerTargetSectionId = secId;
+      this.state.pickerTargetSectionId = this.resolveDestinationSectionId(project, secId, isExplicitStandalone);
+      if (secId && project?.sections?.[secId]) {
         this.state.lastActiveSectionId = secId;
-      } else if (this.state.lastActiveSectionId && project?.sections?.[this.state.lastActiveSectionId]) {
-        this.state.pickerTargetSectionId = this.state.lastActiveSectionId;
-      } else if (project?.sectionOrder && project.sectionOrder.length > 0) {
-        this.state.pickerTargetSectionId = project.sectionOrder[0];
-      } else {
-        this.state.pickerTargetSectionId = null;
+        this.updateProject(p => { p.lastActiveSectionId = secId; });
       }
       this.render();
     };
 
-    this.container.querySelector('#wp-add-unsectioned-comp-btn')?.addEventListener('click', () => openPickerHandler(undefined, true));
-    this.container.querySelector('#wp-empty-add-comp-btn')?.addEventListener('click', () => openPickerHandler());
-    this.container.querySelector('[data-action="add-comp-unsectioned"]')?.addEventListener('click', () => openPickerHandler(undefined, true));
+    const globalAddBtn = this.container.querySelector('#wp-header-add-comp-btn') || this.container.querySelector('#wp-add-unsectioned-comp-btn');
+    if (globalAddBtn) {
+      globalAddBtn.addEventListener('click', (e) => openPickerHandler(undefined, false, e.currentTarget));
+    }
+    this.container.querySelector('#wp-empty-add-comp-btn')?.addEventListener('click', (e) => openPickerHandler(undefined, false, e.currentTarget));
+    this.container.querySelector('[data-action="add-comp-unsectioned"]')?.addEventListener('click', (e) => openPickerHandler(undefined, true, e.currentTarget));
 
     this.container.querySelectorAll('[data-action="add-comp-to-sec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        openPickerHandler(btn.dataset.secId);
+        openPickerHandler(btn.dataset.secId, false, btn);
       });
     });
 
@@ -959,23 +975,6 @@ export class ProjectOverviewView {
       const searchInput = this.container.querySelector('#picker-search-input');
       const sectionSelect = this.container.querySelector('#picker-section-select');
 
-      if (this.cleanupPickerIsolation) {
-        this.cleanupPickerIsolation();
-        this.cleanupPickerIsolation = null;
-      }
-      if (modalOverlay) {
-        this.cleanupPickerIsolation = isolateModal(modalOverlay, {
-          onDismiss: () => {
-            if (this.cleanupPickerIsolation) {
-              this.cleanupPickerIsolation();
-              this.cleanupPickerIsolation = null;
-            }
-            this.state.isPickerOpen = false;
-            this.render();
-          }
-        });
-      }
-
       const closePicker = () => {
         if (this.cleanupPickerIsolation) {
           this.cleanupPickerIsolation();
@@ -984,6 +983,14 @@ export class ProjectOverviewView {
         this.state.isPickerOpen = false;
         this.render();
       };
+
+      if (modalOverlay) {
+        this.cleanupPickerIsolation = isolateModal(modalOverlay, {
+          triggerElement: this.lastPickerTrigger,
+          fallbackSelector: '#wp-header-add-comp-btn',
+          onDismiss: closePicker
+        });
+      }
 
       if (closeBtn) closeBtn.addEventListener('click', closePicker);
       if (cancelBtn) cancelBtn.addEventListener('click', closePicker);
@@ -1016,6 +1023,7 @@ export class ProjectOverviewView {
       this.container.querySelectorAll('[data-action="preview-picker-item"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
+          this.lastDetailsTrigger = btn;
           const compType = btn.dataset.compType;
           this.state.previewDetailsComp = getComponentById(COMPONENT_REGISTRY, compType);
           this.render();
@@ -1034,12 +1042,18 @@ export class ProjectOverviewView {
         });
 
         const targetSecId = this.state.pickerTargetSectionId;
+        const project = this.getProject();
+        const destName = (targetSecId && project?.sections?.[targetSecId]?.name)
+          ? project.sections[targetSecId].name
+          : 'Unsectioned Area';
+
         this.updateProject(p => {
           if (!p.components) p.components = {};
           p.components[newComp.id] = newComp;
           if (targetSecId && p.sections?.[targetSecId]) {
             if (!p.sections[targetSecId].componentOrder) p.sections[targetSecId].componentOrder = [];
             p.sections[targetSecId].componentOrder.push(newComp.id);
+            p.lastActiveSectionId = targetSecId;
           } else {
             if (!p.unsectionedComponentOrder) p.unsectionedComponentOrder = [];
             p.unsectionedComponentOrder.push(newComp.id);
@@ -1053,6 +1067,8 @@ export class ProjectOverviewView {
         this.state.isPickerOpen = false;
         this.state.previewDetailsComp = null;
         this.render();
+
+        showToast(`${regEntry?.name || 'Component'} added to ${destName}.`, 'success');
 
         if (this.onEditComponent) {
           this.onEditComponent(this.getProject(), newComp);
@@ -1078,18 +1094,6 @@ export class ProjectOverviewView {
         this.cleanupDetailsIsolation();
         this.cleanupDetailsIsolation = null;
       }
-      if (detailsOverlay) {
-        this.cleanupDetailsIsolation = isolateModal(detailsOverlay, {
-          onDismiss: () => {
-            if (this.cleanupDetailsIsolation) {
-              this.cleanupDetailsIsolation();
-              this.cleanupDetailsIsolation = null;
-            }
-            this.state.previewDetailsComp = null;
-            this.render();
-          }
-        });
-      }
 
       const closeDetails = () => {
         if (this.cleanupDetailsIsolation) {
@@ -1099,6 +1103,14 @@ export class ProjectOverviewView {
         this.state.previewDetailsComp = null;
         this.render();
       };
+
+      if (detailsOverlay) {
+        this.cleanupDetailsIsolation = isolateModal(detailsOverlay, {
+          triggerElement: this.lastDetailsTrigger,
+          fallbackSelector: '#picker-modal-overlay',
+          onDismiss: closeDetails
+        });
+      }
 
       if (detailsCloseBtn) detailsCloseBtn.addEventListener('click', closeDetails);
       if (detailsCancelBtn) detailsCancelBtn.addEventListener('click', closeDetails);

@@ -482,6 +482,14 @@ export function createPostPublishWorkflow() {
     stepContentContainer.appendChild(box);
   }
 
+  const workflowHeader = document.createElement('div');
+  workflowHeader.className = 'ppt-workflow-header';
+  workflowHeader.innerHTML = `
+    <h1 class="ppt-page-title" style="font-size: 1.5rem; font-weight: 700; margin: 0 0 4px 0; color: var(--text-main, #111);">Persistent Course Tools</h1>
+    <p style="font-size: 0.875rem; color: var(--text-muted, #666); margin: 0 0 16px 0;">Add persistent glossary, resources, and help to an exported Rise course.</p>
+  `;
+
+  container.appendChild(workflowHeader);
   container.appendChild(stepper);
   container.appendChild(stepContentContainer);
   container.appendChild(footerNav);
