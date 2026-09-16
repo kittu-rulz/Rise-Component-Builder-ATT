@@ -153,7 +153,7 @@ test('Export modal shows a compact size summary with code collapsed by default, 
   await expect(page.locator('#export-html-code')).toBeVisible();
 });
 
-test('completion tracking blocks the Iframe Snippet and Web Package ZIP exports, and guides back to Copy for Rise', async ({ page }) => {
+test('completion tracking blocks Web Package ZIP export and guides back to Copy for Rise', async ({ page }) => {
   await openAccordion(page);
   await page.locator('.editor-tab[data-tab="completion"]').click();
   await page.locator('#completion-mode-all-items').check();
@@ -164,23 +164,14 @@ test('completion tracking blocks the Iframe Snippet and Web Package ZIP exports,
   await expect(page.locator('#export-primary-title')).toHaveText('Rise Code Block with completion');
   await expect(page.locator('#btn-copy-html')).toBeEnabled();
 
-  await page.locator('#export-advanced-options > summary').click();
-
-  const iframeButton = page.locator('#btn-copy-iframe');
-  await expect(iframeButton).toBeDisabled();
-  await expect(page.locator('#pane-export-iframe .completion-export-block')).toContainText('Copy for Rise');
-
-  await page.locator('.export-tab[data-export-type="rise-zip"]').click();
   const zipButton = page.locator('#btn-download-rise-zip');
   await expect(zipButton).toBeDisabled();
-  await expect(page.locator('#pane-export-rise-zip .completion-export-block')).toContainText('Copy for Rise');
+  await expect(page.locator('#export-card-zip .completion-export-block')).toContainText('Copy for Rise');
 
-  // Turning completion off releases both blocks.
+  // Turning completion off releases the block.
   await page.locator('#modal-export .modal-close-btn').click();
   await page.locator('#completion-mode-none').check();
   await page.locator('#btn-export').click();
-  await page.locator('#export-advanced-options > summary').click();
-  await expect(page.locator('#btn-copy-iframe')).toBeEnabled();
   await expect(page.locator('#btn-download-rise-zip')).toBeEnabled();
-  await expect(page.locator('#pane-export-iframe .completion-export-block')).toHaveCount(0);
+  await expect(page.locator('#export-card-zip .completion-export-block')).toHaveCount(0);
 });

@@ -18,14 +18,13 @@ import { writePreview, openPreview, generateIframeContent as compilePreview, COM
 import { getDeviceWidthLabel } from './js/device-preview.js';
 import { measureRenderedDimensions } from './js/dom-measurement.js';
 import {
-  buildCoursePackZip, buildExportPayload, buildLargePasteWarning, buildRiseEmbedSnippet,
-  buildRiseProjectZip, buildStorylineWebObjectZip, downloadCoursePackZip, downloadHtml,
-  downloadProjectJson, downloadStorylineWebObjectZip, downloadZipFile, formatExportedFileSize,
+  buildCoursePackZip, buildExportPayload, buildLargePasteWarning,
+  buildRiseProjectZip, downloadCoursePackZip,
+  downloadProjectJson, downloadZipFile, formatExportedFileSize,
   getExportedFileSize, prepareMediaExport
 } from './js/export.js';
 import { copyTextToClipboard, describeStorageUsage, escapeHTML, formatItemLabel, formatReadableDate, normalizeHeadingLevel, toRgba as colorToRgba } from './js/utilities.js';
 import { showToast } from './js/toast.js';
-import { COMPATIBILITY_TIERS, getExportFormatCompatibility } from './js/compatibility.js';
 import {
   checkCompletionExportFormatIssue, collectSyncIssues, runPreflight, summarizePreflight, summarizePreflightForAnnouncement
 } from './js/validation.js';
@@ -3098,42 +3097,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Export compatibility report — shown before any download/copy action, sourced from
-  // js/compatibility.js so the UI never asserts a host-compatibility claim the docs don't.
-  function renderExportCompatibilityReport(formatKey) {
-    const container = document.getElementById('export-compatibility-report');
-    if (!container) return;
-    const entry = getExportFormatCompatibility(formatKey);
-    if (!entry) { container.innerHTML = ''; return; }
-    const tier = COMPATIBILITY_TIERS[entry.tier];
-    container.innerHTML = `
-      <div class="compat-report-header">
-        <span class="compat-report-title">Compatibility</span>
-        <span class="compat-badge ${tier.badgeClass}">${tier.label}</span>
-      </div>
-      <p class="compat-report-summary">${escapeHTML(entry.summary)}</p>
-      <ul class="compat-report-details">${entry.details.map(detail => `<li>${escapeHTML(detail)}</li>`).join('')}</ul>
-    `;
-  }
-
-  // Export Tab Toggle Options
-  const exportTabs = document.querySelectorAll('.export-tab');
-  const exportPanes = document.querySelectorAll('.export-pane');
-  exportTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      exportTabs.forEach(t => t.classList.remove('active'));
-      exportPanes.forEach(p => p.classList.remove('active'));
-
-      tab.classList.add('active');
-      const paneId = `pane-export-${tab.getAttribute('data-export-type')}`;
-      document.getElementById(paneId).classList.add('active');
-      renderExportCompatibilityReport(tab.getAttribute('data-export-type'));
-    });
-  });
 
   // Code Copy Buttons
-  setupCopyBtn('btn-copy-iframe', 'export-iframe-code');
-  setupCopyBtn('btn-copy-rise-embed', 'export-rise-embed-code');
   setupCopyBtn('btn-copy-html', 'export-html-code');
 
   function setupCopyBtn(btnId, targetId) {
@@ -3167,7 +3132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let currentExportBundle = null;
   let currentRiseZipBundle = null;
-  let currentStorylineZipBundle = null;
 
   async function prepareCurrentExport() {
     const prepared = await prepareMediaExport(appState.config);
@@ -3194,70 +3158,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
-  async function prepareStorylineZipBundle() {
-    const prepared = await prepareMediaExport(appState.config, { mode: 'package' });
-    const exportState = { ...appState, config: prepared.config };
-    const html = compilePreview(exportState, componentRegistry, colorToRgba);
-    if (prepared.missing.length) {
-      return { html, manifest: prepared.manifest, warnings: prepared.warnings, missing: prepared.missing, blob: null, size: 0 };
-    }
-    const title = appState.selectedComponent?.title || 'Storyline Web Object';
-    const packaged = await buildStorylineWebObjectZip({ html, assets: prepared.assets, manifest: prepared.manifest, title });
-    return {
-      html, manifest: prepared.manifest, missing: prepared.missing,
-      warnings: [...prepared.warnings, ...packaged.warnings], blob: packaged.blob, size: packaged.size
-    };
-  }
-
   // Tracked so applyCompletionExportGate() (a second, independent gate layered on top —
   // see below) never re-enables a button the general preflight gate already disabled.
   let lastExportGateEnabled = true;
 
   function setExportActionsEnabled(enabled) {
     lastExportGateEnabled = enabled;
-    ['btn-copy-iframe', 'btn-copy-rise-embed', 'btn-copy-html', 'btn-download-html'].forEach(id => {
-      const button = document.getElementById(id);
-      if (!button) return;
-      button.disabled = !enabled;
-      button.title = enabled ? '' : 'Fix the blocking errors listed above before exporting.';
-    });
-    // The Rise Project ZIP and Storyline ZIP buttons have their own independent, narrower block condition
-    // (a genuinely missing asset) layered on top of this preflight gate.
-    ['btn-download-rise-zip', 'btn-download-storyline-zip'].forEach(id => {
-      const zipButton = document.getElementById(id);
-      if (zipButton && enabled === false) {
-        zipButton.disabled = true;
-        zipButton.title = 'Fix the blocking errors listed above before exporting.';
-      }
-    });
+    const copyBtn = document.getElementById('btn-copy-html');
+    if (copyBtn) {
+      copyBtn.disabled = !enabled;
+      copyBtn.title = enabled ? '' : 'Fix the blocking errors listed above before exporting.';
+    }
+    const zipButton = document.getElementById('btn-download-rise-zip');
+    if (zipButton && enabled === false) {
+      zipButton.disabled = true;
+      zipButton.title = 'Fix the blocking errors listed above before exporting.';
+    }
   }
 
   // A second, independent Blocking gate (Requirement 4, P02) layered on top of the general
-  // preflight gate above: when completion tracking is on, the Iframe Snippet, Rise Embed, and Web
-  // Package ZIP formats can't report completion to Rise (js/compatibility.js's single
-  // source of truth), so their actions are disabled with a direct fix — use "Copy for
-  // Rise" in the primary panel instead — regardless of whether the rest of the component
-  // is otherwise clean. Only relaxes a button when the general gate also allows it.
+  // preflight gate above: when completion tracking is on, the Web Package ZIP format
+  // can't report completion to Rise (js/compatibility.js's single source of truth), so its
+  // action is disabled with a direct fix — use "Copy for Rise" instead.
   function applyCompletionExportGate() {
-    [['iframe', 'btn-copy-iframe'], ['rise-embed', 'btn-copy-rise-embed'], ['rise-zip', 'btn-download-rise-zip'], ['storyline', 'btn-download-storyline-zip']].forEach(([formatKey, buttonId]) => {
-      const gateIssue = checkCompletionExportFormatIssue(appState.config, formatKey);
-      const button = document.getElementById(buttonId);
-      const pane = document.getElementById(`pane-export-${formatKey}`);
-      let banner = pane?.querySelector('.completion-export-block');
-      if (gateIssue) {
-        if (pane && !banner) {
-          banner = document.createElement('div');
-          banner.className = 'field-error completion-export-block';
-          banner.setAttribute('role', 'alert');
-          pane.insertBefore(banner, pane.firstChild);
-        }
-        if (banner) banner.textContent = gateIssue.explanation;
-        if (button) { button.disabled = true; button.title = 'Switch to "Copy for Rise" in the main panel — this format doesn\'t report completion to Rise.'; }
-      } else {
-        if (banner) banner.remove();
-        if (button && lastExportGateEnabled) { button.disabled = false; button.title = ''; }
+    const gateIssue = checkCompletionExportFormatIssue(appState.config, 'rise-zip');
+    const zipButton = document.getElementById('btn-download-rise-zip');
+    const zipCard = document.getElementById('export-card-zip');
+    let banner = zipCard?.querySelector('.completion-export-block');
+    if (gateIssue) {
+      if (zipCard && !banner) {
+        banner = document.createElement('div');
+        banner.className = 'field-error completion-export-block';
+        banner.setAttribute('role', 'alert');
+        const cardBody = zipCard.querySelector('.export-card-body');
+        if (cardBody) cardBody.insertBefore(banner, cardBody.firstChild);
+        else zipCard.insertBefore(banner, zipCard.firstChild);
       }
-    });
+      if (banner) banner.textContent = gateIssue.explanation;
+      if (zipButton) { zipButton.disabled = true; zipButton.title = 'Switch to "Copy for Rise" — the ZIP package doesn\'t report completion to Rise.'; }
+    } else {
+      if (banner) banner.remove();
+      if (zipButton && lastExportGateEnabled) { zipButton.disabled = false; zipButton.title = ''; }
+    }
   }
 
   async function runExportPreflightGate() {
@@ -3287,46 +3229,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Primary export recommendation: the Fragment/"Copy for Rise" box is the one dominant
-  // action, relabeled when completion tracking is on and superseded entirely by a
-  // "use Web Package ZIP" notice when media can't be safely inlined into it.
+  // 2-Card Export Layout: Adaptively highlights Copy for Rise (standard components)
+  // vs Web Package ZIP (when media elements are uploaded or attached).
   function updatePrimaryExportSection(payload) {
     const trackCompletion = Boolean(appState.config.trackCompletion);
     const title = document.getElementById('export-primary-title');
     const desc = document.getElementById('export-primary-desc');
-    const zipNotice = document.getElementById('export-primary-zip-notice');
-    const codeBox = document.getElementById('export-primary-code-box');
-    const steps = document.getElementById('export-primary-steps');
-    const advancedDetails = document.getElementById('export-advanced-options');
+    const riseCard = document.getElementById('export-card-rise');
+    const zipCard = document.getElementById('export-card-zip');
     const pasteWarningBox = document.getElementById('export-large-paste-warning');
-    const zipRequired = payload.warnings.length > 0;
+    const hasMedia = (payload.assets && payload.assets.length > 0) || payload.warnings.length > 0;
 
-    if (title) title.textContent = zipRequired
-      ? 'This component needs to be hosted'
-      : (trackCompletion ? 'Rise Code Block with completion' : 'Copy for Rise');
-    if (desc) desc.textContent = zipRequired
-      ? ''
-      : (trackCompletion
+    if (title) {
+      title.textContent = trackCompletion ? 'Rise Code Block with completion' : 'Copy for Rise';
+    }
+    if (desc) {
+      desc.textContent = trackCompletion
         ? 'Paste this into a Code > Add code block in Rise 360. This format is required for Rise to detect when this component is complete.'
-        : 'Paste this into a Code > Add code block in Rise 360.');
+        : 'Paste directly into a Code > Add code block in Articulate Rise.';
+    }
 
-    if (zipNotice) zipNotice.hidden = !zipRequired;
-    if (codeBox) codeBox.hidden = zipRequired;
-    if (steps) steps.hidden = zipRequired;
-    // The paste-size warning is about the Fragment code specifically — irrelevant once
-    // that box is hidden in favor of the "needs to be hosted" ZIP notice.
-    if (zipRequired && pasteWarningBox) pasteWarningBox.hidden = true;
+    if (riseCard && zipCard) {
+      riseCard.classList.toggle('is-recommended', !hasMedia);
+      zipCard.classList.toggle('is-recommended', hasMedia);
+    }
 
-    if (zipRequired && advancedDetails) {
-      advancedDetails.open = true;
-      const zipTab = document.querySelector('.export-tab[data-export-type="rise-zip"]');
-      if (zipTab && !zipTab.classList.contains('active')) zipTab.click();
+    if (hasMedia && pasteWarningBox) {
+      pasteWarningBox.hidden = false;
+      pasteWarningBox.textContent = 'Media elements detected in this component. The Web Package ZIP is recommended for optimal loading performance.';
     }
   }
 
   async function setupExportModalContent() {
-    const activeTab = document.querySelector('.export-tab.active');
-    renderExportCompatibilityReport(activeTab ? activeTab.getAttribute('data-export-type') : 'iframe');
     const canExport = await runExportPreflightGate();
     const warningBox = document.getElementById('export-media-warning');
     if (warningBox) { warningBox.hidden = false; warningBox.classList.add('is-loading'); warningBox.textContent = 'Preparing media export…'; }
@@ -3340,34 +3274,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const payload = currentExportBundle;
 
-    // Iframe Embed Code using self-contained srcdoc
-    const iframeCode = document.getElementById('export-iframe-code');
-    iframeCode.textContent = payload.iframe;
-    const iframeSizeLabel = document.getElementById('export-iframe-size');
-    if (iframeSizeLabel) iframeSizeLabel.textContent = formatExportedFileSize(getExportedFileSize(payload.iframe));
-
-    // Rise Multimedia Embed snippet
-    const riseEmbedUrlInput = document.getElementById('export-rise-embed-url');
-    const riseEmbedCode = document.getElementById('export-rise-embed-code');
-    const riseEmbedSizeLabel = document.getElementById('export-rise-embed-size');
-    const updateRiseEmbedSnippet = () => {
-      const url = riseEmbedUrlInput?.value.trim() || 'https://your-server.example.com/components/my-block/index.html';
-      const snippet = buildRiseEmbedSnippet({
-        url,
-        title: appState.selectedComponent?.title || 'AT&T Interactive Block'
-      });
-      if (riseEmbedCode) riseEmbedCode.textContent = snippet;
-      if (riseEmbedSizeLabel) riseEmbedSizeLabel.textContent = formatExportedFileSize(getExportedFileSize(snippet));
-    };
-    updateRiseEmbedSnippet();
-    if (riseEmbedUrlInput && !riseEmbedUrlInput.dataset.listenerAttached) {
-      riseEmbedUrlInput.dataset.listenerAttached = 'true';
-      riseEmbedUrlInput.addEventListener('input', updateRiseEmbedSnippet);
-    }
-
     // Paste-friendly HTML fragment for custom HTML blocks
     const htmlCode = document.getElementById('export-html-code');
-    htmlCode.textContent = payload.fragment;
+    if (htmlCode) htmlCode.textContent = payload.fragment;
     const htmlSize = getExportedFileSize(payload.fragment);
     const htmlSizeLabel = document.getElementById('export-html-size');
     if (htmlSizeLabel) htmlSizeLabel.textContent = formatExportedFileSize(htmlSize);
@@ -3384,14 +3293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     updatePrimaryExportSection(payload);
-
-    const fileSizeLabel = document.getElementById('export-file-size');
-    if (fileSizeLabel) fileSizeLabel.textContent = `Standalone HTML file size: ${formatExportedFileSize(getExportedFileSize(payload.html))}`;
-
     await setupRiseZipPane(canExport);
-    await setupStorylineZipPane(canExport);
-    // setupRiseZipPane() and setupStorylineZipPane() set buttons disabled/title state purely from
-    // general gate + missing-asset check. Re-apply completion export gate last so it has final word.
     applyCompletionExportGate();
   }
 
@@ -3431,60 +3333,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function setupStorylineZipPane(canExport) {
-    const zipWarningBox = document.getElementById('storyline-zip-warning');
-    const zipBlockingBox = document.getElementById('storyline-zip-blocking');
-    const zipSizeLabel = document.getElementById('storyline-zip-file-size');
-    const zipButton = document.getElementById('btn-download-storyline-zip');
-    if (zipWarningBox) { zipWarningBox.hidden = false; zipWarningBox.classList.add('is-loading'); zipWarningBox.textContent = 'Preparing Storyline Web Object ZIP…'; }
-    try {
-      currentStorylineZipBundle = await prepareStorylineZipBundle();
-    } catch (error) {
-      currentStorylineZipBundle = null;
-      if (zipWarningBox) { zipWarningBox.classList.remove('is-loading'); zipWarningBox.textContent = `Storyline ZIP preparation failed: ${error.message}`; }
-      return;
-    }
-    const bundle = currentStorylineZipBundle;
-    if (zipWarningBox) {
-      zipWarningBox.classList.remove('is-loading');
-      zipWarningBox.hidden = bundle.warnings.length === 0;
-      zipWarningBox.textContent = bundle.warnings.join(' ');
-    }
-    const blocked = bundle.missing.length > 0;
-    if (zipBlockingBox) {
-      zipBlockingBox.hidden = !blocked;
-      zipBlockingBox.textContent = blocked
-        ? `Export blocked: ${bundle.missing.length} required asset${bundle.missing.length === 1 ? ' is' : 's are'} missing from local storage (${bundle.missing.join(', ')}). Re-upload the missing file(s) before exporting.`
-        : '';
-    }
-    if (zipSizeLabel) zipSizeLabel.textContent = blocked ? '' : `Storyline Web Object ZIP size: ${formatExportedFileSize(bundle.size)}`;
-    if (zipButton) {
-      const enabled = canExport && !blocked;
-      zipButton.disabled = !enabled;
-      zipButton.title = blocked ? 'Re-upload the missing asset(s) before exporting.' : enabled ? '' : 'Fix the blocking errors listed above before exporting.';
-    }
-  }
-
-  const btnDownloadHtml = document.getElementById('btn-download-html');
-  if (btnDownloadHtml) {
-    btnDownloadHtml.addEventListener('click', async () => {
-      const title = appState.selectedComponent?.title || 'rise-component';
-      let bundle;
-      try {
-        bundle = await prepareCurrentExport();
-      } catch (error) {
-        showToast(`Export failed: ${error.message}`, 'error', 6000);
-        return;
-      }
-      if (bundle.warnings.length) {
-        currentExportBundle = bundle;
-        showToast('Single-file export is blocked because one or more uploaded assets require separate files. Use the Web Package ZIP option instead.', 'warning', 7000);
-        return;
-      }
-      downloadHtml(title, bundle.html);
-    });
-  }
-
   const btnDownloadRiseZip = document.getElementById('btn-download-rise-zip');
   if (btnDownloadRiseZip) {
     btnDownloadRiseZip.addEventListener('click', async () => {
@@ -3502,26 +3350,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       downloadZipFile(title, bundle.blob);
       showToast(`Web Package ZIP downloaded (${formatExportedFileSize(bundle.size)}).`, 'success');
-    });
-  }
-
-  const btnDownloadStorylineZip = document.getElementById('btn-download-storyline-zip');
-  if (btnDownloadStorylineZip) {
-    btnDownloadStorylineZip.addEventListener('click', async () => {
-      const title = appState.selectedComponent?.title || 'rise-component';
-      let bundle = currentStorylineZipBundle;
-      try {
-        if (!bundle) bundle = await prepareStorylineZipBundle();
-      } catch (error) {
-        showToast(`Export failed: ${error.message}`, 'error', 6000);
-        return;
-      }
-      if (bundle.missing.length) {
-        showToast(`Export blocked: ${bundle.missing.length} required asset${bundle.missing.length === 1 ? ' is' : 's are'} missing from local storage. Re-upload the missing file(s).`, 'error', 7000);
-        return;
-      }
-      downloadStorylineWebObjectZip(title, bundle.blob);
-      showToast(`Storyline Web Object ZIP downloaded (${formatExportedFileSize(bundle.size)}).`, 'success');
     });
   }
 
