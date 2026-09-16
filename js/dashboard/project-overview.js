@@ -268,6 +268,52 @@ export class ProjectOverviewView {
     this.attachEventListeners();
   }
 
+  addComponentToProject(type, targetSecId = null) {
+    const regEntry = getComponentById(COMPONENT_REGISTRY, type);
+    const defaultCfg = regEntry ? getDefaultConfig(regEntry) : {};
+
+    const newComp = createComponentInstance({
+      name: regEntry?.name || 'New Component',
+      type,
+      status: 'draft',
+      config: defaultCfg
+    });
+
+    const project = this.getProject();
+    const resolvedSecId = this.resolveDestinationSectionId(project, targetSecId);
+    const destName = (resolvedSecId && project?.sections?.[resolvedSecId]?.name)
+      ? project.sections[resolvedSecId].name
+      : 'Unsectioned Area';
+
+    this.updateProject(p => {
+      if (!p.components) p.components = {};
+      p.components[newComp.id] = newComp;
+      if (resolvedSecId && p.sections?.[resolvedSecId]) {
+        if (!p.sections[resolvedSecId].componentOrder) p.sections[resolvedSecId].componentOrder = [];
+        p.sections[resolvedSecId].componentOrder.push(newComp.id);
+        p.lastActiveSectionId = resolvedSecId;
+      } else {
+        if (!p.unsectionedComponentOrder) p.unsectionedComponentOrder = [];
+        p.unsectionedComponentOrder.push(newComp.id);
+      }
+    });
+
+    if (this.cleanupPickerIsolation) {
+      this.cleanupPickerIsolation();
+      this.cleanupPickerIsolation = null;
+    }
+    this.state.isPickerOpen = false;
+    this.state.previewDetailsComp = null;
+    this.render();
+
+    showToast(`${regEntry?.name || 'Component'} added to ${destName}.`, 'success');
+
+    if (this.onEditComponent) {
+      this.onEditComponent(this.getProject(), newComp);
+    }
+    return newComp;
+  }
+
   resolveDestinationSectionId(project, secId = undefined, isExplicitStandalone = false) {
     if (isExplicitStandalone) return null;
     if (secId && project?.sections?.[secId]) return secId;
@@ -331,9 +377,36 @@ export class ProjectOverviewView {
         <div class="section-card-body ${section.collapsed ? 'collapsed' : ''}" style="padding: 12px 16px; display: ${section.collapsed ? 'none' : 'flex'}; flex-direction: column; gap: 8px;">
           ${filteredCompIds.length > 0 ? `
             ${filteredCompIds.map((cId, idx) => this.renderComponentRow(project, cId, sectionId, idx, filteredCompIds.length)).join('')}
+          ` : allCompIds.length === 0 ? `
+            <div class="section-quick-start-box" style="padding: 20px 16px; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;">
+              <div style="max-width: 480px;">
+                <p style="font-size: 0.875rem; font-weight: 600; color: #1E293B; margin: 0 0 4px 0;">Start building ${escapeHTML(section.name)}</p>
+                <p style="font-size: 0.8125rem; color: #64748B; margin: 0;">Add an interactive block or choose from popular AT&amp;T interaction patterns:</p>
+              </div>
+              <div class="quick-add-chips-grid" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="multiple-choice" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
+                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Multiple Choice
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="accordion" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
+                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Accordion
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="card-carousel" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
+                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Card Carousel
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="scenario" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
+                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Scenario
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="interactive-video" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
+                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Interactive Video
+                </button>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" data-action="add-comp-to-sec" data-sec-id="${sectionId}" style="margin-top: 4px; padding: 6px 16px;">
+                Browse All 26 Components
+              </button>
+            </div>
           ` : `
             <div class="section-empty-hint" style="font-size: 0.8125rem; color: #777; padding: 12px 8px;">
-              ${allCompIds.length === 0 ? 'No components in this section yet. Click "+ Add Component" to add your first interactive block.' : 'No components match the current filter.'}
+              No components match the current filter.
             </div>
           `}
         </div>
@@ -686,6 +759,15 @@ export class ProjectOverviewView {
       });
     });
 
+    this.container.querySelectorAll('[data-action="quick-add-comp"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const compType = btn.dataset.compType;
+        const secId = btn.dataset.secId;
+        this.addComponentToProject(compType, secId);
+      });
+    });
+
     // Toggle section collapse
     this.container.querySelectorAll('[data-toggle-sec]').forEach(header => {
       header.addEventListener('click', (e) => {
@@ -1030,55 +1112,10 @@ export class ProjectOverviewView {
         });
       });
 
-      const handleAddComponent = (type) => {
-        const regEntry = getComponentById(COMPONENT_REGISTRY, type);
-        const defaultCfg = regEntry ? getDefaultConfig(regEntry) : {};
-
-        const newComp = createComponentInstance({
-          name: regEntry?.name || 'New Component',
-          type,
-          status: 'draft',
-          config: defaultCfg
-        });
-
-        const targetSecId = this.state.pickerTargetSectionId;
-        const project = this.getProject();
-        const destName = (targetSecId && project?.sections?.[targetSecId]?.name)
-          ? project.sections[targetSecId].name
-          : 'Unsectioned Area';
-
-        this.updateProject(p => {
-          if (!p.components) p.components = {};
-          p.components[newComp.id] = newComp;
-          if (targetSecId && p.sections?.[targetSecId]) {
-            if (!p.sections[targetSecId].componentOrder) p.sections[targetSecId].componentOrder = [];
-            p.sections[targetSecId].componentOrder.push(newComp.id);
-            p.lastActiveSectionId = targetSecId;
-          } else {
-            if (!p.unsectionedComponentOrder) p.unsectionedComponentOrder = [];
-            p.unsectionedComponentOrder.push(newComp.id);
-          }
-        });
-
-        if (this.cleanupPickerIsolation) {
-          this.cleanupPickerIsolation();
-          this.cleanupPickerIsolation = null;
-        }
-        this.state.isPickerOpen = false;
-        this.state.previewDetailsComp = null;
-        this.render();
-
-        showToast(`${regEntry?.name || 'Component'} added to ${destName}.`, 'success');
-
-        if (this.onEditComponent) {
-          this.onEditComponent(this.getProject(), newComp);
-        }
-      };
-
       this.container.querySelectorAll('[data-action="select-picker-item"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          handleAddComponent(btn.dataset.compType);
+          this.addComponentToProject(btn.dataset.compType, this.state.pickerTargetSectionId);
         });
       });
     }
@@ -1122,37 +1159,9 @@ export class ProjectOverviewView {
 
       if (detailsAddBtn) {
         detailsAddBtn.addEventListener('click', () => {
-          const type = detailsAddBtn.dataset.compType;
-          const regEntry = getComponentById(COMPONENT_REGISTRY, type);
-          const defaultCfg = regEntry ? getDefaultConfig(regEntry) : {};
-
-          const newComp = createComponentInstance({
-            name: regEntry?.name || 'New Component',
-            type,
-            status: 'draft',
-            config: defaultCfg
-          });
-
-          const targetSecId = this.state.pickerTargetSectionId;
-          this.updateProject(p => {
-            if (!p.components) p.components = {};
-            p.components[newComp.id] = newComp;
-            if (targetSecId && p.sections?.[targetSecId]) {
-              if (!p.sections[targetSecId].componentOrder) p.sections[targetSecId].componentOrder = [];
-              p.sections[targetSecId].componentOrder.push(newComp.id);
-            } else {
-              if (!p.unsectionedComponentOrder) p.unsectionedComponentOrder = [];
-              p.unsectionedComponentOrder.push(newComp.id);
-            }
-          });
-
-          this.state.isPickerOpen = false;
-          this.state.previewDetailsComp = null;
-          this.render();
-
-          if (this.onEditComponent) {
-            this.onEditComponent(this.getProject(), newComp);
-          }
+          const compType = detailsAddBtn.dataset.compType;
+          closeDetails();
+          this.addComponentToProject(compType, this.state.pickerTargetSectionId);
         });
       }
     }
