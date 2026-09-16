@@ -2737,6 +2737,12 @@ input[type="number"]:focus::-webkit-inner-spin-button {
 
 .modal-card.modal-large {
   max-width: 860px;
+  max-height: 90vh;
+}
+
+.modal-card.modal-large .modal-body {
+  max-height: calc(90vh - 65px);
+  padding: 16px 20px 20px;
 }
 
 .modal-card.modal-xl {
