@@ -25,6 +25,62 @@ const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]
 const activeModalStack = [];
 
 /**
+ * Removes disconnected or orphaned modals from the active stack and cleans their listeners.
+ */
+function pruneActiveModalStack() {
+  if (typeof document === 'undefined') return;
+  for (let i = activeModalStack.length - 1; i >= 0; i--) {
+    const item = activeModalStack[i];
+    if (!item.element || !document.contains(item.element)) {
+      if (item.handleKeydown) {
+        document.removeEventListener('keydown', item.handleKeydown, true);
+      }
+      activeModalStack.splice(i, 1);
+    }
+  }
+}
+
+/**
+ * Safely removes inert and aria-hidden attributes from all workspace containers and unmarks body.
+ */
+function removeAllInertness() {
+  if (typeof document === 'undefined') return;
+  const elements = document.querySelectorAll(
+    '#app-shell, .app-container, .app-workspace, #app-root, .dashboard-container, .workspace-container, .project-workspace-view, .project-dashboard-view, main, [inert]'
+  );
+  elements.forEach(el => {
+    if (activeModalStack.some(item => item.element && item.element.contains(el))) {
+      return;
+    }
+    try {
+      el.removeAttribute('inert');
+      if (el.getAttribute('aria-hidden') === 'true' && !el.classList.contains('modal-overlay') && !el.classList.contains('sr-only')) {
+        el.removeAttribute('aria-hidden');
+      }
+    } catch {
+      // ignore
+    }
+  });
+  if (document.body) {
+    document.body.classList.remove('has-open-modal');
+  }
+}
+
+/**
+ * Clears all active modal isolations, removes global event listeners, and unfreezes the UI.
+ */
+export function clearAllModalIsolations() {
+  if (typeof document === 'undefined') return;
+  activeModalStack.forEach(item => {
+    if (item.handleKeydown) {
+      document.removeEventListener('keydown', item.handleKeydown, true);
+    }
+  });
+  activeModalStack.length = 0;
+  removeAllInertness();
+}
+
+/**
  * Isolates a modal dialog by:
  * 1. Setting `inert` on background application containers (#app-shell)
  * 2. Trapping keyboard Tab / Shift+Tab focus inside the modal
@@ -40,6 +96,18 @@ const activeModalStack = [];
  */
 export function isolateModal(modalElement, { triggerElement = null, fallbackSelector = null, onDismiss = null } = {}) {
   if (!modalElement) return () => {};
+
+  pruneActiveModalStack();
+
+  // If modalElement is already in activeModalStack, remove previous isolation entry
+  const existingIdx = activeModalStack.findIndex(item => item.element === modalElement);
+  if (existingIdx !== -1) {
+    const existing = activeModalStack[existingIdx];
+    if (existing.handleKeydown && typeof document !== 'undefined') {
+      document.removeEventListener('keydown', existing.handleKeydown, true);
+    }
+    activeModalStack.splice(existingIdx, 1);
+  }
 
   const opener = triggerElement || (typeof document !== 'undefined' ? document.activeElement : null);
   const fallback = fallbackSelector || (opener?.id ? `#${opener.id}` : null);
@@ -73,7 +141,7 @@ export function isolateModal(modalElement, { triggerElement = null, fallbackSele
 
   // Also catch any other siblings outside modal root if not in app shell
   const otherRoots = typeof document !== 'undefined'
-    ? Array.from(document.querySelectorAll('.app-workspace, #app-root, .dashboard-container, .workspace-container'))
+    ? Array.from(document.querySelectorAll('.app-workspace, #app-root, .dashboard-container, .workspace-container, .project-workspace-view, .project-dashboard-view, main'))
         .filter(el => !el.contains(modalElement) && el !== modalElement && el !== appShell)
     : [];
 
@@ -89,10 +157,6 @@ export function isolateModal(modalElement, { triggerElement = null, fallbackSele
   if (typeof document !== 'undefined' && document.body) {
     document.body.classList.add('has-open-modal');
   }
-
-  // Record this modal in stack
-  const entry = { element: modalElement, opener, fallback, onDismiss };
-  activeModalStack.push(entry);
 
   const handleKeydown = (e) => {
     if (e.key === 'Escape') {
@@ -127,6 +191,10 @@ export function isolateModal(modalElement, { triggerElement = null, fallbackSele
     }
   };
 
+  // Record this modal in stack
+  const entry = { element: modalElement, opener, fallback, onDismiss, handleKeydown };
+  activeModalStack.push(entry);
+
   if (typeof document !== 'undefined') {
     document.addEventListener('keydown', handleKeydown, true);
   }
@@ -142,6 +210,8 @@ export function isolateModal(modalElement, { triggerElement = null, fallbackSele
       activeModalStack.splice(idx, 1);
     }
 
+    pruneActiveModalStack();
+
     // If there is still a parent modal in stack, restore its active state
     if (activeModalStack.length > 0) {
       const currentTop = activeModalStack[activeModalStack.length - 1];
@@ -152,26 +222,7 @@ export function isolateModal(modalElement, { triggerElement = null, fallbackSele
         // ignore
       }
     } else {
-      // Remove inert from appShell and body class
-      if (appShell) {
-        try {
-          appShell.removeAttribute('inert');
-          appShell.removeAttribute('aria-hidden');
-        } catch {
-          // ignore
-        }
-      }
-      otherRoots.forEach(el => {
-        try {
-          el.removeAttribute('inert');
-          el.removeAttribute('aria-hidden');
-        } catch {
-          // ignore
-        }
-      });
-      if (typeof document !== 'undefined' && document.body) {
-        document.body.classList.remove('has-open-modal');
-      }
+      removeAllInertness();
     }
 
     // Focus restoration: opener -> fallback -> nearest control

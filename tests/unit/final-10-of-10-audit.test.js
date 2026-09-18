@@ -199,6 +199,71 @@ describe('Rise Component Builder AT&T — Final 10/10 Verification Suite', () =>
 
       expect(appShell.hasAttribute('inert')).toBe(false);
     });
+
+    it('ensures closing an export dialog completely restores interactivity with no leftover inert elements', () => {
+      const workspace = document.createElement('div');
+      workspace.className = 'app-workspace';
+      appShell.appendChild(workspace);
+
+      const exportModal = document.createElement('div');
+      exportModal.id = 'modal-export';
+      exportModal.className = 'modal-overlay';
+      exportModal.innerHTML = `<div class="modal-card"><button class="modal-close-btn">Close</button></div>`;
+      modalRoot.appendChild(exportModal);
+
+      const triggerBtn = document.createElement('button');
+      triggerBtn.id = 'btn-export';
+      appShell.appendChild(triggerBtn);
+      triggerBtn.focus();
+
+      const cleanup = isolateModal(exportModal, { triggerElement: triggerBtn });
+
+      expect(appShell.hasAttribute('inert')).toBe(true);
+      expect(workspace.hasAttribute('inert')).toBe(true);
+      expect(document.body.classList.contains('has-open-modal')).toBe(true);
+
+      cleanup();
+      exportModal.remove();
+
+      expect(appShell.hasAttribute('inert')).toBe(false);
+      expect(workspace.hasAttribute('inert')).toBe(false);
+      expect(document.body.classList.contains('has-open-modal')).toBe(false);
+      expect(document.querySelectorAll('[inert]')).toHaveLength(0);
+    });
+
+    it('handles rapid re-isolations during component search/filter without accumulating inert locks', () => {
+      const container = document.getElementById('view-container');
+      const project = buildProjectSchemaV3({ name: 'Search Test Project' });
+      saveProject(project);
+
+      const overviewView = new ProjectOverviewView({ container, projectId: project.id });
+      overviewView.mount();
+
+      overviewView.state.isPickerOpen = true;
+      overviewView.render();
+
+      const pickerModal = container.querySelector('#picker-modal-overlay');
+      expect(pickerModal).not.toBeNull();
+      expect(document.body.classList.contains('has-open-modal')).toBe(true);
+
+      // Simulate rapid keystrokes triggering multiple re-renders
+      for (let i = 0; i < 5; i++) {
+        overviewView.state.pickerSearch = `term-${i}`;
+        overviewView.render();
+      }
+
+      // Close the picker
+      overviewView.state.isPickerOpen = false;
+      if (overviewView.cleanupPickerIsolation) {
+        overviewView.cleanupPickerIsolation();
+        overviewView.cleanupPickerIsolation = null;
+      }
+      overviewView.render();
+
+      expect(appShell.hasAttribute('inert')).toBe(false);
+      expect(document.body.classList.contains('has-open-modal')).toBe(false);
+      expect(document.querySelectorAll('[inert]')).toHaveLength(0);
+    });
   });
 
   describe('P0.3 — Escape Handling and Focus Restoration', () => {

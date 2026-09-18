@@ -235,10 +235,6 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-labelledby', 'att-export-review-title');
 
-    // Make main background inert for accessibility
-    const mainWorkspace = document.querySelector('.project-workspace-view, .project-dashboard-view, main');
-    if (mainWorkspace) mainWorkspace.setAttribute('inert', '');
-
     const escapeHtml = (str) => {
       if (typeof str !== 'string') return '';
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');

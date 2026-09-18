@@ -1057,6 +1057,11 @@ export class ProjectOverviewView {
       const searchInput = this.container.querySelector('#picker-search-input');
       const sectionSelect = this.container.querySelector('#picker-section-select');
 
+      if (this.cleanupPickerIsolation) {
+        this.cleanupPickerIsolation();
+        this.cleanupPickerIsolation = null;
+      }
+
       const closePicker = () => {
         if (this.cleanupPickerIsolation) {
           this.cleanupPickerIsolation();

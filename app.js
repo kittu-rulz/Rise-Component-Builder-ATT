@@ -42,7 +42,7 @@ import { ProjectMediaView } from './js/dashboard/project-media.js';
 import { CoursePreviewView } from './js/dashboard/course-preview.js';
 import { ProjectQaView } from './js/dashboard/project-qa.js';
 import { downloadCourseProjectZip, showPreExportReviewDialog } from './js/dashboard/project-export.js';
-import { isolateModal } from './js/dashboard/att-modal.js';
+import { isolateModal, clearAllModalIsolations } from './js/dashboard/att-modal.js';
 // app.js is the composition root and is explicitly allowed to depend on any module,
 // including one specific component's own file (docs/ARCHITECTURE.md "Important
 // dependencies") — reused here only for its MM:SS/H:MM:SS formatter, so the builder's own
@@ -925,6 +925,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function showState(state, context = {}) {
+    clearAllModalIsolations();
     hideAllWorkspacePanels();
 
     if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
@@ -2051,8 +2052,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalStack = modalStack.filter(existing => existing !== id);
 
     if (modalIsolationCleanups.has(id)) {
-      modalIsolationCleanups.get(id)();
+      const cleanup = modalIsolationCleanups.get(id);
       modalIsolationCleanups.delete(id);
+      if (typeof cleanup === 'function') cleanup();
     }
 
     const trigger = modalFocusReturn.get(id);
