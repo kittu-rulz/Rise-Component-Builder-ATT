@@ -194,16 +194,85 @@ export class DashboardView {
             <div class="dashboard-projects-grid">
               ${projects.map(p => this.renderProjectCard(p)).join('')}
             </div>
-          ` : `
+          ` : (this.state.searchQuery || this.state.filter !== 'all') ? `
             <div class="dashboard-empty-state">
               <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
               </svg>
               <h2 class="empty-state-title">No course projects found</h2>
-              <p class="empty-state-subtitle">
-                ${this.state.searchQuery ? 'Try adjusting your search query or filter.' : 'Create your first course project to start building and organizing rich interactive components.'}
-              </p>
+              <p class="empty-state-subtitle">Try adjusting your search query or filter.</p>
               <button id="dash-empty-create-btn" class="btn-att-primary">Create New Project</button>
+            </div>
+          ` : `
+            <div class="dashboard-empty-state-onboarding" style="width: 100%; max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; padding: 12px 0;">
+              <!-- Welcome Hero -->
+              <div style="text-align: center; background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 20px; padding: 36px 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); border-radius: 16px; margin-bottom: 16px;">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                </div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 8px 0; color: var(--att-heading-contrast, #000);">Welcome to Rise Course Builder</h2>
+                <p style="font-size: 0.9375rem; color: #555; max-width: 600px; margin: 0 auto 28px auto; line-height: 1.5;">
+                  Build, preview, test, and package multi-component interactive courses certified for Articulate Rise 360 with 100% AT&T Brand and WCAG 2.2 AA compliance.
+                </p>
+
+                <!-- 3 Options Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; text-align: left;">
+                  <div class="onboarding-option-card" id="onboarding-blank-card" style="background: var(--att-grey-1, #F3F4F5); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
+                    <div style="font-weight: 700; font-size: 1rem; color: var(--att-cobalt, #00388F); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      Blank Course
+                    </div>
+                    <p style="font-size: 0.8125rem; color: #666; margin: 0 0 16px 0; flex: 1;">Start fresh with an empty course workspace to create custom modules and interactive blocks.</p>
+                    <button type="button" class="btn btn-secondary btn-sm" id="onboarding-create-blank-btn" style="width: 100%; justify-content: center;">Create Blank</button>
+                  </div>
+
+                  <div class="onboarding-option-card" id="onboarding-starter-card" style="background: #F0F7FF; border: 1px solid #B8DAFF; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
+                    <div style="font-weight: 700; font-size: 1rem; color: var(--att-cobalt, #00388F); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                      3-Module Starter
+                    </div>
+                    <p style="font-size: 0.8125rem; color: #00388F; margin: 0 0 16px 0; flex: 1;">Pre-populated course structure with Introduction, Deep Dive, and Knowledge Check modules.</p>
+                    <button type="button" class="btn btn-primary btn-sm" id="onboarding-create-starter-btn" style="width: 100%; justify-content: center;">Load 3-Module Starter</button>
+                  </div>
+
+                  <div class="onboarding-option-card" id="onboarding-import-card" style="background: var(--att-grey-1, #F3F4F5); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
+                    <div style="font-weight: 700; font-size: 1rem; color: var(--att-heading-contrast, #000); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                      Import Project
+                    </div>
+                    <p style="font-size: 0.8125rem; color: #666; margin: 0 0 16px 0; flex: 1;">Load an existing course package (.json) from your device.</p>
+                    <button type="button" class="btn btn-secondary btn-sm" id="onboarding-import-btn" style="width: 100%; justify-content: center;">Choose File</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3-Step Workflow Guide -->
+              <div style="background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 16px; padding: 28px 24px;">
+                <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0 0 20px 0; color: var(--att-heading-contrast, #000); text-align: center;">How Course Projects Work</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+                  <div style="display: flex; gap: 14px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--att-cobalt, #00388F); color: #FFF; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.875rem;">1</div>
+                    <div>
+                      <h4 style="font-size: 0.9375rem; font-weight: 700; margin: 0 0 4px 0; color: var(--att-heading-contrast, #000);">Structure &amp; Build</h4>
+                      <p style="font-size: 0.8125rem; color: #666; margin: 0; line-height: 1.45;">Create modules and pick from 26 AT&amp;T certified interactive blocks with live configuration.</p>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 14px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--att-cobalt, #00388F); color: #FFF; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.875rem;">2</div>
+                    <div>
+                      <h4 style="font-size: 0.9375rem; font-weight: 700; margin: 0 0 4px 0; color: var(--att-heading-contrast, #000);">Preview &amp; Audit</h4>
+                      <p style="font-size: 0.8125rem; color: #666; margin: 0; line-height: 1.45;">Test the full interactive course flow across desktop and mobile viewports with QA preflight.</p>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 14px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--att-cobalt, #00388F); color: #FFF; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.875rem;">3</div>
+                    <div>
+                      <h4 style="font-size: 0.9375rem; font-weight: 700; margin: 0 0 4px 0; color: var(--att-heading-contrast, #000);">Export for Rise 360</h4>
+                      <p style="font-size: 0.8125rem; color: #666; margin: 0; line-height: 1.45;">Generate a structured multi-block ZIP or enhance exported courses with persistent tools.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           `}
         </main>
@@ -381,11 +450,49 @@ export class DashboardView {
     if (createBtn) createBtn.addEventListener('click', openModal);
     if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', openModal);
 
+    // Onboarding cards
+    this.container.querySelector('#onboarding-create-blank-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openModal(e);
+    });
+    this.container.querySelector('#onboarding-blank-card')?.addEventListener('click', openModal);
+
+    this.container.querySelector('#onboarding-create-starter-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const project = this.createNewProjectFromTemplate({
+        name: 'AT&T 3-Module Starter Course',
+        client: 'AT&T',
+        desc: 'Interactive 3-module course structure with Introduction, Deep Dive, and Knowledge Check.',
+        template: 'standard'
+      });
+      saveProject(project);
+      this.render();
+      if (this.onOpenProject) this.onOpenProject(project.id);
+    });
+    this.container.querySelector('#onboarding-starter-card')?.addEventListener('click', () => {
+      const project = this.createNewProjectFromTemplate({
+        name: 'AT&T 3-Module Starter Course',
+        client: 'AT&T',
+        desc: 'Interactive 3-module course structure with Introduction, Deep Dive, and Knowledge Check.',
+        template: 'standard'
+      });
+      saveProject(project);
+      this.render();
+      if (this.onOpenProject) this.onOpenProject(project.id);
+    });
+
+    const fileInput = this.container.querySelector('#dash-import-file-input');
+    const triggerImport = (e) => {
+      if (e) e.stopPropagation();
+      if (fileInput) fileInput.click();
+    };
+    this.container.querySelector('#onboarding-import-btn')?.addEventListener('click', triggerImport);
+    this.container.querySelector('#onboarding-import-card')?.addEventListener('click', triggerImport);
+
     // Import JSON button
     const importBtn = this.container.querySelector('#dash-import-btn');
-    const fileInput = this.container.querySelector('#dash-import-file-input');
     if (importBtn && fileInput) {
-      importBtn.addEventListener('click', () => fileInput.click());
+      importBtn.addEventListener('click', triggerImport);
       fileInput.addEventListener('change', async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;

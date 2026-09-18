@@ -387,3 +387,182 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ==========================================================================
+   Course Preview Styles & Responsive Toolbar (P1)
+   ========================================================================== */
+
+.course-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--att-surface, #FFFFFF);
+  border-bottom: 1px solid var(--att-border, #DCDFE3);
+  padding: 10px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.course-preview-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preview-mode-pill-group {
+  display: inline-flex;
+  background: var(--att-grey-1, #F3F4F5);
+  padding: 3px;
+  border-radius: var(--att-radius-pill, 9999px);
+  border: 1px solid var(--att-border, #DCDFE3);
+  gap: 2px;
+}
+
+.preview-mode-pill-group .filter-chip {
+  background: transparent;
+  border: none;
+  border-radius: var(--att-radius-pill, 9999px);
+  padding: 5px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--att-text, #000000);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.preview-mode-pill-group .filter-chip:hover {
+  background: rgba(0, 56, 143, 0.08);
+  color: var(--att-cobalt, #00388F);
+}
+
+.preview-mode-pill-group .filter-chip.active {
+  background: var(--att-cobalt, #00388F);
+  color: var(--att-white, #FFFFFF);
+  box-shadow: 0 1px 3px rgba(0, 56, 143, 0.3);
+}
+
+.preview-util-btn-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-util-btn-group .btn.active {
+  background-color: var(--att-cobalt, #00388F);
+  color: #FFFFFF;
+  border-color: var(--att-cobalt, #00388F);
+}
+
+/* Scroll Offset & Clipping Prevention */
+.course-preview-workspace-main {
+  scroll-padding-top: var(--cp-toolbar-height, 80px);
+}
+
+.course-preview-block,
+.course-preview-section-header {
+  scroll-margin-top: calc(var(--cp-toolbar-height, 80px) + 20px);
+}
+
+.course-preview-block.outline-boundary {
+  outline: 2px dashed var(--att-blue, #009FDB);
+  outline-offset: 4px;
+}
+
+.course-preview-canvas.with-safe-area-overlay {
+  position: relative;
+}
+
+.course-preview-canvas.with-safe-area-overlay::before {
+  content: "Rise Safe Area (740px Max Content Width)";
+  display: block;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--att-cobalt, #00388F);
+  background: rgba(0, 159, 219, 0.08);
+  border: 1px dashed var(--att-blue, #009FDB);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+}
+
+/* Fullscreen mode */
+.preview-fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: var(--bg-canvas, #F4F6F9);
+  overflow-y: auto;
+}
+
+/* Responsive Course Preview Toolbar Breakpoints */
+@media (max-width: 1024px) {
+  .course-preview-toolbar {
+    padding: 10px 16px;
+  }
+  .preview-util-btn-group .btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .course-preview-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .course-preview-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .preview-mode-pill-group {
+    flex: 1;
+    justify-content: center;
+  }
+  .preview-mode-pill-group .filter-chip {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .course-preview-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .preview-mode-pill-group {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    text-align: center;
+  }
+  .preview-mode-pill-group .filter-chip {
+    justify-content: center;
+    padding: 6px 2px;
+  }
+  .preview-util-btn-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .preview-util-btn-group .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

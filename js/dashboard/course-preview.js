@@ -160,45 +160,63 @@ export class CoursePreviewView {
 
     this.container.innerHTML = `
       <div class="project-workspace-view ${this.state.isFullscreen ? 'preview-fullscreen-mode' : ''}">
-        <header class="workspace-header">
+        <header class="workspace-header course-preview-toolbar">
           <div class="workspace-breadcrumbs">
-            <button id="preview-back-btn" class="breadcrumb-back-btn" title="Return to Course Workspace">
+            <button id="preview-back-btn" class="breadcrumb-back-btn" title="Return to Course Workspace" aria-label="Return to Course Workspace: ${escapeHTML(project?.name || 'Course Project')}">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
-              ${escapeHTML(project?.name || 'Course Project')}
+              <span>${escapeHTML(project?.name || 'Course Project')}</span>
             </button>
-            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-separator" aria-hidden="true">/</span>
             <span class="breadcrumb-current">Course Preview</span>
           </div>
 
-          <div class="workspace-header-actions">
+          <div class="workspace-header-actions course-preview-actions">
             <!-- Viewport Switcher -->
-            <div class="preview-mode-pill-group" role="group" aria-label="Device viewport">
-              <button class="filter-chip ${this.state.deviceMode === 'desktop' ? 'active' : ''}" data-device="desktop" title="Desktop mode">Desktop</button>
-              <button class="filter-chip ${this.state.deviceMode === 'tablet' ? 'active' : ''}" data-device="tablet" title="Tablet mode (768px)">Tablet</button>
-              <button class="filter-chip ${this.state.deviceMode === 'mobile-lg' ? 'active' : ''}" data-device="mobile-lg" title="Large Mobile (430px)">Mobile (430)</button>
-              <button class="filter-chip ${this.state.deviceMode === 'mobile' ? 'active' : ''}" data-device="mobile" title="Mobile (375px)">Mobile (375)</button>
+            <div class="preview-mode-pill-group" role="group" aria-label="Device viewport mode">
+              <button class="filter-chip ${this.state.deviceMode === 'desktop' ? 'active' : ''}" data-device="desktop" title="Desktop mode (1080px max)" aria-label="Desktop view" aria-pressed="${this.state.deviceMode === 'desktop'}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                <span class="device-btn-text">Desktop</span>
+              </button>
+              <button class="filter-chip ${this.state.deviceMode === 'tablet' ? 'active' : ''}" data-device="tablet" title="Tablet mode (768px)" aria-label="Tablet view (768px)" aria-pressed="${this.state.deviceMode === 'tablet'}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                <span class="device-btn-text">Tablet</span>
+              </button>
+              <button class="filter-chip ${this.state.deviceMode === 'mobile-lg' ? 'active' : ''}" data-device="mobile-lg" title="Large Mobile mode (430px)" aria-label="Large mobile view (430px)" aria-pressed="${this.state.deviceMode === 'mobile-lg'}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                <span class="device-btn-text">430px</span>
+              </button>
+              <button class="filter-chip ${this.state.deviceMode === 'mobile' ? 'active' : ''}" data-device="mobile" title="Mobile mode (375px)" aria-label="Mobile view (375px)" aria-pressed="${this.state.deviceMode === 'mobile'}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                <span class="device-btn-text">375px</span>
+              </button>
             </div>
 
-            <!-- Display Toggles -->
-            <button class="btn btn-secondary btn-sm ${this.state.showBoundaries ? 'active' : ''}" id="btn-toggle-boundaries" title="Toggle block boundaries">
-              ${this.state.showBoundaries ? '✓ Boundaries' : 'Boundaries'}
-            </button>
-            <button class="btn btn-secondary btn-sm ${this.state.showSafeArea ? 'active' : ''}" id="btn-toggle-safe-area" title="Toggle 740px Rise safe area overlay">
-              ${this.state.showSafeArea ? '✓ Rise Safe Area' : 'Safe Area'}
-            </button>
-            <button class="btn btn-secondary btn-sm" id="btn-reset-preview" title="Reset all component interactions">
-              ↺ Reset Interactions
-            </button>
-            <button class="btn btn-secondary btn-sm" id="btn-toggle-fullscreen" title="Toggle Fullscreen">
-              ${this.state.isFullscreen ? 'Exit Fullscreen' : '⛶ Fullscreen'}
-            </button>
+            <!-- Display Toggles & Utilities -->
+            <div class="preview-util-btn-group">
+              <button class="btn btn-secondary btn-sm ${this.state.showBoundaries ? 'active' : ''}" id="btn-toggle-boundaries" title="Toggle block boundaries" aria-pressed="${this.state.showBoundaries}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3h4v2H5v2H3V3zm14 0h4v4h-2V5h-2V3zM3 17h2v2h2v2H3v-4zm18 0v4h-4v-2h2v-2h2z"></path></svg>
+                <span class="btn-text-label">${this.state.showBoundaries ? 'Boundaries On' : 'Boundaries'}</span>
+              </button>
+              <button class="btn btn-secondary btn-sm ${this.state.showSafeArea ? 'active' : ''}" id="btn-toggle-safe-area" title="Toggle 740px Rise safe area overlay" aria-pressed="${this.state.showSafeArea}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span class="btn-text-label">${this.state.showSafeArea ? 'Safe Area On' : 'Safe Area'}</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-reset-preview" title="Reset all component interactions" aria-label="Reset all component interactions">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                <span class="btn-text-label">Reset Interactions</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-toggle-fullscreen" title="${this.state.isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}" aria-label="${this.state.isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                <span class="btn-text-label">${this.state.isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+              </button>
+            </div>
           </div>
         </header>
 
         <main class="workspace-container course-preview-workspace-main" style="display: flex; flex-direction: column; align-items: center; background: var(--bg-canvas, #F4F6F9); min-height: calc(100vh - 120px); padding: 24px 16px;">
-          <div style="width: 100%; max-width: ${maxCanvasWidth}; transition: max-width 0.25s ease; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
+          <div class="course-preview-header-meta" style="width: 100%; max-width: ${maxCanvasWidth}; transition: max-width 0.25s ease; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
             <h1 class="workspace-title" style="font-size: 1.5rem; font-weight: 700; margin: 0; color: #111;">Course Preview</h1>
             <div class="preview-viewport-info-banner" style="font-size: 0.8125rem; color: #555;">
               Showing: <strong>${deviceLabel}</strong> · ${orderedItems.filter(i => i.type === 'component').length} components in sequence
@@ -227,14 +245,15 @@ export class CoursePreviewView {
                      id="preview-block-${comp.id}"
                      style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.04); position: relative;">
                   <div class="course-preview-block-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; background: #FAFAFA; border-bottom: 1px solid #EFEFEF;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                      <span class="preview-comp-order-badge" style="font-size: 0.75rem; font-weight: 700; background: #E4E7EC; color: #333; padding: 2px 8px; border-radius: 12px;">${index + 1}</span>
-                      <h3 style="font-size: 0.9375rem; font-weight: 600; color: #111; margin: 0;">${escapeHTML(comp.name)}</h3>
-                      <span class="component-type-badge" style="font-size: 0.75rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 8px; border-radius: 4px;">${escapeHTML(typeName)}</span>
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                      <span class="preview-comp-order-badge" style="font-size: 0.75rem; font-weight: 700; background: #E4E7EC; color: #333; padding: 2px 8px; border-radius: 12px; flex-shrink: 0;">${index + 1}</span>
+                      <h3 style="font-size: 0.9375rem; font-weight: 600; color: #111; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(comp.name)}</h3>
+                      <span class="component-type-badge" style="font-size: 0.75rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 8px; border-radius: 4px; flex-shrink: 0;">${escapeHTML(typeName)}</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <button type="button" class="btn btn-secondary btn-sm" data-action="edit-preview-comp" data-comp-id="${comp.id}" style="padding: 4px 10px; font-size: 0.8125rem;">
-                        ✎ Edit Component
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                      <button type="button" class="btn btn-secondary btn-sm" data-action="edit-preview-comp" data-comp-id="${comp.id}" aria-label="Edit component: ${escapeHTML(comp.name)}" style="padding: 6px 12px; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                        <span>Edit Component</span>
                       </button>
                     </div>
                   </div>
@@ -252,7 +271,7 @@ export class CoursePreviewView {
                       </iframe>
                     ` : `
                       <div class="course-preview-error-card" style="padding: 20px; background: #FFF5F5; border: 1px solid #FEB2B2; border-radius: 8px; color: #C53030;">
-                        <h4 style="margin: 0 0 8px 0; font-size: 0.9375rem; font-weight: 700;">⚠️ Could not render ${escapeHTML(comp.name)}</h4>
+                        <h4 style="margin: 0 0 8px 0; font-size: 0.9375rem; font-weight: 700;">Could not render ${escapeHTML(comp.name)}</h4>
                         <p style="margin: 0 0 12px 0; font-size: 0.875rem;">${escapeHTML(compiled.error)}</p>
                         <button type="button" class="btn btn-secondary btn-sm" data-action="edit-preview-comp" data-comp-id="${comp.id}">
                           Open in Editor to Fix
@@ -276,7 +295,17 @@ export class CoursePreviewView {
       </div>
     `;
 
+    this.updateToolbarHeight();
     this.attachEventListeners();
+  }
+
+  updateToolbarHeight() {
+    if (typeof window === 'undefined') return;
+    const header = this.container?.querySelector('.workspace-header');
+    if (header) {
+      const height = header.offsetHeight || 64;
+      document.documentElement.style.setProperty('--cp-toolbar-height', `${height}px`);
+    }
   }
 
   attachEventListeners() {

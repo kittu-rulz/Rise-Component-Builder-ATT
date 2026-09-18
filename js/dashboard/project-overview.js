@@ -451,15 +451,16 @@ export class ProjectOverviewView {
         </div>
 
         <div class="component-row-right" style="display: flex; align-items: center; gap: 8px;">
-          <button class="btn btn-secondary btn-sm" data-action="edit-comp" data-comp-id="${compId}" style="padding: 3px 8px; font-size: 0.75rem;">
-            ✎ Edit
+          <button class="btn btn-secondary btn-sm" data-action="edit-comp" data-comp-id="${compId}" style="padding: 4px 10px; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px;" aria-label="Edit component ${escapeHTML(comp.name)}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+            <span>Edit</span>
           </button>
           
           <!-- Keyboard Move buttons -->
-          ${index > 0 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-up" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Up" style="padding: 2px 6px;">↑</button>` : ''}
-          ${index < totalInGroup - 1 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-down" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Down" style="padding: 2px 6px;">↓</button>` : ''}
+          ${index > 0 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-up" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Up" aria-label="Move ${escapeHTML(comp.name)} Up" style="padding: 4px 8px; display: inline-flex; align-items: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : ''}
+          ${index < totalInGroup - 1 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-down" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Down" aria-label="Move ${escapeHTML(comp.name)} Down" style="padding: 4px 8px; display: inline-flex; align-items: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : ''}
 
-          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options" style="width: 26px; height: 26px;">
+          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options" style="width: 28px; height: 28px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
           </button>
         </div>
@@ -477,6 +478,7 @@ export class ProjectOverviewView {
 
   renderComponentPicker(project) {
     let list = COMPONENT_REGISTRY || [];
+    const isFiltered = Boolean(this.state.pickerSearch.trim() || (this.state.pickerCategory && this.state.pickerCategory !== 'all'));
     
     // Category Filter
     if (this.state.pickerCategory && this.state.pickerCategory !== 'all') {
@@ -493,13 +495,13 @@ export class ProjectOverviewView {
 
     return `
       <div class="modal-overlay is-active" id="picker-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; padding: 20px;">
-        <div class="modal-card" style="max-width: 880px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); overflow: hidden;">
-          <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid #EAEAEA; display: flex; justify-content: space-between; align-items: center;">
+        <div class="modal-card" style="max-width: 920px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); overflow: hidden;">
+          <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid #EAEAEA; display: flex; justify-content: space-between; align-items: center; background: #FAFAFA;">
             <div>
-              <h2 id="picker-modal-title" class="modal-title" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Add Component to Course</h2>
+              <h2 id="picker-modal-title" class="modal-title" style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #111;">Add Component to Course</h2>
               <p style="font-size: 0.8125rem; color: #666; margin: 2px 0 0 0;">Choose an interactive block to add to your course project.</p>
             </div>
-            <button id="picker-close-btn" class="project-menu-btn" aria-label="Close component picker">
+            <button id="picker-close-btn" class="project-menu-btn" aria-label="Close component picker" type="button">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
@@ -507,7 +509,7 @@ export class ProjectOverviewView {
           <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
             <!-- Target Section Chooser & Search -->
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-              <div style="flex: 1; min-width: 240px;">
+              <div style="flex: 1; min-width: 240px; position: relative;">
                 <input
                   id="picker-search-input"
                   class="form-input"
@@ -516,6 +518,7 @@ export class ProjectOverviewView {
                   aria-label="Search components in picker"
                   value="${escapeHTML(this.state.pickerSearch)}"
                   autofocus
+                  style="width: 100%;"
                 />
               </div>
 
@@ -543,6 +546,17 @@ export class ProjectOverviewView {
               }).join('')}
             </div>
 
+            <!-- Search Result Meta Bar -->
+            <div class="picker-result-meta" aria-live="polite" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: #555;">
+              <span>Showing <strong>${list.length}</strong> of ${COMPONENT_REGISTRY.length} components</span>
+              ${isFiltered ? `
+                <button type="button" class="btn btn-secondary btn-sm" id="picker-clear-filters-btn" style="font-size: 0.75rem; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  <span>Clear filters</span>
+                </button>
+              ` : ''}
+            </div>
+
             <!-- Components Grid -->
             <div class="picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
               ${list.map(c => `
@@ -554,7 +568,7 @@ export class ProjectOverviewView {
 
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                     <div>
-                      <h4 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h4>
+                      <h3 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h3>
                       <span class="component-type-badge" style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 5px; border-radius: 4px;">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
                     </div>
                     ${c.tierLabel ? `<span class="component-tier-badge" style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.tierLabel)}</span>` : ''}
@@ -581,15 +595,17 @@ export class ProjectOverviewView {
               `).join('')}
 
               ${list.length === 0 ? `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 32px 16px; color: #666;">
-                  <p>No components match your search. Try a different query or category.</p>
+                <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; color: #666; background: #FAFAFA; border-radius: 12px; border: 1px dashed #DCDFE3;">
+                  <p style="font-size: 0.9375rem; font-weight: 600; margin: 0 0 8px 0; color: #333;">No components match your search</p>
+                  <p style="font-size: 0.8125rem; margin: 0 0 16px 0;">Try adjusting your search keywords or switching category filters.</p>
+                  <button type="button" class="btn btn-secondary btn-sm" id="picker-no-results-reset-btn">Clear search &amp; filters</button>
                 </div>
               ` : ''}
             </div>
           </div>
 
-          <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid #EAEAEA; display: flex; justify-content: flex-end;">
-            <button id="picker-cancel-btn" class="btn btn-secondary btn-sm">Close</button>
+          <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid #EAEAEA; display: flex; justify-content: flex-end; background: #FAFAFA;">
+            <button id="picker-cancel-btn" class="btn btn-secondary btn-sm" type="button">Close</button>
           </div>
         </div>
       </div>
@@ -1093,6 +1109,15 @@ export class ProjectOverviewView {
           this.render();
         });
       }
+
+      const resetFilters = () => {
+        this.state.pickerSearch = '';
+        this.state.pickerCategory = 'all';
+        this.render();
+      };
+
+      this.container.querySelector('#picker-clear-filters-btn')?.addEventListener('click', resetFilters);
+      this.container.querySelector('#picker-no-results-reset-btn')?.addEventListener('click', resetFilters);
 
       if (sectionSelect) {
         sectionSelect.addEventListener('change', (e) => {

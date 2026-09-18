@@ -288,6 +288,22 @@ export class ProjectQaView {
                 <span>💡 <strong>${audit.counts.recommendations}</strong> suggestions</span>
                 <span>✅ <strong>${audit.counts.passed}</strong> passed</span>
               </div>
+
+              <details class="qa-score-explainer" style="margin-top: 14px; background: #FFFFFF; border: 1px solid var(--att-border, #DCDFE3); border-radius: 8px; padding: 10px 14px; font-size: 0.8125rem;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--att-cobalt, #00388F);">
+                  How is this QA Score calculated?
+                </summary>
+                <div style="margin-top: 8px; color: var(--att-text, #333); line-height: 1.5;">
+                  <p style="margin: 0 0 6px 0;">The QA Readiness Score combines two independent audit dimensions:</p>
+                  <ul style="margin: 0 0 8px 18px; padding: 0;">
+                    <li><strong>Technical Quality (${audit.technicalScore}%):</strong> Checks for valid titles, non-empty interactive content items, and block header metadata.</li>
+                    <li><strong>Editorial Workflow:</strong> Evaluates publication status across ${audit.totalComponents} components (${audit.editorial.readyCount} Ready, ${audit.editorial.inReviewCount} In Review, ${audit.editorial.draftCount} Draft).</li>
+                  </ul>
+                  <p style="margin: 0; font-size: 0.75rem; color: #666;">
+                    <em>Note: Any blocker issues (e.g. empty component items) prevent package export and cap readiness at 40% until resolved.</em>
+                  </p>
+                </div>
+              </details>
             </div>
             <div class="workspace-banner-metrics">
               <div class="metric-card">

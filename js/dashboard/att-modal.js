@@ -92,9 +92,11 @@ export function clearAllModalIsolations() {
  * @param {Element|null} [options.triggerElement] - Element that opened the modal (for focus restoration)
  * @param {string|null} [options.fallbackSelector] - Fallback CSS selector if opener is re-rendered
  * @param {Function} [options.onDismiss] - Callback when user presses Escape or clicks outside
+ * @param {string|null} [options.initialFocusSelector] - Explicit selector inside modal to focus on open
+ * @param {boolean} [options.autoFocus] - Whether to automatically set focus inside the modal on open
  * @returns {Function} cleanup - Function to call when modal is closed
  */
-export function isolateModal(modalElement, { triggerElement = null, fallbackSelector = null, onDismiss = null } = {}) {
+export function isolateModal(modalElement, { triggerElement = null, fallbackSelector = null, onDismiss = null, initialFocusSelector = null, autoFocus = true } = {}) {
   if (!modalElement) return () => {};
 
   pruneActiveModalStack();
@@ -197,6 +199,52 @@ export function isolateModal(modalElement, { triggerElement = null, fallbackSele
 
   if (typeof document !== 'undefined') {
     document.addEventListener('keydown', handleKeydown, true);
+
+    // Initial focus placement on open
+    if (autoFocus) {
+      const setInitialFocus = () => {
+        if (!modalElement || !document.contains(modalElement)) return;
+        let targetToFocus = null;
+        if (initialFocusSelector) {
+          targetToFocus = modalElement.querySelector(initialFocusSelector);
+        }
+        if (!targetToFocus) {
+          targetToFocus = modalElement.querySelector('[autofocus]');
+        }
+        if (!targetToFocus) {
+          targetToFocus = modalElement.querySelector('input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled])');
+        }
+        if (!targetToFocus) {
+          const focusable = modalElement.querySelectorAll(FOCUSABLE_SELECTOR);
+          if (focusable.length > 0) {
+            targetToFocus = focusable[0];
+          }
+        }
+        if (!targetToFocus) {
+          const heading = modalElement.querySelector('h1, h2, h3, [role="heading"], .modal-card, .modal-content');
+          if (heading) {
+            if (!heading.hasAttribute('tabindex')) {
+              heading.setAttribute('tabindex', '-1');
+            }
+            targetToFocus = heading;
+          }
+        }
+        const htmlTarget = /** @type {HTMLElement|null} */ (targetToFocus);
+        if (htmlTarget && typeof htmlTarget.focus === 'function') {
+          try {
+            htmlTarget.focus();
+          } catch {
+            // ignore
+          }
+        }
+      };
+
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(setInitialFocus);
+      } else {
+        setTimeout(setInitialFocus, 0);
+      }
+    }
   }
 
   return function cleanupModalIsolation() {
