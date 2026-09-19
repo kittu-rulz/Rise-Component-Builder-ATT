@@ -12,7 +12,7 @@ import {
   withRecentlyUsedEntry
 } from './js/storage.js';
 import { componentCatalog, filterCatalog, createCatalogCard, sortCatalog, renderFilterChips, showComponentDetailsModal, closeComponentDetailsModal } from './js/catalog.js';
-import { COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById, getDefaultConfig } from './js/component-registry.js';
+import { COMPONENT_REGISTRY, getCategoriesWithCounts, getComponentById, getDefaultConfig, normalizeComponentType } from './js/component-registry.js';
 import { createSchemaItemEditor, switchEditorTab as activateEditorTab, addEditorItem, validateActiveComponent, validateSchemaField, setupEditorTabKeyboardNavigation, jumpToEditorField, getFieldTabLocation } from './js/editor.js';
 import { writePreview, openPreview, generateIframeContent as compilePreview, COMPONENT_MAX_WIDTH } from './js/preview.js';
 import { getDeviceWidthLabel } from './js/device-preview.js';
@@ -1026,7 +1026,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           coursePreviewInstance = new CoursePreviewView({
             container: coursePreviewWorkspace,
             projectId: projId,
-            onBack: () => showState('project-overview', { projectId: projId })
+            onBack: () => showState('project-overview', { projectId: projId }),
+            onEditComponent: (project, comp) => {
+              activeProjectId = project.id;
+              applyComponentInstance(project, comp);
+            }
           });
           coursePreviewInstance.mount();
         }
@@ -2518,9 +2522,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       project = window.migrateProject(project);
       comp = project.components?.[comp.id] || comp;
     }
-    const compType = window.normalizeComponentType ? window.normalizeComponentType(comp.type) : comp.type;
+    const compType = normalizeComponentType(comp.type);
     const component = componentCatalog.find(item => item.id === compType || item.id === comp.type)
-      || (typeof getComponentById === 'function' ? getComponentById(componentCatalog, compType) : null);
+      || getComponentById(COMPONENT_REGISTRY, compType)
+      || getComponentById(COMPONENT_REGISTRY, comp.type);
     if (!component) {
       showToast(`Cannot open component type "${comp.type}".`, 'error');
       return false;
@@ -2559,9 +2564,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     setUiTheme(appState.uiTheme);
     syncSettingsControls();
     syncEditorControls();
+    schemaItemEditor.resetToDefaultCollapse(appState.config.items);
+    renderDynamicItems();
     showState('editor');
     updateLivePreview();
-    history.reset(appState.config, appState.componentOverrides);
+    history.clear(appState.config);
     appState.isDirty = false;
     updateProjectStatusDisplay();
     return true;

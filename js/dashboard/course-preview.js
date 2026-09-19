@@ -44,7 +44,11 @@ export class CoursePreviewView {
     if (event.data.type === 'rcb-iframe-height' && event.data.frameId && typeof event.data.height === 'number') {
       const iframe = this.container?.querySelector(`#${event.data.frameId}`);
       if (iframe) {
-        iframe.style.height = `${Math.max(event.data.height + 20, 100)}px`;
+        const targetHeight = Math.max(Math.ceil(event.data.height), 80);
+        const currentHeight = parseInt(iframe.style.height || '0', 10);
+        if (Math.abs(currentHeight - targetHeight) >= 6) {
+          iframe.style.height = `${targetHeight}px`;
+        }
       }
     }
   }
@@ -94,32 +98,45 @@ export class CoursePreviewView {
 
       const html = generateIframeContent(appState, COMPONENT_MODULES, colorToRgba);
 
-      // Inject auto-resizing script into the iframe HTML
+      // Inject auto-resizing script and safe height style into the iframe HTML
       const autoResizeScript = `
+        <style>
+          html, body {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+          }
+        </style>
         <script>
           (function() {
+            var lastReported = 0;
             function reportHeight() {
               try {
-                var body = document.body;
-                var html = document.documentElement;
-                var height = Math.max(
-                  body.scrollHeight, body.offsetHeight,
-                  html.clientHeight, html.scrollHeight, html.offsetHeight
-                );
-                window.parent.postMessage({
-                  type: 'rcb-iframe-height',
-                  frameId: 'iframe-comp-${comp.id}',
-                  height: height
-                }, '*');
+                var root = document.querySelector('.rcb-component-root') || document.body.firstElementChild || document.body;
+                var rect = root ? root.getBoundingClientRect() : null;
+                var height = rect && rect.height ? Math.ceil(rect.height) : document.body.scrollHeight;
+                if (!height || height < 40) {
+                  height = Math.max(document.body.scrollHeight, 100);
+                }
+                if (Math.abs(height - lastReported) >= 4) {
+                  lastReported = height;
+                  window.parent.postMessage({
+                    type: 'rcb-iframe-height',
+                    frameId: 'iframe-comp-${comp.id}',
+                    height: height
+                  }, '*');
+                }
               } catch(e) {}
             }
-            window.addEventListener('load', reportHeight);
+            window.addEventListener('load', function() { setTimeout(reportHeight, 60); });
             window.addEventListener('resize', reportHeight);
             if (window.ResizeObserver) {
-              new ResizeObserver(reportHeight).observe(document.body);
+              var observer = new ResizeObserver(function() { reportHeight(); });
+              var el = document.querySelector('.rcb-component-root') || document.body.firstElementChild || document.body;
+              if (el) observer.observe(el);
             }
-            setTimeout(reportHeight, 300);
-            setTimeout(reportHeight, 1000);
+            setTimeout(reportHeight, 150);
+            setTimeout(reportHeight, 600);
           })();
         </script>
       `;
