@@ -159,105 +159,160 @@ export class ProjectOverviewView {
           </div>
         </header>
 
-        <main class="workspace-container">
-          <!-- Course Banner -->
-          <div class="workspace-banner" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 16px; padding: 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-            <div class="workspace-banner-info">
-              <div class="workspace-banner-tags" style="margin-bottom: 8px;">
-                <span class="project-client-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">${escapeHTML(project.clientLabel || 'AT&T')}</span>
+        <main class="workspace-container workspace-3zone-layout">
+          <!-- Zone 1: Interactive Course Outline Panel -->
+          <div class="workspace-outline-zone">
+            <!-- Compact Course Header -->
+            <div class="workspace-banner" style="background: var(--att-surface, #ffffff); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+              <div class="workspace-banner-info">
+                <div class="workspace-banner-tags" style="margin-bottom: 6px;">
+                  <span class="project-client-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); font-weight: 700; font-size: 0.6875rem; padding: 2px 6px; border-radius: 4px;">${escapeHTML(project.clientLabel || 'AT&T')}</span>
+                </div>
+                <h1 class="workspace-title" style="font-size: 1.125rem; font-weight: 700; color: var(--text-main, #111); margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
+                  ${escapeHTML(project.name)}
+                  <button id="wp-rename-title-btn" class="project-menu-btn" title="Rename course title" style="width: 24px; height: 24px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                  </button>
+                </h1>
+                <p class="workspace-desc" style="font-size: 0.75rem; color: #666; margin: 0; line-height: 1.4;">${escapeHTML(project.description || 'Course Modules & Component Architecture')}</p>
               </div>
-              <h1 class="workspace-title" style="font-size: 1.5rem; font-weight: 700; color: #111; margin: 0 0 6px 0; display: flex; align-items: center; gap: 8px;">
-                ${escapeHTML(project.name)}
-                <button id="wp-rename-title-btn" class="project-menu-btn" title="Rename course title" style="width: 28px; height: 28px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              <div class="workspace-banner-metrics" style="display: flex; gap: 8px;">
+                <span class="section-component-badge" style="background: var(--att-grey-1, #E4E7EC); font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${totalSections} sec</span>
+                <span class="section-component-badge" style="background: var(--att-grey-1, #E4E7EC); font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${totalComponents} comp</span>
+              </div>
+            </div>
+
+            <!-- Course Structure Filter & Controls -->
+            <div class="workspace-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <input 
+                  type="search" 
+                  id="cs-search-input" 
+                  class="form-input" 
+                  placeholder="Search outline…" 
+                  aria-label="Search components in course structure"
+                  value="${escapeHTML(this.state.courseStructureSearch)}"
+                  style="padding: 4px 8px; font-size: 0.75rem; width: 130px;"
+                />
+                <!-- Quick Filter Chips -->
+                <div class="filter-group" style="display: flex; gap: 2px;">
+                  <button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" data-cs-filter="all" style="padding: 2px 6px; font-size: 0.6875rem;">All</button>
+                  <button class="filter-chip ${activeFilter === 'ready' ? 'active' : ''}" data-cs-filter="ready" style="padding: 2px 6px; font-size: 0.6875rem;">Ready</button>
+                </div>
+              </div>
+
+              <div class="workspace-toolbar-actions" style="display: flex; align-items: center; gap: 4px;">
+                <button id="wp-header-add-comp-btn" class="btn btn-secondary btn-sm" title="Add component to course" style="padding: 3px 8px; font-size: 0.75rem;">
+                  + Block
                 </button>
-              </h1>
-              <p class="workspace-desc" style="font-size: 0.875rem; color: #555; margin: 0; max-width: 650px;">${escapeHTML(project.description || 'No description provided. Click to add course objectives and metadata.')}</p>
-            </div>
-            <div class="workspace-banner-metrics" style="display: flex; gap: 16px;">
-              <div class="metric-card" style="text-align: center; padding: 12px 20px; background: #F8F9FA; border-radius: 12px; border: 1px solid #EFEFEF;">
-                <p class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--att-cobalt, #00388F); margin: 0;">${totalSections}</p>
-                <p class="metric-label" style="font-size: 0.75rem; color: #666; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Sections</p>
+                <button id="wp-add-section-btn" class="btn btn-primary btn-sm" style="padding: 3px 8px; font-size: 0.75rem;">
+                  + Section
+                </button>
               </div>
-              <div class="metric-card" style="text-align: center; padding: 12px 20px; background: #F8F9FA; border-radius: 12px; border: 1px solid #EFEFEF;">
-                <p class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--att-cobalt, #00388F); margin: 0;">${totalComponents}</p>
-                <p class="metric-label" style="font-size: 0.75rem; color: #666; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Components</p>
+            </div>
+
+            <!-- Sections List -->
+            <div class="sections-list" style="display: flex; flex-direction: column; gap: 12px;">
+              ${(project.sectionOrder || []).map((secId, idx) => this.renderSectionCard(project, secId, idx, activeFilter, searchFilter)).join('')}
+
+              <!-- Unsectioned Components Section (if any) -->
+              ${(project.unsectionedComponentOrder && project.unsectionedComponentOrder.length > 0) ? `
+                <div class="section-card" style="background: var(--att-surface, #ffffff); border: 1px solid var(--att-border, #DCDFE3); border-radius: 10px; overflow: hidden;">
+                  <div class="section-card-header" style="background: var(--att-surface-sunken, #FAFAFA); border-bottom: 1px solid var(--att-border, #EFEFEF); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="section-header-left" style="display: flex; align-items: center; gap: 6px;">
+                      <h3 class="section-title" style="font-size: 0.875rem; font-weight: 700; margin: 0;">Unsectioned Area</h3>
+                      <span class="section-component-badge" style="background: var(--att-grey-1, #E4E7EC); font-size: 0.6875rem; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${project.unsectionedComponentOrder.length}</span>
+                    </div>
+                    <div>
+                      <button class="btn btn-secondary btn-sm" data-action="add-comp-unsectioned" style="padding: 2px 6px; font-size: 0.6875rem;">+ Add</button>
+                    </div>
+                  </div>
+                  <div class="section-card-body" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+                    ${project.unsectionedComponentOrder
+                      .filter(cId => this.matchesFilter(project.components?.[cId], activeFilter, searchFilter))
+                      .map((cId, idx) => this.renderComponentRow(project, cId, null, idx, project.unsectionedComponentOrder.length))
+                      .join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${(project.sectionOrder || []).length === 0 && (!project.unsectionedComponentOrder || project.unsectionedComponentOrder.length === 0) ? `
+                <div class="dashboard-empty-state" style="text-align: center; padding: 32px 16px; background: var(--att-surface, #ffffff); border: 1px dashed var(--att-border, #DCDFE3); border-radius: 12px;">
+                  <h3 class="empty-state-title" style="font-size: 1rem; font-weight: 700; margin: 0 0 6px 0;">Course is empty</h3>
+                  <p class="empty-state-subtitle" style="font-size: 0.8125rem; color: #666; margin: 0 0 14px 0;">Add your first module or interactive block.</p>
+                  <div style="display: flex; justify-content: center; gap: 8px;">
+                    <button id="wp-empty-add-sec-btn" class="btn btn-primary btn-sm">Add Section</button>
+                    <button id="wp-empty-add-comp-btn" class="btn btn-secondary btn-sm">Add Block</button>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Zone 2: Central Authoring & Live Preview Canvas -->
+          <div class="workspace-canvas-zone" style="background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="canvas-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--att-border, #EAEAEA); padding-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="component-type-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">Live Canvas</span>
+                <span style="font-weight: 700; font-size: 0.9375rem; color: var(--text-main, #111);">Interactive Block Preview</span>
+              </div>
+              <div class="canvas-viewport-controls" style="display: flex; gap: 4px; background: var(--att-grey-1, #F3F4F5); padding: 2px; border-radius: 8px;">
+                <button class="btn btn-secondary btn-sm active" title="Desktop 100% View" style="padding: 4px 8px; font-size: 0.75rem;">Desktop</button>
+                <button class="btn btn-secondary btn-sm" title="Tablet 768px View" style="padding: 4px 8px; font-size: 0.75rem;">Tablet</button>
+                <button class="btn btn-secondary btn-sm" title="Mobile 375px View" style="padding: 4px 8px; font-size: 0.75rem;">Mobile</button>
+              </div>
+            </div>
+
+            <!-- Canvas Viewport Frame -->
+            <div class="canvas-viewport-frame" style="background: var(--att-surface-sunken, #F8FAFC); border: 1px solid var(--att-border, #E2E8F0); border-radius: 12px; min-height: 420px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; text-align: center;">
+              <div style="max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                <div style="width: 64px; height: 64px; border-radius: 16px; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); display: flex; align-items: center; justify-content: center;">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                </div>
+                <h4 style="font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--text-main, #111);">Course Authoring &amp; Flow Canvas</h4>
+                <p style="font-size: 0.875rem; color: #64748B; margin: 0; line-height: 1.5;">Select any component from the Course Outline to preview, configure its interactions, or edit its content in the authoring tool.</p>
+                <button class="btn btn-primary btn-sm" id="wp-preview-canvas-btn" style="margin-top: 6px; padding: 8px 18px; font-size: 0.8125rem;">
+                  Launch Full Course Preview
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- Course Structure Filter & Controls -->
-          <div class="workspace-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-              <h2 class="workspace-toolbar-title" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Course Structure</h2>
-              
-              <!-- Quick Filter Chips -->
-              <div class="filter-group" style="display: flex; gap: 4px;">
-                <button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" data-cs-filter="all">All</button>
-                <button class="filter-chip ${activeFilter === 'draft' ? 'active' : ''}" data-cs-filter="draft">Draft</button>
-                <button class="filter-chip ${activeFilter === 'in_review' ? 'active' : ''}" data-cs-filter="in_review">In Review</button>
-                <button class="filter-chip ${activeFilter === 'ready' ? 'active' : ''}" data-cs-filter="ready">Ready</button>
-              </div>
-
-              <!-- Search within course -->
-              <input 
-                type="search" 
-                id="cs-search-input" 
-                class="form-input" 
-                placeholder="Filter components in course…" 
-                aria-label="Search components in course structure"
-                value="${escapeHTML(this.state.courseStructureSearch)}"
-                style="padding: 4px 10px; font-size: 0.8125rem; width: 200px;"
-              />
+          <!-- Zone 3: Right Contextual Inspector Panel -->
+          <div class="workspace-inspector-zone" style="background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--att-border, #EAEAEA); padding-bottom: 10px;">
+              <h3 style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: var(--text-main, #111);">Inspector</h3>
+              <span class="project-client-badge" style="background: #E8F5E9; color: #2E7D32; font-weight: 700; font-size: 0.6875rem; padding: 2px 6px; border-radius: 4px;">WCAG 2.2 AA</span>
             </div>
 
-            <div class="workspace-toolbar-actions" style="display: flex; align-items: center; gap: 8px;">
-              <button id="wp-expand-all-btn" class="btn btn-secondary btn-sm" title="Expand all sections">Expand All</button>
-              <button id="wp-collapse-all-btn" class="btn btn-secondary btn-sm" title="Collapse all sections">Collapse All</button>
-              <button id="wp-header-add-comp-btn" class="btn btn-secondary btn-sm" title="Add component to course">
-                + Add Component
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.8125rem; color: #555;">
+              <div>
+                <span style="font-weight: 600; color: #333; display: block; margin-bottom: 4px;">Course Target</span>
+                <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">Articulate Rise 360 Certified</span>
+              </div>
+              <div>
+                <span style="font-weight: 600; color: #333; display: block; margin-bottom: 4px;">Editorial Status</span>
+                <span style="background: #EFEFEF; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Multi-Component Project</span>
+              </div>
+              <div style="border-top: 1px solid var(--att-border, #EFEFEF); padding-top: 10px;">
+                <span style="font-weight: 600; color: #333; display: block; margin-bottom: 6px;">Pre-Export QA Health</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="flex: 1; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden;">
+                    <div style="width: 100%; height: 100%; background: #10B981;"></div>
+                  </div>
+                  <span style="font-weight: 700; font-size: 0.75rem; color: #10B981;">100%</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: auto; border-top: 1px solid var(--att-border, #EAEAEA); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <button class="btn btn-secondary btn-sm" id="wp-inspector-qa-btn" style="width: 100%; justify-content: center; font-size: 0.8125rem;">
+                Run QA Preflight
               </button>
-              <button id="wp-add-section-btn" class="btn btn-primary btn-sm">
-                + Add Section
+              <button class="btn btn-primary btn-sm" id="wp-inspector-export-btn" style="width: 100%; justify-content: center; font-size: 0.8125rem;">
+                Export Course Package
               </button>
             </div>
-          </div>
-
-          <!-- Sections List -->
-          <div class="sections-list" style="display: flex; flex-direction: column; gap: 16px;">
-            ${(project.sectionOrder || []).map((secId, idx) => this.renderSectionCard(project, secId, idx, activeFilter, searchFilter)).join('')}
-
-            <!-- Unsectioned Components Section (if any) -->
-            ${(project.unsectionedComponentOrder && project.unsectionedComponentOrder.length > 0) ? `
-              <div class="section-card" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; overflow: hidden;">
-                <div class="section-card-header" style="background: #FAFAFA; border-bottom: 1px solid #EFEFEF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
-                  <div class="section-header-left" style="display: flex; align-items: center; gap: 8px;">
-                    <h3 class="section-title" style="font-size: 1rem; font-weight: 700; margin: 0;">Unsectioned Components</h3>
-                    <span class="section-component-badge" style="background: #E4E7EC; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${project.unsectionedComponentOrder.length}</span>
-                  </div>
-                  <div>
-                    <button class="btn btn-secondary btn-sm" data-action="add-comp-unsectioned" style="padding: 3px 8px; font-size: 0.75rem;">+ Add Component</button>
-                  </div>
-                </div>
-                <div class="section-card-body" style="padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;">
-                  ${project.unsectionedComponentOrder
-                    .filter(cId => this.matchesFilter(project.components?.[cId], activeFilter, searchFilter))
-                    .map((cId, idx) => this.renderComponentRow(project, cId, null, idx, project.unsectionedComponentOrder.length))
-                    .join('')}
-                </div>
-              </div>
-            ` : ''}
-
-            ${(project.sectionOrder || []).length === 0 && (!project.unsectionedComponentOrder || project.unsectionedComponentOrder.length === 0) ? `
-              <div class="dashboard-empty-state" style="text-align: center; padding: 48px 24px; background: #ffffff; border: 1px dashed #DCDFE3; border-radius: 16px;">
-                <h3 class="empty-state-title" style="font-size: 1.25rem; font-weight: 700; margin: 0 0 8px 0;">This course project is currently empty</h3>
-                <p class="empty-state-subtitle" style="color: #666; margin: 0 0 20px 0;">Start by adding structured modules or individual interactive components.</p>
-                <div style="display: flex; justify-content: center; gap: 12px;">
-                  <button id="wp-empty-add-sec-btn" class="btn btn-primary">Add First Section</button>
-                  <button id="wp-empty-add-comp-btn" class="btn btn-secondary">Add Component</button>
-                </div>
-              </div>
-            ` : ''}
           </div>
         </main>
 
@@ -672,13 +727,22 @@ export class ProjectOverviewView {
     this.container.querySelector('#wp-preview-btn')?.addEventListener('click', () => {
       if (this.onOpenPreview) this.onOpenPreview(this.projectId);
     });
+    this.container.querySelector('#wp-preview-canvas-btn')?.addEventListener('click', () => {
+      if (this.onOpenPreview) this.onOpenPreview(this.projectId);
+    });
     this.container.querySelector('#wp-media-btn')?.addEventListener('click', () => {
       if (this.onOpenMedia) this.onOpenMedia(this.projectId);
     });
     this.container.querySelector('#wp-qa-btn')?.addEventListener('click', () => {
       if (this.onOpenQa) this.onOpenQa(this.projectId);
     });
+    this.container.querySelector('#wp-inspector-qa-btn')?.addEventListener('click', () => {
+      if (this.onOpenQa) this.onOpenQa(this.projectId);
+    });
     this.container.querySelector('#wp-export-btn')?.addEventListener('click', () => {
+      if (this.onExportProject) this.onExportProject(this.projectId);
+    });
+    this.container.querySelector('#wp-inspector-export-btn')?.addEventListener('click', () => {
       if (this.onExportProject) this.onExportProject(this.projectId);
     });
 

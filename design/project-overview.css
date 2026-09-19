@@ -540,29 +540,107 @@
   }
 }
 
-@media (max-width: 480px) {
-  .course-preview-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+/* Three-Zone Layout */
+.workspace-container.workspace-3zone-layout {
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) 1fr minmax(260px, 300px);
+  gap: 20px;
+  align-items: start;
+  min-height: calc(100vh - 65px);
+}
+
+.workspace-outline-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.workspace-canvas-zone {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 75px;
+}
+
+.workspace-inspector-zone {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 75px;
+}
+
+/* Slide-in Component Library Drawer */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
   }
-  .preview-mode-pill-group {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    text-align: center;
+  to {
+    transform: translateX(0);
   }
-  .preview-mode-pill-group .filter-chip {
-    justify-content: center;
-    padding: 6px 2px;
+}
+
+.component-library-drawer {
+  animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dark Mode Overrides for 3-Zone Workspace */
+[data-theme="dark"] .workspace-banner,
+[data-theme="dark"] .workspace-canvas-zone,
+[data-theme="dark"] .workspace-inspector-zone,
+[data-theme="dark"] .component-library-drawer {
+  background: var(--att-surface, #1E222B) !important;
+  border-color: var(--att-border, #2E3440) !important;
+  color: var(--text-main, #ECEFF4) !important;
+}
+
+[data-theme="dark"] .canvas-viewport-frame {
+  background: var(--att-surface-sunken, #161920) !important;
+  border-color: var(--att-border, #2E3440) !important;
+}
+
+[data-theme="dark"] .workflow-nav-segment {
+  background: var(--att-surface-sunken, #161920) !important;
+  border-color: var(--att-border, #2E3440) !important;
+}
+
+[data-theme="dark"] .workflow-tab-btn.active {
+  background: var(--att-surface, #1E222B) !important;
+  color: var(--att-blue, #009FDB) !important;
+}
+
+[data-theme="dark"] .workflow-tab-btn:not(.active) {
+  color: #94A3B8 !important;
+}
+
+/* Responsive Media Queries for 3-Zone Workspace */
+@media (max-width: 1200px) {
+  .workspace-container.workspace-3zone-layout {
+    grid-template-columns: minmax(300px, 340px) 1fr;
   }
-  .preview-util-btn-group {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
+  .workspace-inspector-zone {
+    grid-column: 1 / -1;
+    position: static;
   }
-  .preview-util-btn-group .btn {
-    width: 100%;
-    justify-content: center;
+}
+
+@media (max-width: 840px) {
+  .workspace-container.workspace-3zone-layout {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 16px;
+  }
+  .workspace-canvas-zone,
+  .workspace-inspector-zone {
+    position: static;
   }
 }
 
