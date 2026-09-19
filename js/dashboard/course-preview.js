@@ -44,9 +44,9 @@ export class CoursePreviewView {
     if (event.data.type === 'rcb-iframe-height' && event.data.frameId && typeof event.data.height === 'number') {
       const iframe = this.container?.querySelector(`#${event.data.frameId}`);
       if (iframe) {
-        const targetHeight = Math.max(Math.ceil(event.data.height), 80);
+        const targetHeight = Math.max(Math.ceil(event.data.height), 140);
         const currentHeight = parseInt(iframe.style.height || '0', 10);
-        if (Math.abs(currentHeight - targetHeight) >= 6) {
+        if (Math.abs(currentHeight - targetHeight) >= 4) {
           iframe.style.height = `${targetHeight}px`;
         }
       }
@@ -104,7 +104,7 @@ export class CoursePreviewView {
           html, body {
             height: auto !important;
             min-height: 0 !important;
-            overflow: hidden !important;
+            margin: 0 !important;
           }
         </style>
         <script>
@@ -112,31 +112,43 @@ export class CoursePreviewView {
             var lastReported = 0;
             function reportHeight() {
               try {
-                var root = document.querySelector('.rcb-component-root') || document.body.firstElementChild || document.body;
-                var rect = root ? root.getBoundingClientRect() : null;
-                var height = rect && rect.height ? Math.ceil(rect.height) : document.body.scrollHeight;
-                if (!height || height < 40) {
-                  height = Math.max(document.body.scrollHeight, 100);
-                }
-                if (Math.abs(height - lastReported) >= 4) {
-                  lastReported = height;
+                var doc = document.documentElement;
+                var body = document.body;
+                if (!body) return;
+                var wrapper = document.querySelector('.rise-block-wrapper') || document.querySelector('.rcb-component-root') || body.firstElementChild || body;
+                var wrapperRect = wrapper ? wrapper.getBoundingClientRect() : null;
+                var wrapperHeight = wrapperRect && wrapperRect.height ? Math.ceil(wrapperRect.height) : 0;
+                
+                var bodyStyle = window.getComputedStyle ? window.getComputedStyle(body) : null;
+                var pTop = bodyStyle ? (parseFloat(bodyStyle.paddingTop) || 0) : 30;
+                var pBottom = bodyStyle ? (parseFloat(bodyStyle.paddingBottom) || 0) : 30;
+                
+                // Full measured height including wrapper, body padding, and bottom buffer for buttons & focus rings
+                var computedFullHeight = (wrapperHeight > 0) ? Math.ceil(wrapperHeight + pTop + pBottom + 24) : Math.max(body.scrollHeight + 16, 140);
+                var finalHeight = Math.max(computedFullHeight, body.scrollHeight + 16, 140);
+
+                if (Math.abs(finalHeight - lastReported) >= 4) {
+                  lastReported = finalHeight;
                   window.parent.postMessage({
                     type: 'rcb-iframe-height',
                     frameId: 'iframe-comp-${comp.id}',
-                    height: height
+                    height: finalHeight
                   }, '*');
                 }
               } catch(e) {}
             }
-            window.addEventListener('load', function() { setTimeout(reportHeight, 60); });
+            window.addEventListener('load', function() { setTimeout(reportHeight, 60); setTimeout(reportHeight, 350); });
             window.addEventListener('resize', reportHeight);
-            if (window.ResizeObserver) {
+            if (window.ResizeObserver && document.body) {
               var observer = new ResizeObserver(function() { reportHeight(); });
-              var el = document.querySelector('.rcb-component-root') || document.body.firstElementChild || document.body;
-              if (el) observer.observe(el);
+              var target = document.querySelector('.rise-block-wrapper') || document.body.firstElementChild || document.body;
+              if (target) observer.observe(target);
             }
-            setTimeout(reportHeight, 150);
+            document.addEventListener('click', function() { setTimeout(reportHeight, 80); setTimeout(reportHeight, 350); });
+            document.addEventListener('change', function() { setTimeout(reportHeight, 80); });
+            setTimeout(reportHeight, 100);
             setTimeout(reportHeight, 600);
+            setTimeout(reportHeight, 1500);
           })();
         </script>
       `;
