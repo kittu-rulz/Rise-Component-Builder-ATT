@@ -124,7 +124,18 @@
   width: 100%;
   margin: 0 auto;
   padding: var(--att-space-6, 32px);
+  padding-bottom: 80px;
   flex: 1;
+}
+
+.dashboard-empty-state-onboarding {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 12px 0 40px 0;
 }
 
 /* Search and Filters Bar */

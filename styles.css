@@ -456,6 +456,22 @@ a {
   overflow: hidden;
 }
 
+/* Workspace Dedicated Panels */
+.dashboard-workspace-panel,
+.project-overview-workspace-panel,
+.project-media-workspace-panel,
+.course-preview-workspace-panel,
+.project-qa-workspace-panel,
+.post-publish-workspace-panel {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Left Sidebar Navigation */
 .sidebar {
   width: var(--sidebar-width);
