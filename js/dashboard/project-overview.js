@@ -129,28 +129,32 @@ export class ProjectOverviewView {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
-              Course Projects
+              <span>Course Projects</span>
             </button>
             <span class="breadcrumb-separator">/</span>
             <span class="breadcrumb-current">${escapeHTML(project.name)}</span>
           </div>
 
-          <div class="workspace-header-actions">
-            <button id="wp-preview-btn" class="btn btn-secondary btn-sm" title="Preview complete course flow">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              Course Preview
+          <!-- Workflow Segment Control (Build -> Preview -> QA -> Export) -->
+          <div class="workflow-nav-segment" style="display: flex; background: var(--att-grey-1, #F3F4F5); padding: 3px; border-radius: 10px; gap: 2px; border: 1px solid var(--att-border, #DCDFE3);">
+            <button class="workflow-tab-btn active" id="wp-tab-build" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 700; border: none; border-radius: 8px; background: var(--att-surface, #FFF); color: var(--att-cobalt, #00388F); box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer;">
+              Build
             </button>
+            <button class="workflow-tab-btn" id="wp-preview-btn" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: var(--text-main, #333); cursor: pointer;">
+              Preview
+            </button>
+            <button class="workflow-tab-btn" id="wp-qa-btn" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: var(--text-main, #333); cursor: pointer;">
+              QA Preflight
+            </button>
+            <button class="workflow-tab-btn" id="wp-export-btn" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: var(--text-main, #333); cursor: pointer;">
+              Export Package
+            </button>
+          </div>
+
+          <div class="workspace-header-actions">
             <button id="wp-media-btn" class="btn btn-secondary btn-sm" title="Project media library">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-              Media Library
-            </button>
-            <button id="wp-qa-btn" class="btn btn-secondary btn-sm" title="Course-level QA and readiness report">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-              Course QA
-            </button>
-            <button id="wp-export-btn" class="btn btn-primary btn-sm" title="Export Course Project Package">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              Export Course
+              <span>Media</span>
             </button>
           </div>
         </header>
@@ -494,14 +498,14 @@ export class ProjectOverviewView {
     const sectionOrder = project.sectionOrder || [];
 
     return `
-      <div class="modal-overlay is-active" id="picker-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; padding: 20px;">
-        <div class="modal-card" style="max-width: 920px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); overflow: hidden;">
-          <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid #EAEAEA; display: flex; justify-content: space-between; align-items: center; background: #FAFAFA;">
+      <div class="modal-overlay is-active drawer-overlay" id="picker-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title" style="display: flex; justify-content: flex-end; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000;">
+        <div class="modal-card component-library-drawer" style="max-width: 580px; width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--att-surface, #ffffff); border-left: 1px solid var(--att-border, #DCDFE3); box-shadow: -8px 0 32px rgba(0,0,0,0.15); overflow: hidden; animation: slideInRight 0.2s ease-out;">
+          <div class="modal-header" style="padding: 18px 24px; border-bottom: 1px solid var(--att-border, #EAEAEA); display: flex; justify-content: space-between; align-items: center; background: var(--att-surface, #FAFAFA);">
             <div>
-              <h2 id="picker-modal-title" class="modal-title" style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #111;">Add Component to Course</h2>
-              <p style="font-size: 0.8125rem; color: #666; margin: 2px 0 0 0;">Choose an interactive block to add to your course project.</p>
+              <h2 id="picker-modal-title" class="modal-title" style="font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--text-main, #111);">Component Library</h2>
+              <p style="font-size: 0.8125rem; color: #666; margin: 2px 0 0 0;">Pick from 26 certified AT&amp;T interactive blocks.</p>
             </div>
-            <button id="picker-close-btn" class="project-menu-btn" aria-label="Close component picker" type="button">
+            <button id="picker-close-btn" class="project-menu-btn" aria-label="Close component library" type="button">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>

@@ -929,6 +929,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     hideAllWorkspacePanels();
 
     if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
+      if (sidebar) {
+        sidebar.hidden = true;
+        sidebar.style.display = 'none';
+      }
       catalogState.hidden = true;
       editorState.hidden = true;
       catalogState.style.display = 'none';
@@ -1067,6 +1071,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btnDocked) btnDocked.style.display = '';
 
       if (state === 'catalog') {
+        if (sidebar) {
+          sidebar.hidden = false;
+          sidebar.style.display = '';
+        }
         catalogState.hidden = false;
         editorState.hidden = true;
         catalogState.style.display = 'flex';
@@ -1081,6 +1089,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const status = document.getElementById('project-status');
         if (status) status.hidden = true; // no project context on the catalog screen
       } else if (state === 'editor') {
+        if (sidebar) {
+          sidebar.hidden = true;
+          sidebar.style.display = 'none';
+        }
         catalogState.hidden = true;
         editorState.hidden = false;
         catalogState.style.display = 'none';
