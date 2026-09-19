@@ -1119,10 +1119,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const projectTitleEditor = document.getElementById('project-title-editor');
     const status = document.getElementById('project-status');
     const btnProjectsDashboard = document.getElementById('btn-projects-dashboard');
+    const dashboardHeaderActions = document.getElementById('dashboard-header-actions');
 
     if (btnProjectsDashboard) {
       const isDashboardOrCourse = ['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa'].includes(state);
       btnProjectsDashboard.classList.toggle('active', isDashboardOrCourse);
+    }
+
+    if (dashboardHeaderActions) {
+      dashboardHeaderActions.style.display = (state === 'dashboard') ? 'flex' : 'none';
     }
 
     if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {

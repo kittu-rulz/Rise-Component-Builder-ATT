@@ -125,34 +125,7 @@ export class DashboardView {
 
     this.container.innerHTML = `
       <div class="project-dashboard-view">
-        <!-- Header -->
-        <header class="dashboard-header">
-          <div class="dashboard-header-brand">
-            <span class="dashboard-brand-badge">AT&T</span>
-            <div>
-              <h1 class="dashboard-header-title">Rise Component Builder</h1>
-              <p class="dashboard-header-subtitle">Course Projects & Multi-Component Workspace</p>
-            </div>
-          </div>
-          <div class="dashboard-header-actions">
-            <button id="dash-import-btn" class="btn-att-secondary" aria-label="Import Project JSON">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              Import JSON
-            </button>
-            <input type="file" id="dash-import-file-input" accept=".json" style="display:none;" />
-            <button id="dash-create-btn" class="btn-att-primary" aria-label="Create New Course Project">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              New Project
-            </button>
-          </div>
-        </header>
+        <h1 class="sr-only">Rise Component Builder</h1>
 
         <!-- Main Body -->
         <main class="dashboard-container">
@@ -440,14 +413,14 @@ export class DashboardView {
     }
 
     // New Project buttons
-    const createBtn = this.container.querySelector('#dash-create-btn');
-    const emptyCreateBtn = this.container.querySelector('#dash-empty-create-btn');
+    const createBtn = this.container?.querySelector('#dash-create-btn') || document.getElementById('dash-create-btn');
+    const emptyCreateBtn = this.container?.querySelector('#dash-empty-create-btn');
     const openModal = (e) => {
       this.lastCreateTrigger = e?.currentTarget || createBtn;
       this.state.isCreateModalOpen = true;
       this.render();
     };
-    if (createBtn) createBtn.addEventListener('click', openModal);
+    if (createBtn) createBtn.onclick = openModal;
     if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', openModal);
 
     // Onboarding cards
@@ -481,7 +454,7 @@ export class DashboardView {
       if (this.onOpenProject) this.onOpenProject(project.id);
     });
 
-    const fileInput = this.container.querySelector('#dash-import-file-input');
+    const fileInput = this.container?.querySelector('#dash-import-file-input') || document.getElementById('dash-import-file-input');
     const triggerImport = (e) => {
       if (e) e.stopPropagation();
       if (fileInput) fileInput.click();
@@ -490,10 +463,10 @@ export class DashboardView {
     this.container.querySelector('#onboarding-import-card')?.addEventListener('click', triggerImport);
 
     // Import JSON button
-    const importBtn = this.container.querySelector('#dash-import-btn');
+    const importBtn = this.container?.querySelector('#dash-import-btn') || document.getElementById('dash-import-btn');
     if (importBtn && fileInput) {
-      importBtn.addEventListener('click', triggerImport);
-      fileInput.addEventListener('change', async (e) => {
+      importBtn.onclick = triggerImport;
+      fileInput.onchange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
         try {
@@ -506,7 +479,7 @@ export class DashboardView {
         } catch (err) {
           alert(`Could not import project: ${err.message}`);
         }
-      });
+      };
     }
 
     // Project card clicks & action handlers
