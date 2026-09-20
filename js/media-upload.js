@@ -2,6 +2,7 @@ import {
   createMediaReference, formatFileSize, IMAGE_RESIZE_THRESHOLD_PX, isMediaReference, MEDIA_LIMITS, prepareMediaFile
 } from './media.js';
 import { ensureMediaObjectURL, findDuplicateByHash, peekMediaObjectURL, saveMediaRecord } from './media-storage.js';
+import { showMediaPickerModal } from './dashboard/media-picker-modal.js';
 
 const ACCEPT = Object.freeze({
   image: '.jpg,.jpeg,.png,.webp,.svg,.gif,image/jpeg,image/png,image/webp,image/svg+xml,image/gif',
@@ -81,18 +82,41 @@ export function createMediaUploadControl({
   dropZone.tabIndex = 0;
   dropZone.setAttribute('role', 'button');
   dropZone.setAttribute('aria-label', `Upload ${field.label}. Browse or drop a file.`);
+  
   const dropText = document.createElement('span');
   dropText.textContent = 'Drop file here or';
+
+  const actionsGroup = document.createElement('div');
+  actionsGroup.className = 'media-dropzone-actions';
+  actionsGroup.style.display = 'inline-flex';
+  actionsGroup.style.gap = '6px';
+  actionsGroup.style.flexWrap = 'wrap';
+
+  const libraryButton = document.createElement('button');
+  libraryButton.type = 'button';
+  libraryButton.className = 'btn btn-secondary btn-small media-library-btn';
+  libraryButton.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+      <polyline points="21 15 16 10 5 21"></polyline>
+    </svg>
+    Choose from Media Library
+  `;
+
   const browseButton = document.createElement('button');
   browseButton.type = 'button';
   browseButton.className = 'btn btn-secondary btn-small';
-  browseButton.textContent = isMediaReference(currentValue) ? 'Replace file' : 'Browse';
+  browseButton.textContent = isMediaReference(currentValue) ? 'Upload New' : 'Browse File';
+
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = ACCEPT[kind] || '';
   fileInput.multiple = Boolean(field.multiple);
   fileInput.hidden = true;
-  dropZone.append(dropText, browseButton, fileInput);
+
+  actionsGroup.append(libraryButton, browseButton);
+  dropZone.append(dropText, actionsGroup, fileInput);
 
   const details = document.createElement('div');
   details.className = 'media-upload-details';
@@ -105,7 +129,7 @@ export function createMediaUploadControl({
   const removeButton = document.createElement('button');
   removeButton.type = 'button';
   removeButton.className = 'btn btn-text btn-small media-remove-btn';
-  removeButton.textContent = 'Remove file';
+  removeButton.textContent = 'Remove media';
   details.append(preview, metadata, removeButton);
 
   const error = document.createElement('div');
@@ -121,43 +145,65 @@ export function createMediaUploadControl({
     root.classList.toggle('has-error', Boolean(message));
   }
 
-  // Split out from renderValue() so the plain-text URL input's keystroke handler can keep
-  // the badge accurate without rebuilding the preview/metadata on every keystroke (which
-  // would otherwise refetch an in-progress URL from the network on each character typed).
   function updateSourceBadge(hasUpload, isMissing) {
-    // Always visible, regardless of upload state — clear local-vs-external indication is
-    // a requirement in its own right (docs/MEDIA-ASSET-PIPELINE.md), not just something
-    // implied by which sub-control happens to be enabled.
     sourceBadge.hidden = false;
     sourceBadge.classList.toggle('is-missing', isMissing);
     sourceBadge.classList.toggle('is-external', !hasUpload && Boolean(currentValue));
     sourceBadge.classList.toggle('is-empty', !hasUpload && !currentValue);
     sourceBadge.textContent = isMissing
-      ? 'Missing local file'
-      : hasUpload ? 'Local upload (stored in this browser)'
+      ? 'Missing library asset'
+      : hasUpload ? 'Shared Media Library (stored in this browser)'
       : currentValue ? 'External URL'
-      : 'No file selected';
+      : 'No media selected';
   }
 
   function renderValue() {
     preview.replaceChildren();
     metadata.replaceChildren();
     const reference = isMediaReference(currentValue) ? currentValue : null;
-    const source = reference ? peekMediaObjectURL(reference.mediaId) : typeof currentValue === 'string' ? currentValue : '';
+    const assetId = reference ? (reference.mediaId || reference.assetId) : '';
+    const source = assetId ? peekMediaObjectURL(assetId) : typeof currentValue === 'string' ? currentValue : '';
     const isMissing = Boolean(reference) && !source;
     const previewElement = createPreview(kind, source, reference?.name);
     if (previewElement) preview.appendChild(previewElement);
     if (reference) {
       const name = document.createElement('strong');
-      name.textContent = reference.name;
+      name.textContent = reference.name || reference.fileName || 'Selected Asset';
       const meta = document.createElement('span');
       meta.textContent = `${formatFileSize(reference.size)} • ${reference.mimeType}${Number.isFinite(reference.duration) ? ` • ${Math.round(reference.duration)} seconds` : ''}`;
       metadata.append(name, meta);
       if (isMissing) {
-        const missingNotice = document.createElement('span');
+        const missingNotice = document.createElement('div');
         missingNotice.className = 'media-missing-notice';
         missingNotice.setAttribute('role', 'alert');
-        missingNotice.textContent = 'This file is missing from local storage (cleared browser data, or a different browser/device). Use “Replace file” to re-upload it.';
+        missingNotice.style.color = '#B91C1C';
+        missingNotice.style.fontSize = '12px';
+        missingNotice.style.marginTop = '4px';
+        missingNotice.innerHTML = `
+          <span>Asset (${assetId}) is missing from local storage.</span>
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <button type="button" class="btn btn-secondary btn-small" data-action="pick-replacement" style="font-size: 11px; padding: 2px 8px;">Choose Replacement</button>
+            <button type="button" class="btn btn-secondary btn-small" data-action="upload-replacement" style="font-size: 11px; padding: 2px 8px;">Upload Replacement</button>
+            <button type="button" class="btn btn-text btn-small" data-action="clear-reference" style="font-size: 11px; padding: 2px 8px; color: #DC2626;">Remove Reference</button>
+          </div>
+        `;
+
+        missingNotice.querySelector('[data-action="pick-replacement"]')?.addEventListener('click', async () => {
+          const chosen = await showMediaPickerModal({ filterKind: kind, triggerElement: libraryButton, limits, store });
+          if (chosen) {
+            currentValue = chosen;
+            await ensureMediaObjectURL(chosen.mediaId || chosen.assetId, store);
+            renderValue();
+            onChange(currentValue);
+          }
+        });
+        missingNotice.querySelector('[data-action="upload-replacement"]')?.addEventListener('click', () => fileInput.click());
+        missingNotice.querySelector('[data-action="clear-reference"]')?.addEventListener('click', () => {
+          currentValue = '';
+          renderValue();
+          onChange('');
+        });
+
         metadata.appendChild(missingNotice);
       }
     }
@@ -166,7 +212,7 @@ export function createMediaUploadControl({
     details.hidden = !hasUpload;
     externalButton.hidden = !hasUpload;
     urlInput.disabled = hasUpload;
-    browseButton.textContent = hasUpload ? 'Replace file' : 'Browse';
+    browseButton.textContent = hasUpload ? 'Upload New' : 'Browse File';
   }
 
   async function processFiles(files) {
@@ -191,7 +237,7 @@ export function createMediaUploadControl({
         } else {
           reference = await saveMediaRecord(record, store);
         }
-        await ensureMediaObjectURL(reference.mediaId, store);
+        await ensureMediaObjectURL(reference.mediaId || reference.assetId, store);
         references.push(reference);
       }
       currentValue = references[0];
@@ -199,10 +245,10 @@ export function createMediaUploadControl({
       renderValue();
       if (references.length > 1 && onMultiple) onMultiple(references);
       else onChange(currentValue);
-      const uploadedMessage = `${references.length} file${references.length === 1 ? '' : 's'} uploaded.`;
+      const uploadedMessage = `${references.length} file${references.length === 1 ? '' : 's'} uploaded and saved to Media Library.`;
       const notices = [];
       if (resizedCount) notices.push(`${resizedCount} image${resizedCount === 1 ? ' was' : 's were'} resized to fit within ${IMAGE_RESIZE_THRESHOLD_PX}px for optimal performance.`);
-      if (reusedCount) notices.push(`${reusedCount} file${reusedCount === 1 ? '' : 's'} matched an asset already uploaded to this project and reused it instead of storing a duplicate.`);
+      if (reusedCount) notices.push(`${reusedCount} file${reusedCount === 1 ? '' : 's'} matched an asset already uploaded to this project and reused it.`);
       status.textContent = notices.length ? `${uploadedMessage} ${notices.join(' ')}` : uploadedMessage;
     } catch (uploadError) {
       showError(uploadError.message || 'The file could not be uploaded.');
@@ -212,6 +258,25 @@ export function createMediaUploadControl({
       fileInput.value = '';
     }
   }
+
+  libraryButton.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    const chosen = await showMediaPickerModal({
+      filterKind: kind,
+      currentMediaId: isMediaReference(currentValue) ? (currentValue.mediaId || currentValue.assetId) : '',
+      triggerElement: libraryButton,
+      limits,
+      store
+    });
+    if (chosen) {
+      currentValue = chosen;
+      urlInput.value = '';
+      await ensureMediaObjectURL(chosen.mediaId || chosen.assetId, store);
+      renderValue();
+      onChange(currentValue);
+      status.textContent = `Selected “${chosen.name}” from Media Library.`;
+    }
+  });
 
   urlInput.addEventListener('input', () => {
     currentValue = urlInput.value;
@@ -239,7 +304,7 @@ export function createMediaUploadControl({
     urlInput.value = '';
     renderValue();
     onChange('');
-    status.textContent = 'Uploaded file removed from this component.';
+    status.textContent = 'Media reference removed from this component.';
   });
   externalButton.addEventListener('click', () => {
     currentValue = '';

@@ -84,11 +84,13 @@ export async function prepareMediaExport(config, options = {}) {
 
   const transform = async value => {
     if (isMediaReference(value)) {
-      if (resolvedMedia.has(value.mediaId)) return resolvedMedia.get(value.mediaId);
-      const record = await getMediaRecord(value.mediaId, store);
+      const id = value.mediaId || value.assetId;
+      if (resolvedMedia.has(id)) return resolvedMedia.get(id);
+      const record = await getMediaRecord(id, store);
       if (!record?.blob) {
-        warnings.push(`Uploaded media “${value.name}” is missing from local storage and cannot be exported.`);
-        missing.push(value.name);
+        const assetName = value.name || value.fileName || id;
+        warnings.push(`Uploaded media “${assetName}” is missing from local storage and cannot be exported.`);
+        missing.push(assetName);
         return '';
       }
       const filename = uniqueFilename(record.sanitizedName || record.name);
@@ -99,13 +101,13 @@ export async function prepareMediaExport(config, options = {}) {
       const canInline = mode === 'inline' && record.kind === 'image' && record.mimeType !== 'image/svg+xml' && record.size <= inlineImageLimit;
       if (canInline) {
         const dataUrl = await blobToDataURL(record.blob);
-        resolvedMedia.set(value.mediaId, dataUrl);
+        resolvedMedia.set(id, dataUrl);
         return dataUrl;
       }
       if (mode === 'inline') {
         warnings.push(`“${record.name}” requires an external asset file at ${relativePath}; it cannot be safely included in a single HTML file.`);
       }
-      resolvedMedia.set(value.mediaId, relativePath);
+      resolvedMedia.set(id, relativePath);
       return relativePath;
     }
     if (Array.isArray(value)) return Promise.all(value.map(transform));
@@ -118,6 +120,8 @@ export async function prepareMediaExport(config, options = {}) {
 
   return { config: await transform(config), manifest, assets, warnings, missing };
 }
+
+export const transformMediaReferences = prepareMediaExport;
 
 /**
  * Packages a compiled export into a real, standalone ZIP: `index.html` at the ZIP root.

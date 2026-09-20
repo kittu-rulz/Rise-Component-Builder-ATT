@@ -88,7 +88,7 @@ function isSafeProjectValue(value, depth = 0) {
   if (Array.isArray(value)) return value.length <= 1000 && value.every(entry => isSafeProjectValue(entry, depth + 1));
   if (!isPlainObject(value)) return false;
   if ('objectUrl' in value || 'blob' in value) return false;
-  if (value.source === 'upload' && !isMediaReference(value)) return false;
+  if ((value.source === 'upload' || value.source === 'library' || value.sourceType === 'library' || value.sourceType === 'upload') && !isMediaReference(value)) return false;
   return Object.entries(value).length <= 100 && Object.entries(value).every(([key, entry]) =>
     /^[a-zA-Z0-9_-]+$/.test(key) && !DANGEROUS_KEYS.has(key) && isSafeProjectValue(entry, depth + 1));
 }

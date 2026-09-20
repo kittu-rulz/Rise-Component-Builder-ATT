@@ -44,7 +44,9 @@ const TYPE_RULES = Object.freeze({
 });
 
 const MEDIA_REFERENCE_KEYS = new Set([
-  'mediaId', 'schemaVersion', 'source', 'kind', 'name', 'mimeType', 'size', 'createdAt', 'duration'
+  'mediaId', 'assetId', 'schemaVersion', 'source', 'sourceType', 'kind', 'mediaType',
+  'name', 'fileName', 'mimeType', 'size', 'createdAt', 'duration', 'altText', 'alt',
+  'decorative', 'caption', 'transcript', 'dimensions', 'contentHash', 'resized'
 ]);
 
 function createId() {
@@ -85,9 +87,6 @@ export function validateMediaFile(file, kind, limits = MEDIA_LIMITS) {
   return { valid: errors.length === 0, errors, extension, mimeType, limit };
 }
 
-// Pure sizing decision, kept separate from the actual pixel-decoding/canvas work below
-// so it can be unit-tested without a real browser image decoder (this test suite's
-// vitest environment is plain Node — see docs/MEDIA-ASSET-PIPELINE.md).
 export function computeResizeTarget(width, height, threshold = IMAGE_RESIZE_THRESHOLD_PX) {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return null;
   const longEdge = Math.max(width, height);
@@ -96,9 +95,6 @@ export function computeResizeTarget(width, height, threshold = IMAGE_RESIZE_THRE
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
 }
 
-// Requires a real browser image decoder — unavailable in this project's Node-based unit
-// test environment by design, so every caller treats a thrown/rejected result as "could
-// not determine dimensions" and fails open rather than blocking the upload.
 async function readImageDimensions(blob) {
   if (typeof createImageBitmap === 'function') {
     const bitmap = await createImageBitmap(blob);
@@ -122,8 +118,6 @@ async function readImageDimensions(blob) {
   }
 }
 
-// Downscales via <canvas> — also browser-only; callers fail open (keep the original blob)
-// if canvas or its 2D context isn't available.
 async function resizeImageBlob(blob, width, height, mimeType) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
     throw new Error('Image resizing is not available in this environment.');
@@ -159,11 +153,6 @@ async function resizeImageBlob(blob, width, height, mimeType) {
   });
 }
 
-// Content hash for duplicate-file detection (js/media-storage.js#findDuplicateByHash) —
-// hex-encoded SHA-256 of the final stored bytes, so two uploads of the same picture (even
-// under different filenames) are recognized as the same asset. Returns null rather than
-// throwing when the Web Crypto digest API isn't available (e.g. an insecure, non-localhost
-// context), since duplicate detection is an optimization, never a correctness requirement.
 export async function computeFileHash(blob) {
   if (typeof globalThis.crypto?.subtle?.digest !== 'function') return null;
   try {
@@ -175,7 +164,6 @@ export async function computeFileHash(blob) {
 }
 
 export function sanitizeSVGText(value) {
-  // eslint-disable-next-line no-control-regex -- intentionally strips control characters before unsafe-content checks
   const svg = String(value ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
   const normalized = svg
     .replace(/&#x([0-9a-f]+);?/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
@@ -228,35 +216,25 @@ export async function prepareMediaFile(file, kind, options = {}) {
     if (!result.valid) throw new Error(result.error);
     blob = new Blob([result.sanitized], { type: 'image/svg+xml' });
   } else {
-    // Some browsers (WebKit) fail to structured-clone a File object into
-    // IndexedDB; storing a plain Blob copy avoids that failure everywhere.
     blob = new Blob([file], { type: file.type });
   }
 
-  // Dimension limit + auto-downscale only applies to real raster images — SVG has no
-  // fixed pixel grid to decompression-bomb, and both steps require a real browser image
-  // decoder that this project's Node-based unit test environment doesn't provide, so a
-  // failure here is treated as "couldn't determine dimensions" and never blocks the
-  // upload (fails open, same philosophy as the export-preflight engine).
-  let resized = false;
   let dimensions = null;
+  let resized = false;
   if (kind === 'image' && validation.extension !== 'svg') {
     try {
       dimensions = await readImageDimensions(blob);
-      if (Math.max(dimensions.width, dimensions.height) > MAX_IMAGE_DIMENSION_PX) {
-        throw new Error(`${file.name} is ${dimensions.width}×${dimensions.height}px, which exceeds the ${MAX_IMAGE_DIMENSION_PX}px maximum image dimension.`);
+      if (dimensions.width > MAX_IMAGE_DIMENSION_PX || dimensions.height > MAX_IMAGE_DIMENSION_PX) {
+        throw new Error(`The image dimensions (${dimensions.width} × ${dimensions.height} px) exceed the ${MAX_IMAGE_DIMENSION_PX} px maximum.`);
       }
       const target = computeResizeTarget(dimensions.width, dimensions.height);
       if (target) {
         blob = await resizeImageBlob(blob, target.width, target.height, validation.mimeType);
-        resized = true;
         dimensions = target;
+        resized = true;
       }
-    } catch (error) {
-      // Only the explicit over-the-hard-limit case above should ever block the upload;
-      // any other failure (decoder unavailable, resize failed) falls through silently —
-      // `dimensions` simply stays whatever was last determined (or null).
-      if (error.message.includes('maximum image dimension')) throw error;
+    } catch (dimensionError) {
+      if (dimensionError.message.includes('exceed')) throw dimensionError;
     }
   }
 
@@ -265,53 +243,60 @@ export async function prepareMediaFile(file, kind, options = {}) {
     id: options.id || createId(),
     schemaVersion: MEDIA_SCHEMA_VERSION,
     name: file.name,
-    sanitizedName: sanitizeAssetFilename(file.name),
-    mimeType: resized ? (validation.mimeType === 'image/gif' ? 'image/png' : validation.mimeType) : validation.mimeType,
+    mimeType: validation.mimeType,
     size: blob.size,
     createdAt: now,
     kind,
     duration: Number.isFinite(options.duration) ? options.duration : null,
     dimensions,
-    altText: '',
-    decorative: false,
-    caption: '',
-    transcript: '',
-    resized,
     contentHash: await computeFileHash(blob),
     blob
   };
 }
 
-export function createMediaReference(record) {
+export function createMediaReference(record, overrides = {}) {
+  const mediaId = record.id || record.mediaId || record.assetId || '';
+  const kind = record.kind || record.mediaType || 'image';
+  const name = record.name || record.fileName || 'Untitled Asset';
+  const mimeType = record.mimeType || (kind === 'image' ? 'image/png' : kind === 'audio' ? 'audio/mpeg' : 'video/mp4');
+  const size = Number.isFinite(record.size) ? record.size : 0;
+  const createdAt = record.createdAt || new Date().toISOString();
+  const duration = Number.isFinite(record.duration) ? record.duration : null;
+
   return {
     source: 'upload',
-    mediaId: record.id,
+    sourceType: 'library',
+    mediaId,
+    assetId: mediaId,
     schemaVersion: MEDIA_SCHEMA_VERSION,
-    kind: record.kind,
-    name: record.name,
-    mimeType: record.mimeType,
-    size: record.size,
-    createdAt: record.createdAt,
-    duration: Number.isFinite(record.duration) ? record.duration : null
+    kind,
+    mediaType: kind,
+    name,
+    fileName: name,
+    mimeType,
+    size,
+    createdAt,
+    duration,
+    ...overrides
   };
 }
 
 export function isMediaReference(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-    && value.source === 'upload' && typeof value.mediaId === 'string' && Boolean(value.mediaId)
-    && value.schemaVersion === MEDIA_SCHEMA_VERSION
-    && ['image', 'audio', 'video', 'captions'].includes(value.kind)
-    && typeof value.name === 'string' && Boolean(value.name.trim())
-    && typeof value.mimeType === 'string' && Boolean(value.mimeType)
-    && Number.isFinite(value.size) && value.size >= 0
-    && typeof value.createdAt === 'string' && !Number.isNaN(Date.parse(value.createdAt))
-    && [...MEDIA_REFERENCE_KEYS].every(key => value[key] === undefined || value[key] === null
-      || ['string', 'number'].includes(typeof value[key]));
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const isUploadOrLibrary = value.source === 'upload' || value.source === 'library' || value.sourceType === 'library' || value.sourceType === 'upload';
+  const id = value.mediaId || value.assetId;
+  const kind = value.kind || value.mediaType;
+  if (!isUploadOrLibrary || typeof id !== 'string' || !id.trim()) return false;
+  if (!['image', 'audio', 'video', 'captions'].includes(kind)) return false;
+  if (value.name !== undefined && typeof value.name !== 'string') return false;
+  if (value.size !== undefined && (!Number.isFinite(value.size) || value.size < 0)) return false;
+  return Object.keys(value).every(key => MEDIA_REFERENCE_KEYS.has(key));
 }
 
 export function collectMediaReferences(value, found = new Map()) {
   if (isMediaReference(value)) {
-    found.set(value.mediaId, value);
+    const id = value.mediaId || value.assetId;
+    if (id) found.set(id, value);
     return [...found.values()];
   }
   if (Array.isArray(value)) value.forEach(entry => collectMediaReferences(entry, found));

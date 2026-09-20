@@ -132,23 +132,53 @@ export async function restoreMediaReferences(value, store = defaultStore) {
   const references = collectMediaReferences(value);
   const missing = [];
   await Promise.all(references.map(async reference => {
-    if (!await ensureMediaObjectURL(reference.mediaId, store)) missing.push(reference.mediaId);
+    const id = reference.mediaId || reference.assetId;
+    if (!id || !await ensureMediaObjectURL(id, store)) missing.push(id || 'unknown');
   }));
   return { restored: references.length - missing.length, missing };
 }
 
+export function resolveMediaAsset(value) {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (isMediaReference(value)) {
+    const id = value.mediaId || value.assetId;
+    return peekMediaObjectURL(id) || (typeof value.src === 'string' ? value.src : '') || '';
+  }
+  if (value && typeof value === 'object' && (value.mediaId || value.assetId)) {
+    const id = value.mediaId || value.assetId;
+    return peekMediaObjectURL(id) || (typeof value.src === 'string' ? value.src : '') || '';
+  }
+  return '';
+}
+
 export function resolveMediaReference(value) {
-  if (!isMediaReference(value)) return value;
-  return peekMediaObjectURL(value.mediaId);
+  return resolveMediaAsset(value);
 }
 
 export function resolveMediaReferencesForPreview(value) {
-  if (isMediaReference(value)) return resolveMediaReference(value);
+  if (isMediaReference(value)) return resolveMediaAsset(value);
   if (Array.isArray(value)) return value.map(resolveMediaReferencesForPreview);
   if (value && typeof value === 'object') {
     return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, resolveMediaReferencesForPreview(entry)]));
   }
   return value;
+}
+
+export async function ensureAllProjectMediaObjectURLs(project, store = defaultStore) {
+  if (!project) return { restored: 0, missing: [] };
+  const references = collectMediaReferences(project);
+  const missing = [];
+  await Promise.all(references.map(async ref => {
+    const id = ref.mediaId || ref.assetId;
+    if (id) {
+      const url = await ensureMediaObjectURL(id, store);
+      if (!url) missing.push(id);
+    }
+  }));
+  return { restored: references.length - missing.length, missing };
 }
 
 export function getRuntimeMediaURLCount() {

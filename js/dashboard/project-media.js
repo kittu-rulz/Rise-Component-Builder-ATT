@@ -3,10 +3,12 @@
  * Manages project-wide media assets stored in IndexedDB and tracks component references.
  */
 
-import { listMedia, saveMediaRecord, deleteMediaRecord } from '../media-storage.js';
+import { listMedia, saveMediaRecord, deleteMediaRecord, ensureMediaObjectURL } from '../media-storage.js';
 import { prepareMediaFile, createMediaReference } from '../media.js';
 import { getProject } from '../storage.js';
-import { showConfirmDialog } from './att-modal.js';
+import { getMediaAssetUsage, replaceMediaAssetReferences } from '../media-usage.js';
+import { showConfirmDialog, isolateModal } from './att-modal.js';
+import { showMediaPickerModal } from './media-picker-modal.js';
 import { showToast } from '../toast.js';
 
 export class ProjectMediaView {
@@ -38,6 +40,7 @@ export class ProjectMediaView {
     try {
       this.state.isLoading = true;
       this.state.mediaList = await listMedia();
+      await Promise.all(this.state.mediaList.map(a => ensureMediaObjectURL(a.id).catch(() => '')));
     } catch (err) {
       console.warn('[ProjectMedia] Could not load media items:', err);
       this.state.mediaList = [];
@@ -48,16 +51,8 @@ export class ProjectMediaView {
 
   getComponentReferences(mediaId) {
     const project = getProject(this.projectId);
-    if (!project || !project.components) return [];
-
-    const matches = [];
-    for (const comp of Object.values(project.components)) {
-      const configStr = JSON.stringify(comp.config || {});
-      if (configStr.includes(mediaId)) {
-        matches.push(comp.name);
-      }
-    }
-    return matches;
+    const usage = getMediaAssetUsage(mediaId, { activeProject: project });
+    return usage.references.map(r => `${r.componentName} (${r.fieldLabel})`);
   }
 
   render() {
@@ -69,9 +64,9 @@ export class ProjectMediaView {
     if (this.state.filterKind === 'image' || this.state.filterKind === 'video' || this.state.filterKind === 'audio') {
       items = items.filter(m => m.kind === this.state.filterKind);
     } else if (this.state.filterKind === 'used') {
-      items = items.filter(m => this.getComponentReferences(m.id).length > 0);
+      items = items.filter(m => getMediaAssetUsage(m.id, { activeProject: project }).isInUse);
     } else if (this.state.filterKind === 'unused') {
-      items = items.filter(m => this.getComponentReferences(m.id).length === 0);
+      items = items.filter(m => !getMediaAssetUsage(m.id, { activeProject: project }).isInUse);
     }
 
     // Filter by search query
@@ -179,7 +174,7 @@ export class ProjectMediaView {
         </p>
 
         <div class="project-card-stats" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-          <span style="font-size: 0.75rem; font-weight: 700; color: #555;">Used in ${refs.length} ${refs.length === 1 ? 'component' : 'components'}:</span>
+          <span style="font-size: 0.75rem; font-weight: 700; color: #555;">Used in ${refs.length} ${refs.length === 1 ? 'place' : 'places'}:</span>
           ${refs.length > 0 ? `
             <div style="display: flex; flex-wrap: wrap; gap: 4px;">
               ${refs.map(r => `<span class="component-status-badge draft" style="font-size: 11px;">${this.escapeHtml(r)}</span>`).join('')}
@@ -253,23 +248,102 @@ export class ProjectMediaView {
       btn.addEventListener('click', async () => {
         try {
           const id = btn.dataset.id;
-          const ok = await showConfirmDialog({
-            title: 'Delete Media Asset',
-            message: 'Are you sure you want to delete this media asset? Any components referencing it will lose their media source.',
-            confirmText: 'Delete Asset',
-            isDanger: true
-          });
-          if (ok) {
-            await deleteMediaRecord(id);
-            await this.refreshMediaList();
-            this.render();
-            showToast('Media asset deleted.', 'info');
+          const targetAsset = this.state.mediaList.find(a => a.id === id);
+          const assetName = targetAsset?.name || 'this media asset';
+          const usage = getMediaAssetUsage(id);
+
+          if (usage.totalUses > 0) {
+            // In-use Delete & Replace Protection Dialog
+            const action = await this.showInUseDeleteDialog(targetAsset, usage, btn);
+            if (action === 'delete') {
+              await deleteMediaRecord(id);
+              await this.refreshMediaList();
+              this.render();
+              showToast(`Deleted “${assetName}”. Components will show missing asset placeholder.`, 'warning');
+            } else if (action === 'replace') {
+              const replacement = await showMediaPickerModal({
+                filterKind: targetAsset.kind,
+                triggerElement: btn
+              });
+              if (replacement && (replacement.mediaId || replacement.assetId) !== id) {
+                const count = replaceMediaAssetReferences(id, replacement);
+                await deleteMediaRecord(id);
+                await this.refreshMediaList();
+                this.render();
+                showToast(`Replaced ${count} reference(s) with “${replacement.name}” and removed old asset.`, 'success');
+              }
+            }
+          } else {
+            // Unused simple confirmation
+            const ok = await showConfirmDialog({
+              title: 'Delete Media Asset',
+              message: `Are you sure you want to delete “${assetName}”? This asset is not currently referenced in any course components.`,
+              confirmText: 'Delete Asset',
+              isDanger: true
+            });
+            if (ok) {
+              await deleteMediaRecord(id);
+              await this.refreshMediaList();
+              this.render();
+              showToast('Media asset deleted.', 'info');
+            }
           }
         } catch (err) {
           console.error('[ProjectMedia] Delete failed:', err);
           showToast(`Could not delete asset: ${err.message}`, 'error', 5000);
         }
       });
+    });
+  }
+
+  showInUseDeleteDialog(asset, usage, triggerElement) {
+    const host = document.getElementById('modal-root') || document.body;
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+
+      const affectedList = usage.references
+        .map(r => `<li><strong>${this.escapeHtml(r.componentName)}</strong> in <em>${this.escapeHtml(r.projectName)}</em> (${this.escapeHtml(r.fieldLabel)})</li>`)
+        .join('');
+
+      overlay.innerHTML = `
+        <div class="modal-dialog" style="max-width: 540px; width: 92vw; background: #fff; border-radius: 8px; box-shadow: 0 12px 36px rgba(0,0,0,0.25); overflow: hidden;">
+          <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #E2E8F0; background: #FEF2F2;">
+            <h3 style="margin: 0; color: #991B1B; font-size: 1.125rem; font-weight: 700;">⚠️ Asset In Use (${usage.totalUses} ${usage.totalUses === 1 ? 'Reference' : 'References'})</h3>
+          </div>
+          <div class="modal-body" style="padding: 20px; font-size: 0.875rem; color: #334155; line-height: 1.5;">
+            <p style="margin: 0 0 12px;"><strong>“${this.escapeHtml(asset?.name || 'Asset')}”</strong> is currently used in the following components:</p>
+            <div style="max-height: 140px; overflow-y: auto; background: #F8FAFC; padding: 10px 14px; border-radius: 6px; border: 1px solid #E2E8F0; margin-bottom: 14px;">
+              <ul style="margin: 0; padding-left: 20px; font-size: 0.8125rem;">
+                ${affectedList}
+              </ul>
+            </div>
+            <p style="margin: 0; color: #64748B; font-size: 0.8125rem;">
+              Deleting this asset will leave missing media placeholders in the affected components. You can replace all references with another asset first.
+            </p>
+          </div>
+          <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-text" id="dlg-cancel-btn">Cancel</button>
+            <button type="button" class="btn btn-secondary" id="dlg-replace-btn">Replace References</button>
+            <button type="button" class="btn btn-danger" id="dlg-delete-btn">Delete Anyway</button>
+          </div>
+        </div>
+      `;
+
+      function close(choice) {
+        cleanup();
+        overlay.remove();
+        resolve(choice);
+      }
+
+      overlay.querySelector('#dlg-cancel-btn').addEventListener('click', () => close(null));
+      overlay.querySelector('#dlg-replace-btn').addEventListener('click', () => close('replace'));
+      overlay.querySelector('#dlg-delete-btn').addEventListener('click', () => close('delete'));
+
+      host.appendChild(overlay);
+      const cleanup = isolateModal(overlay, { triggerElement, onDismiss: () => close(null) });
     });
   }
 
@@ -283,3 +357,4 @@ export class ProjectMediaView {
       .replace(/'/g, '&#039;');
   }
 }
+
