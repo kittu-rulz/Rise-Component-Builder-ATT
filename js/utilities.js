@@ -1,3 +1,8 @@
+export function pluralize(count, singular, plural = `${singular}s`) {
+  const n = typeof count === 'number' ? count : (Array.isArray(count) ? count.length : Number(count) || 0);
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
 export function toRgba(color, alpha, fallback) {
   const value = (color || '').trim();
   const shortHex = /^#([0-9a-f]{3})$/i.exec(value);

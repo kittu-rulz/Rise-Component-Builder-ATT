@@ -6,7 +6,7 @@
 import { getProject } from '../storage.js';
 import { generateIframeContent } from '../preview.js';
 import { COMPONENT_MODULES, COMPONENT_REGISTRY, normalizeComponentType } from '../component-registry.js';
-import { toRgba as colorToRgba, escapeHTML } from '../utilities.js';
+import { toRgba as colorToRgba, escapeHTML, pluralize } from '../utilities.js';
 
 export class CoursePreviewView {
   constructor({ container = null, projectId = null, onBack = null, onEditComponent = null } = {}) {
@@ -248,7 +248,7 @@ export class CoursePreviewView {
           <div class="course-preview-header-meta" style="width: 100%; max-width: ${maxCanvasWidth}; transition: max-width 0.25s ease; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
             <h1 class="workspace-title" style="font-size: 1.5rem; font-weight: 700; margin: 0; color: #111;">Course Preview</h1>
             <div class="preview-viewport-info-banner" style="font-size: 0.8125rem; color: #555;">
-              Showing: <strong>${deviceLabel}</strong> · ${orderedItems.filter(i => i.type === 'component').length} components in sequence
+              Showing: <strong>${deviceLabel}</strong> · ${pluralize(orderedItems.filter(i => i.type === 'component').length, 'component')} in sequence
             </div>
           </div>
 

@@ -162,6 +162,8 @@ export function createRichTextEditor({
   value = '',
   placeholder = '',
   isSingleLine = false,
+  ariaDescribedBy = '',
+  ariaLabelledBy = '',
   onChange
 }) {
   const container = document.createElement('div');
@@ -183,6 +185,8 @@ export function createRichTextEditor({
   editor.setAttribute('role', 'textbox');
   editor.setAttribute('aria-multiline', isSingleLine ? 'false' : 'true');
   if (placeholder) editor.dataset.placeholder = placeholder;
+  if (ariaDescribedBy) editor.setAttribute('aria-describedby', ariaDescribedBy);
+  if (ariaLabelledBy) editor.setAttribute('aria-labelledby', ariaLabelledBy);
   editor.maxLength = -1;
   editor.innerHTML = sanitizeRichText(value || '');
 
@@ -1020,6 +1024,8 @@ export function upgradeTextareaToRichText(targetElement, { fieldId, isSingleLine
   const controlId = targetElement.id;
   const placeholder = targetElement.placeholder || targetElement.getAttribute('placeholder') || '';
   const initialValue = targetElement.value || targetElement.innerHTML || '';
+  const ariaDescribedBy = targetElement.getAttribute('aria-describedby') || '';
+  const ariaLabelledBy = targetElement.getAttribute('aria-labelledby') || '';
 
   const rte = createRichTextEditor({
     controlId,
@@ -1027,6 +1033,8 @@ export function upgradeTextareaToRichText(targetElement, { fieldId, isSingleLine
     value: initialValue,
     placeholder,
     isSingleLine,
+    ariaDescribedBy,
+    ariaLabelledBy,
     onChange
   });
 

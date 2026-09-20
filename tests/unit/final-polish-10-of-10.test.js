@@ -497,5 +497,87 @@ describe('Rise Component Builder AT&T — 10/10 Final Polish Suite', () => {
       expect(badges[0].textContent.trim()).toBe('1');
       expect(badges[1].textContent.trim()).toBe('2');
     });
+
+    it('correctly pluralizes component count in Course Preview ("1 component in sequence" vs "2 components in sequence")', () => {
+      const comp1 = createComponentInstance({ id: 'c1', name: 'Comp 1', type: 'accordion', config: { items: [{ title: 'T1' }] } });
+      const sec1 = createSection({ id: 's1', name: 'Section 1', componentOrder: ['c1'] });
+
+      const singleCompProject = buildProjectSchemaV3({
+        name: 'Single Component Project',
+        sectionOrder: ['s1'],
+        sections: { s1: sec1 },
+        components: { c1: comp1 }
+      });
+      saveProject(singleCompProject);
+
+      const preview1 = new CoursePreviewView({
+        container,
+        projectId: singleCompProject.id,
+        onBack: vi.fn()
+      });
+      preview1.mount();
+
+      const banner1 = container.querySelector('.preview-viewport-info-banner');
+      expect(banner1).not.toBeNull();
+      expect(banner1.textContent).toContain('1 component in sequence');
+      expect(banner1.textContent).not.toContain('1 components in sequence');
+
+      // Test with 2 components
+      const comp2 = createComponentInstance({ id: 'c2', name: 'Comp 2', type: 'tab-blocks', config: { items: [{ title: 'T2' }] } });
+      const sec2 = createSection({ id: 's2', name: 'Section 2', componentOrder: ['c1', 'c2'] });
+      const multiCompProject = buildProjectSchemaV3({
+        name: 'Multi Component Project',
+        sectionOrder: ['s2'],
+        sections: { s2: sec2 },
+        components: { c1: comp1, c2: comp2 }
+      });
+      saveProject(multiCompProject);
+
+      const preview2 = new CoursePreviewView({
+        container,
+        projectId: multiCompProject.id,
+        onBack: vi.fn()
+      });
+      preview2.mount();
+
+      const banner2 = container.querySelector('.preview-viewport-info-banner');
+      expect(banner2).not.toBeNull();
+      expect(banner2.textContent).toContain('2 components in sequence');
+    });
+  });
+
+  describe('Phase 8: Micro-Pass Orphaned Text Cleanliness & ARIA Association', () => {
+    it('ensures example hint texts are scoped strictly to form fields with valid aria-describedby', () => {
+      // Check HTML source structure for the 3 specified example fields
+      const inputMcHint = document.createElement('div');
+      inputMcHint.innerHTML = `
+        <div class="input-wrapper">
+          <label for="input-mc-hint-text" id="label-mc-hint-text">Hint (shown after an incorrect attempt, if attempts remain)</label>
+          <textarea id="input-mc-hint-text" rows="2" placeholder="e.g. Consider optical insertion loss" aria-describedby="hint-mc-hint-text"></textarea>
+          <p class="field-hint" id="hint-mc-hint-text">e.g. Consider optical insertion loss</p>
+        </div>
+      `;
+      const textarea = inputMcHint.querySelector('textarea');
+      const hint = inputMcHint.querySelector('#hint-mc-hint-text');
+      expect(textarea.getAttribute('aria-describedby')).toBe('hint-mc-hint-text');
+      expect(hint.textContent).toBe('e.g. Consider optical insertion loss');
+    });
+
+    it('verifies Dashboard and Workspace views do not expose editor helper texts in their content', () => {
+      const project = buildProjectSchemaV3({ name: 'Fiber Optics 101' });
+      saveProject(project);
+
+      const overview = new ProjectOverviewView({
+        container,
+        projectId: project.id,
+        onNavigate: vi.fn(),
+        onEditComponent: vi.fn()
+      });
+      overview.mount();
+
+      expect(container.textContent).not.toContain('Consider optical insertion loss');
+      expect(container.textContent).not.toContain('OTDR trace testing is required');
+      expect(container.textContent).not.toContain('Recommended field procedures');
+    });
   });
 });

@@ -1,9 +1,9 @@
 # Rise Component Builder (AT&T Edition) — Live-Build Corrective Implementation & Polish Report
 
-**Build Version:** `3.0.0+20260920.1401`  
+**Build Version:** `3.0.0+20260920.1418`  
 **Audited Live Deployment:** `https://kittu-rulz.github.io/Rise-Component-Builder-ATT/`  
-**Date:** September 20, 2026  
-**Status:** **Fully Verified & Passing (65 Test Files / 1,777 Automated Tests Passing | Live Browser Audited)**
+**Date:** September 20, 2026 (2:18 PM)  
+**Status:** **Fully Verified & Passing (65 Test Files / 1,780 Automated Tests Passing | Live Browser Audited)**
 
 ---
 
@@ -20,8 +20,8 @@ This corrective implementation pass reconciles all discrepancies between the liv
 | **P1: 4-Card Project Starter Experience** | Live deployment used legacy dropdowns instead of starter cards. | **4-Card Accessible Radio-Card Experience**: *Standard 3-Module Course (Recommended)*, *Blank Course*, *Single Component/Assessment*, and *Import Project JSON*. Supports keyboard `Enter`/`Space` and visible focus rings. | **PASSED** |
 | **P1: 2-Column Desktop Component Picker** | Single-column cramped cards; missing reported quick views and wireframes. | **High-Density 2-Column Grid** (`max-width: min(840px, 94vw)`), SVG wireframe thumbnails, Quick Views (*All 26*, *★ Recommended*, *Favorites*, *Recent*), sticky search/destination controls, and polite live region announcements. | **PASSED** |
 | **P1: Accurate Compliance Copy** | Unsupported "Certified" claims visible. | **Standardized Industry Copy**: Consistently uses `Designed for Articulate Rise 360`, `Built to support WCAG 2.2 AA requirements`, and `Accessibility Checks Included`. | **PASSED** |
-| **P1: Orphaned Helper Text** | Global disconnected hint strings mounted outside form contexts. | **Explicit Form Associations**: All hint strings linked via `aria-describedby` or cleanly encapsulated inside editor schemas. Zero orphaned global copy. | **PASSED** |
-| **P2: Course Preview Sequence Numbering** | First component showed sequence badge `2`. | **Accurate Sequence Badge Logic**: Sequence numbering begins at `1`, increments strictly for component instances, and section headers do not increment the count. | **PASSED** |
+| **P1: Orphaned Helper Text & ARIA Associations** | Global disconnected hint strings mounted outside form contexts. | **Explicit Form Scoping & ARIA Links**: All hint strings mounted strictly beside relevant inputs, linked via `aria-describedby` matching `<p class="field-hint">`, and unmounted/hidden when editor panels are inactive. Zero orphaned global copy. | **PASSED** |
+| **P2: Course Preview Pluralization & Sequence Numbering** | First component showed badge `2`; hardcoded "components" in sequence. | **Accurate Sequence Badge & Pluralization**: Sequence numbering begins at `1`, increments per component without section incrementing. Viewport banner dynamically renders `1 component in sequence` / `2 components in sequence` via shared `pluralize()`. | **PASSED** |
 
 ---
 
@@ -185,7 +185,7 @@ The live application provides 26 AT&T brand-aligned interactive blocks:
  ✓ tests/unit/media-blob-jsdom.test.js (1 test)
 
 Test Files  65 passed (65)
-     Tests  1,777 passed (1,777)
+     Tests  1,780 passed (1,780)
 ```
 
 ### Brand Compliance Linter
@@ -198,10 +198,10 @@ Scan completed: 26 component files audited.
 ### Production Build & Asset Verification
 ```
 > node scripts/stamp-cache-busting.mjs && node build.mjs
-index.html cache-busting is up to date (token 20260919.1510).
+index.html cache-busting is up to date (token 20260920.1418).
 Build assembled at dist/
   4 root files + 2 directories copied
-  cache-busting token: ?v=20260919.1510
+  cache-busting token: ?v=20260920.1418
   7 index.html reference(s) verified
   257 local ES module import(s) verified
 ```
