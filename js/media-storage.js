@@ -119,7 +119,7 @@ export function releaseAllMediaObjectURLs() {
 }
 
 export function pruneMediaObjectURLs(config) {
-  const active = new Set(collectMediaReferences(config).map(reference => reference.mediaId));
+  const active = new Set(collectMediaReferences(config).map(reference => reference.mediaId || reference.assetId).filter(Boolean));
   [...runtimeObjectURLs.keys()].forEach(id => { if (!active.has(id)) releaseMediaObjectURL(id); });
 }
 
@@ -151,6 +151,9 @@ export function resolveMediaAsset(value) {
     const id = value.mediaId || value.assetId;
     return peekMediaObjectURL(id) || (typeof value.src === 'string' ? value.src : '') || '';
   }
+  if (value && typeof value === 'object' && typeof value.src === 'string') {
+    return value.src;
+  }
   return '';
 }
 
@@ -162,6 +165,14 @@ export function resolveMediaReferencesForPreview(value) {
   if (isMediaReference(value)) return resolveMediaAsset(value);
   if (Array.isArray(value)) return value.map(resolveMediaReferencesForPreview);
   if (value && typeof value === 'object') {
+    // If this object is an item media structure with type and mediaId or src
+    if (value.type && ['image', 'audio', 'video'].includes(value.type) && (value.mediaId || value.src)) {
+      const resolved = resolveMediaAsset(value.src || value);
+      return {
+        ...value,
+        src: resolved || (typeof value.src === 'string' ? value.src : '')
+      };
+    }
     return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, resolveMediaReferencesForPreview(entry)]));
   }
   return value;

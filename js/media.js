@@ -283,24 +283,33 @@ export function createMediaReference(record, overrides = {}) {
 
 export function isMediaReference(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const isUploadOrLibrary = value.source === 'upload' || value.source === 'library' || value.sourceType === 'library' || value.sourceType === 'upload';
   const id = value.mediaId || value.assetId;
-  const kind = value.kind || value.mediaType;
-  if (!isUploadOrLibrary || typeof id !== 'string' || !id.trim()) return false;
-  if (!['image', 'audio', 'video', 'captions'].includes(kind)) return false;
+  if (!id || typeof id !== 'string' || !id.trim()) return false;
+  const isUploadOrLibrary = value.source === 'upload' || value.source === 'library' || value.sourceType === 'library' || value.sourceType === 'upload' || Boolean(id);
+  if (!isUploadOrLibrary) return false;
+  const kind = value.kind || value.mediaType || value.type;
+  if (kind && !['image', 'audio', 'video', 'captions'].includes(kind)) return false;
   if (value.name !== undefined && typeof value.name !== 'string') return false;
   if (value.size !== undefined && (!Number.isFinite(value.size) || value.size < 0)) return false;
-  return Object.keys(value).every(key => MEDIA_REFERENCE_KEYS.has(key));
+  return true;
 }
 
 export function collectMediaReferences(value, found = new Map()) {
+  if (!value) return [...found.values()];
   if (isMediaReference(value)) {
     const id = value.mediaId || value.assetId;
-    if (id) found.set(id, value);
-    return [...found.values()];
+    if (id && !found.has(id)) found.set(id, value);
+  } else if (typeof value === 'object' && !Array.isArray(value)) {
+    const id = value.mediaId || value.assetId;
+    if (id && typeof id === 'string' && id.trim() && !found.has(id)) {
+      found.set(id, value);
+    }
   }
-  if (Array.isArray(value)) value.forEach(entry => collectMediaReferences(entry, found));
-  else if (value && typeof value === 'object') Object.values(value).forEach(entry => collectMediaReferences(entry, found));
+  if (Array.isArray(value)) {
+    value.forEach(entry => collectMediaReferences(entry, found));
+  } else if (value && typeof value === 'object') {
+    Object.values(value).forEach(entry => collectMediaReferences(entry, found));
+  }
   return [...found.values()];
 }
 

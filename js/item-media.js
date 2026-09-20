@@ -84,8 +84,24 @@ export function normalizeItemMedia(item) {
 
   if (raw.src && typeof raw.src === 'object') {
     if (typeof raw.src.mediaId === 'string') mediaId = raw.src.mediaId;
+    else if (typeof raw.src.assetId === 'string') mediaId = raw.src.assetId;
     if (typeof raw.src.name === 'string') fileName = raw.src.name;
+    else if (typeof raw.src.fileName === 'string') fileName = raw.src.fileName;
     if (typeof raw.src.mimeType === 'string') mimeType = raw.src.mimeType;
+  }
+
+  if (mediaId && (!src || (!src.startsWith('blob:') && !src.startsWith('data:') && !src.startsWith('http') && !src.startsWith('assets/')))) {
+    const runtimeUrl = peekMediaObjectURL(mediaId);
+    if (runtimeUrl) {
+      src = runtimeUrl;
+    }
+  }
+
+  let posterSrc = typeof raw.posterSrc === 'string' ? raw.posterSrc : '';
+  let posterMediaId = typeof raw.posterMediaId === 'string' ? raw.posterMediaId : '';
+  if (posterMediaId && (!posterSrc || (!posterSrc.startsWith('blob:') && !posterSrc.startsWith('data:') && !posterSrc.startsWith('http') && !posterSrc.startsWith('assets/')))) {
+    const runtimePoster = peekMediaObjectURL(posterMediaId);
+    if (runtimePoster) posterSrc = runtimePoster;
   }
 
   return {
@@ -103,8 +119,8 @@ export function normalizeItemMedia(item) {
     aspectRatio,
     fit,
     focalPosition: typeof raw.focalPosition === 'string' ? raw.focalPosition : 'center center',
-    posterSrc: typeof raw.posterSrc === 'string' ? raw.posterSrc : '',
-    posterMediaId: typeof raw.posterMediaId === 'string' ? raw.posterMediaId : '',
+    posterSrc,
+    posterMediaId,
     captionsSrc: typeof raw.captionsSrc === 'string' ? raw.captionsSrc : '',
     preload
   };
@@ -258,14 +274,14 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
     const uploadControl = createMediaUploadControl({
       field: uploadField,
       controlId: `item-media-file-${index}`,
-      value: media.mediaId ? { mediaId: media.mediaId, source: 'upload', name: media.fileName, mimeType: media.mimeType } : media.src,
+      value: media.mediaId ? { mediaId: media.mediaId, assetId: media.mediaId, source: 'upload', sourceType: 'library', kind: media.type, mediaType: media.type, name: media.fileName, fileName: media.fileName, mimeType: media.mimeType } : media.src,
       limits,
       store,
       onChange: value => {
         if (isMediaReference(value)) {
           media.sourceType = 'upload';
-          media.mediaId = value.mediaId;
-          media.fileName = value.name || '';
+          media.mediaId = value.mediaId || value.assetId;
+          media.fileName = value.name || value.fileName || '';
           media.mimeType = value.mimeType || '';
           media.src = value;
         } else if (typeof value === 'string') {
