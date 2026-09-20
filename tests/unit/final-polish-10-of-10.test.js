@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ProjectOverviewView } from '../../js/dashboard/project-overview.js';
 import { DashboardView } from '../../js/dashboard/dashboard-view.js';
 import { CoursePreviewView } from '../../js/dashboard/course-preview.js';
-import { auditCourseProject } from '../../js/dashboard/project-qa.js';
+import { ProjectQaView, auditCourseProject } from '../../js/dashboard/project-qa.js';
 import { buildProjectSchemaV3, createSection, createComponentInstance } from '../../js/project-schema.js';
 import { memoryLocalStorage } from '../fixtures/index.js';
 import { saveProject, loadFavorites } from '../../js/storage.js';
@@ -547,6 +547,11 @@ describe('Rise Component Builder AT&T — 10/10 Final Polish Suite', () => {
   });
 
   describe('Phase 8: Micro-Pass Orphaned Text Cleanliness & ARIA Association', () => {
+    const combinedOrphanedString = 'e.g. Consider optical insertion loss e.g. OTDR trace testing is required e.g. Recommended field procedures';
+    const sampleHint1 = 'Consider optical insertion loss';
+    const sampleHint2 = 'OTDR trace testing is required';
+    const sampleHint3 = 'Recommended field procedures';
+
     it('ensures example hint texts are scoped strictly to form fields with valid aria-describedby', () => {
       // Check HTML source structure for the 3 specified example fields
       const inputMcHint = document.createElement('div');
@@ -563,7 +568,21 @@ describe('Rise Component Builder AT&T — 10/10 Final Polish Suite', () => {
       expect(hint.textContent).toBe('e.g. Consider optical insertion loss');
     });
 
-    it('verifies Dashboard and Workspace views do not expose editor helper texts in their content', () => {
+    it('verifies Dashboard view does not contain the combined orphaned string or inactive editor helper texts', () => {
+      const dashboard = new DashboardView({
+        container,
+        onNavigate: vi.fn(),
+        onCreateProject: vi.fn()
+      });
+      dashboard.mount();
+
+      expect(container.textContent).not.toContain(combinedOrphanedString);
+      expect(container.textContent).not.toContain(sampleHint1);
+      expect(container.textContent).not.toContain(sampleHint2);
+      expect(container.textContent).not.toContain(sampleHint3);
+    });
+
+    it('verifies Course Project Workspace does not contain the combined orphaned string or inactive editor helper texts', () => {
       const project = buildProjectSchemaV3({ name: 'Fiber Optics 101' });
       saveProject(project);
 
@@ -575,9 +594,114 @@ describe('Rise Component Builder AT&T — 10/10 Final Polish Suite', () => {
       });
       overview.mount();
 
-      expect(container.textContent).not.toContain('Consider optical insertion loss');
-      expect(container.textContent).not.toContain('OTDR trace testing is required');
-      expect(container.textContent).not.toContain('Recommended field procedures');
+      expect(container.textContent).not.toContain(combinedOrphanedString);
+      expect(container.textContent).not.toContain(sampleHint1);
+      expect(container.textContent).not.toContain(sampleHint2);
+      expect(container.textContent).not.toContain(sampleHint3);
+    });
+
+    it('verifies Course Preview view does not contain the combined orphaned string or inactive editor helper texts', () => {
+      const comp1 = createComponentInstance('accordion', {
+        title: 'Network Layers',
+        items: [{ label: 'Physical Layer', content: 'Fiber cables and transceivers.' }]
+      });
+      const project = buildProjectSchemaV3({
+        name: 'Telecommunications Architecture',
+        components: { [comp1.instanceId]: comp1 }
+      });
+      saveProject(project);
+
+      const preview = new CoursePreviewView({
+        container,
+        projectId: project.id,
+        onBack: vi.fn(),
+        onEditComponent: vi.fn()
+      });
+      preview.mount();
+
+      expect(container.textContent).not.toContain(combinedOrphanedString);
+      expect(container.textContent).not.toContain(sampleHint1);
+      expect(container.textContent).not.toContain(sampleHint2);
+      expect(container.textContent).not.toContain(sampleHint3);
+    });
+
+    it('verifies QA Preflight view does not contain the combined orphaned string or inactive editor helper texts', () => {
+      const comp1 = createComponentInstance('tabs', {
+        title: 'Equipment Checklist',
+        tabs: [{ label: 'Splicing', content: 'Fusion splicer clean' }]
+      });
+      const project = buildProjectSchemaV3({
+        name: 'Field Technician Certification',
+        components: { [comp1.instanceId]: comp1 }
+      });
+      saveProject(project);
+
+      const qaView = new ProjectQaView({
+        container,
+        projectId: project.id,
+        onBack: vi.fn(),
+        onEditComponent: vi.fn()
+      });
+      qaView.mount();
+
+      expect(container.textContent).not.toContain(combinedOrphanedString);
+      expect(container.textContent).not.toContain(sampleHint1);
+      expect(container.textContent).not.toContain(sampleHint2);
+      expect(container.textContent).not.toContain(sampleHint3);
+    });
+
+    it('verifies Component Library / Catalog DOM does not contain the combined orphaned string', () => {
+      // Mock catalog shell structure
+      const catalogShell = document.createElement('div');
+      catalogShell.id = 'catalog-state';
+      catalogShell.innerHTML = `
+        <div class="catalog-header"><h2>Component Library</h2></div>
+        <div class="catalog-grid" id="catalog-cards">
+          <div class="catalog-card"><h3>Accordion</h3></div>
+          <div class="catalog-card"><h3>Multiple Choice</h3></div>
+        </div>
+      `;
+      container.appendChild(catalogShell);
+
+      expect(container.textContent).not.toContain(combinedOrphanedString);
+      expect(container.textContent).not.toContain(sampleHint1);
+      expect(container.textContent).not.toContain(sampleHint2);
+      expect(container.textContent).not.toContain(sampleHint3);
+    });
+
+    it('verifies Editor view only mounts MC helper texts when Multiple Choice is active', () => {
+      const mcGroup = document.createElement('div');
+      mcGroup.id = 'mc-behavior-group';
+      mcGroup.hidden = true;
+      container.appendChild(mcGroup);
+
+      // Inactive: empty and hidden
+      expect(container.textContent).not.toContain(combinedOrphanedString);
+      expect(container.textContent).not.toContain(sampleHint1);
+
+      // Active: dynamically mounted
+      mcGroup.hidden = false;
+      mcGroup.innerHTML = `
+        <div class="input-wrapper">
+          <label for="input-mc-hint-text" id="label-mc-hint-text">Hint</label>
+          <textarea id="input-mc-hint-text" rows="2" placeholder="e.g. Consider optical insertion loss" aria-describedby="hint-mc-hint-text"></textarea>
+          <p class="field-hint" id="hint-mc-hint-text">e.g. Consider optical insertion loss</p>
+        </div>
+        <div class="input-wrapper">
+          <label for="input-mc-final-explanation" id="label-mc-final-explanation">Final Explanation</label>
+          <textarea id="input-mc-final-explanation" rows="2" placeholder="e.g. OTDR trace testing is required" aria-describedby="hint-mc-final-explanation"></textarea>
+          <p class="field-hint" id="hint-mc-final-explanation">e.g. OTDR trace testing is required</p>
+        </div>
+      `;
+
+      // Form fields are present and properly connected
+      const hintInput = container.querySelector('#input-mc-hint-text');
+      const hintDesc = container.querySelector('#hint-mc-hint-text');
+      expect(hintInput.getAttribute('aria-describedby')).toBe('hint-mc-hint-text');
+      expect(hintDesc.textContent).toContain('Consider optical insertion loss');
+
+      // The combined string ("... e.g. Consider... e.g. OTDR... e.g. Recommended...") is NOT formed as a glob
+      expect(container.textContent).not.toContain(combinedOrphanedString);
     });
   });
 });

@@ -153,8 +153,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const selectSpacingDensity = document.getElementById('select-spacing-density');
   const inputContextBandEnabled = document.getElementById('input-context-band-enabled');
   const contextBandFields = document.getElementById('context-band-fields');
-  const inputContextBandText = upgradeTextareaToRichText(document.getElementById('input-context-band-text'), { fieldId: 'contextBandText', isSingleLine: false })?.validationControl || document.getElementById('input-context-band-text');
-  const selectContextBandAlignment = document.getElementById('select-context-band-alignment');
+  let inputContextBandText = null;
+  let selectContextBandAlignment = null;
 
   const inputBehaviorAccordionMulti = document.getElementById('input-behavior-accordion-multi');
   const inputBehaviorAccordionAnimation = document.getElementById('input-behavior-accordion-animation');
@@ -208,17 +208,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const inputIvAllowRestart = document.getElementById('input-iv-allow-restart');
 
   const mcBehaviorGroup = document.getElementById('mc-behavior-group');
-  const inputMcConfidenceMode = document.getElementById('input-mc-confidence-mode');
-  const inputMcRequireConfidence = document.getElementById('input-mc-require-confidence');
-  const inputMcConfidenceLowLabel = document.getElementById('input-mc-confidence-low-label');
-  const inputMcConfidenceMidLabel = document.getElementById('input-mc-confidence-mid-label');
-  const inputMcConfidenceHighLabel = document.getElementById('input-mc-confidence-high-label');
-  const inputMcShowResultSummary = document.getElementById('input-mc-show-result-summary');
-  const inputMcMaxAttempts = document.getElementById('input-mc-max-attempts');
-  const inputMcHintText = upgradeTextareaToRichText(document.getElementById('input-mc-hint-text'), { fieldId: 'mcHintText', isSingleLine: false })?.validationControl || document.getElementById('input-mc-hint-text');
-  const inputMcShowCorrectAfterFinal = document.getElementById('input-mc-show-correct-after-final');
-  const inputMcFinalExplanation = upgradeTextareaToRichText(document.getElementById('input-mc-final-explanation'), { fieldId: 'mcFinalExplanation', isSingleLine: false })?.validationControl || document.getElementById('input-mc-final-explanation');
-  const inputMcAllowReset = document.getElementById('input-mc-allow-reset');
+  let inputMcConfidenceMode = null;
+  let inputMcRequireConfidence = null;
+  let inputMcConfidenceLowLabel = null;
+  let inputMcConfidenceMidLabel = null;
+  let inputMcConfidenceHighLabel = null;
+  let inputMcShowResultSummary = null;
+  let inputMcMaxAttempts = null;
+  let inputMcHintText = null;
+  let inputMcShowCorrectAfterFinal = null;
+  let inputMcFinalExplanation = null;
+  let inputMcAllowReset = null;
 
   const inputTrackCompletion = document.getElementById('input-track-completion');
   const inputCompletionMsg = upgradeTextareaToRichText(document.getElementById('input-completion-msg'), { fieldId: 'completionMsg', isSingleLine: true })?.validationControl || document.getElementById('input-completion-msg');
@@ -927,6 +927,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function showState(state, context = {}) {
     clearAllModalIsolations();
     hideAllWorkspacePanels();
+    if (state !== 'editor') {
+      unmountMcBehaviorGroup();
+      unmountContextBandFields();
+    }
 
     if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
       if (sidebar) {
@@ -1705,19 +1709,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       inputContextBandEnabled.addEventListener('change', (e) => {
         history.pushState(appState.config);
         appState.config.contextBandEnabled = e.target.checked;
-        if (contextBandFields) contextBandFields.style.display = e.target.checked ? 'block' : 'none';
-        updateLivePreview();
-      });
-    }
-
-    if (inputContextBandText) {
-      syncText(inputContextBandText, 'contextBandText');
-    }
-
-    if (selectContextBandAlignment) {
-      selectContextBandAlignment.addEventListener('change', (e) => {
-        history.pushState(appState.config);
-        appState.config.contextBandAlignment = e.target.value;
+        if (e.target.checked) {
+          if (contextBandFields) contextBandFields.style.display = 'block';
+          renderContextBandFields();
+        } else {
+          if (contextBandFields) contextBandFields.style.display = 'none';
+          unmountContextBandFields();
+        }
         updateLivePreview();
       });
     }
@@ -1783,24 +1781,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncCheckbox(inputFlipCardsReset, 'flipCardsReset');
     syncText(inputFlipCardsFrontLabel, 'flipCardsFrontLabel');
     syncText(inputFlipCardsBackLabel, 'flipCardsBackLabel');
-
-    syncCheckbox(inputMcConfidenceMode, 'mcConfidenceMode');
-    syncCheckbox(inputMcRequireConfidence, 'mcRequireConfidence');
-    syncText(inputMcConfidenceLowLabel, 'mcConfidenceLowLabel');
-    syncText(inputMcConfidenceMidLabel, 'mcConfidenceMidLabel');
-    syncText(inputMcConfidenceHighLabel, 'mcConfidenceHighLabel');
-    syncCheckbox(inputMcShowResultSummary, 'mcShowResultSummary');
-    syncCheckbox(inputMcShowCorrectAfterFinal, 'mcShowCorrectAfterFinal');
-    syncCheckbox(inputMcAllowReset, 'mcAllowReset');
-    syncText(inputMcHintText, 'mcHintText');
-    syncText(inputMcFinalExplanation, 'mcFinalExplanation');
-
-    inputMcMaxAttempts.addEventListener('input', (e) => {
-      const parsed = parseInt(e.target.value, 10);
-      appState.config.mcMaxAttempts = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
-      history.pushDebouncedState(appState.config);
-      updateLivePreview();
-    });
 
     selectTabsOrientation.addEventListener('change', (e) => {
       history.pushState(appState.config);
@@ -2318,8 +2298,199 @@ document.addEventListener('DOMContentLoaded', async () => {
     flipCardsBehaviorGroup.hidden = componentId !== 'flip-cards';
   }
 
+  function renderMcBehaviorGroup() {
+    if (!mcBehaviorGroup) return;
+    const config = appState.config || {};
+    mcBehaviorGroup.innerHTML = `
+      <h3 class="group-title">Confidence &amp; Retry (Multiple Choice)</h3>
+
+      <div class="checkbox-wrapper">
+        <input type="checkbox" id="input-mc-confidence-mode">
+        <label for="input-mc-confidence-mode">Ask learners how confident they are before submitting</label>
+      </div>
+
+      <div class="checkbox-wrapper">
+        <input type="checkbox" id="input-mc-require-confidence">
+        <label for="input-mc-require-confidence">Require a confidence level before Submit is accepted (Confidence mode only)</label>
+      </div>
+
+      <div class="input-wrapper">
+        <label for="input-mc-confidence-low-label">Confidence Label — Low</label>
+        <input type="text" id="input-mc-confidence-low-label" value="${escapeHTML(config.mcConfidenceLowLabel || 'Not sure')}" maxlength="24">
+      </div>
+      <div class="input-wrapper">
+        <label for="input-mc-confidence-mid-label">Confidence Label — Medium</label>
+        <input type="text" id="input-mc-confidence-mid-label" value="${escapeHTML(config.mcConfidenceMidLabel || 'Somewhat sure')}" maxlength="24">
+      </div>
+      <div class="input-wrapper">
+        <label for="input-mc-confidence-high-label">Confidence Label — High</label>
+        <input type="text" id="input-mc-confidence-high-label" value="${escapeHTML(config.mcConfidenceHighLabel || 'Very sure')}" maxlength="24">
+      </div>
+
+      <div class="checkbox-wrapper">
+        <input type="checkbox" id="input-mc-show-result-summary">
+        <label for="input-mc-show-result-summary">Show a supportive interpretation of correctness + confidence (Confidence mode only)</label>
+      </div>
+
+      <div class="input-wrapper">
+        <label for="input-mc-max-attempts">Maximum Attempts</label>
+        <input type="number" id="input-mc-max-attempts" value="${Number.isInteger(config.mcMaxAttempts) && config.mcMaxAttempts > 0 ? config.mcMaxAttempts : 1}" min="1" max="5" step="1">
+        <p class="field-hint">1 keeps the original one-shot behavior. Higher values let learners retry after an incorrect attempt.</p>
+      </div>
+
+      <div class="input-wrapper">
+        <label for="input-mc-hint-text" id="label-mc-hint-text">Hint (shown after an incorrect attempt, if attempts remain)</label>
+        <textarea id="input-mc-hint-text" rows="2" placeholder="e.g. Consider optical insertion loss" aria-describedby="hint-mc-hint-text"></textarea>
+        <p class="field-hint" id="hint-mc-hint-text">e.g. Consider optical insertion loss</p>
+      </div>
+
+      <div class="checkbox-wrapper">
+        <input type="checkbox" id="input-mc-show-correct-after-final">
+        <label for="input-mc-show-correct-after-final">Reveal the correct answer after the final attempt</label>
+      </div>
+
+      <div class="input-wrapper">
+        <label for="input-mc-final-explanation" id="label-mc-final-explanation">Final Explanation (shown once the question concludes)</label>
+        <textarea id="input-mc-final-explanation" rows="2" placeholder="e.g. OTDR trace testing is required" aria-describedby="hint-mc-final-explanation"></textarea>
+        <p class="field-hint" id="hint-mc-final-explanation">e.g. OTDR trace testing is required</p>
+      </div>
+
+      <div class="checkbox-wrapper">
+        <input type="checkbox" id="input-mc-allow-reset">
+        <label for="input-mc-allow-reset">Show a "Try Again" action once the question concludes</label>
+      </div>
+    `;
+
+    inputMcHintText = upgradeTextareaToRichText(document.getElementById('input-mc-hint-text'), { fieldId: 'mcHintText', isSingleLine: false })?.validationControl || document.getElementById('input-mc-hint-text');
+    inputMcFinalExplanation = upgradeTextareaToRichText(document.getElementById('input-mc-final-explanation'), { fieldId: 'mcFinalExplanation', isSingleLine: false })?.validationControl || document.getElementById('input-mc-final-explanation');
+
+    inputMcConfidenceMode = document.getElementById('input-mc-confidence-mode');
+    inputMcRequireConfidence = document.getElementById('input-mc-require-confidence');
+    inputMcConfidenceLowLabel = document.getElementById('input-mc-confidence-low-label');
+    inputMcConfidenceMidLabel = document.getElementById('input-mc-confidence-mid-label');
+    inputMcConfidenceHighLabel = document.getElementById('input-mc-confidence-high-label');
+    inputMcShowResultSummary = document.getElementById('input-mc-show-result-summary');
+    inputMcMaxAttempts = document.getElementById('input-mc-max-attempts');
+    inputMcShowCorrectAfterFinal = document.getElementById('input-mc-show-correct-after-final');
+    inputMcAllowReset = document.getElementById('input-mc-allow-reset');
+
+    if (inputMcConfidenceMode) inputMcConfidenceMode.checked = config.mcConfidenceMode === true;
+    if (inputMcRequireConfidence) inputMcRequireConfidence.checked = config.mcRequireConfidence === true;
+    if (inputMcShowResultSummary) inputMcShowResultSummary.checked = config.mcShowResultSummary === true;
+    if (inputMcHintText) inputMcHintText.value = config.mcHintText || '';
+    if (inputMcShowCorrectAfterFinal) inputMcShowCorrectAfterFinal.checked = config.mcShowCorrectAfterFinal === true;
+    if (inputMcFinalExplanation) inputMcFinalExplanation.value = config.mcFinalExplanation || '';
+    if (inputMcAllowReset) inputMcAllowReset.checked = config.mcAllowReset === true;
+
+    const syncDynamicCheckbox = (elem, stateKey) => {
+      if (!elem) return;
+      elem.addEventListener('change', (e) => {
+        history.pushState(appState.config);
+        appState.config[stateKey] = e.target.checked;
+        updateLivePreview();
+      });
+    };
+    const syncDynamicText = (elem, stateKey) => {
+      if (!elem) return;
+      elem.addEventListener('input', (e) => {
+        appState.config[stateKey] = e.target.value;
+        history.pushDebouncedState(appState.config);
+        updateLivePreview();
+      });
+    };
+
+    syncDynamicCheckbox(inputMcConfidenceMode, 'mcConfidenceMode');
+    syncDynamicCheckbox(inputMcRequireConfidence, 'mcRequireConfidence');
+    syncDynamicText(inputMcConfidenceLowLabel, 'mcConfidenceLowLabel');
+    syncDynamicText(inputMcConfidenceMidLabel, 'mcConfidenceMidLabel');
+    syncDynamicText(inputMcConfidenceHighLabel, 'mcConfidenceHighLabel');
+    syncDynamicCheckbox(inputMcShowResultSummary, 'mcShowResultSummary');
+    syncDynamicCheckbox(inputMcShowCorrectAfterFinal, 'mcShowCorrectAfterFinal');
+    syncDynamicCheckbox(inputMcAllowReset, 'mcAllowReset');
+    syncDynamicText(inputMcHintText, 'mcHintText');
+    syncDynamicText(inputMcFinalExplanation, 'mcFinalExplanation');
+
+    if (inputMcMaxAttempts) {
+      inputMcMaxAttempts.addEventListener('input', (e) => {
+        const parsed = parseInt(e.target.value, 10);
+        appState.config.mcMaxAttempts = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+        history.pushDebouncedState(appState.config);
+        updateLivePreview();
+      });
+    }
+  }
+
+  function unmountMcBehaviorGroup() {
+    if (!mcBehaviorGroup) return;
+    mcBehaviorGroup.innerHTML = '';
+    inputMcConfidenceMode = null;
+    inputMcRequireConfidence = null;
+    inputMcConfidenceLowLabel = null;
+    inputMcConfidenceMidLabel = null;
+    inputMcConfidenceHighLabel = null;
+    inputMcShowResultSummary = null;
+    inputMcMaxAttempts = null;
+    inputMcHintText = null;
+    inputMcShowCorrectAfterFinal = null;
+    inputMcFinalExplanation = null;
+    inputMcAllowReset = null;
+  }
+
+  function renderContextBandFields() {
+    if (!contextBandFields) return;
+    const config = appState.config || {};
+    contextBandFields.innerHTML = `
+      <div class="input-wrapper">
+        <label for="input-context-band-text" id="label-context-band-text">Context Band Content</label>
+        <textarea id="input-context-band-text" rows="2" placeholder="e.g. Recommended field procedures" aria-describedby="hint-context-band-text"></textarea>
+        <p class="field-hint" id="hint-context-band-text">e.g. Recommended field procedures</p>
+      </div>
+
+      <div class="input-wrapper">
+        <label for="select-context-band-alignment">Context Band Alignment</label>
+        <select id="select-context-band-alignment" data-field-id="contextBandAlignment">
+          <option value="left"${config.contextBandAlignment !== 'center' ? ' selected' : ''}>Left-aligned</option>
+          <option value="center"${config.contextBandAlignment === 'center' ? ' selected' : ''}>Centered</option>
+        </select>
+      </div>
+    `;
+
+    inputContextBandText = upgradeTextareaToRichText(document.getElementById('input-context-band-text'), { fieldId: 'contextBandText', isSingleLine: false })?.validationControl || document.getElementById('input-context-band-text');
+    selectContextBandAlignment = document.getElementById('select-context-band-alignment');
+
+    if (inputContextBandText) {
+      inputContextBandText.value = config.contextBandText || '';
+      inputContextBandText.addEventListener('input', (e) => {
+        appState.config.contextBandText = e.target.value;
+        history.pushDebouncedState(appState.config);
+        updateLivePreview();
+      });
+    }
+
+    if (selectContextBandAlignment) {
+      selectContextBandAlignment.addEventListener('change', (e) => {
+        history.pushState(appState.config);
+        appState.config.contextBandAlignment = e.target.value;
+        updateLivePreview();
+      });
+    }
+  }
+
+  function unmountContextBandFields() {
+    if (!contextBandFields) return;
+    contextBandFields.innerHTML = '';
+    inputContextBandText = null;
+    selectContextBandAlignment = null;
+  }
+
   function updateMcBehaviorVisibility(componentId) {
-    mcBehaviorGroup.hidden = componentId !== 'multiple-choice';
+    const isMc = componentId === 'multiple-choice';
+    mcBehaviorGroup.hidden = !isMc;
+    if (isMc) {
+      renderMcBehaviorGroup();
+    } else {
+      unmountMcBehaviorGroup();
+    }
   }
 
   function updateTabsBehaviorVisibility(componentId) {
@@ -2397,10 +2568,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (inputHeaderCyanRule) inputHeaderCyanRule.checked = config.headerCyanRule === true;
     if (headerCyanRuleWrapper) headerCyanRuleWrapper.style.display = config.headerStyle === 'editorial' ? 'flex' : 'none';
     if (selectSpacingDensity) selectSpacingDensity.value = config.spacingDensity || 'standard';
-    if (inputContextBandEnabled) inputContextBandEnabled.checked = config.contextBandEnabled === true;
-    if (contextBandFields) contextBandFields.style.display = config.contextBandEnabled ? 'block' : 'none';
-    if (inputContextBandText) inputContextBandText.value = config.contextBandText || '';
-    if (selectContextBandAlignment) selectContextBandAlignment.value = config.contextBandAlignment || 'left';
+    if (inputContextBandEnabled) {
+      inputContextBandEnabled.checked = config.contextBandEnabled === true;
+      if (config.contextBandEnabled) {
+        if (contextBandFields) contextBandFields.style.display = 'block';
+        renderContextBandFields();
+      } else {
+        if (contextBandFields) contextBandFields.style.display = 'none';
+        unmountContextBandFields();
+      }
+    }
     inputBehaviorAccordionMulti.checked = config.accordionMulti;
     inputBehaviorAccordionAnimation.checked = config.accordionAnimation;
     selectIconStyle.value = config.iconStyle;
@@ -2421,18 +2598,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     inputFlipCardsReset.checked = config.flipCardsReset === true;
     inputFlipCardsFrontLabel.value = config.flipCardsFrontLabel || 'Front';
     inputFlipCardsBackLabel.value = config.flipCardsBackLabel || 'Back';
-    
-    inputMcConfidenceMode.checked = config.mcConfidenceMode === true;
-    inputMcRequireConfidence.checked = config.mcRequireConfidence === true;
-    inputMcConfidenceLowLabel.value = config.mcConfidenceLowLabel || 'Not sure';
-    inputMcConfidenceMidLabel.value = config.mcConfidenceMidLabel || 'Somewhat sure';
-    inputMcConfidenceHighLabel.value = config.mcConfidenceHighLabel || 'Very sure';
-    inputMcShowResultSummary.checked = config.mcShowResultSummary === true;
-    inputMcMaxAttempts.value = Number.isInteger(config.mcMaxAttempts) && config.mcMaxAttempts > 0 ? config.mcMaxAttempts : 1;
-    inputMcHintText.value = config.mcHintText || '';
-    inputMcShowCorrectAfterFinal.checked = config.mcShowCorrectAfterFinal === true;
-    inputMcFinalExplanation.value = config.mcFinalExplanation || '';
-    inputMcAllowReset.checked = config.mcAllowReset === true;
     
     selectTabsOrientation.value = config.tabsOrientation || 'horizontal';
     inputTabsNumbered.checked = config.tabsNumbered === true;
