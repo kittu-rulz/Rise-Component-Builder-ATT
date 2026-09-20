@@ -16,9 +16,9 @@ export function writePreview(iframe, html) {
 }
 
 export function openPreview(html) {
-  const previewWindow = window.open();
+  const previewWindow = window.open('', '_blank');
   if (!previewWindow) return;
-  previewWindow.opener = null;
+  previewWindow.document.open();
   previewWindow.document.write(html);
   previewWindow.document.close();
 }
