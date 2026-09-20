@@ -57,7 +57,7 @@ export function createComponentInstance({
     styleOverrides: normalizeComponentOverrides(styleOverrides),
     mediaRefs: Array.isArray(mediaRefs) ? [...mediaRefs] : [],
     qa: isObject(qa) ? clone(qa) : { status: 'untested', notes: '' },
-    status: ['draft', 'in_review', 'approved'].includes(status) ? status : 'draft',
+    status: ['draft', 'in_review', 'in-review', 'ready', 'approved'].includes(status) ? (status === 'approved' ? 'ready' : status) : 'draft',
     createdAt: createdAt && validDate(createdAt) ? new Date(createdAt).toISOString() : now,
     updatedAt: updatedAt && validDate(updatedAt) ? new Date(updatedAt).toISOString() : now
   };

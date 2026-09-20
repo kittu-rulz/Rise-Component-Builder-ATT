@@ -242,7 +242,7 @@ describe('Rise Component Builder AT&T — Final 10/10 Verification Suite', () =>
       overviewView.state.isPickerOpen = true;
       overviewView.render();
 
-      const pickerModal = container.querySelector('#picker-modal-overlay');
+      const pickerModal = document.querySelector('#picker-modal-overlay');
       expect(pickerModal).not.toBeNull();
       expect(document.body.classList.contains('has-open-modal')).toBe(true);
 

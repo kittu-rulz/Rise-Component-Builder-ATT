@@ -513,6 +513,45 @@
   color: var(--att-text, #000000);
 }
 
+.starter-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.starter-point-card {
+  border: 2px solid var(--att-border, #DCDFE3);
+  background: var(--att-surface, #FFF);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.starter-point-card:hover {
+  border-color: var(--att-blue, #009FDB);
+  box-shadow: 0 2px 8px rgba(0, 159, 219, 0.1);
+}
+
+.starter-point-card.active {
+  border-color: var(--att-cobalt, #00388F) !important;
+  background: #F0F7FF !important;
+  box-shadow: 0 0 0 1px var(--att-cobalt, #00388F);
+}
+
+[data-theme="dark"] .starter-point-card {
+  background: var(--att-surface-sunken, #161920) !important;
+  border-color: var(--att-border, #2E3440) !important;
+}
+
+[data-theme="dark"] .starter-point-card.active {
+  background: #1E2A3A !important;
+  border-color: var(--att-blue, #009FDB) !important;
+}
+
 .form-input,
 .form-textarea,
 .form-select {
@@ -523,6 +562,7 @@
   border-radius: var(--att-radius-sm, 8px);
   outline: none;
   background-color: var(--att-surface, #FFFFFF);
+  color: var(--text-main, #000);
   font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }

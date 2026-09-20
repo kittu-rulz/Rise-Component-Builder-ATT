@@ -254,38 +254,41 @@ export class CoursePreviewView {
 
           <div class="course-preview-canvas ${this.state.showSafeArea ? 'with-safe-area-overlay' : ''}" 
                style="width: 100%; max-width: ${maxCanvasWidth}; transition: max-width 0.25s ease; display: flex; flex-direction: column; gap: 36px;">
-            ${orderedItems.map((item, index) => {
-              if (item.type === 'section-header') {
+            ${(() => {
+              let compCounter = 0;
+              return orderedItems.map((item, index) => {
+                if (item.type === 'section-header') {
+                  return `
+                    <div class="course-preview-section-header" style="border-bottom: 2px solid var(--att-cobalt, #00388F); padding-bottom: 10px; margin-top: ${index === 0 ? '0' : '20px'};">
+                      <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--att-cobalt, #00388F); margin: 0 0 4px 0;">${escapeHTML(item.title)}</h2>
+                      ${item.description ? `<p style="font-size: 0.875rem; color: #666; margin: 0;">${escapeHTML(item.description)}</p>` : ''}
+                    </div>
+                  `;
+                }
+
+                compCounter++;
+                const comp = item.component;
+                const compiled = this.compileComponentHtml(project, comp);
+                const registryEntry = COMPONENT_REGISTRY.find(r => r.id === comp.type);
+                const typeName = registryEntry?.name || comp.type;
+
                 return `
-                  <div class="course-preview-section-header" style="border-bottom: 2px solid var(--att-cobalt, #00388F); padding-bottom: 10px; margin-top: ${index === 0 ? '0' : '20px'};">
-                    <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--att-cobalt, #00388F); margin: 0 0 4px 0;">${escapeHTML(item.title)}</h2>
-                    ${item.description ? `<p style="font-size: 0.875rem; color: #666; margin: 0;">${escapeHTML(item.description)}</p>` : ''}
-                  </div>
-                `;
-              }
-
-              const comp = item.component;
-              const compiled = this.compileComponentHtml(project, comp);
-              const registryEntry = COMPONENT_REGISTRY.find(r => r.id === comp.type);
-              const typeName = registryEntry?.name || comp.type;
-
-              return `
-                <div class="course-preview-block ${this.state.showBoundaries ? 'outline-boundary' : ''}" 
-                     id="preview-block-${comp.id}"
-                     style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.04); position: relative;">
-                  <div class="course-preview-block-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; background: #FAFAFA; border-bottom: 1px solid #EFEFEF;">
-                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                      <span class="preview-comp-order-badge" style="font-size: 0.75rem; font-weight: 700; background: #E4E7EC; color: #333; padding: 2px 8px; border-radius: 12px; flex-shrink: 0;">${index + 1}</span>
-                      <h3 style="font-size: 0.9375rem; font-weight: 600; color: #111; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(comp.name)}</h3>
-                      <span class="component-type-badge" style="font-size: 0.75rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 8px; border-radius: 4px; flex-shrink: 0;">${escapeHTML(typeName)}</span>
+                  <div class="course-preview-block ${this.state.showBoundaries ? 'outline-boundary' : ''}" 
+                       id="preview-block-${comp.id}"
+                       style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.04); position: relative;">
+                    <div class="course-preview-block-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; background: #FAFAFA; border-bottom: 1px solid #EFEFEF;">
+                      <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        <span class="preview-comp-order-badge preview-sequence-badge" style="font-size: 0.75rem; font-weight: 700; background: #E4E7EC; color: #333; padding: 2px 8px; border-radius: 12px; flex-shrink: 0;">${compCounter}</span>
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; color: #111; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(comp.name)}</h3>
+                        <span class="component-type-badge" style="font-size: 0.75rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 8px; border-radius: 4px; flex-shrink: 0;">${escapeHTML(typeName)}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        <button type="button" class="btn btn-secondary btn-sm" data-action="edit-preview-comp" data-comp-id="${comp.id}" aria-label="Edit component: ${escapeHTML(comp.name)}" style="padding: 6px 12px; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px;">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                          <span>Edit Component</span>
+                        </button>
+                      </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                      <button type="button" class="btn btn-secondary btn-sm" data-action="edit-preview-comp" data-comp-id="${comp.id}" aria-label="Edit component: ${escapeHTML(comp.name)}" style="padding: 6px 12px; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                        <span>Edit Component</span>
-                      </button>
-                    </div>
-                  </div>
 
                   <div class="component-rendered-container" style="padding: 16px; min-height: 180px; position: relative; background: #ffffff;">
                     ${compiled.success ? `
@@ -310,7 +313,8 @@ export class CoursePreviewView {
                   </div>
                 </div>
               `;
-            }).join('')}
+            }).join('');
+            })()}
 
             ${orderedItems.length === 0 ? `
               <div class="dashboard-empty-state" style="width: 100%; text-align: center; padding: 48px 24px; background: #ffffff; border-radius: 16px; border: 1px dashed #DCDFE3;">

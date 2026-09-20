@@ -44,7 +44,7 @@ export function auditCourseProject(project) {
         preventsExport: false
       });
       warningCount++;
-    } else if (comp.status === 'in-review') {
+    } else if (comp.status === 'in-review' || comp.status === 'in_review') {
       inReviewCount++;
       compIssues.push({
         severity: 'recommendation',

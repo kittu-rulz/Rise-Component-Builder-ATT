@@ -1,6 +1,6 @@
 /**
  * Projects Dashboard View Controller
- * Handles project listing, search, filtering, sorting, creation, duplication, export/import, and deletion.
+ * Handles project listing, search, filtering, sorting, visual starter cards, export/import, and deletion.
  */
 
 import {
@@ -11,6 +11,7 @@ import {
   buildProjectSchemaV3, createComponentInstance, createSection
 } from '../project-schema.js';
 import { showPromptDialog, showConfirmDialog, isolateModal } from './att-modal.js';
+import { showToast } from '../toast.js';
 
 export class DashboardView {
   constructor({ container = null, onOpenProject = null, onCreateNewComponent = null } = {}) {
@@ -23,7 +24,8 @@ export class DashboardView {
       filter: 'all', // 'all' | 'favorites' | 'recent'
       sortBy: 'updatedAt', // 'updatedAt' | 'name' | 'componentCount'
       activeMenuProjectId: null,
-      isCreateModalOpen: false
+      isCreateModalOpen: false,
+      selectedTemplate: 'standard' // 'standard' | 'blank' | 'single' | 'import'
     };
 
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
@@ -36,6 +38,10 @@ export class DashboardView {
 
   unmount() {
     document.removeEventListener('click', this.handleDocumentClick);
+    if (this.cleanupCreateModalIsolation) {
+      this.cleanupCreateModalIsolation();
+      this.cleanupCreateModalIsolation = null;
+    }
     if (this.container) {
       this.container.innerHTML = '';
     }
@@ -119,13 +125,26 @@ export class DashboardView {
     return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  getModalHost() {
+    return document.getElementById('modal-root') || this.container;
+  }
+
   render() {
     if (!this.container) return;
     const projects = this.getFilteredAndSortedProjects();
+    const allProjects = loadProjects();
+    const isOnboardingDismissed = localStorage.getItem('rcb_onboarding_dismissed') === 'true';
+
+    // Clear any previous modal rendered in modal host if modal is closed
+    const modalHost = this.getModalHost();
+    const existingModal = modalHost?.querySelector('#create-modal-overlay');
+    if (existingModal && !this.state.isCreateModalOpen) {
+      existingModal.remove();
+    }
 
     this.container.innerHTML = `
       <div class="project-dashboard-view">
-        <h1 class="sr-only">Rise Component Builder</h1>
+        <h1 class="sr-only">Course Projects Dashboard | Rise Component Builder</h1>
 
         <!-- Main Body -->
         <main class="dashboard-container">
@@ -147,7 +166,7 @@ export class DashboardView {
             </div>
 
             <div class="dashboard-filters-group">
-              <button class="filter-chip ${this.state.filter === 'all' ? 'active' : ''}" data-filter="all">All Projects</button>
+              <button class="filter-chip ${this.state.filter === 'all' ? 'active' : ''}" data-filter="all">All Projects (${allProjects.length})</button>
               <button class="filter-chip ${this.state.filter === 'favorites' ? 'active' : ''}" data-filter="favorites">Favorites</button>
               <button class="filter-chip ${this.state.filter === 'recent' ? 'active' : ''}" data-filter="recent">Recent</button>
             </div>
@@ -170,28 +189,29 @@ export class DashboardView {
           ` : (this.state.searchQuery || this.state.filter !== 'all') ? `
             <div class="dashboard-empty-state">
               <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <h2 class="empty-state-title">No course projects found</h2>
-              <p class="empty-state-subtitle">Try adjusting your search query or filter.</p>
-              <button id="dash-empty-create-btn" class="btn-att-primary">Create New Project</button>
-            </div>
-          ` : `
-            <div class="dashboard-empty-state-onboarding" style="width: 100%; max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; padding: 12px 0;">
-              <!-- Welcome Hero -->
-              <div style="text-align: center; background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 20px; padding: 36px 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                  <span>Dismiss</span>
+                </button>
                 <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); border-radius: 16px; margin-bottom: 16px;">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                 </div>
-                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 8px 0; color: var(--att-heading-contrast, #000);">Welcome to Rise Course Builder</h2>
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 8px 0; color: var(--att-heading-contrast, #000);">Welcome to Rise Component Builder</h2>
                 <p style="font-size: 0.9375rem; color: #555; max-width: 600px; margin: 0 auto 28px auto; line-height: 1.5;">
-                  Build, preview, test, and package multi-component interactive courses certified for Articulate Rise 360 with 100% AT&T Brand and WCAG 2.2 AA compliance.
+                  Build, preview, audit, and package multi-component interactive courses designed for Articulate Rise 360 with AT&amp;T brand alignment and WCAG 2.2 AA support.
                 </p>
 
                 <!-- 3 Options Cards -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; text-align: left;">
-                  <div class="onboarding-option-card" id="onboarding-blank-card" style="background: var(--att-grey-1, #F3F4F5); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
+                  <div class="onboarding-option-card" id="onboarding-starter-card" style="background: #F0F7FF; border: 2px solid var(--att-cobalt, #00388F); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
                     <div style="font-weight: 700; font-size: 1rem; color: var(--att-cobalt, #00388F); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                      3-Module Starter
+                    </div>
+                    <p style="font-size: 0.8125rem; color: #00388F; margin: 0 0 16px 0; flex: 1;">Recommended structure with Introduction, Deep Dive, and Knowledge Check modules.</p>
+                    <button type="button" class="btn btn-primary btn-sm" id="onboarding-create-starter-btn" style="width: 100%; justify-content: center;">Load 3-Module Starter</button>
+                  </div>
+
+                  <div class="onboarding-option-card" id="onboarding-blank-card" style="background: var(--att-grey-1, #F3F4F5); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
+                    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main, #111); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                       Blank Course
                     </div>
@@ -199,17 +219,8 @@ export class DashboardView {
                     <button type="button" class="btn btn-secondary btn-sm" id="onboarding-create-blank-btn" style="width: 100%; justify-content: center;">Create Blank</button>
                   </div>
 
-                  <div class="onboarding-option-card" id="onboarding-starter-card" style="background: #F0F7FF; border: 1px solid #B8DAFF; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
-                    <div style="font-weight: 700; font-size: 1rem; color: var(--att-cobalt, #00388F); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                      3-Module Starter
-                    </div>
-                    <p style="font-size: 0.8125rem; color: #00388F; margin: 0 0 16px 0; flex: 1;">Pre-populated course structure with Introduction, Deep Dive, and Knowledge Check modules.</p>
-                    <button type="button" class="btn btn-primary btn-sm" id="onboarding-create-starter-btn" style="width: 100%; justify-content: center;">Load 3-Module Starter</button>
-                  </div>
-
                   <div class="onboarding-option-card" id="onboarding-import-card" style="background: var(--att-grey-1, #F3F4F5); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
-                    <div style="font-weight: 700; font-size: 1rem; color: var(--att-heading-contrast, #000); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main, #111); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                       Import Project
                     </div>
@@ -218,42 +229,39 @@ export class DashboardView {
                   </div>
                 </div>
               </div>
-
-              <!-- 3-Step Workflow Guide -->
-              <div style="background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 16px; padding: 28px 24px;">
-                <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0 0 20px 0; color: var(--att-heading-contrast, #000); text-align: center;">How Course Projects Work</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
-                  <div style="display: flex; gap: 14px;">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--att-cobalt, #00388F); color: #FFF; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.875rem;">1</div>
-                    <div>
-                      <h4 style="font-size: 0.9375rem; font-weight: 700; margin: 0 0 4px 0; color: var(--att-heading-contrast, #000);">Structure &amp; Build</h4>
-                      <p style="font-size: 0.8125rem; color: #666; margin: 0; line-height: 1.45;">Create modules and pick from 26 AT&amp;T certified interactive blocks with live configuration.</p>
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 14px;">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--att-cobalt, #00388F); color: #FFF; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.875rem;">2</div>
-                    <div>
-                      <h4 style="font-size: 0.9375rem; font-weight: 700; margin: 0 0 4px 0; color: var(--att-heading-contrast, #000);">Preview &amp; Audit</h4>
-                      <p style="font-size: 0.8125rem; color: #666; margin: 0; line-height: 1.45;">Test the full interactive course flow across desktop and mobile viewports with QA preflight.</p>
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 14px;">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--att-cobalt, #00388F); color: #FFF; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 0.875rem;">3</div>
-                    <div>
-                      <h4 style="font-size: 0.9375rem; font-weight: 700; margin: 0 0 4px 0; color: var(--att-heading-contrast, #000);">Export for Rise 360</h4>
-                      <p style="font-size: 0.8125rem; color: #666; margin: 0; line-height: 1.45;">Generate a structured multi-block ZIP or enhance exported courses with persistent tools.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            </div>
+          ` : `
+            <div class="dashboard-empty-state">
+              <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <h2 class="empty-state-title">No course projects yet</h2>
+              <p class="empty-state-subtitle">Get started by creating a new course project or importing an existing file.</p>
+              <button id="dash-empty-create-btn" class="btn btn-primary">Create New Project</button>
             </div>
           `}
         </main>
-
-        <!-- Create Project Modal -->
-        ${this.state.isCreateModalOpen ? this.renderCreateModal() : ''}
       </div>
     `;
+
+    // Render Modal into modal host
+    if (this.state.isCreateModalOpen) {
+      if (modalHost && modalHost !== this.container) {
+        let overlay = modalHost.querySelector('#create-modal-overlay');
+        if (!overlay) {
+          const temp = document.createElement('div');
+          temp.innerHTML = this.renderCreateModal();
+          overlay = temp.firstElementChild;
+          if (overlay) modalHost.appendChild(overlay);
+        } else {
+          overlay.outerHTML = this.renderCreateModal();
+        }
+      } else {
+        this.container.insertAdjacentHTML('beforeend', this.renderCreateModal());
+      }
+    } else {
+      modalHost?.querySelector('#create-modal-overlay')?.remove();
+    }
 
     this.attachEventListeners();
   }
@@ -268,15 +276,28 @@ export class DashboardView {
         <div class="project-card-header">
           <div class="project-card-tags">
             <span class="project-client-badge">${this.escapeHtml(project.clientLabel || 'AT&T')}</span>
+            ${project.schemaVersion === 3 ? `<span class="project-version-badge">Course Project</span>` : ''}
           </div>
           <div class="project-card-actions">
-            <button class="project-fav-btn ${project.favorite ? 'is-favorite' : ''}" data-action="favorite" data-id="${project.id}" aria-label="Toggle favorite">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="${project.favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button
+              class="project-favorite-btn ${project.favorite ? 'active' : ''}"
+              data-action="favorite"
+              data-id="${project.id}"
+              title="${project.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+              aria-label="${project.favorite ? 'Remove from favorites' : 'Add to favorites'}"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="${project.favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
             </button>
-            <button class="project-menu-btn" data-action="menu" data-id="${project.id}" aria-label="Project actions">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button
+              class="project-menu-btn"
+              data-action="menu"
+              data-id="${project.id}"
+              title="Project actions"
+              aria-label="Project actions"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="1"></circle>
                 <circle cx="12" cy="5" r="1"></circle>
                 <circle cx="12" cy="19" r="1"></circle>
@@ -285,8 +306,10 @@ export class DashboardView {
           </div>
         </div>
 
-        <h2 class="project-card-title">${this.escapeHtml(project.name)}</h2>
-        <p class="project-card-desc">${this.escapeHtml(project.description || 'No description provided.')}</p>
+        <div class="project-card-body" data-action="open" data-id="${project.id}">
+          <h2 class="project-card-title">${this.escapeHtml(project.name)}</h2>
+          <p class="project-card-desc">${this.escapeHtml(project.description || 'No description provided.')}</p>
+        </div>
 
         <div class="project-card-stats">
           <div class="project-stat-item">
@@ -343,41 +366,85 @@ export class DashboardView {
   }
 
   renderCreateModal() {
+    const selectedTemplate = this.state.selectedTemplate || 'standard';
+
     return `
       <div class="modal-overlay is-active" id="create-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="create-project-modal-title">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width: 680px; width: 100%;">
           <div class="modal-header">
-            <h2 id="create-project-modal-title" class="modal-title">Create Course Project</h2>
+            <div>
+              <h2 id="create-project-modal-title" class="modal-title">Create Course Project</h2>
+              <p style="margin: 2px 0 0 0; font-size: 0.8125rem; color: #666;">Choose a starting structure and configure project details.</p>
+            </div>
             <button id="modal-close-btn" class="project-menu-btn" aria-label="Close dialog" type="button">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
           <form id="new-project-form">
-            <div class="modal-body">
-              <div class="form-group">
-                <label for="np-name" class="form-label">Project Name *</label>
-                <input id="np-name" class="form-input" type="text" placeholder="e.g., 5G Network Fundamentals" required autofocus />
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- 4 Starting-Point Cards -->
+              <div>
+                <label class="form-label" style="font-weight: 700; margin-bottom: 8px; display: block;">Select Starting Point</label>
+                <div class="starter-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                  <!-- Card 1: 3-Module Starter -->
+                  <div class="starter-point-card ${selectedTemplate === 'standard' ? 'active' : ''}" data-starter-tpl="standard" tabindex="0" role="radio" aria-checked="${selectedTemplate === 'standard'}" style="border: 2px solid ${selectedTemplate === 'standard' ? 'var(--att-cobalt, #00388F)' : 'var(--att-border, #DCDFE3)'}; background: ${selectedTemplate === 'standard' ? '#F0F7FF' : 'var(--att-surface, #FFF)'}; border-radius: 10px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-weight: 700; font-size: 0.875rem; color: var(--att-cobalt, #00388F);">3-Module Starter</span>
+                      <span style="font-size: 0.75rem; color: ${selectedTemplate === 'standard' ? 'var(--att-cobalt, #00388F)' : '#999'};">★</span>
+                    </div>
+                    <p style="margin: 0; font-size: 0.75rem; color: #555; line-height: 1.3;">Intro, Deep Dive &amp; Knowledge Check.</p>
+                    <span style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 6px; border-radius: 4px; align-self: flex-start; margin-top: auto;">Recommended</span>
+                  </div>
+
+                  <!-- Card 2: Blank Course -->
+                  <div class="starter-point-card ${selectedTemplate === 'blank' ? 'active' : ''}" data-starter-tpl="blank" tabindex="0" role="radio" aria-checked="${selectedTemplate === 'blank'}" style="border: 2px solid ${selectedTemplate === 'blank' ? 'var(--att-cobalt, #00388F)' : 'var(--att-border, #DCDFE3)'}; background: ${selectedTemplate === 'blank' ? '#F0F7FF' : 'var(--att-surface, #FFF)'}; border-radius: 10px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px;">
+                    <span style="font-weight: 700; font-size: 0.875rem; color: #111;">Blank Course</span>
+                    <p style="margin: 0; font-size: 0.75rem; color: #555; line-height: 1.3;">Empty workspace for custom outlines.</p>
+                    <span style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 1px 6px; border-radius: 4px; align-self: flex-start; margin-top: auto;">Custom</span>
+                  </div>
+
+                  <!-- Card 3: Single Component -->
+                  <div class="starter-point-card ${selectedTemplate === 'single' ? 'active' : ''}" data-starter-tpl="single" tabindex="0" role="radio" aria-checked="${selectedTemplate === 'single'}" style="border: 2px solid ${selectedTemplate === 'single' ? 'var(--att-cobalt, #00388F)' : 'var(--att-border, #DCDFE3)'}; background: ${selectedTemplate === 'single' ? '#F0F7FF' : 'var(--att-surface, #FFF)'}; border-radius: 10px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px;">
+                    <span style="font-weight: 700; font-size: 0.875rem; color: #111;">Single Block</span>
+                    <p style="margin: 0; font-size: 0.75rem; color: #555; line-height: 1.3;">Accordion starter block.</p>
+                    <span style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 1px 6px; border-radius: 4px; align-self: flex-start; margin-top: auto;">Quick Edit</span>
+                  </div>
+
+                  <!-- Card 4: Import Existing Project -->
+                  <div class="starter-point-card ${selectedTemplate === 'import' ? 'active' : ''}" data-starter-tpl="import" tabindex="0" role="radio" aria-checked="${selectedTemplate === 'import'}" style="border: 2px solid ${selectedTemplate === 'import' ? 'var(--att-cobalt, #00388F)' : 'var(--att-border, #DCDFE3)'}; background: ${selectedTemplate === 'import' ? '#F0F7FF' : 'var(--att-surface, #FFF)'}; border-radius: 10px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px;">
+                    <span style="font-weight: 700; font-size: 0.875rem; color: #111;">Import Project</span>
+                    <p style="margin: 0; font-size: 0.75rem; color: #555; line-height: 1.3;">Upload saved JSON package.</p>
+                    <span style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 1px 6px; border-radius: 4px; align-self: flex-start; margin-top: auto;">File upload</span>
+                  </div>
+                </div>
+                <input type="hidden" id="np-template" value="${selectedTemplate}" />
               </div>
-              <div class="form-group">
-                <label for="np-client" class="form-label">Client / Brand Tag</label>
-                <input id="np-client" class="form-input" type="text" value="AT&T" />
-              </div>
-              <div class="form-group">
-                <label for="np-desc" class="form-label">Description (optional)</label>
-                <textarea id="np-desc" class="form-textarea" rows="2" placeholder="Course overview and objectives..."></textarea>
-              </div>
-              <div class="form-group">
-                <label for="np-template" class="form-label">Starter Layout</label>
-                <select id="np-template" class="form-select">
-                  <option value="blank">Blank Project (Empty canvas)</option>
-                  <option value="standard">Standard 3-Module Course Structure</option>
-                  <option value="single">Single Component Starter (Accordion)</option>
-                </select>
-              </div>
+
+              ${selectedTemplate === 'import' ? `
+                <div class="form-group" style="background: var(--att-surface-sunken, #FAFAFA); padding: 16px; border-radius: 8px; border: 1.5px dashed var(--att-border, #CBD5E1); text-align: center;">
+                  <label for="np-import-file" style="display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 8px;">Select Course Project JSON File</label>
+                  <input type="file" id="np-import-file" accept=".json" style="font-size: 0.8125rem;" required />
+                </div>
+              ` : `
+                <div class="form-group">
+                  <label for="np-name" class="form-label">Project Name *</label>
+                  <input id="np-name" class="form-input" type="text" placeholder="e.g., 5G Network Fundamentals" required autofocus value="${selectedTemplate === 'standard' ? 'AT&T 3-Module Starter Course' : ''}" />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
+                  <div class="form-group">
+                    <label for="np-client" class="form-label">Client / Brand Tag</label>
+                    <input id="np-client" class="form-input" type="text" value="AT&T" />
+                  </div>
+                  <div class="form-group">
+                    <label for="np-desc" class="form-label">Description (optional)</label>
+                    <input id="np-desc" class="form-input" type="text" placeholder="Course overview and objectives..." value="${selectedTemplate === 'standard' ? 'Interactive 3-module course structure with Introduction, Deep Dive, and Knowledge Check.' : ''}" />
+                  </div>
+                </div>
+              `}
             </div>
             <div class="modal-footer">
-              <button type="button" id="modal-cancel-btn" class="btn-att-secondary">Cancel</button>
-              <button type="submit" class="btn-att-primary">Create Project</button>
+              <button type="button" id="modal-cancel-btn" class="btn btn-secondary">Cancel</button>
+              <button type="submit" class="btn btn-primary">${selectedTemplate === 'import' ? 'Import & Open' : 'Create Project'}</button>
             </div>
           </form>
         </div>
@@ -412,88 +479,75 @@ export class DashboardView {
       });
     }
 
+    // Dismiss onboarding
+    this.container.querySelector('#btn-dismiss-onboarding')?.addEventListener('click', () => {
+      localStorage.setItem('rcb_onboarding_dismissed', 'true');
+      this.render();
+    });
+
     // New Project buttons
     const createBtn = this.container?.querySelector('#dash-create-btn') || document.getElementById('dash-create-btn');
     const emptyCreateBtn = this.container?.querySelector('#dash-empty-create-btn');
-    const openModal = (e) => {
+    const openModal = (e, tpl = 'standard') => {
       this.lastCreateTrigger = e?.currentTarget || createBtn;
+      this.state.selectedTemplate = tpl;
       this.state.isCreateModalOpen = true;
       this.render();
     };
-    if (createBtn) createBtn.onclick = openModal;
-    if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', openModal);
+    if (createBtn) createBtn.onclick = (e) => openModal(e, 'standard');
+    if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', (e) => openModal(e, 'standard'));
 
     // Onboarding cards
     this.container.querySelector('#onboarding-create-blank-btn')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      openModal(e);
+      openModal(e, 'blank');
     });
-    this.container.querySelector('#onboarding-blank-card')?.addEventListener('click', openModal);
+    this.container.querySelector('#onboarding-blank-card')?.addEventListener('click', (e) => openModal(e, 'blank'));
 
     this.container.querySelector('#onboarding-create-starter-btn')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      const project = this.createNewProjectFromTemplate({
-        name: 'AT&T 3-Module Starter Course',
-        client: 'AT&T',
-        desc: 'Interactive 3-module course structure with Introduction, Deep Dive, and Knowledge Check.',
-        template: 'standard'
-      });
-      saveProject(project);
-      this.render();
-      if (this.onOpenProject) this.onOpenProject(project.id);
+      openModal(e, 'standard');
     });
-    this.container.querySelector('#onboarding-starter-card')?.addEventListener('click', () => {
-      const project = this.createNewProjectFromTemplate({
-        name: 'AT&T 3-Module Starter Course',
-        client: 'AT&T',
-        desc: 'Interactive 3-module course structure with Introduction, Deep Dive, and Knowledge Check.',
-        template: 'standard'
-      });
-      saveProject(project);
-      this.render();
-      if (this.onOpenProject) this.onOpenProject(project.id);
-    });
+    this.container.querySelector('#onboarding-starter-card')?.addEventListener('click', (e) => openModal(e, 'standard'));
 
-    const fileInput = this.container?.querySelector('#dash-import-file-input') || document.getElementById('dash-import-file-input');
-    const triggerImport = (e) => {
-      if (e) e.stopPropagation();
-      if (fileInput) fileInput.click();
-    };
-    this.container.querySelector('#onboarding-import-btn')?.addEventListener('click', triggerImport);
-    this.container.querySelector('#onboarding-import-card')?.addEventListener('click', triggerImport);
-
-    // Import JSON button
-    const importBtn = this.container?.querySelector('#dash-import-btn') || document.getElementById('dash-import-btn');
-    if (importBtn && fileInput) {
-      importBtn.onclick = triggerImport;
-      fileInput.onchange = async (e) => {
-        const file = e.target.files?.[0];
+    // Import from dashboard header button
+    const dashImportBtn = document.getElementById('dash-import-btn');
+    const dashImportFileInput = /** @type {HTMLInputElement|null} */ (document.getElementById('dash-import-file-input'));
+    if (dashImportBtn && dashImportFileInput) {
+      dashImportBtn.onclick = () => dashImportFileInput.click();
+      dashImportFileInput.onchange = async (e) => {
+        const target = /** @type {HTMLInputElement} */ (e.target);
+        const file = target?.files?.[0];
         if (!file) return;
         try {
           const text = await file.text();
           const imported = importProjectJson(text);
+          showToast(`Project "${imported.name}" imported successfully!`, 'success');
           this.render();
-          if (this.onOpenProject) {
-            this.onOpenProject(imported.id);
-          }
+          if (this.onOpenProject) this.onOpenProject(imported.id);
         } catch (err) {
-          alert(`Could not import project: ${err.message}`);
+          showToast(`Import failed: ${err.message}`, 'error');
+        } finally {
+          if (dashImportFileInput) dashImportFileInput.value = '';
         }
       };
     }
 
-    // Project card clicks & action handlers
+    this.container.querySelector('#onboarding-import-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (dashImportFileInput) dashImportFileInput.click();
+    });
+    this.container.querySelector('#onboarding-import-card')?.addEventListener('click', () => {
+      if (dashImportFileInput) dashImportFileInput.click();
+    });
+
+    // Project card clicks and action menu items
     this.container.querySelectorAll('.project-card').forEach(card => {
       card.addEventListener('click', async (e) => {
         const actionBtn = e.target.closest('[data-action]');
-        const id = card.dataset.projectId;
-        if (!actionBtn) {
-          // Default click on card -> open project workspace
-          if (this.onOpenProject) this.onOpenProject(id);
-          return;
-        }
-
-        const action = actionBtn.dataset.action;
+        const action = actionBtn ? actionBtn.dataset.action : 'open';
+        const id = (actionBtn && actionBtn.dataset.id) || card.dataset.projectId;
+        if (!id) return;
         e.stopPropagation();
 
         if (action === 'favorite') {
@@ -545,10 +599,11 @@ export class DashboardView {
 
     // Create Modal handlers
     if (this.state.isCreateModalOpen) {
-      const modalOverlay = this.container.querySelector('#create-modal-overlay');
-      const closeBtn = this.container.querySelector('#modal-close-btn');
-      const cancelBtn = this.container.querySelector('#modal-cancel-btn');
-      const form = this.container.querySelector('#new-project-form');
+      const modalHost = this.getModalHost();
+      const modalOverlay = modalHost.querySelector('#create-modal-overlay') || this.container.querySelector('#create-modal-overlay');
+      const closeBtn = modalOverlay?.querySelector('#modal-close-btn');
+      const cancelBtn = modalOverlay?.querySelector('#modal-cancel-btn');
+      const form = modalOverlay?.querySelector('#new-project-form');
 
       if (this.cleanupCreateModalIsolation) {
         this.cleanupCreateModalIsolation();
@@ -580,22 +635,52 @@ export class DashboardView {
         });
       }
 
+      // Starter card clicks & keyboard Enter/Space activation
+      (modalOverlay || this.container).querySelectorAll('[data-starter-tpl]').forEach(card => {
+        const selectCard = () => {
+          this.state.selectedTemplate = card.dataset.starterTpl;
+          this.render();
+        };
+        card.addEventListener('click', selectCard);
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectCard();
+          }
+        });
+      });
+
       if (form) {
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
           e.preventDefault();
-          const name = form.querySelector('#np-name').value;
-          const client = form.querySelector('#np-client').value;
-          const desc = form.querySelector('#np-desc').value;
-          const template = form.querySelector('#np-template').value;
+          const template = this.state.selectedTemplate || 'standard';
+
+          if (template === 'import') {
+            const fileInput = form.querySelector('#np-import-file');
+            const file = fileInput?.files?.[0];
+            if (!file) {
+              showToast('Please select a JSON project file to import.', 'error');
+              return;
+            }
+            try {
+              const text = await file.text();
+              const imported = importProjectJson(text);
+              showToast(`Project "${imported.name}" imported successfully!`, 'success');
+              closeModal();
+              if (this.onOpenProject) this.onOpenProject(imported.id);
+            } catch (err) {
+              showToast(`Import failed: ${err.message}`, 'error');
+            }
+            return;
+          }
+
+          const name = form.querySelector('#np-name')?.value || 'New Project';
+          const client = form.querySelector('#np-client')?.value || 'AT&T';
+          const desc = form.querySelector('#np-desc')?.value || '';
 
           const createdProject = this.createNewProjectFromTemplate({ name, client, desc, template });
           saveProject(createdProject);
-          if (this.cleanupCreateModalIsolation) {
-            this.cleanupCreateModalIsolation();
-            this.cleanupCreateModalIsolation = null;
-          }
-          this.state.isCreateModalOpen = false;
-          this.render();
+          closeModal();
 
           if (this.onOpenProject) {
             this.onOpenProject(createdProject.id);
@@ -770,4 +855,3 @@ export function createNewProjectFromTemplate(options = 'standard') {
     template: opts.template || 'standard'
   });
 }
-

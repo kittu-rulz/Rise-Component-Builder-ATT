@@ -1,20 +1,24 @@
 /**
  * Rise Component Builder AT&T — Project Overview & Multi-Component Workspace Controller
- * Manages course sections, component instances, editorial lifecycle, component picker, and navigation.
+ * Manages course sections, component instances, editorial lifecycle, contextual inspector,
+ * live component canvas, component drawer, and focus editor continuity.
  */
 
 import {
-  getProject, saveProject
+  getProject, saveProject, loadFavorites, saveFavorites, loadRecentlyUsed
 } from '../storage.js';
 import {
   createComponentInstance, createSection
 } from '../project-schema.js';
 import {
-  COMPONENT_REGISTRY, CATEGORIES, getDefaultConfig, getComponentById, searchComponents
+  COMPONENT_REGISTRY, CATEGORIES, getDefaultConfig, getComponentById,
+  searchComponents, COMPONENT_MODULES, normalizeComponentType
 } from '../component-registry.js';
 import { showPromptDialog, showConfirmDialog, isolateModal } from './att-modal.js';
 import { getComponentThumbnailSvg } from './component-thumbnails.js';
-import { escapeHTML } from '../utilities.js';
+import { auditCourseProject } from './project-qa.js';
+import { generateIframeContent } from '../preview.js';
+import { toRgba as colorToRgba, escapeHTML } from '../utilities.js';
 import { showToast } from '../toast.js';
 
 export class ProjectOverviewView {
@@ -37,26 +41,101 @@ export class ProjectOverviewView {
     this.onOpenQa = onOpenQa;
     this.onExportProject = onExportProject;
 
+    const initialFavorites = loadFavorites();
+    const initialRecents = loadRecentlyUsed();
+
     this.state = {
       isPickerOpen: false,
       pickerTargetSectionId: null, // null means unsectioned
       lastActiveSectionId: null,
       pickerSearch: '',
-      pickerCategory: 'all',
+      pickerCategory: 'all', // 'all' | 'recommended' | 'favorites' | 'recent' | categoryId
       previewDetailsComp: null,
       activeMenuId: null,
       courseStructureSearch: '',
-      courseStructureFilter: 'all' // 'all' | 'draft' | 'in_review' | 'ready'
+      courseStructureFilter: 'all', // 'all' | 'draft' | 'in_review' | 'ready'
+      selectedType: 'course', // 'course' | 'section' | 'component'
+      selectedId: null,
+      canvasDevice: 'desktop', // 'desktop' | 'tablet' | 'mobile'
+      favorites: new Set(initialFavorites),
+      recentlyUsed: initialRecents,
+      outlineCollapsed: false
     };
 
     this.cleanupPickerIsolation = null;
     this.cleanupDetailsIsolation = null;
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
+    this.boundResizeMessageListener = this.handleIframeResizeMessage.bind(this);
+  }
+
+  getModalHost() {
+    return document.getElementById('modal-root') || this.container;
   }
 
   mount() {
     document.addEventListener('click', this.handleDocumentClick);
+    window.addEventListener('message', this.boundResizeMessageListener);
+
+    const project = this.getProject();
+    if (project) {
+      if (this.state.selectedType === 'component' && this.state.selectedId) {
+        if (!project.components || !project.components[this.state.selectedId]) {
+          const fallbackId = this.getFirstComponentId(project);
+          if (fallbackId) {
+            this.state.selectedType = 'component';
+            this.state.selectedId = fallbackId;
+          } else {
+            this.state.selectedType = 'course';
+            this.state.selectedId = null;
+          }
+        }
+      } else if (this.state.selectedType === 'section' && this.state.selectedId) {
+        if (this.state.selectedId !== 'unsectioned' && (!project.sections || !project.sections[this.state.selectedId])) {
+          this.state.selectedType = 'course';
+          this.state.selectedId = null;
+        }
+      } else if (!this.state.selectedId) {
+        const firstCompId = this.getFirstComponentId(project);
+        if (firstCompId) {
+          this.state.selectedType = 'component';
+          this.state.selectedId = firstCompId;
+        } else {
+          this.state.selectedType = 'course';
+          this.state.selectedId = null;
+        }
+      }
+    }
+
     this.render();
+
+    if (this.state.selectedType === 'component' && this.state.selectedId) {
+      this.focusAndScrollSelectedComponent(this.state.selectedId);
+    }
+  }
+
+  focusAndScrollSelectedComponent(compId) {
+    if (typeof window === 'undefined' || !this.container) return;
+    setTimeout(() => {
+      const targetRow = this.container.querySelector(`.component-row[data-comp-id="${compId}"]`);
+      if (targetRow) {
+        if (typeof targetRow.scrollIntoView === 'function') {
+          try { targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch {}
+        }
+        const targetBtn = targetRow.querySelector('.component-select-target');
+        if (targetBtn && typeof targetBtn.focus === 'function') {
+          try { targetBtn.focus(); } catch {}
+        }
+      }
+    }, 50);
+  }
+
+  selectNode(type, id = null) {
+    this.state.selectedType = type;
+    this.state.selectedId = id;
+    this.render();
+    if (type === 'component' && id) {
+      this.focusAndScrollSelectedComponent(id);
+    }
   }
 
   unmount() {
@@ -68,9 +147,27 @@ export class ProjectOverviewView {
       this.cleanupDetailsIsolation();
       this.cleanupDetailsIsolation = null;
     }
+    const modalHost = this.getModalHost();
+    modalHost?.querySelector('#picker-modal-overlay')?.remove();
+    modalHost?.querySelector('#details-modal-overlay')?.remove();
     document.removeEventListener('click', this.handleDocumentClick);
+    window.removeEventListener('message', this.boundResizeMessageListener);
     if (this.container) {
       this.container.innerHTML = '';
+    }
+  }
+
+  handleIframeResizeMessage(event) {
+    if (!event.data || typeof event.data !== 'object') return;
+    if (event.data.type === 'rcb-iframe-height' && event.data.frameId && typeof event.data.height === 'number') {
+      const iframe = this.container?.querySelector(`#${event.data.frameId}`);
+      if (iframe) {
+        const targetHeight = Math.max(Math.ceil(event.data.height), 140);
+        const currentHeight = parseInt(iframe.style.height || '0', 10);
+        if (Math.abs(currentHeight - targetHeight) >= 4) {
+          iframe.style.height = `${targetHeight}px`;
+        }
+      }
     }
   }
 
@@ -94,6 +191,93 @@ export class ProjectOverviewView {
     project.updatedAt = new Date().toISOString();
     saveProject(project);
     this.render();
+  }
+
+  getFirstComponentId(project) {
+    if (!project) return null;
+    for (const secId of project.sectionOrder || []) {
+      const sec = project.sections?.[secId];
+      if (sec && sec.componentOrder && sec.componentOrder.length > 0) {
+        return sec.componentOrder[0];
+      }
+    }
+    if (project.unsectionedComponentOrder && project.unsectionedComponentOrder.length > 0) {
+      return project.unsectionedComponentOrder[0];
+    }
+    return null;
+  }
+
+  compileComponentHtml(project, comp) {
+    try {
+      const canonicalType = normalizeComponentType(comp.type);
+      const fakeAppState = {
+        selectedComponent: { id: canonicalType },
+        config: comp.config || {},
+        componentOverrides: comp.styleOverrides || {},
+        currentProjectId: comp.id,
+        activeTheme: project.theme,
+        uiTheme: project.uiTheme || 'light'
+      };
+
+      const html = generateIframeContent(fakeAppState, COMPONENT_MODULES, colorToRgba);
+
+      const autoResizeScript = `
+        <style>
+          html, body {
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 20px !important;
+          }
+        </style>
+        <script>
+          (function() {
+            var lastReported = 0;
+            function reportHeight() {
+              try {
+                var doc = document.documentElement;
+                var body = document.body;
+                if (!body) return;
+                var wrapper = document.querySelector('.rise-block-wrapper') || document.querySelector('.rcb-component-root') || body.firstElementChild || body;
+                var wrapperRect = wrapper ? wrapper.getBoundingClientRect() : null;
+                var wrapperHeight = wrapperRect && wrapperRect.height ? Math.ceil(wrapperRect.height) : 0;
+                var bodyStyle = window.getComputedStyle ? window.getComputedStyle(body) : null;
+                var pTop = bodyStyle ? (parseFloat(bodyStyle.paddingTop) || 0) : 20;
+                var pBottom = bodyStyle ? (parseFloat(bodyStyle.paddingBottom) || 0) : 20;
+                var computedFullHeight = (wrapperHeight > 0) ? Math.ceil(wrapperHeight + pTop + pBottom + 24) : Math.max(body.scrollHeight + 16, 140);
+                var finalHeight = Math.max(computedFullHeight, body.scrollHeight + 16, 140);
+
+                if (Math.abs(finalHeight - lastReported) >= 4) {
+                  lastReported = finalHeight;
+                  window.parent.postMessage({
+                    type: 'rcb-iframe-height',
+                    frameId: 'canvas-comp-iframe-${comp.id}',
+                    height: finalHeight
+                  }, '*');
+                }
+              } catch(e) {}
+            }
+            window.addEventListener('load', function() { setTimeout(reportHeight, 60); setTimeout(reportHeight, 350); });
+            window.addEventListener('resize', reportHeight);
+            if (window.ResizeObserver && document.body) {
+              var observer = new ResizeObserver(function() { reportHeight(); });
+              var target = document.querySelector('.rise-block-wrapper') || document.body.firstElementChild || document.body;
+              if (target) observer.observe(target);
+            }
+            document.addEventListener('click', function() { setTimeout(reportHeight, 80); setTimeout(reportHeight, 350); });
+            setTimeout(reportHeight, 100);
+            setTimeout(reportHeight, 600);
+          })();
+        <\/script>
+      `;
+
+      if (html.includes('</body>')) {
+        return html.replace('</body>', `${autoResizeScript}</body>`);
+      }
+      return `${html}${autoResizeScript}`;
+    } catch (err) {
+      return `<!DOCTYPE html><html><body><div style="padding:20px;color:#c00;font-family:sans-serif;">Unable to render preview: ${escapeHTML(err.message)}</div></body></html>`;
+    }
   }
 
   render() {
@@ -136,17 +320,17 @@ export class ProjectOverviewView {
           </div>
 
           <!-- Workflow Segment Control (Build -> Preview -> QA -> Export) -->
-          <div class="workflow-nav-segment" style="display: flex; background: var(--att-grey-1, #F3F4F5); padding: 3px; border-radius: 10px; gap: 2px; border: 1px solid var(--att-border, #DCDFE3);">
-            <button class="workflow-tab-btn active" id="wp-tab-build" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 700; border: none; border-radius: 8px; background: var(--att-surface, #FFF); color: var(--att-cobalt, #00388F); box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer;">
+          <div class="workflow-nav-segment" role="tablist" aria-label="Course workflow steps">
+            <button class="workflow-tab-btn active" id="wp-tab-build" role="tab" aria-selected="true">
               Build
             </button>
-            <button class="workflow-tab-btn" id="wp-preview-btn" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: var(--text-main, #333); cursor: pointer;">
-              Preview
+            <button class="workflow-tab-btn" id="wp-preview-btn" role="tab" aria-selected="false">
+              Course Preview
             </button>
-            <button class="workflow-tab-btn" id="wp-qa-btn" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: var(--text-main, #333); cursor: pointer;">
+            <button class="workflow-tab-btn" id="wp-qa-btn" role="tab" aria-selected="false">
               QA Preflight
             </button>
-            <button class="workflow-tab-btn" id="wp-export-btn" style="padding: 5px 14px; font-size: 0.8125rem; font-weight: 600; border: none; border-radius: 8px; background: transparent; color: var(--text-main, #333); cursor: pointer;">
+            <button class="workflow-tab-btn" id="wp-export-btn" role="tab" aria-selected="false">
               Export Package
             </button>
           </div>
@@ -161,30 +345,34 @@ export class ProjectOverviewView {
 
         <main class="workspace-container workspace-3zone-layout">
           <!-- Zone 1: Interactive Course Outline Panel -->
-          <div class="workspace-outline-zone">
-            <!-- Compact Course Header -->
-            <div class="workspace-banner" style="background: var(--att-surface, #ffffff); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-              <div class="workspace-banner-info">
-                <div class="workspace-banner-tags" style="margin-bottom: 6px;">
-                  <span class="project-client-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); font-weight: 700; font-size: 0.6875rem; padding: 2px 6px; border-radius: 4px;">${escapeHTML(project.clientLabel || 'AT&T')}</span>
+          <div class="workspace-outline-zone" role="region" aria-label="Course Outline">
+            <!-- Course Header Card -->
+            <div class="workspace-banner ${this.state.selectedType === 'course' ? 'is-selected' : ''}" id="wp-course-banner">
+              <button type="button" class="workspace-banner-select-target" data-action="select-node" data-node-type="course" aria-label="Select Course Overview" aria-pressed="${this.state.selectedType === 'course'}">
+                <div class="workspace-banner-info">
+                  <div class="workspace-banner-tags">
+                    <span class="project-client-badge">${escapeHTML(project.clientLabel || 'AT&T')}</span>
+                  </div>
+                  <h1 class="workspace-title">
+                    <span>${escapeHTML(project.name)}</span>
+                  </h1>
+                  <p class="workspace-desc">${escapeHTML(project.description || 'Course Outline & Interactive Component Structure')}</p>
                 </div>
-                <h1 class="workspace-title" style="font-size: 1.125rem; font-weight: 700; color: var(--text-main, #111); margin: 0 0 4px 0; display: flex; align-items: center; gap: 6px;">
-                  ${escapeHTML(project.name)}
-                  <button id="wp-rename-title-btn" class="project-menu-btn" title="Rename course title" style="width: 24px; height: 24px;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                  </button>
-                </h1>
-                <p class="workspace-desc" style="font-size: 0.75rem; color: #666; margin: 0; line-height: 1.4;">${escapeHTML(project.description || 'Course Modules & Component Architecture')}</p>
-              </div>
-              <div class="workspace-banner-metrics" style="display: flex; gap: 8px;">
-                <span class="section-component-badge" style="background: var(--att-grey-1, #E4E7EC); font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${totalSections} sec</span>
-                <span class="section-component-badge" style="background: var(--att-grey-1, #E4E7EC); font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${totalComponents} comp</span>
+              </button>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0;">
+                <button id="wp-rename-title-btn" class="project-menu-btn" title="Rename course title" aria-label="Rename course title">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                </button>
+                <div class="workspace-banner-metrics">
+                  <span class="section-component-badge">${totalSections} ${totalSections === 1 ? 'section' : 'sections'}</span>
+                  <span class="section-component-badge">${totalComponents} ${totalComponents === 1 ? 'component' : 'components'}</span>
+                </div>
               </div>
             </div>
 
             <!-- Course Structure Filter & Controls -->
-            <div class="workspace-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <div class="workspace-toolbar">
+              <div class="workspace-search-group">
                 <input 
                   type="search" 
                   id="cs-search-input" 
@@ -192,42 +380,45 @@ export class ProjectOverviewView {
                   placeholder="Search outline…" 
                   aria-label="Search components in course structure"
                   value="${escapeHTML(this.state.courseStructureSearch)}"
-                  style="padding: 4px 8px; font-size: 0.75rem; width: 130px;"
                 />
                 <!-- Quick Filter Chips -->
-                <div class="filter-group" style="display: flex; gap: 2px;">
-                  <button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" data-cs-filter="all" style="padding: 2px 6px; font-size: 0.6875rem;">All</button>
-                  <button class="filter-chip ${activeFilter === 'ready' ? 'active' : ''}" data-cs-filter="ready" style="padding: 2px 6px; font-size: 0.6875rem;">Ready</button>
+                <div class="filter-group">
+                  <button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" data-cs-filter="all">All</button>
+                  <button class="filter-chip ${activeFilter === 'draft' ? 'active' : ''}" data-cs-filter="draft">Draft</button>
+                  <button class="filter-chip ${activeFilter === 'in_review' ? 'active' : ''}" data-cs-filter="in_review">In Review</button>
+                  <button class="filter-chip ${activeFilter === 'ready' ? 'active' : ''}" data-cs-filter="ready">Ready</button>
                 </div>
               </div>
 
-              <div class="workspace-toolbar-actions" style="display: flex; align-items: center; gap: 4px;">
-                <button id="wp-header-add-comp-btn" class="btn btn-secondary btn-sm" title="Add component to course" style="padding: 3px 8px; font-size: 0.75rem;">
-                  + Block
+              <div class="workspace-toolbar-actions">
+                <button id="wp-header-add-comp-btn" class="btn btn-secondary btn-sm" title="Add component to course">
+                  + Component
                 </button>
-                <button id="wp-add-section-btn" class="btn btn-primary btn-sm" style="padding: 3px 8px; font-size: 0.75rem;">
+                <button id="wp-add-section-btn" class="btn btn-primary btn-sm">
                   + Section
                 </button>
               </div>
             </div>
 
             <!-- Sections List -->
-            <div class="sections-list" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="sections-list">
               ${(project.sectionOrder || []).map((secId, idx) => this.renderSectionCard(project, secId, idx, activeFilter, searchFilter)).join('')}
 
               <!-- Unsectioned Components Section (if any) -->
               ${(project.unsectionedComponentOrder && project.unsectionedComponentOrder.length > 0) ? `
-                <div class="section-card" style="background: var(--att-surface, #ffffff); border: 1px solid var(--att-border, #DCDFE3); border-radius: 10px; overflow: hidden;">
-                  <div class="section-card-header" style="background: var(--att-surface-sunken, #FAFAFA); border-bottom: 1px solid var(--att-border, #EFEFEF); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
-                    <div class="section-header-left" style="display: flex; align-items: center; gap: 6px;">
-                      <h3 class="section-title" style="font-size: 0.875rem; font-weight: 700; margin: 0;">Unsectioned Area</h3>
-                      <span class="section-component-badge" style="background: var(--att-grey-1, #E4E7EC); font-size: 0.6875rem; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${project.unsectionedComponentOrder.length}</span>
-                    </div>
+                <div class="section-card ${this.state.selectedType === 'section' && this.state.selectedId === 'unsectioned' ? 'is-selected' : ''}" data-section-id="unsectioned">
+                  <div class="section-card-header">
+                    <button type="button" class="section-select-target" data-action="select-node" data-node-type="section" data-node-id="unsectioned" aria-label="Select Unsectioned Area" aria-pressed="${this.state.selectedType === 'section' && this.state.selectedId === 'unsectioned'}">
+                      <div class="section-header-left">
+                        <h3 class="section-title">Unsectioned Area</h3>
+                        <span class="section-component-badge">${project.unsectionedComponentOrder.length}</span>
+                      </div>
+                    </button>
                     <div>
-                      <button class="btn btn-secondary btn-sm" data-action="add-comp-unsectioned" style="padding: 2px 6px; font-size: 0.6875rem;">+ Add</button>
+                      <button class="btn btn-secondary btn-sm" data-action="add-comp-unsectioned">+ Add</button>
                     </div>
                   </div>
-                  <div class="section-card-body" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+                  <div class="section-card-body">
                     ${project.unsectionedComponentOrder
                       .filter(cId => this.matchesFilter(project.components?.[cId], activeFilter, searchFilter))
                       .map((cId, idx) => this.renderComponentRow(project, cId, null, idx, project.unsectionedComponentOrder.length))
@@ -237,12 +428,12 @@ export class ProjectOverviewView {
               ` : ''}
 
               ${(project.sectionOrder || []).length === 0 && (!project.unsectionedComponentOrder || project.unsectionedComponentOrder.length === 0) ? `
-                <div class="dashboard-empty-state" style="text-align: center; padding: 32px 16px; background: var(--att-surface, #ffffff); border: 1px dashed var(--att-border, #DCDFE3); border-radius: 12px;">
-                  <h3 class="empty-state-title" style="font-size: 1rem; font-weight: 700; margin: 0 0 6px 0;">Course is empty</h3>
-                  <p class="empty-state-subtitle" style="font-size: 0.8125rem; color: #666; margin: 0 0 14px 0;">Add your first module or interactive block.</p>
-                  <div style="display: flex; justify-content: center; gap: 8px;">
+                <div class="dashboard-empty-state">
+                  <h3 class="empty-state-title">Course is empty</h3>
+                  <p class="empty-state-subtitle">Add your first section or interactive component.</p>
+                  <div class="empty-state-actions">
                     <button id="wp-empty-add-sec-btn" class="btn btn-primary btn-sm">Add Section</button>
-                    <button id="wp-empty-add-comp-btn" class="btn btn-secondary btn-sm">Add Block</button>
+                    <button id="wp-empty-add-comp-btn" class="btn btn-secondary btn-sm">Add Component</button>
                   </div>
                 </div>
               ` : ''}
@@ -250,81 +441,345 @@ export class ProjectOverviewView {
           </div>
 
           <!-- Zone 2: Central Authoring & Live Preview Canvas -->
-          <div class="workspace-canvas-zone" style="background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
-            <div class="canvas-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--att-border, #EAEAEA); padding-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="component-type-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">Live Canvas</span>
-                <span style="font-weight: 700; font-size: 0.9375rem; color: var(--text-main, #111);">Interactive Block Preview</span>
-              </div>
-              <div class="canvas-viewport-controls" style="display: flex; gap: 4px; background: var(--att-grey-1, #F3F4F5); padding: 2px; border-radius: 8px;">
-                <button class="btn btn-secondary btn-sm active" title="Desktop 100% View" style="padding: 4px 8px; font-size: 0.75rem;">Desktop</button>
-                <button class="btn btn-secondary btn-sm" title="Tablet 768px View" style="padding: 4px 8px; font-size: 0.75rem;">Tablet</button>
-                <button class="btn btn-secondary btn-sm" title="Mobile 375px View" style="padding: 4px 8px; font-size: 0.75rem;">Mobile</button>
-              </div>
-            </div>
-
-            <!-- Canvas Viewport Frame -->
-            <div class="canvas-viewport-frame" style="background: var(--att-surface-sunken, #F8FAFC); border: 1px solid var(--att-border, #E2E8F0); border-radius: 12px; min-height: 420px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; text-align: center;">
-              <div style="max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                <div style="width: 64px; height: 64px; border-radius: 16px; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); display: flex; align-items: center; justify-content: center;">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                </div>
-                <h4 style="font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--text-main, #111);">Course Authoring &amp; Flow Canvas</h4>
-                <p style="font-size: 0.875rem; color: #64748B; margin: 0; line-height: 1.5;">Select any component from the Course Outline to preview, configure its interactions, or edit its content in the authoring tool.</p>
-                <button class="btn btn-primary btn-sm" id="wp-preview-canvas-btn" style="margin-top: 6px; padding: 8px 18px; font-size: 0.8125rem;">
-                  Launch Full Course Preview
-                </button>
-              </div>
-            </div>
+          <div class="workspace-canvas-zone" role="region" aria-label="Interactive Canvas">
+            ${this.renderCentralCanvas(project)}
           </div>
 
           <!-- Zone 3: Right Contextual Inspector Panel -->
-          <div class="workspace-inspector-zone" style="background: var(--att-surface, #FFFFFF); border: 1px solid var(--att-border, #DCDFE3); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--att-border, #EAEAEA); padding-bottom: 10px;">
-              <h3 style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: var(--text-main, #111);">Inspector</h3>
-              <span class="project-client-badge" style="background: #E8F5E9; color: #2E7D32; font-weight: 700; font-size: 0.6875rem; padding: 2px 6px; border-radius: 4px;">WCAG 2.2 AA</span>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.8125rem; color: #555;">
-              <div>
-                <span style="font-weight: 600; color: #333; display: block; margin-bottom: 4px;">Course Target</span>
-                <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">Articulate Rise 360 Certified</span>
-              </div>
-              <div>
-                <span style="font-weight: 600; color: #333; display: block; margin-bottom: 4px;">Editorial Status</span>
-                <span style="background: #EFEFEF; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">Multi-Component Project</span>
-              </div>
-              <div style="border-top: 1px solid var(--att-border, #EFEFEF); padding-top: 10px;">
-                <span style="font-weight: 600; color: #333; display: block; margin-bottom: 6px;">Pre-Export QA Health</span>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <div style="flex: 1; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden;">
-                    <div style="width: 100%; height: 100%; background: #10B981;"></div>
-                  </div>
-                  <span style="font-weight: 700; font-size: 0.75rem; color: #10B981;">100%</span>
-                </div>
-              </div>
-            </div>
-
-            <div style="margin-top: auto; border-top: 1px solid var(--att-border, #EAEAEA); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-              <button class="btn btn-secondary btn-sm" id="wp-inspector-qa-btn" style="width: 100%; justify-content: center; font-size: 0.8125rem;">
-                Run QA Preflight
-              </button>
-              <button class="btn btn-primary btn-sm" id="wp-inspector-export-btn" style="width: 100%; justify-content: center; font-size: 0.8125rem;">
-                Export Course Package
-              </button>
-            </div>
+          <div class="workspace-inspector-zone" role="region" aria-label="Properties Inspector">
+            ${this.renderContextualInspector(project)}
           </div>
         </main>
-
-        <!-- Component Picker Modal -->
-        ${this.state.isPickerOpen ? this.renderComponentPicker(project) : ''}
-
-        <!-- Component Details Preview Modal -->
-        ${this.state.previewDetailsComp ? this.renderDetailsModal(this.state.previewDetailsComp, project) : ''}
       </div>
     `;
 
+    // Render Modals into modal host
+    const modalHost = this.getModalHost();
+    if (this.state.isPickerOpen) {
+      if (modalHost && modalHost !== this.container) {
+        let overlay = modalHost.querySelector('#picker-modal-overlay');
+        if (!overlay) {
+          const temp = document.createElement('div');
+          temp.innerHTML = this.renderComponentPicker(project);
+          overlay = temp.firstElementChild;
+          if (overlay) modalHost.appendChild(overlay);
+        } else {
+          overlay.outerHTML = this.renderComponentPicker(project);
+        }
+      } else {
+        this.container.insertAdjacentHTML('beforeend', this.renderComponentPicker(project));
+      }
+    } else {
+      modalHost?.querySelector('#picker-modal-overlay')?.remove();
+    }
+
+    if (this.state.previewDetailsComp) {
+      if (modalHost && modalHost !== this.container) {
+        let overlay = modalHost.querySelector('#details-modal-overlay');
+        if (!overlay) {
+          const temp = document.createElement('div');
+          temp.innerHTML = this.renderDetailsModal(this.state.previewDetailsComp, project);
+          overlay = temp.firstElementChild;
+          if (overlay) modalHost.appendChild(overlay);
+        } else {
+          overlay.outerHTML = this.renderDetailsModal(this.state.previewDetailsComp, project);
+        }
+      } else {
+        this.container.insertAdjacentHTML('beforeend', this.renderDetailsModal(this.state.previewDetailsComp, project));
+      }
+    } else {
+      modalHost?.querySelector('#details-modal-overlay')?.remove();
+    }
+
     this.attachEventListeners();
+  }
+
+  renderCentralCanvas(project) {
+    const { selectedType, selectedId, canvasDevice } = this.state;
+    const selectedComp = selectedType === 'component' && selectedId ? project.components?.[selectedId] : null;
+    const selectedSec = selectedType === 'section' && selectedId ? (selectedId === 'unsectioned' ? { name: 'Unsectioned Area', description: 'Standalone components' } : project.sections?.[selectedId]) : null;
+
+    let deviceWidthStyle = 'width: 100%; max-width: 100%;';
+    if (canvasDevice === 'tablet') {
+      deviceWidthStyle = 'width: 768px; max-width: 100%;';
+    } else if (canvasDevice === 'mobile') {
+      deviceWidthStyle = 'width: 375px; max-width: 100%;';
+    }
+
+    if (selectedComp) {
+      const regEntry = getComponentById(COMPONENT_REGISTRY, selectedComp.type);
+      const typeLabel = regEntry?.name || selectedComp.type;
+      const iframeSrcDoc = this.compileComponentHtml(project, selectedComp);
+
+      return `
+        <div class="canvas-header">
+          <div class="canvas-header-title">
+            <span class="component-type-badge">${escapeHTML(typeLabel)}</span>
+            <span class="canvas-active-title">${escapeHTML(selectedComp.name)}</span>
+          </div>
+          <div class="canvas-viewport-controls" role="group" aria-label="Device viewport preview">
+            <button class="btn btn-secondary btn-sm ${canvasDevice === 'desktop' ? 'active' : ''}" data-canvas-device="desktop" title="Desktop View (100%)">Desktop</button>
+            <button class="btn btn-secondary btn-sm ${canvasDevice === 'tablet' ? 'active' : ''}" data-canvas-device="tablet" title="Tablet View (768px)">Tablet</button>
+            <button class="btn btn-secondary btn-sm ${canvasDevice === 'mobile' ? 'active' : ''}" data-canvas-device="mobile" title="Mobile View (375px)">Mobile</button>
+          </div>
+        </div>
+
+        <div class="canvas-viewport-container" style="display: flex; justify-content: center; width: 100%; overflow-x: auto; background: var(--att-surface-sunken, #F8FAFC); border-radius: 12px; padding: 16px;">
+          <div class="canvas-device-wrapper" style="${deviceWidthStyle} transition: width 0.2s ease; background: #FFFFFF; border: 1px solid var(--att-border, #E2E8F0); border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); overflow: hidden;">
+            <div class="canvas-component-topbar" style="padding: 8px 14px; background: var(--att-surface-sunken, #FAFAFA); border-bottom: 1px solid var(--att-border, #EAEAEA); display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.75rem; font-weight: 700; color: #555;">Live Preview</span>
+              <button class="btn btn-primary btn-sm" data-action="open-focus-editor" data-comp-id="${selectedComp.id}" style="padding: 3px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                <span>Open Focus Editor</span>
+              </button>
+            </div>
+            <iframe
+              id="canvas-comp-iframe-${selectedComp.id}"
+              class="canvas-preview-iframe"
+              srcdoc="${escapeHTML(iframeSrcDoc)}"
+              title="Live preview for ${escapeHTML(selectedComp.name)}"
+              style="width: 100%; border: none; min-height: 280px; display: block;"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            ></iframe>
+          </div>
+        </div>
+      `;
+    }
+
+    if (selectedSec) {
+      const compIds = selectedId === 'unsectioned' ? (project.unsectionedComponentOrder || []) : (selectedSec.componentOrder || []);
+      return `
+        <div class="canvas-header">
+          <div class="canvas-header-title">
+            <span class="component-type-badge">Section View</span>
+            <span class="canvas-active-title">${escapeHTML(selectedSec.name)}</span>
+          </div>
+        </div>
+
+        <div class="canvas-viewport-frame" style="padding: 24px;">
+          <div style="max-width: 580px; display: flex; flex-direction: column; gap: 14px; text-align: left; width: 100%;">
+            <div>
+              <h3 style="margin: 0 0 4px 0; font-size: 1.125rem; font-weight: 700; color: var(--text-main, #111);">${escapeHTML(selectedSec.name)}</h3>
+              <p style="margin: 0; font-size: 0.875rem; color: #64748B;">${escapeHTML(selectedSec.description || 'Section Module Overview')}</p>
+            </div>
+            <div style="font-size: 0.8125rem; font-weight: 600; color: #475569;">
+              ${compIds.length} ${compIds.length === 1 ? 'Component' : 'Components'} in this section:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${compIds.map(cId => {
+                const c = project.components?.[cId];
+                if (!c) return '';
+                const reg = getComponentById(COMPONENT_REGISTRY, c.type);
+                return `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #FFF; border: 1px solid var(--att-border, #E2E8F0); border-radius: 8px;">
+                    <div>
+                      <span style="font-weight: 700; font-size: 0.875rem; color: #111;">${escapeHTML(c.name)}</span>
+                      <span style="margin-left: 8px; font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 6px; border-radius: 4px;">${escapeHTML(reg?.name || c.type)}</span>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" data-action="select-comp-preview" data-comp-id="${c.id}" style="padding: 4px 10px; font-size: 0.75rem;">
+                      Preview Block
+                    </button>
+                  </div>
+                `;
+              }).join('')}
+              ${compIds.length === 0 ? `
+                <div style="padding: 24px; text-align: center; background: #FFF; border: 1px dashed var(--att-border, #CBD5E1); border-radius: 8px;">
+                  <p style="font-size: 0.8125rem; color: #64748B; margin: 0 0 8px 0;">No components added to this section yet.</p>
+                  <button class="btn btn-primary btn-sm" data-action="add-comp-to-sec" data-sec-id="${selectedId}">+ Add Component</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Default / Course Selection
+    return `
+      <div class="canvas-header">
+        <div class="canvas-header-title">
+          <span class="component-type-badge">Course Canvas</span>
+          <span class="canvas-active-title">${escapeHTML(project.name)}</span>
+        </div>
+      </div>
+
+      <div class="canvas-viewport-frame" style="min-height: 420px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 32px; text-align: center;">
+        <div style="max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+          <div style="width: 64px; height: 64px; border-radius: 16px; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); display: flex; align-items: center; justify-content: center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          </div>
+          <h2 style="font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--text-main, #111);">Course Authoring &amp; Flow Canvas</h2>
+          <p style="font-size: 0.875rem; color: #64748B; margin: 0; line-height: 1.5;">Select any component from the Course Outline to preview, configure its properties, or enter the full Focus Editor.</p>
+          <button class="btn btn-primary btn-sm" id="wp-preview-canvas-btn" style="margin-top: 6px; padding: 8px 18px; font-size: 0.8125rem;">
+            Launch Full Course Preview
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  renderContextualInspector(project) {
+    const { selectedType, selectedId } = this.state;
+    const totalComponents = Object.keys(project.components || {}).length;
+
+    if (selectedType === 'component' && selectedId && project.components?.[selectedId]) {
+      const comp = project.components[selectedId];
+      const regEntry = getComponentById(COMPONENT_REGISTRY, comp.type);
+      const typeLabel = regEntry?.name || comp.type;
+
+      return `
+        <div class="inspector-header">
+          <h3 class="inspector-title">Component Inspector</h3>
+          <span class="project-client-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F);">${escapeHTML(typeLabel)}</span>
+        </div>
+
+        <div class="inspector-body">
+          <div class="inspector-prop-group">
+            <label class="inspector-label" for="insp-comp-name">Component Title</label>
+            <input id="insp-comp-name" class="form-input" type="text" value="${escapeHTML(comp.name)}" style="font-size: 0.8125rem;" />
+          </div>
+
+          <div class="inspector-prop-group">
+            <label class="inspector-label" for="insp-comp-status">Editorial Status</label>
+            <select id="insp-comp-status" class="form-select" style="font-size: 0.8125rem;">
+              <option value="draft" ${comp.status === 'draft' ? 'selected' : ''}>Draft</option>
+              <option value="in_review" ${comp.status === 'in_review' || comp.status === 'in-review' ? 'selected' : ''}>In Review</option>
+              <option value="ready" ${comp.status === 'ready' ? 'selected' : ''}>Ready</option>
+            </select>
+          </div>
+
+          <div class="inspector-prop-group">
+            <span class="inspector-label">Learning Purpose</span>
+            <span style="font-size: 0.8125rem; color: #555;">${escapeHTML(regEntry?.description || 'Interactive Learning Block')}</span>
+          </div>
+
+          <div class="inspector-prop-group">
+            <span class="inspector-label">Standards & Compatibility</span>
+            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; color: #444;">
+              <span>• Designed for Articulate Rise 360</span>
+              <span>• Built to support WCAG 2.2 AA requirements</span>
+              <span>• Responsive mobile/desktop layout</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inspector-footer">
+          <button class="btn btn-primary" data-action="open-focus-editor" data-comp-id="${comp.id}" style="width: 100%; justify-content: center; font-size: 0.8125rem; font-weight: 700;">
+            Open Focus Editor
+          </button>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-secondary btn-sm" data-action="duplicate-comp" data-comp-id="${comp.id}" style="flex: 1; font-size: 0.75rem;">Duplicate</button>
+            <button class="btn btn-secondary btn-sm text-danger" data-action="delete-comp" data-comp-id="${comp.id}" style="flex: 1; font-size: 0.75rem;">Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (selectedType === 'section' && selectedId) {
+      const isUnsec = selectedId === 'unsectioned';
+      const sec = isUnsec ? { name: 'Unsectioned Area', description: 'Standalone components' } : project.sections?.[selectedId];
+      const count = isUnsec ? (project.unsectionedComponentOrder?.length || 0) : (sec?.componentOrder?.length || 0);
+
+      return `
+        <div class="inspector-header">
+          <h3 class="inspector-title">Section Inspector</h3>
+          <span class="section-component-badge">${count} ${count === 1 ? 'block' : 'blocks'}</span>
+        </div>
+
+        <div class="inspector-body">
+          <div class="inspector-prop-group">
+            <label class="inspector-label">Section Name</label>
+            <span style="font-weight: 700; font-size: 0.875rem; color: #111;">${escapeHTML(sec?.name || 'Section')}</span>
+          </div>
+
+          <div class="inspector-prop-group">
+            <label class="inspector-label">Description</label>
+            <span style="font-size: 0.8125rem; color: #555;">${escapeHTML(sec?.description || 'No section description.')}</span>
+          </div>
+
+          <div class="inspector-prop-group">
+            <span class="inspector-label">Section Summary</span>
+            <span style="font-size: 0.8125rem; color: #555;">Contains ${count} component instances.</span>
+          </div>
+        </div>
+
+        <div class="inspector-footer">
+          <button class="btn btn-primary" data-action="add-comp-to-sec" data-sec-id="${selectedId}" style="width: 100%; justify-content: center; font-size: 0.8125rem;">
+            + Add Component
+          </button>
+          ${!isUnsec ? `
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary btn-sm" data-action="rename-sec" data-sec-id="${selectedId}" style="flex: 1; font-size: 0.75rem;">Rename</button>
+              <button class="btn btn-secondary btn-sm text-danger" data-action="delete-sec" data-sec-id="${selectedId}" style="flex: 1; font-size: 0.75rem;">Delete</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // Default / Course Level Inspector
+    const qa = auditCourseProject(project);
+    const hasContent = totalComponents > 0;
+    return `
+      <div class="inspector-header">
+        <h3 class="inspector-title">Course Inspector</h3>
+        <span class="project-client-badge" style="background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F);">Accessibility Checks Included</span>
+      </div>
+
+      <div class="inspector-body">
+        <div class="inspector-prop-group">
+          <span class="inspector-label">Course Title</span>
+          <span style="font-weight: 700; font-size: 0.875rem; color: #111;">${escapeHTML(project.name)}</span>
+        </div>
+
+        <div class="inspector-prop-group">
+          <span class="inspector-label">Course Target</span>
+          <span style="color: var(--att-cobalt, #00388F); font-weight: 600; font-size: 0.8125rem;">Designed for Articulate Rise 360</span>
+        </div>
+
+        <div class="inspector-prop-group">
+          <span class="inspector-label">Editorial Scope</span>
+          <span style="font-size: 0.8125rem; color: #555;">${totalComponents} interactive ${totalComponents === 1 ? 'component' : 'components'} across ${Object.keys(project.sections || {}).length} sections</span>
+        </div>
+
+        <div class="inspector-prop-group" style="border-top: 1px solid var(--att-border, #EFEFEF); padding-top: 10px;">
+          <span class="inspector-label">Pre-Export QA Health</span>
+          ${hasContent ? `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8125rem; font-weight: 600; color: #1E293B;">Overall Readiness:</span>
+                <span class="badge ${qa.overallStatusClass}" style="font-size: 0.75rem;">${escapeHTML(qa.overallStatus)} (${qa.overallScore}%)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748B;">
+                <span>Technical Checks:</span>
+                <span style="font-weight: 600; color: #334155;">${qa.technicalScore}%</span>
+              </div>
+              <div style="display: flex; gap: 6px; font-size: 0.6875rem; color: #64748B; margin-top: 2px;">
+                <span>${qa.editorial.readyCount} Ready</span> • 
+                <span>${qa.editorial.inReviewCount} In Review</span> • 
+                <span>${qa.editorial.draftCount} Draft</span>
+              </div>
+              ${(qa.counts.blockers > 0 || qa.counts.errors > 0 || qa.counts.warnings > 0) ? `
+                <div style="font-size: 0.6875rem; color: ${qa.counts.blockers > 0 ? '#DC2626' : '#D97706'}; font-weight: 600;">
+                  ${qa.counts.blockers > 0 ? `${qa.counts.blockers} blocker(s) ` : ''}${qa.counts.errors > 0 ? `${qa.counts.errors} error(s) ` : ''}${qa.counts.warnings > 0 ? `${qa.counts.warnings} warning(s)` : ''}
+                </div>
+              ` : ''}
+            </div>
+          ` : `
+            <span style="font-size: 0.8125rem; color: #64748B; font-style: italic;">No content to evaluate</span>
+          `}
+        </div>
+      </div>
+
+      <div class="inspector-footer">
+        <button class="btn btn-secondary btn-sm" id="wp-inspector-qa-btn" style="width: 100%; justify-content: center; font-size: 0.8125rem;" ${!hasContent ? 'disabled' : ''}>
+          Run QA Preflight
+        </button>
+        <button class="btn btn-primary btn-sm" id="wp-inspector-export-btn" style="width: 100%; justify-content: center; font-size: 0.8125rem;" ${!hasContent ? 'disabled' : ''}>
+          Export Course Package
+        </button>
+      </div>
+    `;
   }
 
   addComponentToProject(type, targetSecId = null) {
@@ -363,6 +818,8 @@ export class ProjectOverviewView {
     }
     this.state.isPickerOpen = false;
     this.state.previewDetailsComp = null;
+    this.state.selectedType = 'component';
+    this.state.selectedId = newComp.id;
     this.render();
 
     showToast(`${regEntry?.name || 'Component'} added to ${destName}.`, 'success');
@@ -411,67 +868,68 @@ export class ProjectOverviewView {
     const allCompIds = section.componentOrder || [];
     const filteredCompIds = allCompIds.filter(cId => this.matchesFilter(project.components?.[cId], activeFilter, searchFilter));
     const isMenuOpen = this.state.activeMenuId === sectionId;
+    const isSelected = this.state.selectedType === 'section' && this.state.selectedId === sectionId;
 
     return `
-      <div class="section-card" data-section-id="${sectionId}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-        <div class="section-card-header" data-toggle-sec="${sectionId}" style="background: #FAFAFA; border-bottom: 1px solid #EFEFEF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-          <div class="section-header-left" style="display: flex; align-items: center; gap: 10px;">
-            <svg class="section-toggle-icon ${section.collapsed ? 'collapsed' : ''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s ease; transform: ${section.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}">
+      <div class="section-card ${isSelected ? 'is-selected' : ''}" data-section-id="${sectionId}">
+        <div class="section-card-header">
+          <button type="button" class="section-collapse-toggle" data-toggle-sec="${sectionId}" aria-label="${section.collapsed ? 'Expand section' : 'Collapse section'}">
+            <svg class="section-toggle-icon ${section.collapsed ? 'collapsed' : ''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-            <h3 class="section-title" style="font-size: 1rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(section.name)}</h3>
-            <span class="section-component-badge" style="background: #E4E7EC; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 12px;">${allCompIds.length} component${allCompIds.length === 1 ? '' : 's'}</span>
-          </div>
+          </button>
 
-          <div class="section-header-right" style="display: flex; align-items: center; gap: 8px;">
-            <button class="btn btn-secondary btn-sm" data-action="add-comp-to-sec" data-sec-id="${sectionId}" style="padding: 3px 8px; font-size: 0.75rem;">
-              + Add Component
+          <button type="button" class="section-select-target" data-action="select-node" data-node-type="section" data-node-id="${sectionId}" aria-label="Select section ${escapeHTML(section.name)}" aria-pressed="${isSelected}">
+            <div class="section-header-left">
+              <h3 class="section-title">${escapeHTML(section.name)}</h3>
+              <span class="section-component-badge">${allCompIds.length} ${allCompIds.length === 1 ? 'component' : 'components'}</span>
+            </div>
+          </button>
+
+          <div class="section-header-right">
+            <button class="btn btn-secondary btn-sm" data-action="add-comp-to-sec" data-sec-id="${sectionId}">
+              + Component
             </button>
-            <button class="project-menu-btn" data-action="section-menu" data-sec-id="${sectionId}" aria-label="Section options" style="width: 28px; height: 28px;">
+            <button class="project-menu-btn" data-action="section-menu" data-sec-id="${sectionId}" aria-label="Section options">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
             </button>
           </div>
         </div>
 
-        <div class="section-card-body ${section.collapsed ? 'collapsed' : ''}" style="padding: 12px 16px; display: ${section.collapsed ? 'none' : 'flex'}; flex-direction: column; gap: 8px;">
+        <div class="section-card-body ${section.collapsed ? 'collapsed' : ''}" style="display: ${section.collapsed ? 'none' : 'flex'};">
           ${filteredCompIds.length > 0 ? `
             ${filteredCompIds.map((cId, idx) => this.renderComponentRow(project, cId, sectionId, idx, filteredCompIds.length)).join('')}
           ` : allCompIds.length === 0 ? `
-            <div class="section-quick-start-box" style="padding: 20px 16px; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px;">
-              <div style="max-width: 480px;">
-                <p style="font-size: 0.875rem; font-weight: 600; color: #1E293B; margin: 0 0 4px 0;">Start building ${escapeHTML(section.name)}</p>
-                <p style="font-size: 0.8125rem; color: #64748B; margin: 0;">Add an interactive block or choose from popular AT&amp;T interaction patterns:</p>
-              </div>
-              <div class="quick-add-chips-grid" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="multiple-choice" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
-                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Multiple Choice
+            <div class="section-quick-start-box">
+              <p style="font-size: 0.875rem; font-weight: 600; color: #1E293B; margin: 0 0 4px 0;">Start building ${escapeHTML(section.name)}</p>
+              <p style="font-size: 0.8125rem; color: #64748B; margin: 0 0 10px 0;">Add an interactive component to this section:</p>
+              <div class="quick-add-chips-grid">
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="accordion">
+                  + Accordion
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="accordion" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
-                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Accordion
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="multiple-choice">
+                  + Multiple Choice
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="card-carousel" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
-                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Card Carousel
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="card-carousel">
+                  + Card Carousel
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="scenario" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
-                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Scenario
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="interactive-video" style="font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 20px;">
-                  <span style="color: var(--att-cobalt, #00388F); font-weight: 700;">+</span> Interactive Video
+                <button type="button" class="btn btn-secondary btn-sm quick-add-chip" data-action="quick-add-comp" data-sec-id="${sectionId}" data-comp-type="scenario">
+                  + Scenario
                 </button>
               </div>
-              <button type="button" class="btn btn-primary btn-sm" data-action="add-comp-to-sec" data-sec-id="${sectionId}" style="margin-top: 4px; padding: 6px 16px;">
+              <button type="button" class="btn btn-primary btn-sm" data-action="add-comp-to-sec" data-sec-id="${sectionId}" style="margin-top: 8px;">
                 Browse All 26 Components
               </button>
             </div>
           ` : `
-            <div class="section-empty-hint" style="font-size: 0.8125rem; color: #777; padding: 12px 8px;">
+            <div class="section-empty-hint">
               No components match the current filter.
             </div>
           `}
         </div>
 
         ${isMenuOpen ? `
-          <div class="project-action-menu" style="top: 40px; right: 24px; position: absolute; z-index: 20; background: #fff; border: 1px solid #DCDFE3; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 4px 0; min-width: 150px;">
+          <div class="project-action-menu">
             <button class="project-menu-item" data-action="rename-sec" data-sec-id="${sectionId}">Rename Section</button>
             <button class="project-menu-item" data-action="duplicate-sec" data-sec-id="${sectionId}">Duplicate Section</button>
             ${index > 0 ? `<button class="project-menu-item" data-action="move-sec-up" data-sec-id="${sectionId}">Move Up</button>` : ''}
@@ -488,44 +946,48 @@ export class ProjectOverviewView {
     if (!comp) return '';
 
     const isMenuOpen = this.state.activeMenuId === compId;
+    const isSelected = this.state.selectedType === 'component' && this.state.selectedId === compId;
     const registryEntry = COMPONENT_REGISTRY.find(r => r.id === comp.type);
     const typeLabel = registryEntry?.name || comp.type;
-    const statusClass = comp.status === 'ready' ? 'status-ready' : comp.status === 'in_review' ? 'status-review' : 'status-draft';
+    const statusClass = comp.status === 'ready' ? 'status-ready' : (comp.status === 'in_review' || comp.status === 'in-review') ? 'status-review' : 'status-draft';
 
     return `
-      <div class="component-row" data-comp-id="${compId}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #FAFAFA; border: 1px solid #EAEAEA; border-radius: 8px; position: relative;">
-        <div class="component-row-left" style="display: flex; align-items: center; gap: 10px;">
-          <span class="component-drag-handle" title="Position in section" style="color: #999; font-size: 0.75rem; font-weight: 700;">#${index + 1}</span>
-          <span class="component-type-badge" style="font-size: 0.75rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 2px 8px; border-radius: 4px;">${escapeHTML(typeLabel)}</span>
-          <h4 class="component-name" style="font-size: 0.875rem; font-weight: 600; color: #111; margin: 0;">${escapeHTML(comp.name)}</h4>
-          
-          <!-- Editorial Status Badge -->
-          <div class="editorial-status-dropdown-wrapper" style="display: inline-block;">
-            <select class="component-status-select ${statusClass}" data-action="change-status" data-comp-id="${compId}" aria-label="Status for ${escapeHTML(comp.name)}" style="font-size: 0.6875rem; font-weight: 700; padding: 2px 6px; border-radius: 12px; border: 1px solid #DCDFE3; cursor: pointer;">
+      <div class="component-row ${isSelected ? 'is-selected' : ''}" data-comp-id="${compId}">
+        <button type="button" class="component-select-target" data-action="select-node" data-node-type="component" data-node-id="${compId}" aria-label="Select component ${escapeHTML(comp.name)}" aria-pressed="${isSelected}">
+          <div class="component-row-left">
+            <span class="component-drag-handle" title="Position in section">#${index + 1}</span>
+            <span class="component-type-badge">${escapeHTML(typeLabel)}</span>
+            <h4 class="component-name">${escapeHTML(comp.name)}</h4>
+          </div>
+        </button>
+
+        <div class="component-row-right">
+          <!-- Editorial Status Dropdown Badge -->
+          <div class="editorial-status-dropdown-wrapper">
+            <select class="component-status-select ${statusClass}" data-action="change-status" data-comp-id="${compId}" aria-label="Status for ${escapeHTML(comp.name)}">
               <option value="draft" ${comp.status === 'draft' ? 'selected' : ''}>Draft</option>
-              <option value="in_review" ${comp.status === 'in_review' ? 'selected' : ''}>In Review</option>
+              <option value="in_review" ${comp.status === 'in_review' || comp.status === 'in-review' ? 'selected' : ''}>In Review</option>
               <option value="ready" ${comp.status === 'ready' ? 'selected' : ''}>Ready</option>
             </select>
           </div>
-        </div>
 
-        <div class="component-row-right" style="display: flex; align-items: center; gap: 8px;">
-          <button class="btn btn-secondary btn-sm" data-action="edit-comp" data-comp-id="${compId}" style="padding: 4px 10px; font-size: 0.8125rem; display: inline-flex; align-items: center; gap: 6px;" aria-label="Edit component ${escapeHTML(comp.name)}">
+          <button class="btn btn-secondary btn-sm" data-action="edit-comp" data-comp-id="${compId}" aria-label="Open Focus Editor for ${escapeHTML(comp.name)}">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-            <span>Edit</span>
+            <span>Focus Edit</span>
           </button>
           
           <!-- Keyboard Move buttons -->
-          ${index > 0 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-up" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Up" aria-label="Move ${escapeHTML(comp.name)} Up" style="padding: 4px 8px; display: inline-flex; align-items: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : ''}
-          ${index < totalInGroup - 1 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-down" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Down" aria-label="Move ${escapeHTML(comp.name)} Down" style="padding: 4px 8px; display: inline-flex; align-items: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : ''}
+          ${index > 0 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-up" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Up" aria-label="Move ${escapeHTML(comp.name)} Up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : ''}
+          ${index < totalInGroup - 1 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-down" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Down" aria-label="Move ${escapeHTML(comp.name)} Down"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : ''}
 
-          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options" style="width: 28px; height: 28px;">
+          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
           </button>
         </div>
 
         ${isMenuOpen ? `
-          <div class="project-action-menu" style="top: 36px; right: 16px; position: absolute; z-index: 20; background: #fff; border: 1px solid #DCDFE3; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 4px 0; min-width: 140px;">
+          <div class="project-action-menu">
+            <button class="project-menu-item" data-action="open-focus-editor" data-comp-id="${compId}">Open Focus Editor</button>
             <button class="project-menu-item" data-action="duplicate-comp" data-comp-id="${compId}">Duplicate</button>
             <button class="project-menu-item" data-action="rename-comp" data-comp-id="${compId}">Rename</button>
             <button class="project-menu-item text-danger" data-action="delete-comp" data-comp-id="${compId}" data-sec-id="${sectionId || ''}">Delete</button>
@@ -539,8 +1001,14 @@ export class ProjectOverviewView {
     let list = COMPONENT_REGISTRY || [];
     const isFiltered = Boolean(this.state.pickerSearch.trim() || (this.state.pickerCategory && this.state.pickerCategory !== 'all'));
     
-    // Category Filter
-    if (this.state.pickerCategory && this.state.pickerCategory !== 'all') {
+    // Category or Quick Views Filter
+    if (this.state.pickerCategory === 'recommended') {
+      list = list.filter(c => c.tier === 'flagship' || c.complexity === 'Standard');
+    } else if (this.state.pickerCategory === 'favorites') {
+      list = list.filter(c => this.state.favorites.has(c.id));
+    } else if (this.state.pickerCategory === 'recent') {
+      list = list.filter(c => (this.state.recentlyUsed || []).includes(c.id));
+    } else if (this.state.pickerCategory && this.state.pickerCategory !== 'all') {
       list = list.filter(c => c.categoryId === this.state.pickerCategory || c.category === this.state.pickerCategory);
     }
 
@@ -553,22 +1021,22 @@ export class ProjectOverviewView {
     const sectionOrder = project.sectionOrder || [];
 
     return `
-      <div class="modal-overlay is-active drawer-overlay" id="picker-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title" style="display: flex; justify-content: flex-end; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000;">
-        <div class="modal-card component-library-drawer" style="max-width: 580px; width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--att-surface, #ffffff); border-left: 1px solid var(--att-border, #DCDFE3); box-shadow: -8px 0 32px rgba(0,0,0,0.15); overflow: hidden; animation: slideInRight 0.2s ease-out;">
-          <div class="modal-header" style="padding: 18px 24px; border-bottom: 1px solid var(--att-border, #EAEAEA); display: flex; justify-content: space-between; align-items: center; background: var(--att-surface, #FAFAFA);">
+      <div class="modal-overlay is-active drawer-overlay" id="picker-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title">
+        <div class="modal-card component-library-drawer">
+          <div class="modal-header">
             <div>
-              <h2 id="picker-modal-title" class="modal-title" style="font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--text-main, #111);">Component Library</h2>
-              <p style="font-size: 0.8125rem; color: #666; margin: 2px 0 0 0;">Pick from 26 certified AT&amp;T interactive blocks.</p>
+              <h2 id="picker-modal-title" class="modal-title">Component Library</h2>
+              <p class="modal-subtitle">Pick from 26 AT&amp;T brand-aligned interactive blocks.</p>
             </div>
             <button id="picker-close-btn" class="project-menu-btn" aria-label="Close component library" type="button">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
 
-          <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
-            <!-- Target Section Chooser & Search -->
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-              <div style="flex: 1; min-width: 240px; position: relative;">
+          <div class="modal-body">
+            <!-- Target Section Chooser & Search Bar (Sticky Header Area) -->
+            <div class="picker-sticky-controls">
+              <div class="picker-search-bar">
                 <input
                   id="picker-search-input"
                   class="form-input"
@@ -577,93 +1045,101 @@ export class ProjectOverviewView {
                   aria-label="Search components in picker"
                   value="${escapeHTML(this.state.pickerSearch)}"
                   autofocus
-                  style="width: 100%;"
                 />
               </div>
 
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <label for="picker-section-select" style="font-size: 0.8125rem; font-weight: 600; color: #444;">Add into:</label>
-                <select id="picker-section-select" class="form-select" aria-label="Destination section" style="padding: 6px 12px; font-size: 0.8125rem;">
+              <div class="picker-destination-bar">
+                <label for="picker-section-select">Add into:</label>
+                <select id="picker-section-select" class="form-select" aria-label="Destination section">
                   ${sectionOrder.map(sId => `
                     <option value="${sId}" ${this.state.pickerTargetSectionId === sId ? 'selected' : ''}>${escapeHTML(sections[sId]?.name || 'Section')}</option>
                   `).join('')}
                   <option value="" ${!this.state.pickerTargetSectionId ? 'selected' : ''}>Unsectioned Area (Standalone)</option>
                 </select>
               </div>
-            </div>
 
-            <!-- Category Filter Tabs -->
-            <div class="picker-category-tabs" style="display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #EFEFEF; padding-bottom: 10px;">
-              <button class="filter-chip ${this.state.pickerCategory === 'all' ? 'active' : ''}" data-picker-cat="all">All (${COMPONENT_REGISTRY.length})</button>
-              ${CATEGORIES.map(cat => {
-                const count = COMPONENT_REGISTRY.filter(c => c.categoryId === cat.id || c.category === cat.id).length;
-                return `
-                  <button class="filter-chip ${this.state.pickerCategory === cat.id ? 'active' : ''}" data-picker-cat="${cat.id}">
-                    ${escapeHTML(cat.name)} (${count})
-                  </button>
-                `;
-              }).join('')}
+              <!-- Quick View & Category Filter Chips -->
+              <div class="picker-category-tabs">
+                <button class="filter-chip ${this.state.pickerCategory === 'all' ? 'active' : ''}" data-picker-cat="all">All (${COMPONENT_REGISTRY.length})</button>
+                <button class="filter-chip ${this.state.pickerCategory === 'recommended' ? 'active' : ''}" data-picker-cat="recommended">★ Recommended</button>
+                <button class="filter-chip ${this.state.pickerCategory === 'favorites' ? 'active' : ''}" data-picker-cat="favorites">Favorites (${this.state.favorites.size})</button>
+                <button class="filter-chip ${this.state.pickerCategory === 'recent' ? 'active' : ''}" data-picker-cat="recent">Recent</button>
+                ${CATEGORIES.map(cat => {
+                  const count = COMPONENT_REGISTRY.filter(c => c.categoryId === cat.id || c.category === cat.id).length;
+                  return `
+                    <button class="filter-chip ${this.state.pickerCategory === cat.id ? 'active' : ''}" data-picker-cat="${cat.id}">
+                      ${escapeHTML(cat.name)} (${count})
+                    </button>
+                  `;
+                }).join('')}
+              </div>
             </div>
 
             <!-- Search Result Meta Bar -->
-            <div class="picker-result-meta" aria-live="polite" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: #555;">
+            <div class="picker-result-meta" aria-live="polite">
               <span>Showing <strong>${list.length}</strong> of ${COMPONENT_REGISTRY.length} components</span>
               ${isFiltered ? `
-                <button type="button" class="btn btn-secondary btn-sm" id="picker-clear-filters-btn" style="font-size: 0.75rem; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="picker-clear-filters-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   <span>Clear filters</span>
                 </button>
               ` : ''}
             </div>
 
-            <!-- Components Grid -->
-            <div class="picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
-              ${list.map(c => `
-                <div class="picker-item-card" data-comp-type="${c.id}" style="background: #ffffff; border: 1px solid #DCDFE3; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; transition: all 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                  <!-- Wireframe Structural Illustration -->
-                  <div class="picker-item-wireframe-banner" style="background: #F4F6F9; border-radius: 8px; padding: 6px 10px; display: flex; justify-content: center; align-items: center; border: 1px solid #EAEAEA; height: 72px; overflow: hidden;">
-                    ${c.thumbnail || getComponentThumbnailSvg(c.id, { width: 110, height: 60 })}
-                  </div>
-
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                    <div>
-                      <h3 class="picker-item-title" style="font-size: 0.9375rem; font-weight: 700; margin: 0; color: #111;">${escapeHTML(c.name)}</h3>
-                      <span class="component-type-badge" style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 5px; border-radius: 4px;">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
+            <!-- Responsive 2-Column Components Grid -->
+            <div class="picker-grid">
+              ${list.map(c => {
+                const isFav = this.state.favorites.has(c.id);
+                return `
+                  <div class="picker-item-card" data-comp-type="${c.id}">
+                    <!-- Wireframe Thumbnail -->
+                    <div class="picker-item-wireframe-banner">
+                      ${c.thumbnail || getComponentThumbnailSvg(c.id, { width: 120, height: 64 })}
                     </div>
-                    ${c.tierLabel ? `<span class="component-tier-badge" style="font-size: 0.6875rem; background: #EFEFEF; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.tierLabel)}</span>` : ''}
-                  </div>
-                  
-                  <p class="picker-item-desc" style="font-size: 0.8125rem; color: #555; margin: 0; line-height: 1.45; min-height: 2.8em;" title="${escapeHTML(c.description || '')}">
-                    ${escapeHTML(c.description || '')}
-                  </p>
 
-                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                    <span class="picker-card-chip" style="font-size: 0.6875rem; background: #E8F5E9; color: #2E7D32; padding: 2px 6px; border-radius: 4px; font-weight: 600;">WCAG 2.2 AA</span>
-                    ${c.complexity ? `<span class="picker-card-chip" style="font-size: 0.6875rem; background: #F3F4F5; color: #555; padding: 2px 6px; border-radius: 4px;">${escapeHTML(c.complexity)}</span>` : ''}
-                  </div>
+                    <div class="picker-card-header">
+                      <div>
+                        <h3 class="picker-item-title">${escapeHTML(c.name)}</h3>
+                        <span class="component-type-badge">${escapeHTML(c.categoryName || c.categoryId || 'Interactive')}</span>
+                      </div>
+                      <button type="button" class="favorite-toggle-btn ${isFav ? 'active' : ''}" data-action="toggle-fav-comp" data-comp-type="${c.id}" aria-label="${isFav ? 'Remove from favorites' : 'Add to favorites'}" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+                        ${isFav ? '★' : '☆'}
+                      </button>
+                    </div>
+                    
+                    <p class="picker-item-desc" title="${escapeHTML(c.description || '')}">
+                      ${escapeHTML(c.description || '')}
+                    </p>
 
-                  <div style="margin-top: auto; display: flex; gap: 8px; padding-top: 4px;">
-                    <button class="btn btn-secondary btn-sm" data-action="preview-picker-item" data-comp-type="${c.id}" style="flex: 1; font-size: 0.75rem;">
-                      Details &amp; Info
-                    </button>
-                    <button class="btn btn-primary btn-sm" data-action="select-picker-item" data-comp-type="${c.id}" style="flex: 1; font-size: 0.75rem;">
-                      + Add Block
-                    </button>
+                    ${c.bestWhen ? `
+                      <div class="picker-card-bestfor">
+                        <strong>Best for:</strong> ${escapeHTML(c.bestWhen.length > 70 ? `${c.bestWhen.substring(0, 67)}…` : c.bestWhen)}
+                      </div>
+                    ` : ''}
+
+                    <div class="picker-card-actions">
+                      <button class="btn btn-secondary btn-sm" data-action="preview-picker-item" data-comp-type="${c.id}">
+                        Details
+                      </button>
+                      <button class="btn btn-primary btn-sm" data-action="select-picker-item" data-comp-type="${c.id}">
+                        + Add
+                      </button>
+                    </div>
                   </div>
-                </div>
-              `).join('')}
+                `;
+              }).join('')}
 
               ${list.length === 0 ? `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; color: #666; background: #FAFAFA; border-radius: 12px; border: 1px dashed #DCDFE3;">
-                  <p style="font-size: 0.9375rem; font-weight: 600; margin: 0 0 8px 0; color: #333;">No components match your search</p>
-                  <p style="font-size: 0.8125rem; margin: 0 0 16px 0;">Try adjusting your search keywords or switching category filters.</p>
-                  <button type="button" class="btn btn-secondary btn-sm" id="picker-no-results-reset-btn">Clear search &amp; filters</button>
+                <div class="picker-empty-state">
+                  <p class="picker-empty-title">No components found</p>
+                  <p class="picker-empty-desc">Try adjusting your search query or switching filter tabs.</p>
+                  <button type="button" class="btn btn-secondary btn-sm" id="picker-no-results-reset-btn">Reset filters</button>
                 </div>
               ` : ''}
             </div>
           </div>
 
-          <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid #EAEAEA; display: flex; justify-content: flex-end; background: #FAFAFA;">
+          <div class="modal-footer">
             <button id="picker-cancel-btn" class="btn btn-secondary btn-sm" type="button">Close</button>
           </div>
         </div>
@@ -673,42 +1149,53 @@ export class ProjectOverviewView {
 
   renderDetailsModal(comp, _project) {
     return `
-      <div class="modal-overlay is-active" id="details-modal-overlay" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; padding: 20px;">
-        <div class="modal-card" style="max-width: 650px; width: 100%; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column;">
-          <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid #EFEFEF; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 1.125rem; font-weight: 700;">${escapeHTML(comp.name)} Details</h3>
+      <div class="modal-overlay is-active" id="details-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+        <div class="modal-card" style="max-width: 680px;">
+          <div class="modal-header">
+            <div>
+              <h3 id="details-modal-title" style="margin: 0; font-size: 1.125rem; font-weight: 700;">${escapeHTML(comp.name)}</h3>
+              <span class="component-type-badge" style="margin-top: 4px;">${escapeHTML(comp.categoryName || comp.categoryId || 'Interactive')}</span>
+            </div>
             <button id="details-close-btn" class="project-menu-btn" aria-label="Close details">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
-          <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="background: var(--att-surface-sunken, #F4F6F9); padding: 14px; border-radius: 10px; display: flex; justify-content: center; align-items: center; border: 1px solid var(--att-border, #EAEAEA);">
+              ${comp.thumbnail || getComponentThumbnailSvg(comp.id, { width: 220, height: 110 })}
+            </div>
+
             <div>
-              <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: #333;">Description & Purpose</h4>
-              <p style="margin: 0; font-size: 0.8125rem; color: #555; line-height: 1.4;">${escapeHTML(comp.description)}</p>
+              <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: var(--text-main, #111);">Description &amp; Purpose</h4>
+              <p style="margin: 0; font-size: 0.8125rem; color: #555; line-height: 1.5;">${escapeHTML(comp.description)}</p>
             </div>
 
             ${comp.bestWhen ? `
               <div>
-                <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: #333;">Best Use Cases</h4>
-                <p style="margin: 0; font-size: 0.8125rem; color: #555; line-height: 1.4;">${escapeHTML(comp.bestWhen)}</p>
+                <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: var(--text-main, #111);">Recommended Use Cases</h4>
+                <p style="margin: 0; font-size: 0.8125rem; color: #555; line-height: 1.5;">${escapeHTML(comp.bestWhen)}</p>
               </div>
             ` : ''}
 
             ${comp.differentiator ? `
               <div style="background: #F0FDF4; border: 1px solid #BBF7D0; padding: 10px 14px; border-radius: 8px;">
-                <h4 style="margin: 0 0 2px 0; font-size: 0.8125rem; font-weight: 700; color: #15803D;">Why Choose This Custom Component:</h4>
-                <p style="margin: 0; font-size: 0.75rem; color: #166534;">${escapeHTML(comp.differentiator)}</p>
+                <h4 style="margin: 0 0 2px 0; font-size: 0.8125rem; font-weight: 700; color: #15803D;">Why Choose This Component:</h4>
+                <p style="margin: 0; font-size: 0.75rem; color: #166534; line-height: 1.4;">${escapeHTML(comp.differentiator)}</p>
               </div>
             ` : ''}
 
-            ${comp.riseEquivalent ? `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.8125rem; background: var(--att-surface-sunken, #FAFAFA); padding: 12px; border-radius: 8px;">
               <div>
-                <h4 style="margin: 0 0 4px 0; font-size: 0.875rem; font-weight: 700; color: #333;">Rise Comparison</h4>
-                <p style="margin: 0; font-size: 0.8125rem; color: #555;">${escapeHTML(comp.riseEquivalent)}</p>
+                <strong>Rise Compatibility:</strong>
+                <p style="margin: 2px 0 0 0; color: #555;">${escapeHTML(comp.riseEquivalent || 'Designed for seamless Rise integration')}</p>
               </div>
-            ` : ''}
+              <div>
+                <strong>Accessibility Support:</strong>
+                <p style="margin: 2px 0 0 0; color: #555;">Built to support WCAG 2.2 AA requirements with full keyboard navigation.</p>
+              </div>
+            </div>
           </div>
-          <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid #EFEFEF; display: flex; justify-content: flex-end; gap: 8px;">
+          <div class="modal-footer">
             <button id="details-cancel-btn" class="btn btn-secondary btn-sm">Close</button>
             <button id="details-add-btn" class="btn btn-primary btn-sm" data-comp-type="${comp.id}">+ Add Component</button>
           </div>
@@ -721,6 +1208,22 @@ export class ProjectOverviewView {
     // Back to dashboard
     this.container.querySelector('#wp-back-btn')?.addEventListener('click', () => {
       if (this.onBackToDashboard) this.onBackToDashboard();
+    });
+
+    // Course Overview Selection Banner
+    this.container.querySelector('#wp-course-banner')?.addEventListener('click', (e) => {
+      if (e.target.closest('#wp-rename-title-btn')) return;
+      this.state.selectedType = 'course';
+      this.state.selectedId = null;
+      this.render();
+    });
+
+    // Device Viewport Toggles in Canvas
+    this.container.querySelectorAll('[data-canvas-device]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.state.canvasDevice = btn.dataset.canvasDevice;
+        this.render();
+      });
     });
 
     // Top workspace action buttons
@@ -747,7 +1250,8 @@ export class ProjectOverviewView {
     });
 
     // Rename project title
-    this.container.querySelector('#wp-rename-title-btn')?.addEventListener('click', async () => {
+    this.container.querySelector('#wp-rename-title-btn')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
       const project = this.getProject();
       const newName = await showPromptDialog({
         title: 'Edit Course Title',
@@ -777,23 +1281,6 @@ export class ProjectOverviewView {
       });
     });
 
-    // Expand all / Collapse all sections
-    this.container.querySelector('#wp-expand-all-btn')?.addEventListener('click', () => {
-      this.updateProject(p => {
-        for (const s of Object.values(p.sections || {})) {
-          s.collapsed = false;
-        }
-      });
-    });
-
-    this.container.querySelector('#wp-collapse-all-btn')?.addEventListener('click', () => {
-      this.updateProject(p => {
-        for (const s of Object.values(p.sections || {})) {
-          s.collapsed = true;
-        }
-      });
-    });
-
     // Add Section button
     const addSectionHandler = async () => {
       const name = await showPromptDialog({
@@ -811,12 +1298,15 @@ export class ProjectOverviewView {
           p.sectionOrder.push(newSec.id);
           p.sections[newSec.id] = newSec;
         });
+        this.state.selectedType = 'section';
+        this.state.selectedId = newSec.id;
+        this.render();
       }
     };
     this.container.querySelector('#wp-add-section-btn')?.addEventListener('click', addSectionHandler);
     this.container.querySelector('#wp-empty-add-sec-btn')?.addEventListener('click', addSectionHandler);
 
-    // Add component buttons
+    // Add component picker trigger
     const openPickerHandler = (secId = undefined, isExplicitStandalone = false, triggerBtn = null) => {
       const project = this.getProject();
       this.lastPickerTrigger = triggerBtn || document.activeElement;
@@ -852,16 +1342,64 @@ export class ProjectOverviewView {
       });
     });
 
-    // Toggle section collapse
+    // Toggle section collapse & section selection
     this.container.querySelectorAll('[data-toggle-sec]').forEach(header => {
       header.addEventListener('click', (e) => {
         if (e.target.closest('[data-action]')) return;
         const secId = header.dataset.toggleSec;
+        this.state.selectedType = 'section';
+        this.state.selectedId = secId;
         this.updateProject(p => {
           if (p.sections?.[secId]) {
             p.sections[secId].collapsed = !p.sections[secId].collapsed;
           }
         });
+      });
+    });
+
+    // Component row selection
+    this.container.querySelectorAll('.component-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action]') || e.target.closest('select') || e.target.closest('button')) return;
+        const compId = row.dataset.compId;
+        this.state.selectedType = 'component';
+        this.state.selectedId = compId;
+        this.render();
+      });
+    });
+
+    this.container.querySelectorAll('[data-action="select-comp-preview"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.state.selectedType = 'component';
+        this.state.selectedId = btn.dataset.compId;
+        this.render();
+      });
+    });
+
+    // Open Focus Editor button
+    this.container.querySelectorAll('[data-action="open-focus-editor"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const compId = btn.dataset.compId;
+        const project = this.getProject();
+        const comp = project.components?.[compId];
+        if (comp && this.onEditComponent) {
+          this.onEditComponent(project, comp);
+        }
+      });
+    });
+
+    // Focus Edit button on component row
+    this.container.querySelectorAll('[data-action="edit-comp"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const compId = btn.dataset.compId;
+        const project = this.getProject();
+        const comp = project.components?.[compId];
+        if (comp && this.onEditComponent) {
+          this.onEditComponent(project, comp);
+        }
       });
     });
 
@@ -907,7 +1445,6 @@ export class ProjectOverviewView {
           description: sec.description
         });
 
-        // Duplicate components in this section
         const newCompIds = [];
         const newComps = {};
         for (const cId of sec.componentOrder || []) {
@@ -950,6 +1487,9 @@ export class ProjectOverviewView {
             }
             delete p.sections[secId];
           });
+          this.state.selectedType = 'course';
+          this.state.selectedId = null;
+          this.render();
         }
       });
     });
@@ -984,20 +1524,35 @@ export class ProjectOverviewView {
       });
     });
 
-    // Component Edit button
-    this.container.querySelectorAll('[data-action="edit-comp"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const compId = btn.dataset.compId;
-        const project = this.getProject();
-        const comp = project.components?.[compId];
-        if (comp && this.onEditComponent) {
-          this.onEditComponent(project, comp);
+    // Inspector component name editing
+    const inspNameInput = this.container.querySelector('#insp-comp-name');
+    if (inspNameInput) {
+      inspNameInput.addEventListener('change', (e) => {
+        const newName = e.target.value.trim();
+        const compId = this.state.selectedId;
+        if (newName && compId) {
+          this.updateProject(p => {
+            if (p.components?.[compId]) p.components[compId].name = newName;
+          });
         }
       });
-    });
+    }
 
-    // Component Status Change select
+    // Inspector component status editing
+    const inspStatusSelect = this.container.querySelector('#insp-comp-status');
+    if (inspStatusSelect) {
+      inspStatusSelect.addEventListener('change', (e) => {
+        const newStatus = e.target.value;
+        const compId = this.state.selectedId;
+        if (compId) {
+          this.updateProject(p => {
+            if (p.components?.[compId]) p.components[compId].status = newStatus;
+          });
+        }
+      });
+    }
+
+    // Component Status Change select in row
     this.container.querySelectorAll('[data-action="change-status"]').forEach(select => {
       select.addEventListener('change', (e) => {
         e.stopPropagation();
@@ -1129,17 +1684,46 @@ export class ProjectOverviewView {
             }
             delete p.components[compId];
           });
+          if (this.state.selectedId === compId) {
+            this.state.selectedType = 'course';
+            this.state.selectedId = null;
+            this.render();
+          }
         }
       });
     });
 
+    // Outline node selection (Course, Section, Component)
+    this.container.querySelectorAll('[data-action="select-node"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nodeType = btn.dataset.nodeType;
+        const nodeId = btn.dataset.nodeId || null;
+        this.selectNode(nodeType, nodeId);
+      });
+    });
+
+    // Toggle section collapse
+    this.container.querySelectorAll('[data-toggle-sec]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const secId = btn.dataset.toggleSec;
+        this.updateProject(p => {
+          if (p.sections?.[secId]) {
+            p.sections[secId].collapsed = !p.sections[secId].collapsed;
+          }
+        });
+      });
+    });
+
     // Modal Picker handlers
+    const modalHost = this.getModalHost() || this.container;
     if (this.state.isPickerOpen) {
-      const modalOverlay = this.container.querySelector('#picker-modal-overlay');
-      const closeBtn = this.container.querySelector('#picker-close-btn');
-      const cancelBtn = this.container.querySelector('#picker-cancel-btn');
-      const searchInput = this.container.querySelector('#picker-search-input');
-      const sectionSelect = this.container.querySelector('#picker-section-select');
+      const modalOverlay = modalHost.querySelector('#picker-modal-overlay');
+      const closeBtn = modalHost.querySelector('#picker-close-btn');
+      const cancelBtn = modalHost.querySelector('#picker-cancel-btn');
+      const searchInput = modalHost.querySelector('#picker-search-input');
+      const sectionSelect = modalHost.querySelector('#picker-section-select');
 
       if (this.cleanupPickerIsolation) {
         this.cleanupPickerIsolation();
@@ -1184,8 +1768,8 @@ export class ProjectOverviewView {
         this.render();
       };
 
-      this.container.querySelector('#picker-clear-filters-btn')?.addEventListener('click', resetFilters);
-      this.container.querySelector('#picker-no-results-reset-btn')?.addEventListener('click', resetFilters);
+      modalHost.querySelector('#picker-clear-filters-btn')?.addEventListener('click', resetFilters);
+      modalHost.querySelector('#picker-no-results-reset-btn')?.addEventListener('click', resetFilters);
 
       if (sectionSelect) {
         sectionSelect.addEventListener('change', (e) => {
@@ -1193,14 +1777,29 @@ export class ProjectOverviewView {
         });
       }
 
-      this.container.querySelectorAll('[data-picker-cat]').forEach(btn => {
+      modalHost.querySelectorAll('[data-picker-cat]').forEach(btn => {
         btn.addEventListener('click', () => {
           this.state.pickerCategory = btn.dataset.pickerCat;
           this.render();
         });
       });
 
-      this.container.querySelectorAll('[data-action="preview-picker-item"]').forEach(btn => {
+      // Favorite toggle in component card
+      modalHost.querySelectorAll('[data-action="toggle-fav-comp"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const compId = btn.dataset.compType;
+          if (this.state.favorites.has(compId)) {
+            this.state.favorites.delete(compId);
+          } else {
+            this.state.favorites.add(compId);
+          }
+          saveFavorites(this.state.favorites);
+          this.render();
+        });
+      });
+
+      modalHost.querySelectorAll('[data-action="preview-picker-item"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.lastDetailsTrigger = btn;
@@ -1210,7 +1809,7 @@ export class ProjectOverviewView {
         });
       });
 
-      this.container.querySelectorAll('[data-action="select-picker-item"]').forEach(btn => {
+      modalHost.querySelectorAll('[data-action="select-picker-item"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.addComponentToProject(btn.dataset.compType, this.state.pickerTargetSectionId);
@@ -1220,10 +1819,10 @@ export class ProjectOverviewView {
 
     // Component details modal handlers
     if (this.state.previewDetailsComp) {
-      const detailsOverlay = this.container.querySelector('#details-modal-overlay');
-      const detailsCloseBtn = this.container.querySelector('#details-close-btn');
-      const detailsCancelBtn = this.container.querySelector('#details-cancel-btn');
-      const detailsAddBtn = this.container.querySelector('#details-add-btn');
+      const detailsOverlay = modalHost.querySelector('#details-modal-overlay');
+      const detailsCloseBtn = modalHost.querySelector('#details-close-btn');
+      const detailsCancelBtn = modalHost.querySelector('#details-cancel-btn');
+      const detailsAddBtn = modalHost.querySelector('#details-add-btn');
 
       if (this.cleanupDetailsIsolation) {
         this.cleanupDetailsIsolation();

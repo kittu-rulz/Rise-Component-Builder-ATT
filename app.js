@@ -1002,6 +1002,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               });
             }
           });
+          if (context.selectedComponentId) {
+            projectOverviewInstance.state.selectedType = 'component';
+            projectOverviewInstance.state.selectedId = context.selectedComponentId;
+          }
           projectOverviewInstance.mount();
         }
       } else if (state === 'project-media') {
@@ -1520,14 +1524,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   function performBackToCatalog() {
     if (appState.activeProject) {
       const projId = appState.activeProject.id;
+      const compId = appState.activeComponentInstance?.id;
       appState.activeProject = null;
       appState.activeComponentInstance = null;
       appState.selectedComponent = null;
       appState.currentProjectId = null;
       appState.currentProjectName = '';
-      showState('project-overview', { projectId: projId });
+      showState('project-overview', { projectId: projId, selectedComponentId: compId });
       return;
     }
+    const backBtnLabel = document.getElementById('btn-back-to-catalog-label') || document.querySelector('#btn-back-to-catalog span');
+    if (backBtnLabel) backBtnLabel.textContent = 'Back to Templates';
     appState.selectedComponent = null;
     appState.currentProjectId = null;
     appState.currentProjectName = '';
@@ -2566,6 +2573,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncEditorControls();
     schemaItemEditor.resetToDefaultCollapse(appState.config.items);
     renderDynamicItems();
+    const backBtnLabel = document.getElementById('btn-back-to-catalog-label') || document.querySelector('#btn-back-to-catalog span');
+    if (backBtnLabel) backBtnLabel.textContent = 'Return to Course Workspace';
     showState('editor');
     updateLivePreview();
     history.clear(appState.config);
