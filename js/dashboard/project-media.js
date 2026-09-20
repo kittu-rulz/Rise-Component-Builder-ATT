@@ -3,10 +3,11 @@
  * Manages project-wide media assets stored in IndexedDB and tracks component references.
  */
 
-import { listMedia, saveMedia, deleteMedia } from '../media-storage.js';
-import { createMediaReference } from '../media.js';
+import { listMedia, saveMediaRecord, deleteMediaRecord } from '../media-storage.js';
+import { prepareMediaFile, createMediaReference } from '../media.js';
 import { getProject } from '../storage.js';
 import { showConfirmDialog } from './att-modal.js';
+import { showToast } from '../toast.js';
 
 export class ProjectMediaView {
   constructor({ container, projectId, onBack }) {
@@ -226,35 +227,47 @@ export class ProjectMediaView {
 
     if (fileInput) {
       fileInput.addEventListener('change', async (event) => {
-        const files = Array.from(event.target.files || []);
-        for (const file of files) {
-          const kind = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
-          const ref = createMediaReference({
-            kind,
-            name: file.name,
-            mimeType: file.type,
-            size: file.size
-          });
-          await saveMedia(ref, file);
+        try {
+          const files = Array.from(event.target.files || []);
+          if (!files.length) return;
+          let uploadedCount = 0;
+          for (const file of files) {
+            const kind = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
+            const record = await prepareMediaFile(file, kind);
+            await saveMediaRecord(record);
+            uploadedCount++;
+          }
+          await this.refreshMediaList();
+          this.render();
+          showToast(`${uploadedCount} ${uploadedCount === 1 ? 'asset' : 'assets'} uploaded successfully.`, 'success');
+        } catch (err) {
+          console.error('[ProjectMedia] Upload failed:', err);
+          showToast(`Upload failed: ${err.message}`, 'error', 5000);
+        } finally {
+          fileInput.value = '';
         }
-        await this.refreshMediaList();
-        this.render();
       });
     }
 
     this.container.querySelectorAll('[data-action="delete-media"]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const ok = await showConfirmDialog({
-          title: 'Delete Media Asset',
-          message: 'Are you sure you want to delete this media asset? Any components referencing it will lose their media source.',
-          confirmText: 'Delete Asset',
-          isDanger: true
-        });
-        if (ok) {
-          await deleteMedia(id);
-          await this.refreshMediaList();
-          this.render();
+        try {
+          const id = btn.dataset.id;
+          const ok = await showConfirmDialog({
+            title: 'Delete Media Asset',
+            message: 'Are you sure you want to delete this media asset? Any components referencing it will lose their media source.',
+            confirmText: 'Delete Asset',
+            isDanger: true
+          });
+          if (ok) {
+            await deleteMediaRecord(id);
+            await this.refreshMediaList();
+            this.render();
+            showToast('Media asset deleted.', 'info');
+          }
+        } catch (err) {
+          console.error('[ProjectMedia] Delete failed:', err);
+          showToast(`Could not delete asset: ${err.message}`, 'error', 5000);
         }
       });
     });
