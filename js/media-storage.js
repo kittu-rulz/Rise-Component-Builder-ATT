@@ -162,20 +162,34 @@ export function resolveMediaReference(value) {
 }
 
 export function resolveMediaReferencesForPreview(value) {
-  if (isMediaReference(value)) return resolveMediaAsset(value);
-  if (Array.isArray(value)) return value.map(resolveMediaReferencesForPreview);
-  if (value && typeof value === 'object') {
-    // If this object is an item media structure with type and mediaId or src
-    if (value.type && ['image', 'audio', 'video'].includes(value.type) && (value.mediaId || value.src)) {
-      const resolved = resolveMediaAsset(value.src || value);
-      return {
-        ...value,
-        src: resolved || (typeof value.src === 'string' ? value.src : '')
-      };
-    }
-    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, resolveMediaReferencesForPreview(entry)]));
+  if (!value) return value;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+
+  // 1. If this object is an item-media structure (e.g. from item-media.js)
+  if (typeof value === 'object' && !Array.isArray(value) && (value.placement !== undefined || (value.type && ['image', 'audio', 'video', 'none'].includes(value.type) && (value.mediaId || value.src !== undefined || value.alt !== undefined || value.caption !== undefined)))) {
+    const mediaId = value.mediaId || (value.src && typeof value.src === 'object' ? (value.src.mediaId || value.src.assetId) : '');
+    const resolvedSrc = mediaId ? (peekMediaObjectURL(mediaId) || (typeof value.src === 'string' ? value.src : '')) : (typeof value.src === 'string' ? value.src : resolveMediaAsset(value.src));
+    const posterMediaId = value.posterMediaId || (value.posterSrc && typeof value.posterSrc === 'object' ? (value.posterSrc.mediaId || value.posterSrc.assetId) : '');
+    const resolvedPoster = posterMediaId ? (peekMediaObjectURL(posterMediaId) || (typeof value.posterSrc === 'string' ? value.posterSrc : '')) : (typeof value.posterSrc === 'string' ? value.posterSrc : resolveMediaAsset(value.posterSrc));
+    return {
+      ...value,
+      src: resolvedSrc || (typeof value.src === 'string' ? value.src : ''),
+      posterSrc: resolvedPoster || (typeof value.posterSrc === 'string' ? value.posterSrc : '')
+    };
   }
-  return value;
+
+  // 2. If this is a standalone media reference (e.g. iconImage, backgroundImage, beforeImage, etc.)
+  if (isMediaReference(value)) {
+    return resolveMediaAsset(value);
+  }
+
+  // 3. Arrays
+  if (Array.isArray(value)) {
+    return value.map(resolveMediaReferencesForPreview);
+  }
+
+  // 4. Other objects (e.g. root config, item objects)
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, resolveMediaReferencesForPreview(entry)]));
 }
 
 export async function ensureAllProjectMediaObjectURLs(project, store = defaultStore) {

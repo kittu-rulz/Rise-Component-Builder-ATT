@@ -382,6 +382,37 @@ describe('Item Media Attachment Module (js/item-media.js)', () => {
         expect.arrayContaining([expect.stringContaining('VIDEO media type is selected, but no media source was provided')])
       );
     });
+
+    it('resolves item.media structures properly in preview without collapsing into a string', async () => {
+      const { resolveMediaReferencesForPreview } = await import('../../js/media-storage.js');
+      const config = {
+        items: [
+          {
+            title: 'Uploaded Media Item',
+            content: '<p>Body text</p>',
+            media: {
+              type: 'image',
+              sourceType: 'upload',
+              mediaId: 'med-upload-999',
+              src: {
+                mediaId: 'med-upload-999',
+                name: 'test-upload.png',
+                mimeType: 'image/png'
+              },
+              alt: 'Uploaded test image',
+              placement: 'above',
+              aspectRatio: '16:9',
+              fit: 'contain'
+            }
+          }
+        ]
+      };
+      const resolved = resolveMediaReferencesForPreview(config);
+      expect(typeof resolved.items[0].media).toBe('object');
+      expect(resolved.items[0].media.type).toBe('image');
+      expect(resolved.items[0].media.placement).toBe('above');
+      expect(resolved.items[0].media.alt).toBe('Uploaded test image');
+    });
   });
 });
 

@@ -283,6 +283,7 @@ export function createMediaReference(record, overrides = {}) {
 
 export function isMediaReference(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (value.placement !== undefined && (value.aspectRatio !== undefined || value.fit !== undefined)) return false;
   const id = value.mediaId || value.assetId;
   if (!id || typeof id !== 'string' || !id.trim()) return false;
   const isUploadOrLibrary = value.source === 'upload' || value.source === 'library' || value.sourceType === 'library' || value.sourceType === 'upload' || Boolean(id);
