@@ -16,10 +16,6 @@ test('Accordion item media control allows adding image with responsive placement
   const mediaDetails = firstCard.locator('.item-media-details-shell');
   await expect(mediaDetails).toBeVisible();
 
-  // Open details if not open
-  const summary = mediaDetails.locator('summary');
-  await summary.click();
-
   // Select Image from Media Type select
   const typeSelect = mediaDetails.locator('.item-media-type-select');
   await typeSelect.selectOption('image');
@@ -50,7 +46,6 @@ test('Accordion item media control allows adding image with responsive placement
 test('Accordion item media supports audio with transcript drawer in preview', async ({ page }) => {
   const firstCard = page.locator('#dynamic-items-container > .dynamic-item-card:not(.component-fields-card)').first();
   const mediaDetails = firstCard.locator('.item-media-details-shell');
-  await mediaDetails.locator('summary').click();
 
   const typeSelect = mediaDetails.locator('.item-media-type-select');
   await typeSelect.selectOption('audio');
@@ -74,7 +69,6 @@ test('Accordion item media supports audio with transcript drawer in preview', as
 test('Accordion item media supports video with 16:9 aspect ratio and placement', async ({ page }) => {
   const firstCard = page.locator('#dynamic-items-container > .dynamic-item-card:not(.component-fields-card)').first();
   const mediaDetails = firstCard.locator('.item-media-details-shell');
-  await mediaDetails.locator('summary').click();
 
   const typeSelect = mediaDetails.locator('.item-media-type-select');
   await typeSelect.selectOption('video');

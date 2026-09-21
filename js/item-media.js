@@ -59,6 +59,87 @@ export function createDefaultItemMedia() {
   };
 }
 
+export function getItemMediaType(item) {
+  if (!item || typeof item !== 'object') return 'none';
+  if (typeof item.media === 'string') return item.media;
+  return item.media?.type || item.media?.kind || item.mediaType || 'none';
+}
+
+/**
+ * Creates an empty item media config for a specific type.
+ * @param {ItemMediaType} type 
+ * @returns {ItemMediaConfig}
+ */
+export function createEmptyItemMedia(type) {
+  switch (type) {
+    case 'image':
+      return {
+        type: 'image',
+        sourceType: 'upload',
+        src: '',
+        mediaId: '',
+        fileName: '',
+        mimeType: '',
+        alt: '',
+        decorative: false,
+        caption: '',
+        transcript: '',
+        placement: 'above',
+        aspectRatio: 'original',
+        fit: 'contain',
+        focalPosition: 'center center',
+        posterSrc: '',
+        posterMediaId: '',
+        captionsSrc: '',
+        preload: 'metadata'
+      };
+    case 'audio':
+      return {
+        type: 'audio',
+        sourceType: 'upload',
+        src: '',
+        mediaId: '',
+        fileName: '',
+        mimeType: '',
+        alt: '',
+        decorative: false,
+        caption: '',
+        transcript: '',
+        placement: 'above',
+        aspectRatio: 'original',
+        fit: 'contain',
+        focalPosition: 'center center',
+        posterSrc: '',
+        posterMediaId: '',
+        captionsSrc: '',
+        preload: 'metadata'
+      };
+    case 'video':
+      return {
+        type: 'video',
+        sourceType: 'upload',
+        src: '',
+        mediaId: '',
+        fileName: '',
+        mimeType: '',
+        alt: '',
+        decorative: false,
+        caption: '',
+        transcript: '',
+        placement: 'above',
+        aspectRatio: '16:9',
+        fit: 'contain',
+        focalPosition: 'center center',
+        posterSrc: '',
+        posterMediaId: '',
+        captionsSrc: '',
+        preload: 'metadata'
+      };
+    default:
+      return createDefaultItemMedia();
+  }
+}
+
 /**
  * Normalizes item media configuration, guaranteeing safe defaults without mutating callers.
  * @param {any} item 
@@ -66,13 +147,14 @@ export function createDefaultItemMedia() {
  */
 export function normalizeItemMedia(item) {
   if (!item || typeof item !== 'object') return createDefaultItemMedia();
-  const raw = item.media;
-  if (!raw || typeof raw !== 'object') return createDefaultItemMedia();
-
-  const type = ['none', 'image', 'audio', 'video'].includes(raw.type) ? raw.type : 'none';
+  const raw = typeof item.media === 'object' && item.media !== null
+    ? item.media
+    : (typeof item.media === 'string' ? { type: item.media } : {});
+  const rawType = getItemMediaType(item);
+  const type = ['none', 'image', 'audio', 'video'].includes(rawType) ? rawType : 'none';
   const sourceType = ['upload', 'url'].includes(raw.sourceType) ? raw.sourceType : 'upload';
   const placement = ['above', 'below', 'left', 'right'].includes(raw.placement) ? raw.placement : 'above';
-  const aspectRatio = ['original', '16:9', '4:3', '1:1', '3:2'].includes(raw.aspectRatio) ? raw.aspectRatio : 'original';
+  const aspectRatio = ['original', '16:9', '4:3', '1:1', '3:2'].includes(raw.aspectRatio) ? raw.aspectRatio : (type === 'video' ? '16:9' : 'original');
   const fit = ['contain', 'cover'].includes(raw.fit) ? raw.fit : 'contain';
   const preload = ['metadata', 'none'].includes(raw.preload) ? raw.preload : 'metadata';
 
@@ -193,8 +275,9 @@ export function validateItemMedia(media, itemIndex = 0) {
  * @returns {HTMLElement}
  */
 export function createItemMediaControl({ item, index, onChange, limits = MEDIA_LIMITS, store = mediaStore, itemLabel = '' }) {
-  if (!item.media) {
-    item.media = createDefaultItemMedia();
+  const currentType = getItemMediaType(item);
+  if (!item.media || typeof item.media !== 'object') {
+    item.media = currentType !== 'none' ? { ...createEmptyItemMedia(currentType), type: currentType } : createDefaultItemMedia();
   } else {
     item.media = { ...createDefaultItemMedia(), ...item.media };
   }
@@ -202,24 +285,21 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
   const media = item.media;
   const contextLabel = itemLabel || item.title || `Item ${index + 1}`;
   const container = document.createElement('div');
-  container.className = 'item-media-attachment-container';
+  container.className = 'item-media-attachment-container item-media-section';
 
-  const details = document.createElement('details');
-  details.className = 'item-media-details-shell';
-  if (media.type !== 'none') {
-    details.open = true;
-  }
+  const shell = document.createElement('div');
+  shell.className = 'item-media-details-shell';
 
-  const summary = document.createElement('summary');
-  summary.className = 'item-media-summary-header';
+  const header = document.createElement('div');
+  header.className = 'item-media-summary-header';
   const summaryTitle = document.createElement('span');
   summaryTitle.className = 'item-media-summary-title';
   summaryTitle.textContent = 'Media — Optional';
   const summaryBadge = document.createElement('span');
   summaryBadge.className = 'item-media-type-badge';
   summaryBadge.textContent = media.type === 'none' ? 'None' : media.type.toUpperCase();
-  summary.append(summaryTitle, summaryBadge);
-  details.appendChild(summary);
+  header.append(summaryTitle, summaryBadge);
+  shell.appendChild(header);
 
   const body = document.createElement('div');
   body.className = 'item-media-editor-body';
@@ -259,23 +339,24 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
 
   function renderSubControls() {
     subControls.innerHTML = '';
-    summaryBadge.textContent = media.type === 'none' ? 'None' : media.type.toUpperCase();
+    const activeType = getItemMediaType(item);
+    summaryBadge.textContent = activeType === 'none' ? 'None' : activeType.toUpperCase();
 
-    if (media.type === 'none') {
+    if (activeType === 'none') {
       return;
     }
 
-    const typeCap = media.type.charAt(0).toUpperCase() + media.type.slice(1);
+    const typeCap = activeType.charAt(0).toUpperCase() + activeType.slice(1);
     const itemMediaLabel = `${contextLabel} ${typeCap}`;
 
     // 2. Upload / URL Source Control
     const uploadField = {
       id: `media-source-${index}`,
-      type: media.type,
+      type: activeType,
       label: `${typeCap} File`,
-      uploadKind: media.type,
+      uploadKind: activeType,
       contextLabel: itemMediaLabel,
-      preferredDimensions: media.type === 'image' ? '1200 × 800 px or responsive' : undefined
+      preferredDimensions: activeType === 'image' ? '1200 × 800 px or responsive' : undefined
     };
 
     const uploadControl = createMediaUploadControl({
@@ -696,35 +777,37 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
 
   typeSelect.addEventListener('change', () => {
     const newType = typeSelect.value;
-    media.type = newType;
     if (newType === 'none') {
-      media.src = '';
-      media.mediaId = '';
-      media.fileName = '';
-      media.mimeType = '';
-    } else if (newType === 'image') {
-      if (!media.placement) media.placement = 'above';
-      if (!media.aspectRatio) media.aspectRatio = 'original';
-      if (!media.fit) media.fit = 'contain';
-      if (media.decorative === undefined) media.decorative = false;
-      if (!media.alt) media.alt = '';
-    } else if (newType === 'audio') {
-      if (!media.placement) media.placement = 'above';
-      if (!media.preload) media.preload = 'metadata';
-      if (!media.transcript) media.transcript = '';
-    } else if (newType === 'video') {
-      if (!media.placement) media.placement = 'above';
-      if (!media.aspectRatio || media.aspectRatio === 'original') media.aspectRatio = '16:9';
-      if (!media.preload) media.preload = 'metadata';
-      if (!media.transcript) media.transcript = '';
+      Object.assign(item.media, createDefaultItemMedia());
+      item.media.type = 'none';
+    } else {
+      const defaults = createEmptyItemMedia(newType);
+      Object.assign(item.media, defaults);
+      item.media.type = newType;
+      if (newType === 'image') {
+        if (!item.media.placement) item.media.placement = 'above';
+        if (!item.media.aspectRatio) item.media.aspectRatio = 'original';
+        if (!item.media.fit) item.media.fit = 'contain';
+        if (item.media.decorative === undefined) item.media.decorative = false;
+        if (!item.media.alt) item.media.alt = '';
+      } else if (newType === 'audio') {
+        if (!item.media.placement) item.media.placement = 'above';
+        if (!item.media.preload) item.media.preload = 'metadata';
+        if (!item.media.transcript) item.media.transcript = '';
+      } else if (newType === 'video') {
+        if (!item.media.placement) item.media.placement = 'above';
+        if (!item.media.aspectRatio || item.media.aspectRatio === 'original') item.media.aspectRatio = '16:9';
+        if (!item.media.preload) item.media.preload = 'metadata';
+        if (!item.media.transcript) item.media.transcript = '';
+      }
     }
     renderSubControls();
     onChange();
   });
 
   renderSubControls();
-  details.appendChild(body);
-  container.appendChild(details);
+  shell.appendChild(body);
+  container.appendChild(shell);
   return container;
 }
 

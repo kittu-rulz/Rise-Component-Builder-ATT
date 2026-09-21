@@ -2,13 +2,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   createDefaultItemMedia,
-  normalizeItemMedia,
-  isItemMediaActive,
-  validateItemMedia,
-  renderItemMediaElement,
-  wrapItemMediaContent,
+  createEmptyItemMedia,
+  createItemMediaControl,
   getItemMediaCSS,
-  createItemMediaControl
+  getItemMediaType,
+  isItemMediaActive,
+  normalizeItemMedia,
+  renderItemMediaCSS,
+  renderItemMediaElement,
+  validateItemMedia,
+  wrapItemMediaContent
 } from '../../js/item-media.js';
 import { getEditorSchema } from '../../js/editor-schemas.js';
 import { createSchemaItemEditor } from '../../js/editor.js';
@@ -560,6 +563,81 @@ describe('Item Media Attachment Module (js/item-media.js)', () => {
       expect(items[0].media.src).toBe('https://example.com/item-image.png');
 
       // Verify block background remains completely unchanged
+      expect(config.blockBackgroundImage).toBe('https://example.com/bg.jpg');
+    });
+
+    it('canonical getItemMediaType correctly resolves across legacy and object formats', () => {
+      expect(getItemMediaType(null)).toBe('none');
+      expect(getItemMediaType({})).toBe('none');
+      expect(getItemMediaType({ media: 'image' })).toBe('image');
+      expect(getItemMediaType({ media: { type: 'audio' } })).toBe('audio');
+      expect(getItemMediaType({ media: { kind: 'video' } })).toBe('video');
+      expect(getItemMediaType({ mediaType: 'image' })).toBe('image');
+    });
+
+    it('createEmptyItemMedia creates complete serializable schemas for image, audio, and video', () => {
+      const img = createEmptyItemMedia('image');
+      expect(img.type).toBe('image');
+      expect(img.placement).toBe('above');
+      expect(img.aspectRatio).toBe('original');
+      expect(img.fit).toBe('contain');
+      expect(img.decorative).toBe(false);
+
+      const aud = createEmptyItemMedia('audio');
+      expect(aud.type).toBe('audio');
+      expect(aud.preload).toBe('metadata');
+      expect(aud.placement).toBe('above');
+
+      const vid = createEmptyItemMedia('video');
+      expect(vid.type).toBe('video');
+      expect(vid.aspectRatio).toBe('16:9');
+      expect(vid.preload).toBe('metadata');
+    });
+
+    it('maintains independent media configurations across multiple items', () => {
+      const container = document.createElement('div');
+      const schema = getEditorSchema('accordion');
+      const items = [
+        {
+          title: 'Section 1',
+          content: 'Content 1',
+          media: { type: 'image', sourceType: 'url', src: 'https://example.com/img1.jpg' }
+        },
+        {
+          title: 'Section 2',
+          content: 'Content 2',
+          media: { type: 'audio', sourceType: 'url', src: 'https://example.com/audio2.mp3' }
+        }
+      ];
+      const config = {
+        blockBackgroundImage: 'https://example.com/bg.jpg',
+        items
+      };
+
+      const editor = createSchemaItemEditor({
+        container,
+        onChange: () => {}
+      });
+
+      editor.render({ schema, items, config });
+
+      const itemCards = container.querySelectorAll('.dynamic-item-card:not(.component-fields-card)');
+      expect(itemCards.length).toBe(2);
+
+      // Section 1 has Image controls
+      const card1Select = itemCards[0].querySelector('.item-media-type-select');
+      expect(card1Select?.value).toBe('image');
+
+      // Section 2 has Audio controls
+      const card2Select = itemCards[1].querySelector('.item-media-type-select');
+      expect(card2Select?.value).toBe('audio');
+
+      // Update Section 1 media type to none
+      card1Select.value = 'none';
+      card1Select.dispatchEvent(new Event('change'));
+
+      expect(items[0].media.type).toBe('none');
+      expect(items[1].media.type).toBe('audio');
       expect(config.blockBackgroundImage).toBe('https://example.com/bg.jpg');
     });
   });
