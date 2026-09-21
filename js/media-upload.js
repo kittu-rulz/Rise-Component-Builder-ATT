@@ -40,13 +40,16 @@ function createPreview(kind, source, name) {
 }
 
 /**
- * @param {{ field: any, controlId: any, value?: any, onChange: any, onMultiple?: any, store?: any, limits?: any }} options
+ * @param {{ field: any, controlId: any, value?: any, onChange: any, onMultiple?: any, store?: any, limits?: any, contextLabel?: string }} options
  */
 export function createMediaUploadControl({
-  field, controlId, value, onChange, onMultiple, store, limits
+  field, controlId, value, onChange, onMultiple, store, limits, contextLabel
 }) {
   let currentValue = value || '';
   const kind = field.uploadKind || field.type;
+  const targetContext = contextLabel || field.contextLabel || field.label || 'this component';
+  const kindLabel = kind === 'image' ? 'Image' : kind === 'audio' ? 'Audio' : kind === 'video' ? 'Video' : kind === 'captions' ? 'Captions' : 'Media';
+
   const root = document.createElement('div');
   root.className = 'media-upload-control';
 
@@ -58,10 +61,15 @@ export function createMediaUploadControl({
   urlInput.dataset.fieldId = field.id;
   urlInput.placeholder = `Enter external ${kind === 'captions' ? 'captions' : field.type} URL`;
   urlInput.value = typeof currentValue === 'string' ? currentValue : '';
+  urlInput.setAttribute('aria-label', `External ${kindLabel} URL for ${targetContext}`);
+
   const externalButton = document.createElement('button');
   externalButton.type = 'button';
   externalButton.className = 'btn btn-text btn-small media-external-btn';
   externalButton.textContent = 'Reset to external URL';
+  const resetLabel = `Reset to external ${kindLabel} URL for ${targetContext}`;
+  externalButton.setAttribute('aria-label', resetLabel);
+  externalButton.title = resetLabel;
   urlRow.append(urlInput, externalButton);
 
   const guidance = document.createElement('p');
@@ -92,7 +100,7 @@ export function createMediaUploadControl({
   dropZone.className = 'media-drop-zone';
   dropZone.tabIndex = 0;
   dropZone.setAttribute('role', 'button');
-  dropZone.setAttribute('aria-label', `Upload ${field.label}. Browse or drop a file.`);
+  dropZone.setAttribute('aria-label', `Upload ${kindLabel} for ${targetContext}. Browse or drop a file.`);
   
   const dropText = document.createElement('span');
   dropText.textContent = 'Drop file here or';
@@ -106,6 +114,9 @@ export function createMediaUploadControl({
   const libraryButton = document.createElement('button');
   libraryButton.type = 'button';
   libraryButton.className = 'btn btn-secondary btn-small media-library-btn';
+  const chooseTitle = `Choose ${kindLabel} for ${targetContext} from Media Library`;
+  libraryButton.setAttribute('aria-label', chooseTitle);
+  libraryButton.title = chooseTitle;
   libraryButton.innerHTML = `
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;">
       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -117,7 +128,12 @@ export function createMediaUploadControl({
 
   const browseButton = document.createElement('button');
   browseButton.type = 'button';
-  browseButton.className = 'btn btn-secondary btn-small';
+  browseButton.className = 'btn btn-secondary btn-small media-browse-btn';
+  const uploadTitle = isMediaReference(currentValue)
+    ? `Replace ${kindLabel} for ${targetContext}`
+    : `Upload ${kindLabel} for ${targetContext}`;
+  browseButton.setAttribute('aria-label', uploadTitle);
+  browseButton.title = uploadTitle;
   browseButton.textContent = isMediaReference(currentValue) ? 'Upload New' : 'Browse File';
 
   const fileInput = document.createElement('input');
@@ -125,6 +141,7 @@ export function createMediaUploadControl({
   fileInput.accept = ACCEPT[kind] || '';
   fileInput.multiple = Boolean(field.multiple);
   fileInput.hidden = true;
+  fileInput.setAttribute('aria-label', `Choose ${kindLabel} file for ${targetContext}`);
 
   actionsGroup.append(libraryButton, browseButton);
   dropZone.append(dropText, actionsGroup, fileInput);
@@ -141,6 +158,9 @@ export function createMediaUploadControl({
   removeButton.type = 'button';
   removeButton.className = 'btn btn-text btn-small media-remove-btn';
   removeButton.textContent = 'Remove media';
+  const removeTitle = `Remove ${kindLabel} from ${targetContext}`;
+  removeButton.setAttribute('aria-label', removeTitle);
+  removeButton.title = removeTitle;
   details.append(preview, metadata, removeButton);
 
   const error = document.createElement('div');

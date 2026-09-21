@@ -10,7 +10,8 @@ const contentFields = [
 // component-specific image field (e.g. hotspots' own interactive background).
 const sharedComponentFields = [
   field('blockBackgroundImage', 'Block Background Image (Optional)', 'image', {
-    required: false, default: '', preferredDimensions: '1600 × 900 px or larger'
+    required: false, default: '', preferredDimensions: '1600 × 900 px or larger',
+    contextLabel: 'Block Background'
   })
 ];
 

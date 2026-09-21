@@ -273,8 +273,9 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
     let fieldElement;
     if (['image', 'audio', 'video'].includes(field.type) || field.uploadKind) {
       let media;
+      const contextLabel = field.contextLabel || (indexKey === 'component' ? (schema.componentLabel || field.label) : (items && items[indexKey]?.title ? `${formatItemLabel(schema, indexKey)} (${items[indexKey].title})` : `${formatItemLabel(schema, indexKey)} ${field.label}`));
       media = createMediaUploadControl({
-        field, controlId, value: model[field.id], limits,
+        field, controlId, value: model[field.id], limits, contextLabel,
         onChange: value => {
           model[`${field.id}Duration`] = isMediaReference(value) && Number.isFinite(value.duration) ? value.duration : null;
           updateValue(value, media.validationControl);
@@ -486,9 +487,11 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
         });
 
         if (schema.supportsItemMedia) {
+          const itemTitle = item.title || `${formatItemLabel(schema, index)}`;
           const mediaControl = createItemMediaControl({
             item,
             index,
+            itemLabel: itemTitle,
             limits,
             onChange: () => {
               onChange();

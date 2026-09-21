@@ -189,9 +189,10 @@ export function validateItemMedia(media, itemIndex = 0) {
  * @param {() => void} options.onChange - Triggered when any media field updates
  * @param {any} [options.limits] - Custom media size limits
  * @param {any} [options.store] - IndexedDB media store instance
+ * @param {string} [options.itemLabel] - Accessible human-readable label of the item
  * @returns {HTMLElement}
  */
-export function createItemMediaControl({ item, index, onChange, limits = MEDIA_LIMITS, store = mediaStore }) {
+export function createItemMediaControl({ item, index, onChange, limits = MEDIA_LIMITS, store = mediaStore, itemLabel = '' }) {
   if (!item.media) {
     item.media = createDefaultItemMedia();
   } else {
@@ -199,6 +200,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
   }
 
   const media = item.media;
+  const contextLabel = itemLabel || item.title || `Item ${index + 1}`;
   const container = document.createElement('div');
   container.className = 'item-media-attachment-container';
 
@@ -233,6 +235,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
   const typeSelect = document.createElement('select');
   typeSelect.id = typeId;
   typeSelect.className = 'item-media-type-select';
+  typeSelect.setAttribute('aria-label', `Media Type for ${contextLabel}`);
   [
     { value: 'none', label: 'None (Text Only)' },
     { value: 'image', label: 'Image (JPG, PNG, WebP, SVG, GIF)' },
@@ -262,12 +265,16 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       return;
     }
 
+    const typeCap = media.type.charAt(0).toUpperCase() + media.type.slice(1);
+    const itemMediaLabel = `${contextLabel} ${typeCap}`;
+
     // 2. Upload / URL Source Control
     const uploadField = {
       id: `media-source-${index}`,
       type: media.type,
-      label: `${media.type.charAt(0).toUpperCase() + media.type.slice(1)} File`,
+      label: `${typeCap} File`,
       uploadKind: media.type,
+      contextLabel: itemMediaLabel,
       preferredDimensions: media.type === 'image' ? '1200 × 800 px or responsive' : undefined
     };
 
@@ -277,6 +284,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       value: media.mediaId ? { mediaId: media.mediaId, assetId: media.mediaId, source: 'upload', sourceType: 'library', kind: media.type, mediaType: media.type, name: media.fileName, fileName: media.fileName, mimeType: media.mimeType } : media.src,
       limits,
       store,
+      contextLabel: itemMediaLabel,
       onChange: value => {
         if (isMediaReference(value)) {
           media.sourceType = 'upload';
@@ -315,6 +323,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       altInput.placeholder = 'Describe the image content and purpose for screen reader users';
       altInput.value = media.alt || '';
       altInput.disabled = Boolean(media.decorative);
+      altInput.setAttribute('aria-label', `Image Alternative Text for ${contextLabel}`);
 
       const decorWrapper = document.createElement('div');
       decorWrapper.className = 'checkbox-wrapper';
@@ -322,6 +331,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       decorInput.type = 'checkbox';
       decorInput.id = `item-media-decor-${index}`;
       decorInput.checked = Boolean(media.decorative);
+      decorInput.setAttribute('aria-label', `Decorative image (empty alt text) for ${contextLabel}`);
       const decorLabel = document.createElement('label');
       decorLabel.htmlFor = decorInput.id;
       decorLabel.textContent = 'Decorative image (empty alt text)';
@@ -352,6 +362,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       captionInput.type = 'text';
       captionInput.placeholder = 'Optional visible caption below image';
       captionInput.value = media.caption || '';
+      captionInput.setAttribute('aria-label', `Image Caption for ${contextLabel}`);
       captionInput.addEventListener('input', () => {
         media.caption = captionInput.value;
         onChange();
@@ -369,6 +380,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const placementLabel = document.createElement('label');
       placementLabel.textContent = 'Placement';
       const placementSelect = document.createElement('select');
+      placementSelect.setAttribute('aria-label', `Image Placement for ${contextLabel}`);
       [
         { value: 'above', label: 'Above text (Full width)' },
         { value: 'below', label: 'Below text (Full width)' },
@@ -393,6 +405,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const ratioLabel = document.createElement('label');
       ratioLabel.textContent = 'Aspect Ratio';
       const ratioSelect = document.createElement('select');
+      ratioSelect.setAttribute('aria-label', `Image Aspect Ratio for ${contextLabel}`);
       [
         { value: 'original', label: 'Original' },
         { value: '16:9', label: '16:9 Landscape' },
@@ -418,6 +431,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const fitLabel = document.createElement('label');
       fitLabel.textContent = 'Image Fit';
       const fitSelect = document.createElement('select');
+      fitSelect.setAttribute('aria-label', `Image Fit for ${contextLabel}`);
       [
         { value: 'contain', label: 'Contain (Show complete image)' },
         { value: 'cover', label: 'Cover (Fill area)' }
@@ -449,6 +463,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const placementLabel = document.createElement('label');
       placementLabel.textContent = 'Audio Placement';
       const placementSelect = document.createElement('select');
+      placementSelect.setAttribute('aria-label', `Audio Placement for ${contextLabel}`);
       [
         { value: 'above', label: 'Above text' },
         { value: 'below', label: 'Below text' }
@@ -471,6 +486,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const preloadLabel = document.createElement('label');
       preloadLabel.textContent = 'Preload';
       const preloadSelect = document.createElement('select');
+      preloadSelect.setAttribute('aria-label', `Audio Preload for ${contextLabel}`);
       [
         { value: 'metadata', label: 'Metadata (Recommended)' },
         { value: 'none', label: 'None (Load only on play)' }
@@ -499,6 +515,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       labelInput.type = 'text';
       labelInput.placeholder = 'e.g. Executive Interview Audio Snippet';
       labelInput.value = media.caption || '';
+      labelInput.setAttribute('aria-label', `Audio Label for ${contextLabel}`);
       labelInput.addEventListener('input', () => {
         media.caption = labelInput.value;
         onChange();
@@ -515,6 +532,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       transcriptInput.rows = 3;
       transcriptInput.placeholder = 'Add full text transcript for accessibility';
       transcriptInput.value = media.transcript || '';
+      transcriptInput.setAttribute('aria-label', `Audio Transcript for ${contextLabel}`);
       transcriptInput.addEventListener('input', () => {
         media.transcript = transcriptInput.value;
         onChange();
@@ -534,6 +552,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const placementLabel = document.createElement('label');
       placementLabel.textContent = 'Video Placement';
       const placementSelect = document.createElement('select');
+      placementSelect.setAttribute('aria-label', `Video Placement for ${contextLabel}`);
       [
         { value: 'above', label: 'Above text (Full width)' },
         { value: 'below', label: 'Below text (Full width)' },
@@ -558,6 +577,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const ratioLabel = document.createElement('label');
       ratioLabel.textContent = 'Aspect Ratio';
       const ratioSelect = document.createElement('select');
+      ratioSelect.setAttribute('aria-label', `Video Aspect Ratio for ${contextLabel}`);
       [
         { value: '16:9', label: '16:9 Widescreen' },
         { value: '4:3', label: '4:3 Standard' },
@@ -581,6 +601,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       const preloadLabel = document.createElement('label');
       preloadLabel.textContent = 'Preload';
       const preloadSelect = document.createElement('select');
+      preloadSelect.setAttribute('aria-label', `Video Preload for ${contextLabel}`);
       [
         { value: 'metadata', label: 'Metadata (Recommended)' },
         { value: 'none', label: 'None (Load only on play)' }
@@ -606,6 +627,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
         type: 'image',
         label: 'Video Poster Image (Optional)',
         uploadKind: 'image',
+        contextLabel: `${contextLabel} Video Poster`,
         preferredDimensions: '1200 × 675 px (16:9)'
       };
       const posterUploadControl = createMediaUploadControl({
@@ -614,6 +636,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
         value: media.posterMediaId ? { mediaId: media.posterMediaId, assetId: media.posterMediaId, source: 'upload', sourceType: 'library', kind: 'image', mediaType: 'image' } : media.posterSrc,
         limits,
         store,
+        contextLabel: `${contextLabel} Video Poster`,
         onChange: val => {
           if (isMediaReference(val)) {
             media.posterMediaId = val.mediaId || val.assetId;
@@ -635,7 +658,8 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
         id: `item-media-captions-${index}`,
         type: 'captions',
         label: 'WebVTT Captions Track URL or File (Optional)',
-        uploadKind: 'captions'
+        uploadKind: 'captions',
+        contextLabel: `${contextLabel} Video Captions`
       };
       const captionsUploadControl = createMediaUploadControl({
         field: captionsField,
@@ -643,6 +667,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
         value: media.captionsSrc || '',
         limits,
         store,
+        contextLabel: `${contextLabel} Video Captions`,
         onChange: val => {
           media.captionsSrc = typeof val === 'string' ? val : (val?.name || '');
           onChange();
@@ -659,6 +684,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       transcriptInput.rows = 3;
       transcriptInput.placeholder = 'Add full text transcript for accessibility';
       transcriptInput.value = media.transcript || '';
+      transcriptInput.setAttribute('aria-label', `Video Transcript for ${contextLabel}`);
       transcriptInput.addEventListener('input', () => {
         media.transcript = transcriptInput.value;
         onChange();
@@ -669,7 +695,29 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
   }
 
   typeSelect.addEventListener('change', () => {
-    media.type = typeSelect.value;
+    const newType = typeSelect.value;
+    media.type = newType;
+    if (newType === 'none') {
+      media.src = '';
+      media.mediaId = '';
+      media.fileName = '';
+      media.mimeType = '';
+    } else if (newType === 'image') {
+      if (!media.placement) media.placement = 'above';
+      if (!media.aspectRatio) media.aspectRatio = 'original';
+      if (!media.fit) media.fit = 'contain';
+      if (media.decorative === undefined) media.decorative = false;
+      if (!media.alt) media.alt = '';
+    } else if (newType === 'audio') {
+      if (!media.placement) media.placement = 'above';
+      if (!media.preload) media.preload = 'metadata';
+      if (!media.transcript) media.transcript = '';
+    } else if (newType === 'video') {
+      if (!media.placement) media.placement = 'above';
+      if (!media.aspectRatio || media.aspectRatio === 'original') media.aspectRatio = '16:9';
+      if (!media.preload) media.preload = 'metadata';
+      if (!media.transcript) media.transcript = '';
+    }
     renderSubControls();
     onChange();
   });

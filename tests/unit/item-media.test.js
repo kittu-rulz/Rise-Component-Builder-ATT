@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
   createDefaultItemMedia,
@@ -6,8 +7,11 @@ import {
   validateItemMedia,
   renderItemMediaElement,
   wrapItemMediaContent,
-  getItemMediaCSS
+  getItemMediaCSS,
+  createItemMediaControl
 } from '../../js/item-media.js';
+import { getEditorSchema } from '../../js/editor-schemas.js';
+import { createSchemaItemEditor } from '../../js/editor.js';
 import { generateHTML, generateCSS, generateJS, validate } from '../../components/accordion.js';
 
 describe('Item Media Attachment Module (js/item-media.js)', () => {
@@ -412,6 +416,151 @@ describe('Item Media Attachment Module (js/item-media.js)', () => {
       expect(resolved.items[0].media.type).toBe('image');
       expect(resolved.items[0].media.placement).toBe('above');
       expect(resolved.items[0].media.alt).toBe('Uploaded test image');
+    });
+  });
+
+  describe('createItemMediaControl & Focus Editor Integration', () => {
+    it('renders separate, uniquely named Media Library triggers for Block Background vs Accordion Item', () => {
+      const container = document.createElement('div');
+      const schema = getEditorSchema('accordion');
+      const items = [
+        {
+          title: 'Understanding User Intent',
+          content: 'Intro content',
+          media: { type: 'image', sourceType: 'upload', src: '', mediaId: '' }
+        }
+      ];
+      const config = {
+        blockBackgroundImage: '',
+        items
+      };
+
+      const editor = createSchemaItemEditor({
+        container,
+        onChange: () => {}
+      });
+
+      editor.render({ schema, items, config });
+
+      // Find all "Choose from Media Library" buttons
+      const libraryButtons = Array.from(container.querySelectorAll('.media-library-btn'));
+      expect(libraryButtons.length).toBeGreaterThanOrEqual(2);
+
+      const backgroundBtn = libraryButtons.find(btn => btn.getAttribute('aria-label')?.includes('Block Background'));
+      expect(backgroundBtn).toBeDefined();
+      expect(backgroundBtn?.getAttribute('aria-label')).toBe('Choose Image for Block Background from Media Library');
+
+      const itemBtn = libraryButtons.find(btn => btn.getAttribute('aria-label')?.includes('Understanding User Intent') || btn.getAttribute('aria-label')?.includes('Accordion Section 1'));
+      expect(itemBtn).toBeDefined();
+      expect(itemBtn?.getAttribute('aria-label')).toContain('Image for');
+      expect(itemBtn?.getAttribute('aria-label')).toContain('from Media Library');
+
+      // The background trigger and item trigger must be separate DOM nodes
+      expect(backgroundBtn).not.toBe(itemBtn);
+    });
+
+    it('dynamically renders full audio controls when item media type is set to audio', () => {
+      const item = {
+        title: 'Network Overview',
+        content: 'Audio explanation',
+        media: { type: 'none' }
+      };
+
+      const control = createItemMediaControl({
+        item,
+        index: 0,
+        itemLabel: 'Network Overview',
+        onChange: () => {}
+      });
+
+      const typeSelect = control.querySelector('.item-media-type-select');
+      expect(typeSelect).not.toBeNull();
+
+      // Change to audio
+      typeSelect.value = 'audio';
+      typeSelect.dispatchEvent(new Event('change'));
+
+      expect(item.media.type).toBe('audio');
+      expect(item.media.placement).toBe('above');
+      expect(item.media.preload).toBe('metadata');
+
+      const subControls = control.querySelector('.item-media-subcontrols');
+      expect(subControls).not.toBeNull();
+      const libraryBtn = subControls.querySelector('.media-library-btn');
+      expect(libraryBtn).not.toBeNull();
+      expect(libraryBtn.getAttribute('aria-label')).toContain('Choose Audio for Network Overview Audio from Media Library');
+
+      const transcriptInput = subControls.querySelector('textarea[aria-label*="Transcript"]');
+      expect(transcriptInput).not.toBeNull();
+    });
+
+    it('dynamically renders full video controls with poster and captions when set to video', () => {
+      const item = {
+        title: 'Safety Procedure Video',
+        content: 'Watch video',
+        media: { type: 'none' }
+      };
+
+      const control = createItemMediaControl({
+        item,
+        index: 0,
+        itemLabel: 'Safety Procedure Video',
+        onChange: () => {}
+      });
+
+      const typeSelect = control.querySelector('.item-media-type-select');
+      typeSelect.value = 'video';
+      typeSelect.dispatchEvent(new Event('change'));
+
+      expect(item.media.type).toBe('video');
+      expect(item.media.aspectRatio).toBe('16:9');
+
+      const subControls = control.querySelector('.item-media-subcontrols');
+      const libraryBtns = Array.from(subControls.querySelectorAll('.media-library-btn'));
+      // Video source + Video poster
+      expect(libraryBtns.length).toBeGreaterThanOrEqual(2);
+
+      const videoTrigger = libraryBtns.find(btn => btn.getAttribute('aria-label')?.includes('Choose Video for Safety Procedure Video'));
+      expect(videoTrigger).toBeDefined();
+
+      const posterTrigger = libraryBtns.find(btn => btn.getAttribute('aria-label')?.includes('Poster'));
+      expect(posterTrigger).toBeDefined();
+    });
+
+    it('attaching media to an item does not overwrite or mutate block background image', () => {
+      const container = document.createElement('div');
+      const schema = getEditorSchema('accordion');
+      const items = [
+        {
+          title: 'Section 1',
+          content: 'Content 1',
+          media: { type: 'image', sourceType: 'upload', src: '', mediaId: '' }
+        }
+      ];
+      const config = {
+        blockBackgroundImage: 'https://example.com/bg.jpg',
+        items
+      };
+
+      const editor = createSchemaItemEditor({
+        container,
+        onChange: () => {}
+      });
+
+      editor.render({ schema, items, config });
+
+      // Find item upload control URL input
+      const itemUrlInput = container.querySelector('#item-media-file-0');
+      expect(itemUrlInput).not.toBeNull();
+
+      itemUrlInput.value = 'https://example.com/item-image.png';
+      itemUrlInput.dispatchEvent(new Event('input'));
+
+      // Verify item media updated
+      expect(items[0].media.src).toBe('https://example.com/item-image.png');
+
+      // Verify block background remains completely unchanged
+      expect(config.blockBackgroundImage).toBe('https://example.com/bg.jpg');
     });
   });
 });
