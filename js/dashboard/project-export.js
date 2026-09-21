@@ -271,7 +271,7 @@ export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.8125rem;">
               <div style="background: var(--att-surface, #FFFFFF); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--att-border, #DCDFE3);">
                 <div style="color: var(--att-text-muted, #707780); font-size: 0.75rem;">Structure</div>
-                <div style="font-weight: 700; color: var(--att-text, #000);">${totalSecs} Sections · ${totalComps} Comps</div>
+                <div style="font-weight: 700; color: var(--att-text, #000);">${totalSecs} ${totalSecs === 1 ? 'Section' : 'Sections'} · ${totalComps} ${totalComps === 1 ? 'Component' : 'Components'}</div>
               </div>
               <div style="background: var(--att-surface, #FFFFFF); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--att-border, #DCDFE3);">
                 <div style="color: var(--att-text-muted, #707780); font-size: 0.75rem;">Editorial Status</div>

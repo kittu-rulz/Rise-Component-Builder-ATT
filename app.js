@@ -2157,6 +2157,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Escape outside modals: return from editor to catalog if authoring
     if (event.key === 'Escape' && !isEditingText) {
+      if (document.body?.classList.contains('has-open-modal') || document.querySelector('.modal-overlay:not([style*="display: none"]):not([hidden])')) {
+        return;
+      }
       if (editorState && editorState.style.display !== 'none') {
         event.preventDefault();
         btnBackToCatalog?.click();

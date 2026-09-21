@@ -600,37 +600,55 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
       videoRow.append(placementWrapper, ratioWrapper, preloadWrapper);
       subControls.appendChild(videoRow);
 
-      // Poster Image URL
-      const posterWrapper = document.createElement('div');
-      posterWrapper.className = 'input-wrapper';
-      const posterLabel = document.createElement('label');
-      posterLabel.textContent = 'Video Poster Image URL (Optional)';
-      const posterInput = document.createElement('input');
-      posterInput.type = 'url';
-      posterInput.placeholder = 'https://example.com/poster.jpg';
-      posterInput.value = media.posterSrc || '';
-      posterInput.addEventListener('input', () => {
-        media.posterSrc = posterInput.value;
-        onChange();
+      // Poster Image Control
+      const posterField = {
+        id: `item-media-poster-${index}`,
+        type: 'image',
+        label: 'Video Poster Image (Optional)',
+        uploadKind: 'image',
+        preferredDimensions: '1200 × 675 px (16:9)'
+      };
+      const posterUploadControl = createMediaUploadControl({
+        field: posterField,
+        controlId: `item-media-poster-${index}`,
+        value: media.posterMediaId ? { mediaId: media.posterMediaId, assetId: media.posterMediaId, source: 'upload', sourceType: 'library', kind: 'image', mediaType: 'image' } : media.posterSrc,
+        limits,
+        store,
+        onChange: val => {
+          if (isMediaReference(val)) {
+            media.posterMediaId = val.mediaId || val.assetId;
+            media.posterSrc = val;
+          } else if (typeof val === 'string') {
+            media.posterMediaId = '';
+            media.posterSrc = val;
+          } else {
+            media.posterMediaId = '';
+            media.posterSrc = '';
+          }
+          onChange();
+        }
       });
-      posterWrapper.append(posterLabel, posterInput);
-      subControls.appendChild(posterWrapper);
+      subControls.appendChild(posterUploadControl.element);
 
-      // Captions WebVTT URL
-      const captionWrapper = document.createElement('div');
-      captionWrapper.className = 'input-wrapper';
-      const captionLabel = document.createElement('label');
-      captionLabel.textContent = 'WebVTT Captions Track URL (Optional)';
-      const captionInput = document.createElement('input');
-      captionInput.type = 'url';
-      captionInput.placeholder = 'https://example.com/captions.vtt';
-      captionInput.value = media.captionsSrc || '';
-      captionInput.addEventListener('input', () => {
-        media.captionsSrc = captionInput.value;
-        onChange();
+      // Captions Control
+      const captionsField = {
+        id: `item-media-captions-${index}`,
+        type: 'captions',
+        label: 'WebVTT Captions Track URL or File (Optional)',
+        uploadKind: 'captions'
+      };
+      const captionsUploadControl = createMediaUploadControl({
+        field: captionsField,
+        controlId: `item-media-captions-${index}`,
+        value: media.captionsSrc || '',
+        limits,
+        store,
+        onChange: val => {
+          media.captionsSrc = typeof val === 'string' ? val : (val?.name || '');
+          onChange();
+        }
       });
-      captionWrapper.append(captionLabel, captionInput);
-      subControls.appendChild(captionWrapper);
+      subControls.appendChild(captionsUploadControl.element);
 
       // Transcript
       const transcriptWrapper = document.createElement('div');

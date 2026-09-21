@@ -38,22 +38,6 @@ import { isMediaReference } from './media.js';
 function scanConfigForMedia(value, targetMediaId, currentPath, found, context) {
   if (!value) return;
 
-  if (isMediaReference(value) || (typeof value === 'object' && !Array.isArray(value) && (value.mediaId || value.assetId))) {
-    const id = value.mediaId || value.assetId;
-    if (id === targetMediaId) {
-      found.push({
-        projectId: context.projectId,
-        projectName: context.projectName,
-        componentId: context.componentId,
-        componentName: context.componentName,
-        componentType: context.componentType,
-        fieldPath: currentPath,
-        fieldLabel: currentPath.split('.').pop() || 'media'
-      });
-    }
-    return;
-  }
-
   if (typeof value === 'string' && value === targetMediaId) {
     found.push({
       projectId: context.projectId,
@@ -71,9 +55,36 @@ function scanConfigForMedia(value, targetMediaId, currentPath, found, context) {
     value.forEach((item, idx) => {
       scanConfigForMedia(item, targetMediaId, `${currentPath}[${idx}]`, found, context);
     });
-  } else if (typeof value === 'object') {
+    return;
+  }
+
+  if (typeof value === 'object') {
+    if (value.mediaId === targetMediaId || value.assetId === targetMediaId) {
+      found.push({
+        projectId: context.projectId,
+        projectName: context.projectName,
+        componentId: context.componentId,
+        componentName: context.componentName,
+        componentType: context.componentType,
+        fieldPath: currentPath,
+        fieldLabel: currentPath.split('.').pop() || 'media'
+      });
+    }
+    if (value.posterMediaId === targetMediaId) {
+      found.push({
+        projectId: context.projectId,
+        projectName: context.projectName,
+        componentId: context.componentId,
+        componentName: context.componentName,
+        componentType: context.componentType,
+        fieldPath: `${currentPath}.posterMediaId`,
+        fieldLabel: 'poster'
+      });
+    }
     Object.entries(value).forEach(([key, subVal]) => {
-      scanConfigForMedia(subVal, targetMediaId, currentPath ? `${currentPath}.${key}` : key, found, context);
+      if (key !== 'mediaId' && key !== 'assetId' && key !== 'posterMediaId') {
+        scanConfigForMedia(subVal, targetMediaId, currentPath ? `${currentPath}.${key}` : key, found, context);
+      }
     });
   }
 }

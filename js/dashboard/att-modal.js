@@ -163,6 +163,8 @@ export function isolateModal(modalElement, { triggerElement = null, fallbackSele
   const handleKeydown = (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       if (typeof onDismiss === 'function') onDismiss();
       return;
     }

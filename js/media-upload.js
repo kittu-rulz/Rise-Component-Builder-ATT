@@ -73,6 +73,17 @@ export function createMediaUploadControl({
     const svgLimit = formatFileSize((limits || MEDIA_LIMITS).svg);
     guidance.textContent = `Supported formats: JPG, JPEG, PNG, WebP, SVG, GIF. Preferred dimensions: ${preferred}. Maximum file size: ${imageLimit}; SVG: ${svgLimit}.`;
     urlInput.dataset.guidanceId = guidance.id;
+  } else if (kind === 'audio') {
+    const audioLimit = formatFileSize((limits || MEDIA_LIMITS).audio);
+    guidance.textContent = `Supported formats: MP3, WAV, M4A, OGG. Maximum file size: ${audioLimit}.`;
+    urlInput.dataset.guidanceId = guidance.id;
+  } else if (kind === 'video') {
+    const videoLimit = formatFileSize((limits || MEDIA_LIMITS).video);
+    guidance.textContent = `Supported formats: MP4, WebM. Maximum file size: ${videoLimit}.`;
+    urlInput.dataset.guidanceId = guidance.id;
+  } else if (kind === 'captions') {
+    guidance.textContent = 'Supported formats: WebVTT (.vtt).';
+    urlInput.dataset.guidanceId = guidance.id;
   } else {
     guidance.hidden = true;
   }
