@@ -1254,6 +1254,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       dashboardHeaderActions.style.display = (state === 'dashboard') ? 'flex' : 'none';
     }
 
+    const contextualToolbar = document.getElementById('app-toolbar-contextual');
+    if (contextualToolbar) {
+      contextualToolbar.style.display = (state === 'editor') ? 'flex' : 'none';
+    }
+
     if (['landing', 'dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
       if (toolbarActions) toolbarActions.style.display = 'none';
       if (projectTitleEditor) projectTitleEditor.style.display = 'none';
@@ -1665,16 +1670,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (targetNav === 'landing') {
             showState('landing');
           } else if (targetNav === 'dashboard') {
-            if (appState.selectedComponent) {
-              showState('editor');
-            } else {
-              const defaultComp = componentCatalog.find(c => c.id === 'tab-blocks') || componentCatalog.find(c => c.id === 'accordion') || componentCatalog[0];
-              if (defaultComp) {
-                loadComponentToEditor(defaultComp);
-              } else {
-                showState('dashboard');
-              }
-            }
+            showState('dashboard');
           } else if (targetNav === 'catalog') {
             appState.selectedComponent = null;
             showState('catalog');
@@ -2881,7 +2877,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           sectionName = foundSec.name;
         }
       }
-      appState.currentProjectName = `Course Projects / ${project.name} / ${sectionName} / ${comp.name}`;
+      appState.currentProjectName = comp.name || component.title || 'Untitled Component';
+      appState.currentProjectBreadcrumb = `Course Projects / ${project.name} / ${sectionName} / ${comp.name}`;
       appState.selectedComponent = component;
       applyMissingSchemaDefaults(component);
       await restoreMediaReferences(appState.config);

@@ -7,7 +7,7 @@ import { getProject } from '../storage.js';
 import { generateIframeContent } from '../preview.js';
 import { COMPONENT_MODULES, COMPONENT_REGISTRY, normalizeComponentType } from '../component-registry.js';
 import { toRgba as colorToRgba, escapeHTML, pluralize } from '../utilities.js';
-import { showPreExportReviewDialog, buildCourseProjectZip } from './project-export.js';
+import { showPreExportReviewDialog, buildCourseProjectZip, downloadCourseProjectZip } from './project-export.js';
 
 export class CoursePreviewView {
   constructor({ container = null, projectId = null, onBack = null, onOpenQa = null, onOpenPreview = null, onEditComponent = null } = {}) {
@@ -393,7 +393,17 @@ export class CoursePreviewView {
     });
 
     this.container.querySelector('#wp-export-btn')?.addEventListener('click', () => {
-      showPreExportReviewDialog(this.projectId, () => buildCourseProjectZip(this.projectId));
+      showPreExportReviewDialog({
+        projectId: this.projectId,
+        onProceed: async (id) => {
+          try {
+            await downloadCourseProjectZip(id);
+          } catch (err) {
+            console.error('Export failed:', err);
+          }
+        },
+        onViewQa: this.onOpenQa
+      });
     });
 
     this.container.querySelector('#preview-empty-back-btn')?.addEventListener('click', () => {

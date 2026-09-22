@@ -238,8 +238,8 @@ export class DashboardView {
                 <div class="starter-card-icon-wrap">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                 </div>
-                <h3 class="starter-card-title">3-Module Starter Course</h3>
-                <p class="starter-card-desc">Generate a multi-module course with Introduction, Interactive Deep-Dive, and Knowledge Check blocks.</p>
+                <h3 class="starter-card-title">3-Module Sample Course</h3>
+                <p class="starter-card-desc">Generate a multi-module sample course with Fiber Deployment, 5G Architecture, and Safety &amp; Compliance blocks.</p>
                 <div class="starter-card-footer">
                   <span class="starter-card-cta">Launch Course Builder →</span>
                 </div>
@@ -252,7 +252,7 @@ export class DashboardView {
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                 </div>
                 <h3 class="starter-card-title">Rise Post-Publish Toolkit</h3>
-                <p class="starter-card-desc">Inject Persistent Top Nav, Course Search, Glossary, Lightbox, &amp; Resource Center into published Rise ZIP exports.</p>
+                <p class="starter-card-desc">Inject Persistent Top Nav, Glossary Modal, Resource Center, and Help Dialog into published Rise ZIP exports.</p>
                 <div class="starter-card-footer">
                   <span class="starter-card-cta">Open Package Tools →</span>
                 </div>
@@ -490,10 +490,10 @@ export class DashboardView {
                   <!-- Card 1: 3-Module Starter -->
                   <div class="starter-point-card ${selectedTemplate === 'standard' ? 'active' : ''}" data-starter-tpl="standard" tabindex="0" role="radio" aria-checked="${selectedTemplate === 'standard'}" style="border: 2px solid ${selectedTemplate === 'standard' ? 'var(--att-cobalt, #00388F)' : 'var(--att-border, #DCDFE3)'}; background: ${selectedTemplate === 'standard' ? '#F0F7FF' : 'var(--att-surface, #FFF)'}; border-radius: 10px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span style="font-weight: 700; font-size: 0.875rem; color: var(--att-cobalt, #00388F);">3-Module Starter</span>
+                      <span style="font-weight: 700; font-size: 0.875rem; color: var(--att-cobalt, #00388F);">3-Module Sample Course</span>
                       <span style="font-size: 0.75rem; color: ${selectedTemplate === 'standard' ? 'var(--att-cobalt, #00388F)' : '#999'};">★</span>
                     </div>
-                    <p style="margin: 0; font-size: 0.75rem; color: #555; line-height: 1.3;">Intro, Deep Dive &amp; Knowledge Check.</p>
+                    <p style="margin: 0; font-size: 0.75rem; color: #555; line-height: 1.3;">Fiber Deployment, 5G Architecture &amp; Compliance.</p>
                     <span style="font-size: 0.6875rem; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); padding: 1px 6px; border-radius: 4px; align-self: flex-start; margin-top: auto;">Recommended</span>
                   </div>
 
@@ -538,7 +538,7 @@ export class DashboardView {
                   </div>
                   <div class="form-group">
                     <label for="np-desc" class="form-label">Description (optional)</label>
-                    <input id="np-desc" class="form-input" type="text" placeholder="Course overview and objectives..." value="${selectedTemplate === 'standard' ? 'Interactive 3-module course structure with Introduction, Deep Dive, and Knowledge Check.' : ''}" />
+                    <input id="np-desc" class="form-input" type="text" placeholder="Course overview and objectives..." value="${selectedTemplate === 'standard' ? 'Interactive 3-module course structure with Fiber Deployment, 5G Architecture, and Safety & Compliance Check.' : ''}" />
                   </div>
                 </div>
               `}
@@ -654,17 +654,35 @@ export class DashboardView {
       });
     }
 
-    // New Project buttons
-    const createBtn = this.container?.querySelector('#dash-create-btn') || document.getElementById('dash-create-btn');
-    const emptyCreateBtn = this.container?.querySelector('#dash-empty-create-btn');
+    // New Project & Import buttons
     const openModal = (e, tpl = 'standard') => {
-      this.lastCreateTrigger = e?.currentTarget || createBtn;
+      this.lastCreateTrigger = e?.currentTarget;
       this.state.selectedTemplate = tpl;
       this.state.isCreateModalOpen = true;
       this.render();
     };
-    if (createBtn) createBtn.onclick = (e) => openModal(e, 'standard');
-    if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', (e) => openModal(e, 'standard'));
+    document.querySelectorAll('#dash-create-btn, .dash-btn-create, #dash-empty-create-btn').forEach(btn => {
+      btn.onclick = (e) => openModal(e, 'standard');
+    });
+
+    const headerImportBtn = document.getElementById('dash-import-btn');
+    const headerImportInput = document.getElementById('dash-import-file-input');
+    if (headerImportBtn && headerImportInput) {
+      headerImportBtn.onclick = () => headerImportInput.click();
+      headerImportInput.onchange = async () => {
+        const file = headerImportInput.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const imported = importProjectJson(text);
+          showToast(`Project "${imported.name}" imported successfully!`, 'success');
+          this.render();
+          if (this.onOpenProject) this.onOpenProject(imported.id);
+        } catch (err) {
+          showToast(`Import failed: ${err.message}`, 'error');
+        }
+      };
+    }
 
     // Project card clicks and action menu items
     this.container.querySelectorAll('.project-card').forEach(card => {

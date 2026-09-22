@@ -208,7 +208,21 @@ export async function downloadCourseProjectZip(projectId) {
  * @param {Function} [options.onViewQa]
  * @returns {Promise<boolean>}
  */
-export function showPreExportReviewDialog({ projectId, onProceed, onViewQa }) {
+export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeOnViewQa = null) {
+  let projectId;
+  let onProceed;
+  let onViewQa;
+
+  if (typeof options === 'string') {
+    projectId = options;
+    onProceed = maybeOnProceed;
+    onViewQa = maybeOnViewQa;
+  } else if (options && typeof options === 'object') {
+    projectId = options.projectId;
+    onProceed = options.onProceed;
+    onViewQa = options.onViewQa;
+  }
+
   return new Promise((resolve) => {
     const project = getProject(projectId);
     if (!project) {

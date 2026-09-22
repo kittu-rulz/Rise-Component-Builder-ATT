@@ -971,9 +971,13 @@ export class ProjectOverviewView {
       <div class="component-row ${isSelected ? 'is-selected' : ''}" data-comp-id="${compId}">
         <button type="button" class="component-select-target" data-action="select-node" data-node-type="component" data-node-id="${compId}" aria-label="Select component ${escapeHTML(comp.name)}" aria-pressed="${isSelected}">
           <div class="component-row-left">
-            <span class="component-drag-handle" title="Position in section">#${index + 1}</span>
-            <span class="component-type-badge">${escapeHTML(typeLabel)}</span>
-            <h4 class="component-name">${escapeHTML(comp.name)}</h4>
+            <div class="component-row-title-line">
+              <span class="component-drag-handle" title="Position in section">#${index + 1}</span>
+              <h4 class="component-name" title="${escapeHTML(comp.name)}">${escapeHTML(comp.name)}</h4>
+            </div>
+            <div class="component-row-meta-line">
+              <span class="component-type-badge">${escapeHTML(typeLabel)}</span>
+            </div>
           </div>
         </button>
 
@@ -996,7 +1000,7 @@ export class ProjectOverviewView {
           ${index > 0 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-up" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Up" aria-label="Move ${escapeHTML(comp.name)} Up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : ''}
           ${index < totalInGroup - 1 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-down" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Down" aria-label="Move ${escapeHTML(comp.name)} Down"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : ''}
 
-          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options">
+          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options for ${escapeHTML(comp.name)}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
           </button>
         </div>

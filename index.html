@@ -124,253 +124,263 @@
 
     <!-- Top Toolbar -->
     <header class="app-toolbar" id="main-app-toolbar">
-      <div class="toolbar-brand">
-        <div class="logo-icon" id="brand-logo-btn" role="button" tabindex="0" title="Aptara Rise Studio"
-          aria-label="Aptara Rise Studio">
-          <!-- Aptara wordmark, from D:\E\00_Kittu\APTARA_Logos\Aptara-Logos\AptaraLogos-SVG\Aptara Logo.svg
-               (user-supplied, 2026-08-19) — fixed brand colors from the source file, not
-               currentColor, since (unlike the AT&T mark it replaces) this asset wasn't
-               designed with a black/white variant pair for light/dark adaptation. -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="112" height="21" viewBox="0 0 567.81 106.04" role="img"
-            aria-label="Aptara">
-            <path
-              d="M84.17,106.04l-10.73-23.55H24.67l-10.73,23.55H0L49.05,0l49.05,106.04h-13.94ZM68.14,71.21l-19.09-41.81-18.95,41.81h38.04Z"
-              fill="#807f83" />
-            <path
-              d="M154.25,1.81c18.12,0,32.05,10.73,32.05,31.63s-13.93,31.49-32.05,31.49h-28.01v41.11h-12.82V1.81h40.83ZM126.1,53.65h26.61c11.15,0,20.49-6.55,20.49-20.21s-9.34-20.34-20.49-20.34h-26.61v40.55Z"
-              fill="#807f83" />
-            <polygon
-              points="245.24 13.1 245.24 106.04 232.42 106.04 232.42 13.1 193.68 13.1 193.68 1.81 283.98 1.81 283.98 13.1 245.24 13.1"
-              fill="#807f83" />
-            <path
-              d="M423.87,64.24h-27.17v41.8h-12.82V1.81h40.27c17.98,0,32.05,10.45,32.05,31.21,0,15.33-7.66,25.08-19.09,29.12l24.52,43.89h-14.35l-23.41-41.8ZM422.62,52.95c11.01,0,20.49-6.27,20.49-19.93s-9.48-19.93-20.49-19.93h-26.06v39.85h26.06Z"
-              fill="#807f83" />
-            <path
-              d="M553.88,106.04l-10.73-23.55h-48.77l-10.73,23.55h-13.94L518.76,0l49.05,106.04h-13.93ZM537.85,71.21l-19.09-41.81-18.95,41.81h38.04Z"
-              fill="#807f83" />
-            <polygon points="319.39 29.4 354.65 106.04 368.44 106.04 319.39 0 270.34 106.04 284.12 106.04 319.39 29.4"
-              fill="#005984" />
-          </svg>
-        </div>
-        <div class="brand-divider"></div>
-        <div class="logo-text">
-          <div class="logo-title-row">
-            <span class="logo-title">Rise Studio</span>
-            <span class="brand-badge-pill">Enterprise</span>
-          </div>
-          <span class="version-tag" id="app-version-tag">v3.0.0</span>
-        </div>
-        <div class="project-title-editor" id="project-title-editor">
-          <span id="header-project-name" class="header-project-name" title="Click to rename project" tabindex="0"
-            role="button" aria-label="Project name: Click to rename">Untitled Component</span>
-          <button type="button" id="btn-edit-project-name" class="edit-project-name-btn" title="Rename project"
-            aria-label="Rename project">
-            <svg width="12" height="12" viewBox="0 0 32 32" fill="currentColor">
+      <!-- Row 1: Global Navigation & Utilities -->
+      <div class="app-toolbar-global" id="app-toolbar-global">
+        <div class="toolbar-brand">
+          <div class="logo-icon" id="brand-logo-btn" role="button" tabindex="0" title="Aptara Rise Studio"
+            aria-label="Aptara Rise Studio">
+            <!-- Aptara wordmark, from D:\E\00_Kittu\APTARA_Logos\Aptara-Logos\AptaraLogos-SVG\Aptara Logo.svg
+                 (user-supplied, 2026-08-19) — fixed brand colors from the source file, not
+                 currentColor, since (unlike the AT&T mark it replaces) this asset wasn't
+                 designed with a black/white variant pair for light/dark adaptation. -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="112" height="21" viewBox="0 0 567.81 106.04" role="img"
+              aria-label="Aptara">
               <path
-                d="M2 26 2 30 6 30 21.1 14.9 17.1 10.9 2 26ZM27.7 8.3C28.1 7.9 28.1 7.3 27.7 6.9L25.1 4.3C24.7 3.9 24.1 3.9 23.7 4.3L21.9 6.1 25.9 10.1 27.7 8.3Z" />
+                d="M84.17,106.04l-10.73-23.55H24.67l-10.73,23.55H0L49.05,0l49.05,106.04h-13.94ZM68.14,71.21l-19.09-41.81-18.95,41.81h38.04Z"
+                fill="#807f83" />
+              <path
+                d="M154.25,1.81c18.12,0,32.05,10.73,32.05,31.63s-13.93,31.49-32.05,31.49h-28.01v41.11h-12.82V1.81h40.83ZM126.1,53.65h26.61c11.15,0,20.49-6.55,20.49-20.21s-9.34-20.34-20.49-20.34h-26.61v40.55Z"
+                fill="#807f83" />
+              <polygon
+                points="245.24 13.1 245.24 106.04 232.42 106.04 232.42 13.1 193.68 13.1 193.68 1.81 283.98 1.81 283.98 13.1 245.24 13.1"
+                fill="#807f83" />
+              <path
+                d="M423.87,64.24h-27.17v41.8h-12.82V1.81h40.27c17.98,0,32.05,10.45,32.05,31.21,0,15.33-7.66,25.08-19.09,29.12l24.52,43.89h-14.35l-23.41-41.8ZM422.62,52.95c11.01,0,20.49-6.27,20.49-19.93s-9.48-19.93-20.49-19.93h-26.06v39.85h26.06Z"
+                fill="#807f83" />
+              <path
+                d="M553.88,106.04l-10.73-23.55h-48.77l-10.73,23.55h-13.94L518.76,0l49.05,106.04h-13.93ZM537.85,71.21l-19.09-41.81-18.95,41.81h38.04Z"
+                fill="#807f83" />
+              <polygon points="319.39 29.4 354.65 106.04 368.44 106.04 319.39 0 270.34 106.04 284.12 106.04 319.39 29.4"
+                fill="#005984" />
             </svg>
-          </button>
-          <input type="text" id="input-header-project-name" class="header-project-name-input"
-            aria-label="Edit project name" style="display:none;" maxlength="60" />
+          </div>
+          <div class="brand-divider"></div>
+          <div class="logo-text">
+            <div class="logo-title-row">
+              <span class="logo-title">Rise Studio</span>
+              <span class="brand-badge-pill">Enterprise</span>
+            </div>
+            <span class="version-tag" id="app-version-tag">v3.0.0</span>
+          </div>
         </div>
-        <div id="project-status" class="project-status" role="status" aria-live="polite">
-          <span class="status-dot"></span>
-          <span id="project-status-text">Saved</span>
+
+        <!-- Persistent Tubelight Navigation Bar in normal flex flow -->
+        <nav class="tubelight-nav" id="tubelight-navbar" aria-label="Primary Navigation">
+          <!-- Home / Landing -->
+          <button type="button" class="tubelight-nav-item" data-nav="landing" aria-label="Home" title="Home Intro">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <span class="tubelight-label">Home</span>
+            <div class="tubelight-lamp">
+              <div class="tubelight-lamp-glow-lg"></div>
+              <div class="tubelight-lamp-glow-sm"></div>
+              <div class="tubelight-lamp-bar"></div>
+            </div>
+          </button>
+
+          <!-- Projects Dashboard -->
+          <button type="button" class="tubelight-nav-item is-active" data-nav="dashboard"
+            aria-label="Course Projects Dashboard" title="Course Projects">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
+            <span class="tubelight-label">Projects</span>
+            <div class="tubelight-lamp">
+              <div class="tubelight-lamp-glow-lg"></div>
+              <div class="tubelight-lamp-glow-sm"></div>
+              <div class="tubelight-lamp-bar"></div>
+            </div>
+          </button>
+
+          <!-- Media Library -->
+          <button type="button" class="tubelight-nav-item" data-nav="project-media" aria-label="Course Media Library"
+            title="Course Media Library">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+              <circle cx="9" cy="9" r="2" />
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+            </svg>
+            <span class="tubelight-label">Media</span>
+            <div class="tubelight-lamp">
+              <div class="tubelight-lamp-glow-lg"></div>
+              <div class="tubelight-lamp-glow-sm"></div>
+              <div class="tubelight-lamp-bar"></div>
+            </div>
+          </button>
+
+          <!-- Post-Publish Toolkit -->
+          <button type="button" class="tubelight-nav-item" data-nav="post-publish" aria-label="Post-Publish Toolkit"
+            title="Post-Publish Toolkit">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+            </svg>
+            <span class="tubelight-label">Post-Publish</span>
+            <div class="tubelight-lamp">
+              <div class="tubelight-lamp-glow-lg"></div>
+              <div class="tubelight-lamp-glow-sm"></div>
+              <div class="tubelight-lamp-bar"></div>
+            </div>
+          </button>
+        </nav>
+
+        <!-- Right Header Actions / Utilities -->
+        <div class="toolbar-right-cluster">
+          <!-- Course Projects Dashboard Actions -->
+          <div id="dashboard-header-actions" class="dashboard-header-actions"
+            style="display: none; align-items: center; gap: 8px;">
+            <button id="dash-import-btn" class="btn btn-secondary dash-btn-import" aria-label="Import Project JSON"
+              title="Import Project JSON">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Import</span>
+            </button>
+            <input type="file" id="dash-import-file-input" accept=".json" style="display:none;" />
+            <button id="dash-create-btn" class="btn btn-primary dash-btn-create" aria-label="Create New Course Project"
+              title="Create New Course Project">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>New Project</span>
+            </button>
+          </div>
+
+          <div class="toolbar-utilities">
+            <button id="btn-theme" class="utility-btn" title="Toggle Builder Light/Dark Mode"
+              aria-label="Toggle builder light or dark interface mode">
+              <!-- Light Mode Icon -->
+              <svg class="theme-icon-light" width="18" height="18" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M16 7C11 7 7 11 7 16 7 21 11 25 16 25 21 25 25 21 25 16 25 11 21 7 16 7ZM16 23C12.1 23 9 19.9 9 16 9 12.1 12.1 9 16 9 19.9 9 23 12.1 23 16 23ZM19.9 19.9 19.9 23 16 23ZM17 5 15 5 15 1 17 1 17 5ZM15 27 17 27 17 31 15 31 15 27ZM31 15 31 17 27 17 27 15 31 15ZM5 17 1 17 1 15 5 15 5 17ZM24.5 23.1 27.3 25.9 25.9 27.3 23.1 24.5 24.5 23.1ZM7.5 8.9 4.7 6.1 6.1 4.7 8.9 7.5 7.5 8.9ZM24.5 8.9 23.1 7.5 25.9 4.7 27.3 6.1 24.5 8.9ZM7.5 23.1 8.9 24.5 6.1 27.3 4.7 25.9 7.5 23.1Z" />
+              </svg>
+              <!-- Dark Mode Icon -->
+              <svg class="theme-icon-dark" width="18" height="18" viewBox="0 0 32 32" fill="currentColor"
+                style="display:none;">
+                <path
+                  d="M28.7 19.8C27.3 20.3 25.8 20.6 24.4 20.6 17.3 20.6 11.5 14.8 11.5 7.7 11.5 6.2 11.8 4.8 12.3 3.4L13 1.4 11 2.1C5 4.2 1 9.8 1 16.1 1 24.3 7.7 31 15.9 31 22.2 31 27.8 27 29.9 21.1L30.6 19.1 28.7 19.8ZM15.9 29C8.8 29 3 23.2 3 16.1 3 11.3 5.6 7 9.7 4.8 9.5 5.8 9.4 6.7 9.4 7.7 9.4 15.9 16.1 22.6 24.3 22.6 25.3 22.6 26.2 22.5 27.2 22.3 25 26.4 20.7 29 15.9 29ZM22 6 20 6 20 4 22 4 22 6ZM21 13 19 13 19 11 21 11 21 13ZM28 12 26 12 26 10 28 10 28 12Z" />
+              </svg>
+            </button>
+            <button id="btn-shortcuts" class="utility-btn" title="Keyboard Shortcuts (?)"
+              aria-label="Open keyboard shortcuts cheat sheet">
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M16 2C8.3 2 2 8.3 2 16s6.3 14 14 14 14-6.3 14-14S23.7 2 16 2zm1 22h-2v-2h2v2zm1.6-9.4c-.6.6-1.1 1-1.3 1.9h-1.6c0-1.4.6-2.2 1.4-2.9.6-.5 1.1-.9 1.1-1.6 0-1-.8-1.8-1.8-1.8s-1.8.8-1.8 1.8h-2c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8c0 1.1-.6 1.9-1.4 2.6z" />
+              </svg>
+            </button>
+            <button id="btn-settings" class="utility-btn" title="Settings" aria-label="Open settings">
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M17.5 31 14.5 31C13.1 31 12 29.9 12 28.5L12 28C12 27 11.5 26 10.6 25.5 9.6 24.9 8.4 24.9 7.5 25.5L7.2 25.7C6 26.4 4.5 26 3.8 24.8L2.3 22.2C1.6 21 2 19.5 3.2 18.8L3.5 18.6C4.4 18.1 5 17.1 5 16 5 14.9 4.4 13.9 3.5 13.4L3.2 13.2C2 12.5 1.6 11 2.3 9.8L3.8 7.2C4.5 6 6 5.6 7.2 6.3L7.5 6.5C8.5 7.1 9.7 7.1 10.6 6.5 11.5 5.9 12 5 12 4L12 3.5C12 2.1 13.1 1 14.5 1L17.5 1C18.9 1 20 2.1 20 3.5L20 3.9C20 5 20.6 5.9 21.5 6.5 22.4 7 23.6 7 24.5 6.5L24.8 6.3C26 5.6 27.5 6 28.2 7.2L29.7 9.8C30.4 11 30 12.5 28.8 13.2L28.5 13.4C27.6 13.9 27 14.9 27 16L27 16C27 17.1 27.6 18.1 28.5 18.6L28.8 18.8C30 19.5 30.4 21 29.7 22.2L28.2 24.8C27.5 26 26 26.4 24.8 25.7L24.5 25.5C23.5 24.9 22.3 24.9 21.4 25.5 20.5 26.1 20 27 20 28L20 28.5C20 29.9 18.9 31 17.5 31ZM9 23.2C9.9 23.2 10.8 23.4 11.6 23.9 13.1 24.8 14 26.4 14 28.1L14 28.6C14 28.9 14.2 29.1 14.5 29.1L17.5 29.1C17.8 29.1 18 28.9 18 28.6L18 28C18 26.3 18.9 24.7 20.4 23.8C22 22.9 23.9 22.9 25.5 23.8L25.8 24C26 24.1 26.3 24.1 26.5 23.8L28 21.2C28.1 21 28.1 20.7 27.8 20.5L27.5 20.3C26 19.5 25 17.8 25 16 25 14.2 26 12.5 27.5 11.6L27.8 11.4C28 11.3 28.1 11 28 10.7L26.5 8.1C26.4 7.9 26.1 7.8 25.8 7.9L25.5 8.1C24 9 22 9 20.5 8.1 19 7.3 18 5.7 18 3.9L18 3.5C18 3.2 17.8 3 17.5 3L14.5 3C14.2 3 14 3.2 14 3.5L14 4C14 5.7 13.1 7.3 11.6 8.2 10 9.1 8 9.1 6.5 8.2L6.2 8C5.9 7.9 5.6 7.9 5.5 8.2L4 10.8C3.9 11 3.9 11.3 4.2 11.5L4.5 11.7C6 12.5 7 14.2 7 16 7 17.8 6 19.5 4.5 20.4L4.2 20.6C3.9 20.7 3.9 21 4 21.2L5.5 23.8C5.6 24 5.9 24.1 6.2 24L6.5 23.8C7.3 23.4 8.1 23.2 9 23.2Z" />
+                <path
+                  d="M16 22C12.7 22 10 19.3 10 16 10 12.7 12.7 10 16 10 19.3 10 22 12.7 22 16 22ZM16 12C13.8 12 12 13.8 12 16 12 18.2 13.8 20 16 20 18.2 20 20 18.2 20 16 20 13.8 18.2 12 16 12Z" />
+              </svg>
+            </button>
+            <div class="user-profile" title="Signed in as Instructional Designer">
+              <div class="avatar-ring">
+                <div class="avatar">ID</div>
+              </div>
+              <span class="user-status-dot" title="Online"></span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Persistent Tubelight Navigation Bar -->
-      <nav class="tubelight-nav" id="tubelight-navbar" aria-label="Primary Navigation">
-        <!-- Home / Landing -->
-        <button type="button" class="tubelight-nav-item" data-nav="landing" aria-label="Home" title="Home Intro">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          <span class="tubelight-label">Home</span>
-          <div class="tubelight-lamp">
-            <div class="tubelight-lamp-glow-lg"></div>
-            <div class="tubelight-lamp-glow-sm"></div>
-            <div class="tubelight-lamp-bar"></div>
+      <!-- Row 2: Contextual Authoring & Focus Editor Toolbar -->
+      <div class="app-toolbar-contextual" id="app-toolbar-contextual" style="display: none;">
+        <div class="contextual-toolbar-left" style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+          <div class="project-title-editor" id="project-title-editor" style="display: flex; align-items: center; gap: 8px;">
+            <span id="header-project-name" class="header-project-name" title="Click to rename project" tabindex="0"
+              role="button" aria-label="Project name: Click to rename">Untitled Component</span>
+            <button type="button" id="btn-edit-project-name" class="edit-project-name-btn" title="Rename project"
+              aria-label="Rename project">
+              <svg width="12" height="12" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M2 26 2 30 6 30 21.1 14.9 17.1 10.9 2 26ZM27.7 8.3C28.1 7.9 28.1 7.3 27.7 6.9L25.1 4.3C24.7 3.9 24.1 3.9 23.7 4.3L21.9 6.1 25.9 10.1 27.7 8.3Z" />
+              </svg>
+            </button>
+            <input type="text" id="input-header-project-name" class="header-project-name-input"
+              aria-label="Edit project name" style="display:none;" maxlength="60" />
           </div>
-        </button>
 
-        <!-- Projects Dashboard -->
-        <button type="button" class="tubelight-nav-item is-active" data-nav="dashboard"
-          aria-label="Course Projects Dashboard" title="Course Projects">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          </svg>
-          <span class="tubelight-label">Projects</span>
-          <div class="tubelight-lamp">
-            <div class="tubelight-lamp-glow-lg"></div>
-            <div class="tubelight-lamp-glow-sm"></div>
-            <div class="tubelight-lamp-bar"></div>
+          <div id="project-status" class="project-status" role="status" aria-live="polite">
+            <span class="status-dot"></span>
+            <span id="project-status-text">Saved</span>
           </div>
-        </button>
-
-
-        <!-- Media Library -->
-        <button type="button" class="tubelight-nav-item" data-nav="project-media" aria-label="Course Media Library"
-          title="Course Media Library">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-            <circle cx="9" cy="9" r="2" />
-            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-          </svg>
-          <span class="tubelight-label">Media</span>
-          <div class="tubelight-lamp">
-            <div class="tubelight-lamp-glow-lg"></div>
-            <div class="tubelight-lamp-glow-sm"></div>
-            <div class="tubelight-lamp-bar"></div>
-          </div>
-        </button>
-
-        <!-- Post-Publish Toolkit -->
-        <button type="button" class="tubelight-nav-item" data-nav="post-publish" aria-label="Post-Publish Toolkit"
-          title="Post-Publish Toolkit">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path
-              d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-          </svg>
-          <span class="tubelight-label">Post-Publish</span>
-          <div class="tubelight-lamp">
-            <div class="tubelight-lamp-glow-lg"></div>
-            <div class="tubelight-lamp-glow-sm"></div>
-            <div class="tubelight-lamp-bar"></div>
-          </div>
-        </button>
-      </nav>
-
-      <!-- Right Header Actions / Utilities -->
-      <div class="toolbar-right-cluster">
-        <!-- Course Projects Dashboard Actions -->
-        <div id="dashboard-header-actions" class="dashboard-header-actions"
-          style="display: none; align-items: center; gap: 8px;">
-          <button id="dash-import-btn" class="btn btn-secondary dash-btn-import" aria-label="Import Project JSON"
-            title="Import Project JSON">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Import</span>
-          </button>
-          <input type="file" id="dash-import-file-input" accept=".json" style="display:none;" />
-          <button id="dash-create-btn" class="btn btn-primary dash-btn-create" aria-label="Create New Course Project"
-            title="Create New Course Project">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            <span>New Project</span>
-          </button>
         </div>
 
-        <div class="toolbar-actions" style="display: none;">
-          <!-- Course Projects Workspace Navigation -->
-          <button id="btn-projects-dashboard" class="btn btn-secondary" title="Course Projects Dashboard"
-            aria-label="Course Projects Dashboard" style="display:none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            </svg>
-            <span>Projects</span>
-          </button>
-          <button id="btn-new" class="btn btn-secondary" title="New Project (Ctrl+Alt+N)" aria-label="New Project">
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <path d="M17 9 15 9 15 15 9 15 9 17 15 17 15 23 17 23 17 17 23 17 23 15 17 15Z" />
-            </svg>
-            <span>New</span>
-          </button>
-          <button id="btn-open" class="btn btn-secondary" title="Open Project (Ctrl+O)" aria-label="Open Project">
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M27 28 5 28C3.3 28 2 26.7 2 25L2 4 12.4 4 15.4 7 27 7C28.7 7 30 8.3 30 10L30 25C30 26.7 28.7 28 27 28ZM4 6 4 25C4 25.6 4.4 26 5 26L27 26C27.6 26 28 25.6 28 25L28 10C28 9.4 27.6 9 27 9L14.6 9 11.6 6 4 6Z" />
-            </svg>
-            <span>Open</span>
-          </button>
-          <button id="btn-save" class="btn btn-secondary" title="Save Component (Ctrl+S)" aria-label="Save Component">
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M23.4 3 3 3 3 26C3 27.7 4.3 29 6 29L26 29C27.7 29 29 27.7 29 26L29 8.5 23.4 3ZM11 5 21 5 21 8C21 8.6 20.6 9 20 9L12 9C11.4 9 11 8.6 11 8L11 5ZM11 27 11 18 21 18 21 27 11 27ZM27 26C27 26.6 26.6 27 26 27L23 27 23 16 9 16 9 27 6 27C5.4 27 5 26.6 5 26L5 5 9 5 9 8C9 9.7 10.3 11 12 11L20 11C21.7 11 23 9.7 23 8L23 5.4 27 9.4 27 26Z" />
-            </svg>
-            <span>Save</span>
-          </button>
-          <button id="btn-duplicate" class="btn btn-secondary" title="Duplicate Component"
-            aria-label="Duplicate Component">
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M28 10V28H10V10H28ZM28 8H10C8.9 8 8 8.9 8 10V28C8 29.1 8.9 30 10 30H28C29.1 30 30 29.1 30 28V10C30 8.9 29.1 8 28 8ZM22 4H4C2.9 4 2 4.9 2 6V24H4V6H22V4Z" />
-            </svg>
-          </button>
-          <div class="divider"></div>
-          <button id="btn-undo" class="btn btn-secondary btn-icon" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M12.4 12 17.7 6.7 16.3 5.3 8.6 13 16.3 20.7 17.7 19.3 12.4 14C17.7 14 22 18.3 22 23.6L22 26 24 26 24 23.6C24 17.2 18.8 12 12.4 12Z" />
-            </svg>
-          </button>
-          <button id="btn-redo" class="btn btn-secondary btn-icon" title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
-            aria-label="Redo" disabled>
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M19.6 12C13.2 12 8 17.2 8 23.6L8 26 10 26 10 23.6C10 18.3 14.3 14 19.6 14L14.3 19.3 15.7 20.7 23.4 13 15.7 5.3 14.3 6.7 19.6 12Z" />
-            </svg>
-          </button>
-          <div class="divider"></div>
-          <button id="btn-export" class="btn btn-primary" title="Export Component (Ctrl+E)"
-            aria-label="Export Component">
-            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M23.9 8.1C23.5 4.1 20.1 1 16 1 11.9 1 8.5 4.1 8.1 8.1 4.1 8.5 1 11.9 1 16 1 20.4 4.6 24 9 24L9 22C5.7 22 3 19.3 3 16 3 12.7 5.7 10 9 10L10 10 10 9C10 5.7 12.7 3 16 3 19.3 3 22 5.7 22 9L22 10 23 10C26.3 10 29 12.7 29 16 29 19.3 26.3 22 23 22L23 24C27.4 24 31 20.4 31 16 31 11.9 27.9 8.5 23.9 8.1Z" />
-              <path d="M17 27.1 17 15 15 15 15 27.1 11.8 23.8 10.3 25.2 16 30.9 21.7 25.2 20.2 23.8Z" />
-            </svg>
-            <span>Export</span>
-          </button>
-        </div>
-
-        <div class="toolbar-utilities">
-          <button id="btn-theme" class="utility-btn" title="Toggle Builder Light/Dark Mode"
-            aria-label="Toggle builder light or dark interface mode">
-            <!-- Light Mode Icon -->
-            <svg class="theme-icon-light" width="18" height="18" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M16 7C11 7 7 11 7 16 7 21 11 25 16 25 21 25 25 21 25 16 25 11 21 7 16 7ZM16 23C12.1 23 9 19.9 9 16 9 12.1 12.1 9 16 9 19.9 9 23 12.1 23 16 23ZM19.9 19.9 19.9 23 16 23ZM17 5 15 5 15 1 17 1 17 5ZM15 27 17 27 17 31 15 31 15 27ZM31 15 31 17 27 17 27 15 31 15ZM5 17 1 17 1 15 5 15 5 17ZM24.5 23.1 27.3 25.9 25.9 27.3 23.1 24.5 24.5 23.1ZM7.5 8.9 4.7 6.1 6.1 4.7 8.9 7.5 7.5 8.9ZM24.5 8.9 23.1 7.5 25.9 4.7 27.3 6.1 24.5 8.9ZM7.5 23.1 8.9 24.5 6.1 27.3 4.7 25.9 7.5 23.1Z" />
-            </svg>
-            <!-- Dark Mode Icon -->
-            <svg class="theme-icon-dark" width="18" height="18" viewBox="0 0 32 32" fill="currentColor"
-              style="display:none;">
-              <path
-                d="M28.7 19.8C27.3 20.3 25.8 20.6 24.4 20.6 17.3 20.6 11.5 14.8 11.5 7.7 11.5 6.2 11.8 4.8 12.3 3.4L13 1.4 11 2.1C5 4.2 1 9.8 1 16.1 1 24.3 7.7 31 15.9 31 22.2 31 27.8 27 29.9 21.1L30.6 19.1 28.7 19.8ZM15.9 29C8.8 29 3 23.2 3 16.1 3 11.3 5.6 7 9.7 4.8 9.5 5.8 9.4 6.7 9.4 7.7 9.4 15.9 16.1 22.6 24.3 22.6 25.3 22.6 26.2 22.5 27.2 22.3 25 26.4 20.7 29 15.9 29ZM22 6 20 6 20 4 22 4 22 6ZM21 13 19 13 19 11 21 11 21 13ZM28 12 26 12 26 10 28 10 28 12Z" />
-            </svg>
-          </button>
-          <button id="btn-shortcuts" class="utility-btn" title="Keyboard Shortcuts (?)"
-            aria-label="Open keyboard shortcuts cheat sheet">
-            <svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M16 2C8.3 2 2 8.3 2 16s6.3 14 14 14 14-6.3 14-14S23.7 2 16 2zm1 22h-2v-2h2v2zm1.6-9.4c-.6.6-1.1 1-1.3 1.9h-1.6c0-1.4.6-2.2 1.4-2.9.6-.5 1.1-.9 1.1-1.6 0-1-.8-1.8-1.8-1.8s-1.8.8-1.8 1.8h-2c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8c0 1.1-.6 1.9-1.4 2.6z" />
-            </svg>
-          </button>
-          <button id="btn-settings" class="utility-btn" title="Settings" aria-label="Open settings">
-            <svg width="18" height="18" viewBox="0 0 32 32" fill="currentColor">
-              <path
-                d="M17.5 31 14.5 31C13.1 31 12 29.9 12 28.5L12 28C12 27 11.5 26 10.6 25.5 9.6 24.9 8.4 24.9 7.5 25.5L7.2 25.7C6 26.4 4.5 26 3.8 24.8L2.3 22.2C1.6 21 2 19.5 3.2 18.8L3.5 18.6C4.4 18.1 5 17.1 5 16 5 14.9 4.4 13.9 3.5 13.4L3.2 13.2C2 12.5 1.6 11 2.3 9.8L3.8 7.2C4.5 6 6 5.6 7.2 6.3L7.5 6.5C8.5 7.1 9.7 7.1 10.6 6.5 11.5 5.9 12 5 12 4L12 3.5C12 2.1 13.1 1 14.5 1L17.5 1C18.9 1 20 2.1 20 3.5L20 3.9C20 5 20.6 5.9 21.5 6.5 22.4 7 23.6 7 24.5 6.5L24.8 6.3C26 5.6 27.5 6 28.2 7.2L29.7 9.8C30.4 11 30 12.5 28.8 13.2L28.5 13.4C27.6 13.9 27 14.9 27 16L27 16C27 17.1 27.6 18.1 28.5 18.6L28.8 18.8C30 19.5 30.4 21 29.7 22.2L28.2 24.8C27.5 26 26 26.4 24.8 25.7L24.5 25.5C23.5 24.9 22.3 24.9 21.4 25.5 20.5 26.1 20 27 20 28L20 28.5C20 29.9 18.9 31 17.5 31ZM9 23.2C9.9 23.2 10.8 23.4 11.6 23.9 13.1 24.8 14 26.4 14 28.1L14 28.6C14 28.9 14.2 29.1 14.5 29.1L17.5 29.1C17.8 29.1 18 28.9 18 28.6L18 28C18 26.3 18.9 24.7 20.4 23.8C22 22.9 23.9 22.9 25.5 23.8L25.8 24C26 24.1 26.3 24.1 26.5 23.8L28 21.2C28.1 21 28.1 20.7 27.8 20.5L27.5 20.3C26 19.5 25 17.8 25 16 25 14.2 26 12.5 27.5 11.6L27.8 11.4C28 11.3 28.1 11 28 10.7L26.5 8.1C26.4 7.9 26.1 7.8 25.8 7.9L25.5 8.1C24 9 22 9 20.5 8.1 19 7.3 18 5.7 18 3.9L18 3.5C18 3.2 17.8 3 17.5 3L14.5 3C14.2 3 14 3.2 14 3.5L14 4C14 5.7 13.1 7.3 11.6 8.2 10 9.1 8 9.1 6.5 8.2L6.2 8C5.9 7.9 5.6 7.9 5.5 8.2L4 10.8C3.9 11 3.9 11.3 4.2 11.5L4.5 11.7C6 12.5 7 14.2 7 16 7 17.8 6 19.5 4.5 20.4L4.2 20.6C3.9 20.7 3.9 21 4 21.2L5.5 23.8C5.6 24 5.9 24.1 6.2 24L6.5 23.8C7.3 23.4 8.1 23.2 9 23.2Z" />
-              <path
-                d="M16 22C12.7 22 10 19.3 10 16 10 12.7 12.7 10 16 10 19.3 10 22 12.7 22 16 22ZM16 12C13.8 12 12 13.8 12 16 12 18.2 13.8 20 16 20 18.2 20 20 18.2 20 16 20 13.8 18.2 12 16 12Z" />
-            </svg>
-          </button>
-          <div class="user-profile" title="Signed in as Instructional Designer">
-            <div class="avatar-ring">
-              <div class="avatar">ID</div>
-            </div>
-            <span class="user-status-dot" title="Online"></span>
+        <div class="contextual-toolbar-right" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <div class="toolbar-actions" id="authoring-toolbar-actions" style="display: flex; align-items: center; gap: 6px;">
+            <button id="btn-projects-dashboard" class="btn btn-secondary" title="Course Projects Dashboard"
+              aria-label="Course Projects Dashboard" style="display:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Projects</span>
+            </button>
+            <button id="btn-new" class="btn btn-secondary" title="New Project (Ctrl+Alt+N)" aria-label="New Project">
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <path d="M17 9 15 9 15 15 9 15 9 17 15 17 15 23 17 23 17 17 23 17 23 15 17 15Z" />
+              </svg>
+              <span>New</span>
+            </button>
+            <button id="btn-open" class="btn btn-secondary" title="Open Project (Ctrl+O)" aria-label="Open Project">
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M27 28 5 28C3.3 28 2 26.7 2 25L2 4 12.4 4 15.4 7 27 7C28.7 7 30 8.3 30 10L30 25C30 26.7 28.7 28 27 28ZM4 6 4 25C4 25.6 4.4 26 5 26L27 26C27.6 26 28 25.6 28 25L28 10C28 9.4 27.6 9 27 9L14.6 9 11.6 6 4 6Z" />
+              </svg>
+              <span>Open</span>
+            </button>
+            <button id="btn-duplicate" class="btn btn-secondary" title="Duplicate Component"
+              aria-label="Duplicate Component">
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M28 10V28H10V10H28ZM28 8H10C8.9 8 8 8.9 8 10V28C8 29.1 8.9 30 10 30H28C29.1 30 30 29.1 30 28V10C30 8.9 29.1 8 28 8ZM22 4H4C2.9 4 2 4.9 2 6V24H4V6H22V4Z" />
+              </svg>
+            </button>
+            <div class="divider" style="width: 1px; height: 20px; background: var(--att-border, #CBD5E1); margin: 0 4px;"></div>
+            <button id="btn-undo" class="btn btn-secondary btn-icon" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M12.4 12 17.7 6.7 16.3 5.3 8.6 13 16.3 20.7 17.7 19.3 12.4 14C17.7 14 22 18.3 22 23.6L22 26 24 26 24 23.6C24 17.2 18.8 12 12.4 12Z" />
+              </svg>
+            </button>
+            <button id="btn-redo" class="btn btn-secondary btn-icon" title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
+              aria-label="Redo" disabled>
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M19.6 12C13.2 12 8 17.2 8 23.6L8 26 10 26 10 23.6C10 18.3 14.3 14 19.6 14L14.3 19.3 15.7 20.7 23.4 13 15.7 5.3 14.3 6.7 19.6 12Z" />
+              </svg>
+            </button>
+            <div class="divider" style="width: 1px; height: 20px; background: var(--att-border, #CBD5E1); margin: 0 4px;"></div>
+            <button id="btn-save" class="btn btn-secondary" title="Save Component (Ctrl+S)" aria-label="Save Component">
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M23.4 3 3 3 3 26C3 27.7 4.3 29 6 29L26 29C27.7 29 29 27.7 29 26L29 8.5 23.4 3ZM11 5 21 5 21 8C21 8.6 20.6 9 20 9L12 9C11.4 9 11 8.6 11 8L11 5ZM11 27 11 18 21 18 21 27 11 27ZM27 26C27 26.6 26.6 27 26 27L23 27 23 16 9 16 9 27 6 27C5.4 27 5 26.6 5 26L5 5 9 5 9 8C9 9.7 10.3 11 12 11L20 11C21.7 11 23 9.7 23 8L23 5.4 27 9.4 27 26Z" />
+              </svg>
+              <span>Save</span>
+            </button>
+            <button id="btn-export" class="btn btn-primary" title="Export Component (Ctrl+E)"
+              aria-label="Export Component">
+              <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <path
+                  d="M23.9 8.1C23.5 4.1 20.1 1 16 1 11.9 1 8.5 4.1 8.1 8.1 4.1 8.5 1 11.9 1 16 1 20.4 4.6 24 9 24L9 22C5.7 22 3 19.3 3 16 3 12.7 5.7 10 9 10L10 10 10 9C10 5.7 12.7 3 16 3 19.3 3 22 5.7 22 9L22 10 23 10C26.3 10 29 12.7 29 16 29 19.3 26.3 22 23 22L23 24C27.4 24 31 20.4 31 16 31 11.9 27.9 8.5 23.9 8.1Z" />
+                <path d="M17 27.1 17 15 15 15 15 27.1 11.8 23.8 10.3 25.2 16 30.9 21.7 25.2 20.2 23.8Z" />
+              </svg>
+              <span>Export</span>
+            </button>
           </div>
         </div>
       </div>

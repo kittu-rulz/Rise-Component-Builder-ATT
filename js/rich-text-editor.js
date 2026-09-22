@@ -164,6 +164,7 @@ export function createRichTextEditor({
   isSingleLine = false,
   ariaDescribedBy = '',
   ariaLabelledBy = '',
+  ariaLabel = '',
   onChange
 }) {
   const container = document.createElement('div');
@@ -187,6 +188,7 @@ export function createRichTextEditor({
   if (placeholder) editor.dataset.placeholder = placeholder;
   if (ariaDescribedBy) editor.setAttribute('aria-describedby', ariaDescribedBy);
   if (ariaLabelledBy) editor.setAttribute('aria-labelledby', ariaLabelledBy);
+  if (ariaLabel) editor.setAttribute('aria-label', ariaLabel);
   editor.maxLength = -1;
   editor.innerHTML = sanitizeRichText(value || '');
 
@@ -1019,13 +1021,14 @@ export function createRichTextEditor({
  * @param {Object} [options={}]
  * @returns {{ element: HTMLElement, validationControl: HTMLElement, getValue: () => string, setValue: (val: string) => void } | null}
  */
-export function upgradeTextareaToRichText(targetElement, { fieldId, isSingleLine = false, onChange = null } = {}) {
+export function upgradeTextareaToRichText(targetElement, { fieldId, isSingleLine = false, ariaLabel = '', onChange = null } = {}) {
   if (!targetElement) return null;
   const controlId = targetElement.id;
   const placeholder = targetElement.placeholder || targetElement.getAttribute('placeholder') || '';
   const initialValue = targetElement.value || targetElement.innerHTML || '';
   const ariaDescribedBy = targetElement.getAttribute('aria-describedby') || '';
   const ariaLabelledBy = targetElement.getAttribute('aria-labelledby') || '';
+  const resolvedAriaLabel = ariaLabel || targetElement.getAttribute('aria-label') || '';
 
   const rte = createRichTextEditor({
     controlId,
@@ -1035,6 +1038,7 @@ export function upgradeTextareaToRichText(targetElement, { fieldId, isSingleLine
     isSingleLine,
     ariaDescribedBy,
     ariaLabelledBy,
+    ariaLabel: resolvedAriaLabel,
     onChange
   });
 

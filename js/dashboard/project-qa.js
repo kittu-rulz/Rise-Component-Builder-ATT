@@ -6,7 +6,7 @@
  */
 
 import { getProject } from '../storage.js';
-import { showPreExportReviewDialog, buildCourseProjectZip } from './project-export.js';
+import { showPreExportReviewDialog, buildCourseProjectZip, downloadCourseProjectZip } from './project-export.js';
 
 /**
  * Performs a deep audit of a course project.
@@ -475,7 +475,17 @@ export class ProjectQaView {
     });
 
     this.container.querySelector('#wp-export-btn')?.addEventListener('click', () => {
-      showPreExportReviewDialog(this.projectId, () => buildCourseProjectZip(this.projectId));
+      showPreExportReviewDialog({
+        projectId: this.projectId,
+        onProceed: async (id) => {
+          try {
+            await downloadCourseProjectZip(id);
+          } catch (err) {
+            console.error('Export failed:', err);
+          }
+        },
+        onViewQa: this.onOpenQa
+      });
     });
 
     this.container.querySelector('#qa-return-structure-btn')?.addEventListener('click', () => {

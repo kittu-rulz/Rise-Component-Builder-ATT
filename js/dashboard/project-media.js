@@ -111,7 +111,7 @@ export class ProjectMediaView {
             <div class="workspace-banner-info">
               <h1 class="workspace-title">Course Media Library</h1>
               <p class="workspace-desc">
-                High-performance offline assets stored in browser IndexedDB. Stored assets can be referenced across any course component.
+                High-performance offline assets stored locally in your browser on this device (IndexedDB). Stored assets can be referenced across any course component.
               </p>
               <div style="margin-top: 8px; font-size: 0.8125rem; color: #555555; display: flex; gap: 16px;">
                 <span>Total Assets: <strong>${this.state.mediaList.length}</strong></span>
