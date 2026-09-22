@@ -12,7 +12,7 @@ import { escapeAttribute, normalizeHeadingLevel } from './utilities.js';
 // handle that, silently dropping the whole style/image layer in some of them. http:/https:
 // already cover every legitimate same-origin case this policy needs, so 'self' added no
 // real permission — only this compatibility risk.
-export const CSP_META = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src http: https: data: blob:; media-src http: https: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
+export const CSP_META = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' http: https: data: blob: file:; media-src 'self' http: https: blob: file:; connect-src 'none'; base-uri 'none'; form-action 'none'";
 
 // Reset + shared block chrome (title/headline/description) + shared surfaces and density. No component-specific rules.
 export const BASE_RESET_CSS = `

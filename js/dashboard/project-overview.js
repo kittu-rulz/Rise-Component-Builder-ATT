@@ -20,6 +20,7 @@ import { auditCourseProject } from './project-qa.js';
 import { generateIframeContent } from '../preview.js';
 import { toRgba as colorToRgba, escapeHTML } from '../utilities.js';
 import { showToast } from '../toast.js';
+import { getBuiltInTheme, DEFAULT_THEME_ID } from '../themes.js';
 
 export class ProjectOverviewView {
   constructor({
@@ -215,7 +216,7 @@ export class ProjectOverviewView {
         config: comp.config || {},
         componentOverrides: comp.styleOverrides || {},
         currentProjectId: comp.id,
-        activeTheme: project.theme,
+        activeTheme: project.theme || getBuiltInTheme(DEFAULT_THEME_ID),
         uiTheme: project.uiTheme || 'light'
       };
 
@@ -321,17 +322,36 @@ export class ProjectOverviewView {
 
           <!-- Workflow Segment Control (Build -> Preview -> QA -> Export) -->
           <div class="workflow-nav-segment" role="tablist" aria-label="Course workflow steps">
-            <button class="workflow-tab-btn active" id="wp-tab-build" role="tab" aria-selected="true">
-              Build
+            <button class="workflow-tab-btn active" id="wp-tab-build" role="tab" aria-selected="true" title="Build & Edit Course">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Build</span>
             </button>
-            <button class="workflow-tab-btn" id="wp-preview-btn" role="tab" aria-selected="false">
-              Course Preview
+            <button class="workflow-tab-btn" id="wp-preview-btn" role="tab" aria-selected="false" title="Launch Full Course Preview">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>Course Preview</span>
             </button>
-            <button class="workflow-tab-btn" id="wp-qa-btn" role="tab" aria-selected="false">
-              QA Preflight
+            <button class="workflow-tab-btn" id="wp-qa-btn" role="tab" aria-selected="false" title="Course Quality & Compliance QA">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+              <span>QA Preflight</span>
             </button>
-            <button class="workflow-tab-btn" id="wp-export-btn" role="tab" aria-selected="false">
-              Export Package
+            <button class="workflow-tab-btn" id="wp-export-btn" role="tab" aria-selected="false" title="Export Course Package ZIP">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Export Package</span>
             </button>
           </div>
 
@@ -823,10 +843,6 @@ export class ProjectOverviewView {
     this.render();
 
     showToast(`${regEntry?.name || 'Component'} added to ${destName}.`, 'success');
-
-    if (this.onEditComponent) {
-      this.onEditComponent(this.getProject(), newComp);
-    }
     return newComp;
   }
 

@@ -95,6 +95,59 @@ describe('prepareMediaExport filename and cache handling', () => {
     expect(result.config.items[0].content).toBe('assets/shared.png');
     expect(result.config.items[1].content).toBe('assets/shared-2.png');
   });
+
+  test('resolves item.media attachments correctly in package mode', async () => {
+    const record = { id: 'item-img', blob: pngBlob(), sanitizedName: 'diagram.png', kind: 'image', mimeType: 'image/png', size: 8, name: 'diagram.png' };
+    const store = fakeStore({ 'item-img': record });
+    const config = {
+      items: [
+        {
+          title: 'Panel 1',
+          content: 'Some text',
+          media: {
+            type: 'image',
+            sourceType: 'upload',
+            mediaId: 'item-img',
+            fileName: 'diagram.png',
+            src: '',
+            placement: 'above',
+            aspectRatio: 'original',
+            fit: 'contain'
+          }
+        }
+      ]
+    };
+    const result = await prepareMediaExport(config, { store, mode: 'package' });
+    expect(result.manifest.length).toBe(1);
+    expect(result.manifest[0].filename).toBe('diagram.png');
+    expect(result.assets.length).toBe(1);
+    expect(result.config.items[0].media.src).toBe('assets/diagram.png');
+  });
+
+  test('resolves item.media attachments to data URLs in inline mode', async () => {
+    const record = { id: 'item-img', blob: pngBlob(), sanitizedName: 'diagram.png', kind: 'image', mimeType: 'image/png', size: 8, name: 'diagram.png' };
+    const store = fakeStore({ 'item-img': record });
+    const config = {
+      items: [
+        {
+          title: 'Panel 1',
+          content: 'Some text',
+          media: {
+            type: 'image',
+            sourceType: 'upload',
+            mediaId: 'item-img',
+            fileName: 'diagram.png',
+            src: '',
+            placement: 'above',
+            aspectRatio: 'original',
+            fit: 'contain'
+          }
+        }
+      ]
+    };
+    const result = await prepareMediaExport(config, { store, mode: 'inline' });
+    expect(result.config.items[0].media.src).toMatch(/^data:image\/png;base64,/);
+  });
 });
 
 describe('buildRiseProjectZip', () => {

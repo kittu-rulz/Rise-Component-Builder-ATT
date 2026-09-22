@@ -4,8 +4,8 @@
  */
 
 import {
-  deleteProject, duplicateProject, exportProjectJson, getProject,
-  importProjectJson, loadProjects, saveProject, toggleFavoriteProject
+  clearDraft, deleteProject, duplicateProject, exportProjectJson, getProject,
+  importProjectJson, loadDraft, loadProjects, saveProject, toggleFavoriteProject
 } from '../storage.js';
 import {
   buildProjectSchemaV3, createComponentInstance, createSection
@@ -14,10 +14,22 @@ import { showPromptDialog, showConfirmDialog, isolateModal } from './att-modal.j
 import { showToast } from '../toast.js';
 
 export class DashboardView {
-  constructor({ container = null, onOpenProject = null, onCreateNewComponent = null } = {}) {
+  constructor({
+    container = null,
+    onOpenProject = null,
+    onCreateNewComponent = null,
+    onOpenCatalog = null,
+    onOpenComponent = null,
+    onOpenPostPublish = null,
+    onRestoreDraft = null
+  } = {}) {
     this.container = container;
     this.onOpenProject = onOpenProject;
     this.onCreateNewComponent = onCreateNewComponent;
+    this.onOpenCatalog = onOpenCatalog;
+    this.onOpenComponent = onOpenComponent;
+    this.onOpenPostPublish = onOpenPostPublish;
+    this.onRestoreDraft = onRestoreDraft;
 
     this.state = {
       searchQuery: '',
@@ -133,7 +145,7 @@ export class DashboardView {
     if (!this.container) return;
     const projects = this.getFilteredAndSortedProjects();
     const allProjects = loadProjects();
-    const isOnboardingDismissed = localStorage.getItem('rcb_onboarding_dismissed') === 'true';
+    const activeDraft = loadDraft();
 
     // Clear any previous modal rendered in modal host if modal is closed
     const modalHost = this.getModalHost();
@@ -144,102 +156,191 @@ export class DashboardView {
 
     this.container.innerHTML = `
       <div class="project-dashboard-view">
-        <h1 class="sr-only">Course Projects Dashboard | Rise Component Builder</h1>
-
-        <!-- Main Body -->
         <main class="dashboard-container">
-          <!-- Controls Bar -->
-          <div class="dashboard-controls">
-            <div class="dashboard-search-wrapper">
-              <svg class="dashboard-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input
-                id="dash-search-input"
-                class="dashboard-search-input"
-                type="search"
-                placeholder="Search courses and projects..."
-                value="${this.escapeHtml(this.state.searchQuery)}"
-                aria-label="Search projects"
-              />
-            </div>
 
-            <div class="dashboard-filters-group">
-              <button class="filter-chip ${this.state.filter === 'all' ? 'active' : ''}" data-filter="all">All Projects (${allProjects.length})</button>
-              <button class="filter-chip ${this.state.filter === 'favorites' ? 'active' : ''}" data-filter="favorites">Favorites</button>
-              <button class="filter-chip ${this.state.filter === 'recent' ? 'active' : ''}" data-filter="recent">Recent</button>
-            </div>
+          <!-- Hero Landing Header -->
+          <header class="dashboard-hero-section">
+            <div class="dashboard-hero-content">
+              <div class="dashboard-hero-eyebrow">
+                <span class="hero-brand-pill">Aptara Learning Interaction Studio</span>
+                <span class="hero-compliance-pill">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  WCAG 2.2 AA &amp; Brand Verified
+                </span>
+              </div>
 
-            <div class="dashboard-sort-wrapper">
-              <label for="dash-sort-select" class="dashboard-sort-label">Sort by:</label>
-              <select id="dash-sort-select" class="dashboard-sort-select">
-                <option value="updatedAt" ${this.state.sortBy === 'updatedAt' ? 'selected' : ''}>Last Modified</option>
-                <option value="name" ${this.state.sortBy === 'name' ? 'selected' : ''}>Alphabetical</option>
-                <option value="componentCount" ${this.state.sortBy === 'componentCount' ? 'selected' : ''}>Components Count</option>
-              </select>
-            </div>
-          </div>
+              <h1 class="dashboard-hero-title">Course Projects Dashboard <span class="hero-title-accent">· Rise Component Builder</span></h1>
+              <p class="dashboard-hero-description">
+                Design, preview, audit, and package brand-compliant interactive modules and post-publish course enhancements for Articulate Rise 360 without writing code.
+              </p>
 
-          <!-- Grid or Empty State -->
-          ${projects.length > 0 ? `
-            <div class="dashboard-projects-grid">
-              ${projects.map(p => this.renderProjectCard(p)).join('')}
-            </div>
-          ` : (this.state.searchQuery || this.state.filter !== 'all') ? `
-            <div class="dashboard-empty-state">
-              <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <span>Dismiss</span>
-                </button>
-                <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; background: rgba(0, 56, 143, 0.08); color: var(--att-cobalt, #00388F); border-radius: 16px; margin-bottom: 16px;">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              <div class="dashboard-hero-stats">
+                <div class="hero-stat-item">
+                  <span class="hero-stat-num">${allProjects.length}</span>
+                  <span class="hero-stat-label">Saved Courses</span>
                 </div>
-                <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 8px 0; color: var(--att-heading-contrast, #000);">Welcome to Rise Component Builder</h2>
-                <p style="font-size: 0.9375rem; color: #555; max-width: 600px; margin: 0 auto 28px auto; line-height: 1.5;">
-                  Build, preview, audit, and package multi-component interactive courses designed for Articulate Rise 360 with AT&amp;T brand alignment and WCAG 2.2 AA support.
-                </p>
-
-                <!-- 3 Options Cards -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; text-align: left;">
-                  <div class="onboarding-option-card" id="onboarding-starter-card" style="background: #F0F7FF; border: 2px solid var(--att-cobalt, #00388F); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
-                    <div style="font-weight: 700; font-size: 1rem; color: var(--att-cobalt, #00388F); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                      3-Module Starter
-                    </div>
-                    <p style="font-size: 0.8125rem; color: #00388F; margin: 0 0 16px 0; flex: 1;">Recommended structure with Introduction, Deep Dive, and Knowledge Check modules.</p>
-                    <button type="button" class="btn btn-primary btn-sm" id="onboarding-create-starter-btn" style="width: 100%; justify-content: center;">Load 3-Module Starter</button>
-                  </div>
-
-                  <div class="onboarding-option-card" id="onboarding-blank-card" style="background: var(--att-grey-1, #F3F4F5); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
-                    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main, #111); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                      Blank Course
-                    </div>
-                    <p style="font-size: 0.8125rem; color: #666; margin: 0 0 16px 0; flex: 1;">Start fresh with an empty course workspace to create custom modules and interactive blocks.</p>
-                    <button type="button" class="btn btn-secondary btn-sm" id="onboarding-create-blank-btn" style="width: 100%; justify-content: center;">Create Blank</button>
-                  </div>
-
-                  <div class="onboarding-option-card" id="onboarding-import-card" style="background: var(--att-grey-1, #F3F4F5); border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s ease; display: flex; flex-direction: column;">
-                    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main, #111); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                      Import Project
-                    </div>
-                    <p style="font-size: 0.8125rem; color: #666; margin: 0 0 16px 0; flex: 1;">Load an existing course package (.json) from your device.</p>
-                    <button type="button" class="btn btn-secondary btn-sm" id="onboarding-import-btn" style="width: 100%; justify-content: center;">Choose File</button>
-                  </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat-item">
+                  <span class="hero-stat-num">26</span>
+                  <span class="hero-stat-label">Interactive Blocks</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat-item">
+                  <span class="hero-stat-num">4</span>
+                  <span class="hero-stat-label">Post-Publish Tools</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat-item">
+                  <span class="hero-stat-num">100%</span>
+                  <span class="hero-stat-label">Rise 360 Ready</span>
                 </div>
               </div>
             </div>
-          ` : `
-            <div class="dashboard-empty-state">
-              <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <h2 class="empty-state-title">No course projects yet</h2>
-              <p class="empty-state-subtitle">Get started by creating a new course project or importing an existing file.</p>
-              <button id="dash-empty-create-btn" class="btn btn-primary">Create New Project</button>
+          </header>
+
+          <!-- Active Draft Recovery Banner (if draft exists in local storage) -->
+          ${activeDraft ? `
+            <section class="dashboard-draft-banner" aria-label="Resume working draft">
+              <div class="draft-banner-left">
+                <div class="draft-banner-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </div>
+                <div class="draft-banner-text">
+                  <div class="draft-banner-tags">
+                    <span class="draft-badge-pill">Unsaved Working Draft</span>
+                    <span class="draft-badge-type">${this.escapeHtml(activeDraft.type || 'Custom Block')}</span>
+                  </div>
+                  <h3 class="draft-banner-title">Resume editing “${this.escapeHtml(activeDraft.name || 'Untitled Component')}”</h3>
+                  <p class="draft-banner-sub">An autosaved working session is ready on this device. Jump right back in or create a new project below.</p>
+                </div>
+              </div>
+              <div class="draft-banner-actions">
+                <button type="button" class="btn btn-att-primary" id="btn-resume-draft">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  <span>Resume Draft</span>
+                </button>
+                <button type="button" class="btn btn-att-secondary" id="btn-dismiss-draft">Dismiss</button>
+              </div>
+            </section>
+          ` : ''}
+
+          <!-- Quick Action Starter Grid -->
+          <section class="dashboard-starters-section" aria-label="Quick start options">
+            <div class="section-header-wrap">
+              <h2 class="dashboard-section-heading">Create &amp; Build</h2>
+              <span class="dashboard-section-sub">Choose a workflow to start authoring or enhancing learning experiences</span>
             </div>
-          `}
+
+            <div class="dashboard-starters-grid">
+              <!-- Starter 1: 3-Module Course -->
+              <div class="starter-card is-primary" id="starter-action-course" role="button" tabindex="0">
+                <div class="starter-card-badge">Recommended</div>
+                <div class="starter-card-icon-wrap">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                </div>
+                <h3 class="starter-card-title">3-Module Starter Course</h3>
+                <p class="starter-card-desc">Generate a multi-module course with Introduction, Interactive Deep-Dive, and Knowledge Check blocks.</p>
+                <div class="starter-card-footer">
+                  <span class="starter-card-cta">Launch Course Builder →</span>
+                </div>
+              </div>
+
+              <!-- Starter 2: Post-Publish Tools -->
+              <div class="starter-card" id="starter-action-postpublish" role="button" tabindex="0">
+                <div class="starter-card-badge is-accent">Rise Enhancer</div>
+                <div class="starter-card-icon-wrap">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                </div>
+                <h3 class="starter-card-title">Rise Post-Publish Toolkit</h3>
+                <p class="starter-card-desc">Inject Persistent Top Nav, Course Search, Glossary, Lightbox, &amp; Resource Center into published Rise ZIP exports.</p>
+                <div class="starter-card-footer">
+                  <span class="starter-card-cta">Open Package Tools →</span>
+                </div>
+              </div>
+
+              <!-- Starter 3: Import Package -->
+              <div class="starter-card" id="starter-action-import" role="button" tabindex="0">
+                <div class="starter-card-badge is-neutral">JSON / ZIP</div>
+                <div class="starter-card-icon-wrap">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </div>
+                <h3 class="starter-card-title">Import Project Package</h3>
+                <p class="starter-card-desc">Restore an existing course project file or packaged interactive component from your device.</p>
+                <div class="starter-card-footer">
+                  <span class="starter-card-cta">Upload Project File →</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Course Projects Workspace Section -->
+          <section class="dashboard-projects-section" aria-label="Course projects workspace">
+            <div class="projects-section-header">
+              <div>
+                <h2 class="dashboard-section-heading">Course Projects Workspace</h2>
+                <span class="dashboard-section-sub">Manage and edit your saved Articulate Rise courses</span>
+              </div>
+              <button type="button" class="btn btn-att-primary" id="dash-create-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>New Course Project</span>
+              </button>
+            </div>
+
+            <!-- Controls Bar (Search, Filters, Sort) -->
+            <div class="dashboard-controls">
+              <div class="dashboard-search-wrapper">
+                <svg class="dashboard-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input
+                  id="dash-search-input"
+                  class="dashboard-search-input"
+                  type="search"
+                  placeholder="Search courses by name or client..."
+                  value="${this.escapeHtml(this.state.searchQuery)}"
+                  aria-label="Search projects"
+                />
+              </div>
+
+              <div class="dashboard-filters-group">
+                <button class="filter-chip ${this.state.filter === 'all' ? 'active' : ''}" data-filter="all">All Projects (${allProjects.length})</button>
+                <button class="filter-chip ${this.state.filter === 'favorites' ? 'active' : ''}" data-filter="favorites">Favorites</button>
+                <button class="filter-chip ${this.state.filter === 'recent' ? 'active' : ''}" data-filter="recent">Recent</button>
+              </div>
+
+              <div class="dashboard-sort-wrapper">
+                <label for="dash-sort-select" class="dashboard-sort-label">Sort:</label>
+                <select id="dash-sort-select" class="dashboard-sort-select" aria-label="Sort projects list">
+                  <option value="updatedAt" ${this.state.sortBy === 'updatedAt' ? 'selected' : ''}>Last Modified</option>
+                  <option value="name" ${this.state.sortBy === 'name' ? 'selected' : ''}>Alphabetical</option>
+                  <option value="componentCount" ${this.state.sortBy === 'componentCount' ? 'selected' : ''}>Components Count</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Grid or Empty State -->
+            ${projects.length > 0 ? `
+              <div class="dashboard-projects-grid">
+                ${projects.map(p => this.renderProjectCard(p)).join('')}
+              </div>
+            ` : `
+              <div class="dashboard-empty-state">
+                <div class="empty-state-icon-wrap">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </div>
+                <h3 class="empty-state-title">${this.state.searchQuery ? 'No matching projects found' : 'No course projects yet'}</h3>
+                <p class="empty-state-subtitle">${this.state.searchQuery ? 'Try modifying your search or clearing the active filter.' : 'Get started by creating a new course project or loading a starter template.'}</p>
+                <button id="dash-empty-create-btn" class="btn btn-att-primary">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <span>Create Project</span>
+                </button>
+              </div>
+            `}
+          </section>
+
         </main>
       </div>
     `;
@@ -307,7 +408,7 @@ export class DashboardView {
         </div>
 
         <div class="project-card-body" data-action="open" data-id="${project.id}">
-          <h2 class="project-card-title">${this.escapeHtml(project.name)}</h2>
+          <h3 class="project-card-title">${this.escapeHtml(project.name)}</h3>
           <p class="project-card-desc">${this.escapeHtml(project.description || 'No description provided.')}</p>
         </div>
 
@@ -453,6 +554,80 @@ export class DashboardView {
   }
 
   attachEventListeners() {
+    // Resume draft button
+    const resumeDraftBtn = this.container.querySelector('#btn-resume-draft');
+    if (resumeDraftBtn) {
+      resumeDraftBtn.addEventListener('click', () => {
+        const draft = loadDraft();
+        if (draft && this.onRestoreDraft) {
+          this.onRestoreDraft(draft);
+        } else if (this.onOpenCatalog) {
+          this.onOpenCatalog();
+        }
+      });
+    }
+
+    // Dismiss draft button
+    const dismissDraftBtn = this.container.querySelector('#btn-dismiss-draft');
+    if (dismissDraftBtn) {
+      dismissDraftBtn.addEventListener('click', () => {
+        clearDraft();
+        showToast('Draft dismissed.', 'info');
+        this.render();
+      });
+    }
+
+    // Quick Action Starters
+    const starterCourse = this.container.querySelector('#starter-action-course');
+    if (starterCourse) {
+      starterCourse.addEventListener('click', () => {
+        const newProject = this.createNewProjectFromTemplate({
+          name: 'AT&T 3-Module Starter Course',
+          client: 'AT&T',
+          desc: 'Interactive 3-module course structure with Introduction, Deep Dive, and Knowledge Check.',
+          template: 'standard'
+        });
+        saveProject(newProject);
+        showToast(`Created “${newProject.name}”.`, 'success');
+        if (this.onOpenProject) this.onOpenProject(newProject.id);
+      });
+      starterCourse.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          starterCourse.click();
+        }
+      });
+    }
+
+    const starterPostPublish = this.container.querySelector('#starter-action-postpublish');
+    if (starterPostPublish) {
+      starterPostPublish.addEventListener('click', () => {
+        if (this.onOpenPostPublish) this.onOpenPostPublish();
+      });
+      starterPostPublish.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          starterPostPublish.click();
+        }
+      });
+    }
+
+    const starterImport = this.container.querySelector('#starter-action-import');
+    if (starterImport) {
+      starterImport.addEventListener('click', (e) => {
+        this.lastCreateTrigger = e?.currentTarget;
+        this.state.selectedTemplate = 'import';
+        this.state.isCreateModalOpen = true;
+        this.render();
+      });
+      starterImport.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          starterImport.click();
+        }
+      });
+    }
+
     // Search input
     const searchInput = this.container.querySelector('#dash-search-input');
     if (searchInput) {
@@ -479,12 +654,6 @@ export class DashboardView {
       });
     }
 
-    // Dismiss onboarding
-    this.container.querySelector('#btn-dismiss-onboarding')?.addEventListener('click', () => {
-      localStorage.setItem('rcb_onboarding_dismissed', 'true');
-      this.render();
-    });
-
     // New Project buttons
     const createBtn = this.container?.querySelector('#dash-create-btn') || document.getElementById('dash-create-btn');
     const emptyCreateBtn = this.container?.querySelector('#dash-empty-create-btn');
@@ -496,50 +665,6 @@ export class DashboardView {
     };
     if (createBtn) createBtn.onclick = (e) => openModal(e, 'standard');
     if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', (e) => openModal(e, 'standard'));
-
-    // Onboarding cards
-    this.container.querySelector('#onboarding-create-blank-btn')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openModal(e, 'blank');
-    });
-    this.container.querySelector('#onboarding-blank-card')?.addEventListener('click', (e) => openModal(e, 'blank'));
-
-    this.container.querySelector('#onboarding-create-starter-btn')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openModal(e, 'standard');
-    });
-    this.container.querySelector('#onboarding-starter-card')?.addEventListener('click', (e) => openModal(e, 'standard'));
-
-    // Import from dashboard header button
-    const dashImportBtn = document.getElementById('dash-import-btn');
-    const dashImportFileInput = /** @type {HTMLInputElement|null} */ (document.getElementById('dash-import-file-input'));
-    if (dashImportBtn && dashImportFileInput) {
-      dashImportBtn.onclick = () => dashImportFileInput.click();
-      dashImportFileInput.onchange = async (e) => {
-        const target = /** @type {HTMLInputElement} */ (e.target);
-        const file = target?.files?.[0];
-        if (!file) return;
-        try {
-          const text = await file.text();
-          const imported = importProjectJson(text);
-          showToast(`Project "${imported.name}" imported successfully!`, 'success');
-          this.render();
-          if (this.onOpenProject) this.onOpenProject(imported.id);
-        } catch (err) {
-          showToast(`Import failed: ${err.message}`, 'error');
-        } finally {
-          if (dashImportFileInput) dashImportFileInput.value = '';
-        }
-      };
-    }
-
-    this.container.querySelector('#onboarding-import-btn')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (dashImportFileInput) dashImportFileInput.click();
-    });
-    this.container.querySelector('#onboarding-import-card')?.addEventListener('click', () => {
-      if (dashImportFileInput) dashImportFileInput.click();
-    });
 
     // Project card clicks and action menu items
     this.container.querySelectorAll('.project-card').forEach(card => {

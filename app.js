@@ -36,6 +36,7 @@ import { createHistoryManager } from './js/history.js';
 import { getPresetsForComponent } from './js/presets.js';
 import { upgradeTextareaToRichText } from './js/rich-text-editor.js';
 import { createPostPublishWorkflow } from './js/post-publish/workflow-shell.js';
+import { LandingView } from './js/dashboard/landing-view.js';
 import { DashboardView } from './js/dashboard/dashboard-view.js';
 import { ProjectOverviewView } from './js/dashboard/project-overview.js';
 import { ProjectMediaView } from './js/dashboard/project-media.js';
@@ -115,6 +116,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const editorState = document.getElementById('editor-state');
   const postPublishWorkspace = document.getElementById('post-publish-workspace');
   let postPublishWorkflowInstance = null;
+
+  const landingWorkspace = document.getElementById('landing-workspace');
+  let landingViewInstance = null;
 
   const dashboardWorkspace = document.getElementById('dashboard-workspace');
   const projectOverviewWorkspace = document.getElementById('project-overview-workspace');
@@ -407,14 +411,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 4. Hook up live sync for values in Form Inputs
     setupFormListeners();
+
+    // 5. Setup persistent Tubelight Navbar event listeners
+    const tubelightNav = document.getElementById('tubelight-navbar');
+    if (tubelightNav) {
+      tubelightNav.querySelectorAll('.tubelight-nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const navTarget = btn.dataset.nav;
+          if (navTarget === 'landing') {
+            showState('landing');
+          } else if (navTarget === 'dashboard') {
+            showState('dashboard');
+          } else if (navTarget === 'catalog') {
+            showState('catalog');
+          } else if (navTarget === 'project-media') {
+            showState('project-media', { projectId: activeProjectId });
+          } else if (navTarget === 'post-publish') {
+            showState('post-publish');
+          }
+        });
+      });
+    }
+
+    const brandLogoBtn = document.getElementById('brand-logo-btn');
+    if (brandLogoBtn) {
+      brandLogoBtn.addEventListener('click', () => showState('landing'));
+      brandLogoBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          showState('landing');
+        }
+      });
+    }
     
-    // 5. Restore a valid draft, otherwise build the initial preview.
+    // 6. Default into Landing Page on startup
     syncSettingsControls();
-    const draft = loadDraft();
-    if (draft && !window.location.search.includes('dashboard') && await applyProject(draft, true)) {
-      showToast(`Restored draft “${draft.name}”.`, 'success');
-    } else {
+    if (window.location.search.includes('dashboard')) {
       showState('dashboard');
+    } else if (window.location.search.includes('editor')) {
+      const initialComp = componentCatalog.find(c => c.id === 'tab-blocks') || componentCatalog.find(c => c.id === 'accordion') || componentCatalog[0];
+      if (initialComp) {
+        loadComponentToEditor(initialComp);
+      } else {
+        showState('dashboard');
+      }
+    } else if (window.location.search.includes('post-publish')) {
+      showState('post-publish');
+    } else {
+      showState('landing');
     }
 
     window.setInterval(saveCurrentDraft, 60000);
@@ -916,7 +960,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function hideAllWorkspacePanels() {
-    [dashboardWorkspace, projectOverviewWorkspace, projectMediaWorkspace, coursePreviewWorkspace, projectQaWorkspace, postPublishWorkspace].forEach(panel => {
+    [landingWorkspace, dashboardWorkspace, projectOverviewWorkspace, projectMediaWorkspace, coursePreviewWorkspace, projectQaWorkspace, postPublishWorkspace].forEach(panel => {
       if (panel) {
         panel.hidden = true;
         panel.style.display = 'none';
@@ -927,12 +971,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   function showState(state, context = {}) {
     clearAllModalIsolations();
     hideAllWorkspacePanels();
+    document.body.classList.toggle('is-landing-mode', state === 'landing');
     if (state !== 'editor') {
       unmountMcBehaviorGroup();
       unmountContextBandFields();
     }
 
-    if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
+    if (['landing', 'dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
       if (sidebar) {
         sidebar.hidden = true;
         sidebar.style.display = 'none';
@@ -959,7 +1004,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const status = document.getElementById('project-status');
       if (status) status.hidden = true;
 
-      if (state === 'dashboard') {
+      if (state === 'landing') {
+        if (landingWorkspace) {
+          landingWorkspace.hidden = false;
+          landingWorkspace.style.display = 'flex';
+          if (landingViewInstance) landingViewInstance.unmount();
+          landingViewInstance = new LandingView({
+            container: landingWorkspace,
+            onEnterDashboard: () => showState('dashboard')
+          });
+          landingViewInstance.mount();
+        }
+      } else if (state === 'dashboard') {
         if (dashboardWorkspace) {
           dashboardWorkspace.hidden = false;
           dashboardWorkspace.style.display = 'flex';
@@ -969,6 +1025,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             onOpenProject: (projId) => {
               activeProjectId = projId;
               showState('project-overview', { projectId: projId });
+            },
+            onOpenCatalog: () => {
+              showState('dashboard');
+            },
+            onCreateNewComponent: () => {
+              performNewProject();
+            },
+            onOpenComponent: (componentId) => {
+              const comp = componentCatalog.find(c => c.id === componentId) || getComponentById(COMPONENT_REGISTRY, componentId);
+              if (comp) {
+                loadComponentToEditor(comp);
+              } else {
+                showState('dashboard');
+              }
+            },
+            onOpenPostPublish: () => {
+              showState('post-publish');
+            },
+            onRestoreDraft: async (draft) => {
+              if (await applyProject(draft, true)) {
+                showToast(`Restored draft “${draft.name}”.`, 'success');
+              }
             }
           });
           dashboardViewInstance.mount();
@@ -1035,6 +1113,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             container: coursePreviewWorkspace,
             projectId: projId,
             onBack: () => showState('project-overview', { projectId: projId }),
+            onOpenQa: (id) => showState('project-qa', { projectId: id }),
+            onOpenPreview: (id) => showState('course-preview', { projectId: id }),
             onEditComponent: (project, comp) => {
               activeProjectId = project.id;
               applyComponentInstance(project, comp);
@@ -1052,6 +1132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             container: projectQaWorkspace,
             projectId: projId,
             onBack: () => showState('project-overview', { projectId: projId }),
+            onOpenQa: (id) => showState('project-qa', { projectId: id }),
+            onOpenPreview: (id) => showState('course-preview', { projectId: id }),
             onEditComponent: (project, comp) => {
               activeProjectId = project.id;
               applyComponentInstance(project, comp);
@@ -1064,7 +1146,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           postPublishWorkspace.hidden = false;
           postPublishWorkspace.style.display = 'flex';
           if (!postPublishWorkflowInstance) {
-            postPublishWorkflowInstance = createPostPublishWorkflow();
+            postPublishWorkflowInstance = createPostPublishWorkflow({
+              onBack: () => showState('dashboard')
+            });
             postPublishWorkspace.appendChild(postPublishWorkflowInstance);
           }
         }
@@ -1117,9 +1201,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (btnBackToCatalog) {
           const backSpan = btnBackToCatalog.querySelector('span');
           if (backSpan) {
-            backSpan.textContent = appState.activeProject ? 'Back to Course' : 'Back to Templates';
+            backSpan.textContent = appState.activeProject ? 'Return to Course Workspace' : 'Back to Projects';
           }
-          btnBackToCatalog.title = appState.activeProject ? 'Return to Course Workspace' : 'Back to Component Templates';
+          btnBackToCatalog.title = appState.activeProject ? 'Return to Course Workspace' : 'Back to Projects Dashboard';
         }
         // Auto-collapse sidebar in editor mode
         if (sidebar && !sidebar.classList.contains('sidebar-collapsed')) {
@@ -1145,6 +1229,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnProjectsDashboard = document.getElementById('btn-projects-dashboard');
     const dashboardHeaderActions = document.getElementById('dashboard-header-actions');
 
+    // Update persistent Tubelight Navbar active tab
+    const tubelightNav = document.getElementById('tubelight-navbar');
+    if (tubelightNav) {
+      let activeNav = 'dashboard';
+      if (state === 'landing') activeNav = 'landing';
+      else if (state === 'dashboard' || state === 'project-overview' || state === 'course-preview' || state === 'project-qa' || state === 'catalog' || state === 'editor') activeNav = 'dashboard';
+      else if (state === 'project-media') activeNav = 'project-media';
+      else if (state === 'post-publish') activeNav = 'post-publish';
+
+      tubelightNav.querySelectorAll('.tubelight-nav-item').forEach(btn => {
+        const isActive = btn.dataset.nav === activeNav;
+        btn.classList.toggle('is-active', isActive);
+        btn.setAttribute('aria-current', isActive ? 'page' : 'false');
+      });
+    }
+
     if (btnProjectsDashboard) {
       const isDashboardOrCourse = ['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa'].includes(state);
       btnProjectsDashboard.classList.toggle('active', isDashboardOrCourse);
@@ -1154,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       dashboardHeaderActions.style.display = (state === 'dashboard') ? 'flex' : 'none';
     }
 
-    if (['dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
+    if (['landing', 'dashboard', 'project-overview', 'project-media', 'course-preview', 'project-qa', 'post-publish'].includes(state)) {
       if (toolbarActions) toolbarActions.style.display = 'none';
       if (projectTitleEditor) projectTitleEditor.style.display = 'none';
       if (status) status.hidden = true;
@@ -1455,32 +1555,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   // component switches rather than resetting to Desktop.
 
   function loadComponentToEditor(component) {
+    if (!component) return;
+    const catEntry = componentCatalog.find(c => c.id === component.id) || component;
     appState.currentProjectId = null;
     appState.currentProjectName = '';
-    appState.selectedComponent = component;
+    appState.selectedComponent = catEntry;
     
-    activeComponentTitle.innerText = component.title;
-    activeComponentCategory.innerText = component.category.toUpperCase();
-    updateComponentSpecificOptions(component.id);
+    const title = catEntry.title || catEntry.name || 'Component';
+    const category = (catEntry.category || catEntry.categoryId || 'interactive').toUpperCase();
+    
+    activeComponentTitle.innerText = title;
+    activeComponentCategory.innerText = category;
+    updateComponentSpecificOptions(catEntry.id);
     syncIvAuthoringVideoSource();
     renderIvMarkerTimeline();
 
     // Sync block text items with defaults/reset if needed
-    inputBlockTitle.value = component.title.toUpperCase();
-    inputBlockHeadline.value = `Explore details about ${component.title}`;
+    inputBlockTitle.value = title.toUpperCase();
+    inputBlockHeadline.value = `Explore details about ${title}`;
     
     appState.config.blockTitle = inputBlockTitle.value;
     appState.config.blockHeadline = inputBlockHeadline.value;
     
     // Set Favorites icon look
-    setFavoriteButtonState(appState.favorites.has(component.id));
+    setFavoriteButtonState(appState.favorites.has(catEntry.id));
 
     // Setup component-specific default fields
-    setupComponentFields(component.id);
-    (component.editorSchema?.componentFields || []).forEach(field => {
+    setupComponentFields(catEntry.id);
+    (catEntry.editorSchema?.componentFields || []).forEach(field => {
       appState.config[field.id] = structuredClone(field.default ?? '');
     });
-    applyMissingSchemaDefaults(component);
+    applyMissingSchemaDefaults(catEntry);
     syncResolvedThemeConfig();
 
     // P11 Requirement 1: a freshly-picked component starts with only its first item
@@ -1520,7 +1625,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     (schema.componentFields || []).forEach(field => {
       if (appState.config[field.id] === undefined) appState.config[field.id] = structuredClone(field.default ?? '');
     });
-    appState.config.items.forEach(item => schema.itemFields.forEach(field => {
+    (appState.config.items || []).forEach(item => (schema.itemFields || []).forEach(field => {
       if (item[field.id] === undefined) item[field.id] = structuredClone(field.default ?? '');
     }));
   }
@@ -1538,12 +1643,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     const backBtnLabel = document.getElementById('btn-back-to-catalog-label') || document.querySelector('#btn-back-to-catalog span');
-    if (backBtnLabel) backBtnLabel.textContent = 'Back to Templates';
+    if (backBtnLabel) backBtnLabel.textContent = 'Back to Projects';
     appState.selectedComponent = null;
     appState.currentProjectId = null;
     appState.currentProjectName = '';
-    showState('catalog');
-    renderCatalog();
+    showState('dashboard');
   }
 
   btnBackToCatalog.addEventListener('click', async () => {
@@ -1551,12 +1655,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (guard === true) performBackToCatalog();
   });
 
+  // Persistent Tubelight Navigation Bar
+  const tubelightNav = document.getElementById('tubelight-navbar');
+  if (tubelightNav) {
+    tubelightNav.querySelectorAll('.tubelight-nav-item').forEach(navBtn => {
+      navBtn.addEventListener('click', async () => {
+        const targetNav = navBtn.dataset.nav;
+        const targetAction = () => {
+          if (targetNav === 'landing') {
+            showState('landing');
+          } else if (targetNav === 'dashboard') {
+            if (appState.selectedComponent) {
+              showState('editor');
+            } else {
+              const defaultComp = componentCatalog.find(c => c.id === 'tab-blocks') || componentCatalog.find(c => c.id === 'accordion') || componentCatalog[0];
+              if (defaultComp) {
+                loadComponentToEditor(defaultComp);
+              } else {
+                showState('dashboard');
+              }
+            }
+          } else if (targetNav === 'catalog') {
+            appState.selectedComponent = null;
+            showState('catalog');
+            renderCatalog();
+          } else if (targetNav === 'project-media') {
+            showState('project-media');
+          } else if (targetNav === 'post-publish') {
+            showState('post-publish');
+          }
+        };
+
+        const guard = await guardUnsavedChanges(targetAction);
+        if (guard === true) targetAction();
+      });
+    });
+  }
+
   if (btnProjectsDashboard) {
     btnProjectsDashboard.addEventListener('click', async () => {
       const guard = await guardUnsavedChanges(() => showState('dashboard'));
       if (guard === true) showState('dashboard');
     });
   }
+
+  const brandLogo = document.querySelector('.brand-logo');
+  const logoText = document.querySelector('.logo-text');
+  const brandLogoBtn = document.getElementById('brand-logo-btn');
+  [brandLogo, logoText, brandLogoBtn].forEach(el => {
+    if (el) {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', async () => {
+        const guard = await guardUnsavedChanges(() => showState('landing'));
+        if (guard === true) showState('landing');
+      });
+    }
+  });
 
   // Favorite toggle
   function setFavoriteButtonState(isFavorited) {
@@ -2693,62 +2847,68 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function applyComponentInstance(project, comp) {
-    if (window.migrateProject) {
-      project = window.migrateProject(project);
-      comp = project.components?.[comp.id] || comp;
-    }
-    const compType = normalizeComponentType(comp.type);
-    const component = componentCatalog.find(item => item.id === compType || item.id === comp.type)
-      || getComponentById(COMPONENT_REGISTRY, compType)
-      || getComponentById(COMPONENT_REGISTRY, comp.type);
-    if (!component) {
-      showToast(`Cannot open component type "${comp.type}".`, 'error');
-      return false;
-    }
-    resetConfig();
-    appState.config = { ...appState.config, ...structuredClone(comp.config), items: structuredClone(comp.config?.items || []) };
-    appState.activeProject = project;
-    appState.activeComponentInstance = comp;
-    appState.currentProjectId = project.id;
-    
-    // Compute full breadcrumb path: Course Projects / [Course Name] / [Section Name] / [Component Name]
-    let sectionName = 'Unsectioned Area';
-    if (project.sections && typeof project.sections === 'object') {
-      for (const sec of Object.values(project.sections)) {
-        if (sec.componentOrder && Array.isArray(sec.componentOrder) && sec.componentOrder.includes(comp.id)) {
-          sectionName = sec.name || 'Section';
-          break;
+    try {
+      if (window.migrateProject) {
+        project = window.migrateProject(project);
+        comp = project.components?.[comp.id] || comp;
+      }
+      const compType = normalizeComponentType(comp.type);
+      const component = componentCatalog.find(item => item.id === compType || item.id === comp.type)
+        || getComponentById(COMPONENT_REGISTRY, compType)
+        || getComponentById(COMPONENT_REGISTRY, comp.type);
+      if (!component) {
+        showToast(`Cannot open component type "${comp.type}".`, 'error');
+        return false;
+      }
+      resetConfig();
+      appState.config = { ...appState.config, ...structuredClone(comp.config), items: structuredClone(comp.config?.items || []) };
+      appState.activeProject = project;
+      appState.activeComponentInstance = comp;
+      appState.currentProjectId = project.id;
+      
+      // Compute full breadcrumb path: Course Projects / [Course Name] / [Section Name] / [Component Name]
+      let sectionName = 'Unsectioned Area';
+      if (project.sections && typeof project.sections === 'object') {
+        for (const sec of Object.values(project.sections)) {
+          if (sec.componentOrder && Array.isArray(sec.componentOrder) && sec.componentOrder.includes(comp.id)) {
+            sectionName = sec.name || 'Section';
+            break;
+          }
+        }
+      } else if (project.structure && Array.isArray(project.structure.sections)) {
+        const foundSec = project.structure.sections.find(s => (s.componentIds || []).includes(comp.id));
+        if (foundSec && foundSec.name) {
+          sectionName = foundSec.name;
         }
       }
-    } else if (project.structure && Array.isArray(project.structure.sections)) {
-      const foundSec = project.structure.sections.find(s => (s.componentIds || []).includes(comp.id));
-      if (foundSec && foundSec.name) {
-        sectionName = foundSec.name;
-      }
+      appState.currentProjectName = `Course Projects / ${project.name} / ${sectionName} / ${comp.name}`;
+      appState.selectedComponent = component;
+      applyMissingSchemaDefaults(component);
+      await restoreMediaReferences(appState.config);
+      appState.settings = { ...project.settings };
+      appState.activeTheme = getBuiltInTheme(DEFAULT_THEME_ID);
+      appState.activeThemeId = appState.activeTheme.id;
+      appState.componentOverrides = normalizeComponentOverrides(comp.styleOverrides || project.componentOverrides);
+      appState.uiTheme = project.uiTheme || 'light';
+      syncResolvedThemeConfig();
+      setUiTheme(appState.uiTheme);
+      syncSettingsControls();
+      syncEditorControls();
+      schemaItemEditor.resetToDefaultCollapse(appState.config.items);
+      renderDynamicItems();
+      const backBtnLabel = document.getElementById('btn-back-to-catalog-label') || document.querySelector('#btn-back-to-catalog span');
+      if (backBtnLabel) backBtnLabel.textContent = 'Return to Course Workspace';
+      showState('editor');
+      updateLivePreview();
+      history.clear(appState.config);
+      appState.isDirty = false;
+      updateProjectStatusDisplay();
+      return true;
+    } catch (err) {
+      console.error('Error applying component instance:', err);
+      showToast(`Could not open component editor: ${err.message}`, 'error');
+      return false;
     }
-    appState.currentProjectName = `Course Projects / ${project.name} / ${sectionName} / ${comp.name}`;
-    appState.selectedComponent = component;
-    applyMissingSchemaDefaults(component);
-    await restoreMediaReferences(appState.config);
-    appState.settings = { ...project.settings };
-    appState.activeTheme = getBuiltInTheme(DEFAULT_THEME_ID);
-    appState.activeThemeId = appState.activeTheme.id;
-    appState.componentOverrides = normalizeComponentOverrides(comp.styleOverrides || project.componentOverrides);
-    appState.uiTheme = project.uiTheme || 'light';
-    syncResolvedThemeConfig();
-    setUiTheme(appState.uiTheme);
-    syncSettingsControls();
-    syncEditorControls();
-    schemaItemEditor.resetToDefaultCollapse(appState.config.items);
-    renderDynamicItems();
-    const backBtnLabel = document.getElementById('btn-back-to-catalog-label') || document.querySelector('#btn-back-to-catalog span');
-    if (backBtnLabel) backBtnLabel.textContent = 'Return to Course Workspace';
-    showState('editor');
-    updateLivePreview();
-    history.clear(appState.config);
-    appState.isDirty = false;
-    updateProjectStatusDisplay();
-    return true;
   }
 
   function buildCurrentProject(name, asNew = false) {
@@ -3045,12 +3205,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncResolvedThemeConfig();
     appState.currentProjectId = null;
     appState.currentProjectName = '';
-    appState.selectedComponent = null;
     appState.isDirty = false; // P08: a blank slate hasn't been edited yet
     releaseAllMediaObjectURLs();
-    showState('catalog');
-    renderCatalog();
-    showToast('New project started. Choose a component to begin.', 'success');
+    const defaultComp = componentCatalog.find(c => c.id === 'tab-blocks') || componentCatalog.find(c => c.id === 'accordion') || componentCatalog[0];
+    if (defaultComp) {
+      loadComponentToEditor(defaultComp);
+    } else {
+      showState('catalog');
+      renderCatalog();
+    }
+    showToast('New project started.', 'success');
   }
 
   document.getElementById('btn-new').addEventListener('click', async () => {

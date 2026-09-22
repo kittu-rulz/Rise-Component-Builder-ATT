@@ -29,6 +29,7 @@ const ROOT_DIRS = ['js', 'components'];
 // ship in dist/ at the same relative path.
 const NESTED_FILES = [
   'design/att-tokens.css',
+  'design/landing.css',
   'design/post-publish.css',
   'design/dashboard.css',
   'design/project-overview.css'

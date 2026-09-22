@@ -1,4 +1,4 @@
-import { collectMediaReferences, createMediaReference, isMediaReference } from './media.js';
+import { blobToDataURL, collectMediaReferences, createMediaReference, isMediaReference } from './media.js';
 import { registerLocalBlobURL, revokeLocalBlobURL } from './utilities.js';
 
 export const MEDIA_DB_NAME = 'rise-component-builder-media';
@@ -110,7 +110,9 @@ export function releaseMediaObjectURL(id) {
   const url = runtimeObjectURLs.get(id);
   if (!url) return false;
   runtimeObjectURLs.delete(id);
-  revokeLocalBlobURL(url);
+  if (url.startsWith('blob:')) {
+    revokeLocalBlobURL(url);
+  }
   return true;
 }
 
@@ -145,10 +147,16 @@ export function resolveMediaAsset(value) {
   }
   if (isMediaReference(value)) {
     const id = value.mediaId || value.assetId;
+    if (typeof value.src === 'string' && (value.src.startsWith('data:') || value.src.startsWith('assets/') || value.src.startsWith('http://') || value.src.startsWith('https://') || value.src.startsWith('./'))) {
+      return value.src;
+    }
     return peekMediaObjectURL(id) || (typeof value.src === 'string' ? value.src : '') || '';
   }
   if (value && typeof value === 'object' && (value.mediaId || value.assetId)) {
     const id = value.mediaId || value.assetId;
+    if (typeof value.src === 'string' && (value.src.startsWith('data:') || value.src.startsWith('assets/') || value.src.startsWith('http://') || value.src.startsWith('https://') || value.src.startsWith('./'))) {
+      return value.src;
+    }
     return peekMediaObjectURL(id) || (typeof value.src === 'string' ? value.src : '') || '';
   }
   if (value && typeof value === 'object' && typeof value.src === 'string') {
@@ -167,10 +175,18 @@ export function resolveMediaReferencesForPreview(value) {
 
   // 1. If this object is an item-media structure (e.g. from item-media.js)
   if (typeof value === 'object' && !Array.isArray(value) && (value.placement !== undefined || (value.type && ['image', 'audio', 'video', 'none'].includes(value.type) && (value.mediaId || value.src !== undefined || value.alt !== undefined || value.caption !== undefined)))) {
+    const isExportedSrc = typeof value.src === 'string' && (value.src.startsWith('data:') || value.src.startsWith('assets/') || value.src.startsWith('http://') || value.src.startsWith('https://') || value.src.startsWith('./'));
     const mediaId = value.mediaId || (value.src && typeof value.src === 'object' ? (value.src.mediaId || value.src.assetId) : '');
-    const resolvedSrc = mediaId ? (peekMediaObjectURL(mediaId) || (typeof value.src === 'string' ? value.src : '')) : (typeof value.src === 'string' ? value.src : resolveMediaAsset(value.src));
+    const resolvedSrc = isExportedSrc
+      ? value.src
+      : (mediaId ? (peekMediaObjectURL(mediaId) || (typeof value.src === 'string' ? value.src : '')) : (typeof value.src === 'string' ? value.src : resolveMediaAsset(value.src)));
+
+    const isExportedPoster = typeof value.posterSrc === 'string' && (value.posterSrc.startsWith('data:') || value.posterSrc.startsWith('assets/') || value.posterSrc.startsWith('http://') || value.posterSrc.startsWith('https://') || value.posterSrc.startsWith('./'));
     const posterMediaId = value.posterMediaId || (value.posterSrc && typeof value.posterSrc === 'object' ? (value.posterSrc.mediaId || value.posterSrc.assetId) : '');
-    const resolvedPoster = posterMediaId ? (peekMediaObjectURL(posterMediaId) || (typeof value.posterSrc === 'string' ? value.posterSrc : '')) : (typeof value.posterSrc === 'string' ? value.posterSrc : resolveMediaAsset(value.posterSrc));
+    const resolvedPoster = isExportedPoster
+      ? value.posterSrc
+      : (posterMediaId ? (peekMediaObjectURL(posterMediaId) || (typeof value.posterSrc === 'string' ? value.posterSrc : '')) : (typeof value.posterSrc === 'string' ? value.posterSrc : resolveMediaAsset(value.posterSrc)));
+
     return {
       ...value,
       src: resolvedSrc || (typeof value.src === 'string' ? value.src : ''),

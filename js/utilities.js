@@ -147,14 +147,14 @@ export function sanitizeURL(value, options = {}) {
   const input = String(value ?? '').trim();
   if (!input) return fallback;
   const schemeEnd = input.indexOf(':');
-  if (schemeEnd < 1) return allowRelative && (/^assets\/[a-z0-9._-]+$/i.test(input) || input.startsWith('./') || input.startsWith('/')) ? input : fallback;
+  if (schemeEnd < 1) return allowRelative && (/^(?:\.\/|\/)?assets\/[^<>"'`\r\n\t]+$/i.test(input) || input.startsWith('./') || input.startsWith('/')) ? input : fallback;
   // eslint-disable-next-line no-control-regex -- intentionally strips control characters that could hide a scheme, e.g. a NUL byte inside "javascript:"
   const normalizedScheme = input.slice(0, schemeEnd).replace(/[\u0000-\u0020\u007f]+/g, '').toLowerCase();
 
   if (normalizedScheme === 'javascript' || normalizedScheme === 'vbscript') return fallback;
   if (normalizedScheme === 'data') {
     if (!allowDataImage) return fallback;
-    return /^data:image\/(?:png|jpeg|gif|webp|avif);base64,[a-z0-9+/=]+$/i.test(input) ? input : fallback;
+    return /^data:image\/(?:png|jpeg|jpg|gif|webp|avif|svg\+xml);base64,[a-z0-9+/=\s]+$/i.test(input) ? input : fallback;
   }
   if (normalizedScheme === 'blob') return allowBlob && localBlobURLs.has(input) ? input : fallback;
   if (allowMailto && normalizedScheme === 'mailto') {

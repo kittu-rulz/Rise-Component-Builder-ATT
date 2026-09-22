@@ -10,7 +10,7 @@ import { validatePostPublishConfig } from './validator.js';
 import { enhanceRisePackage } from './zip-enhancer.js';
 import { escapeHTML, formatStorageBytes } from '../utilities.js';
 
-export function createPostPublishWorkflow() {
+export function createPostPublishWorkflow({ onBack = null } = {}) {
   const container = document.createElement('div');
   container.className = 'ppt-workflow-container';
 
@@ -485,9 +485,28 @@ export function createPostPublishWorkflow() {
   const workflowHeader = document.createElement('div');
   workflowHeader.className = 'ppt-workflow-header';
   workflowHeader.innerHTML = `
+    <div class="ppt-header-top-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+      <div class="workspace-breadcrumbs">
+        <button id="ppt-back-btn" class="breadcrumb-back-btn" title="Back to Projects Dashboard" aria-label="Back to Projects Dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Course Projects Dashboard</span>
+        </button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Rise Post-Publish Toolkit</span>
+      </div>
+    </div>
     <h1 class="ppt-page-title" style="font-size: 1.5rem; font-weight: 700; margin: 0 0 4px 0; color: var(--text-main, #111);">Persistent Course Tools</h1>
     <p style="font-size: 0.875rem; color: var(--text-muted, #666); margin: 0 0 16px 0;">Add persistent glossary, resources, and help to an exported Rise course.</p>
   `;
+
+  const backBtn = workflowHeader.querySelector('#ppt-back-btn');
+  if (backBtn && onBack) {
+    backBtn.addEventListener('click', () => {
+      onBack();
+    });
+  }
 
   container.appendChild(workflowHeader);
   container.appendChild(stepper);

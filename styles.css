@@ -58,13 +58,13 @@
 
 /* Dark Mode Variable Overrides */
 [data-theme="dark"] {
-  --bg-app: #0F172A;
+  --bg-app: #0B1120;
   --bg-panel: #1E293B;
   --bg-sidebar: #0F172A;
   --bg-toolbar: #0F172A;
   /* On dark panels, the brand blue itself passes AA for text (4.86–5.94:1) — no need
      for the light-mode CTA navy, which would nearly disappear here (1.37:1). */
-  --primary-text: #009FDB;
+  --primary-text: #38BDF8;
   /* Dark-mode CTA fill: AT&T's own darker gradient stop of #009FDB (also used as the
      exported-component accent, js/themes.js) — keeps white button text readable
      (4.81:1) while still standing out against the dark app chrome. */
@@ -78,18 +78,32 @@
   --text-muted: #94A3B8;
   --text-inverse: #0F172A;
 
-  --input-bg: #1E293B;
+  --input-bg: #0F172A;
   --input-border: #334155;
-  /* Solid, not translucent: a translucent tint composites differently depending on
-     whatever's behind it, which measured as low as 4.45:1 against #009FDB text in
-     some contexts (axe color-contrast, tests/e2e/accessibility.spec.js) — just under
-     the 4.5:1 AA minimum. A solid color guarantees the ratio regardless of context. */
   --primary-light: #0A2540;
   
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-  --shadow-inset: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-inset: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+
+  /* AT&T Brand Token Dark Overrides */
+  --att-surface: #1E293B;
+  --att-surface-sunken: #0B1120;
+  --att-text: #F1F5F9;
+  --att-text-on-dark: #FFFFFF;
+  --att-heading: #38BDF8;
+  --att-heading-contrast: #FFFFFF;
+  --att-border: #334155;
+  --att-border-strong: #475569;
+  --att-grey-1: #0F172A;
+  --att-grey-2: #334155;
+  --att-grey-3: #64748B;
+  --att-black: #FFFFFF;
+  --att-cta-bg: #0079B1;
+  --att-cta-bg-hover: #005F8C;
+  --att-shadow-1: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --att-shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
 /* Base Resets */
@@ -145,62 +159,128 @@ a {
 
 /* Header Toolbar */
 .app-toolbar {
-  height: var(--toolbar-height);
-  background-color: var(--bg-toolbar);
-  border-bottom: 1px solid var(--border-color);
+  height: 64px;
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  z-index: 10;
-  box-shadow: var(--shadow-sm);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  padding: 0 24px;
+  z-index: 100;
+  box-shadow: 0 4px 20px -2px rgba(0, 56, 143, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+[data-theme="dark"] .app-toolbar {
+  background-color: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.45);
 }
 
 .toolbar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   min-width: 0; /* Phase 2.B: allow brand children to shrink at narrow widths */
+}
+
+.brand-divider {
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(180deg, rgba(203, 213, 225, 0.1) 0%, rgba(203, 213, 225, 0.8) 50%, rgba(203, 213, 225, 0.1) 100%);
+}
+
+[data-theme="dark"] .brand-divider {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.05) 100%);
 }
 
 .logo-icon {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.logo-icon:hover {
+  transform: scale(1.02);
 }
 
 .logo-icon svg {
-  width: 144px;
-  height: 27px;
-}
-
-.logo-text h1 {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  line-height: 1.2;
+  width: 118px;
+  height: 22px;
 }
 
 .logo-text {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+.logo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+  line-height: 1.2;
+  color: var(--text-main);
+}
+
+.brand-badge-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(0, 56, 143, 0.1) 0%, rgba(0, 159, 219, 0.15) 100%);
+  color: var(--att-cobalt, #00388F);
+  border: 1px solid rgba(0, 159, 219, 0.3);
+  line-height: 1.3;
+}
+
+[data-theme="dark"] .brand-badge-pill {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%);
+  color: #38BDF8;
+  border-color: rgba(56, 189, 248, 0.3);
 }
 
 .version-tag {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 500;
-  /* Not Cobalt: a static label, not a clickable control (brand rule — Cobalt is
-     reserved for clickable elements). AT&T Blue is fine here since it's a
-     non-text/background use, not a text-color-carrying role. */
   color: var(--text-muted);
-  background-color: var(--primary-light);
-  padding: 1px 6px;
-  /* Not a capsule: this is a static label, not a clickable control (brand rule —
-     capsule/pill shapes are reserved for clickable items). */
-  border-radius: 6px;
+  background-color: rgba(241, 245, 249, 0.85);
+  border: 1px solid rgba(203, 213, 225, 0.6);
+  padding: 1px 7px;
+  border-radius: 9999px;
   align-self: flex-start;
-  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+}
+
+.version-tag::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+[data-theme="dark"] .version-tag {
+  background-color: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94A3B8;
 }
 
 /* Project name/save-status (P08) — sits beside the brand lockup, hidden until a
@@ -210,7 +290,6 @@ a {
   font-weight: 500;
   color: var(--text-muted);
   padding: 3px 10px;
-  /* Not a capsule: a status readout, not a clickable control. */
   border-radius: 6px;
   background-color: var(--bg-panel);
   border: 1px solid var(--border-color);
@@ -251,6 +330,143 @@ a {
   overflow: hidden;
 }
 
+/* Persistent Tubelight Navigation Bar */
+.tubelight-nav {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  background: rgba(241, 245, 249, 0.75);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 3px 4px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+  gap: 2px;
+  z-index: 10;
+}
+
+[data-theme="dark"] .tubelight-nav {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.tubelight-nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tubelight-nav-item:hover {
+  color: var(--att-cobalt, #00388F);
+}
+
+[data-theme="dark"] .tubelight-nav-item:hover {
+  color: #38BDF8;
+}
+
+.tubelight-nav-item.is-active {
+  color: var(--att-cobalt, #00388F);
+  background: rgba(0, 56, 143, 0.07);
+}
+
+[data-theme="dark"] .tubelight-nav-item.is-active {
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+/* Glowing Lamp / Beam Effect */
+.tubelight-lamp {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-3px) scale(0.9);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tubelight-nav-item.is-active .tubelight-lamp {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.tubelight-lamp-bar {
+  width: 28px;
+  height: 3px;
+  background: #00388F;
+  border-radius: 9999px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 56, 143, 0.4);
+}
+
+[data-theme="dark"] .tubelight-lamp-bar {
+  background: #38BDF8;
+  box-shadow: 0 1px 4px rgba(56, 189, 248, 0.6);
+}
+
+.tubelight-lamp-glow-lg {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 20px;
+  background: radial-gradient(circle, rgba(0, 159, 219, 0.45) 0%, rgba(0, 56, 143, 0) 70%);
+  filter: blur(6px);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .tubelight-lamp-glow-lg {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.65) 0%, rgba(14, 165, 233, 0) 70%);
+}
+
+.tubelight-lamp-glow-sm {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 12px;
+  background: radial-gradient(circle, rgba(0, 159, 219, 0.7) 0%, rgba(0, 159, 219, 0) 70%);
+  filter: blur(2px);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .tubelight-lamp-glow-sm {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.9) 0%, rgba(56, 189, 248, 0) 70%);
+}
+
+.toolbar-right-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .toolbar-actions {
   display: flex;
   align-items: center;
@@ -261,15 +477,19 @@ a {
 .toolbar-utilities {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .divider {
   width: 1px;
   height: 24px;
-  background-color: var(--border-color);
+  background: linear-gradient(180deg, rgba(203, 213, 225, 0.2) 0%, rgba(203, 213, 225, 0.8) 50%, rgba(203, 213, 225, 0.2) 100%);
   margin: 0 4px;
+}
+
+[data-theme="dark"] .divider {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.05) 100%);
 }
 
 /* Phase 2.B: Responsive toolbar breakpoints
@@ -413,40 +633,94 @@ a {
 }
 
 .utility-btn {
-  background: transparent;
-  border: none;
+  background: rgba(241, 245, 249, 0.65);
+  border: 1px solid rgba(203, 213, 225, 0.5);
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--text-muted);
-  transition: all var(--transition-fast);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .utility-btn:hover {
-  background-color: var(--bg-app);
-  color: var(--text-main);
+  background: #FFFFFF;
+  border-color: rgba(0, 159, 219, 0.5);
+  color: #00388F;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .utility-btn {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .utility-btn:hover {
+  background: rgba(51, 65, 85, 0.85);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38BDF8;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
 .user-profile {
-  margin-left: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 6px;
+  cursor: pointer;
+}
+
+.avatar-ring {
+  padding: 2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00388F 0%, #009FDB 100%);
+  box-shadow: 0 2px 8px rgba(0, 56, 143, 0.22);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.user-profile:hover .avatar-ring {
+  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgba(0, 56, 143, 0.35);
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background-color: #ECFDF5;
-  color: #065F46;
-  font-size: 12px;
-  font-weight: 600;
+  background-color: #FFFFFF;
+  color: #00388F;
+  font-size: 11.5px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--border-color);
+  letter-spacing: 0.02em;
+}
+
+[data-theme="dark"] .avatar {
+  background-color: #0F172A;
+  color: #38BDF8;
+}
+
+.user-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #10B981;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.8);
+}
+
+[data-theme="dark"] .user-status-dot {
+  border-color: #0F172A;
 }
 
 /* Workspace Frame */
@@ -457,6 +731,7 @@ a {
 }
 
 /* Workspace Dedicated Panels */
+.landing-workspace-panel,
 .dashboard-workspace-panel,
 .project-overview-workspace-panel,
 .project-media-workspace-panel,

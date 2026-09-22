@@ -82,36 +82,87 @@ export async function prepareMediaExport(config, options = {}) {
     return unique;
   };
 
+  async function resolveMediaId(id, fallbackName = '') {
+    if (!id || typeof id !== 'string' || !id.trim()) return '';
+    if (resolvedMedia.has(id)) return resolvedMedia.get(id);
+    const record = await getMediaRecord(id, store);
+    if (!record?.blob) {
+      const assetName = fallbackName || id;
+      warnings.push(`Uploaded media “${assetName}” is missing from local storage and cannot be exported.`);
+      missing.push(assetName);
+      return '';
+    }
+    const filename = uniqueFilename(record.sanitizedName || record.name);
+    const relativePath = `assets/${filename}`;
+    const manifestEntry = { filename, sourceMediaId: record.id, mimeType: record.mimeType, relativePath };
+    manifest.push(manifestEntry);
+    assets.push({ ...manifestEntry, blob: record.blob });
+    const canInline = mode === 'inline' && record.kind === 'image' && record.mimeType !== 'image/svg+xml' && record.size <= inlineImageLimit;
+    if (canInline) {
+      const dataUrl = await blobToDataURL(record.blob);
+      resolvedMedia.set(id, dataUrl);
+      return dataUrl;
+    }
+    if (mode === 'inline') {
+      warnings.push(`“${record.name}” requires an external asset file at ${relativePath}; it cannot be safely included in a single HTML file.`);
+    }
+    resolvedMedia.set(id, relativePath);
+    return relativePath;
+  }
+
   const transform = async value => {
+    if (!value) return value;
     if (isMediaReference(value)) {
       const id = value.mediaId || value.assetId;
-      if (resolvedMedia.has(id)) return resolvedMedia.get(id);
-      const record = await getMediaRecord(id, store);
-      if (!record?.blob) {
-        const assetName = value.name || value.fileName || id;
-        warnings.push(`Uploaded media “${assetName}” is missing from local storage and cannot be exported.`);
-        missing.push(assetName);
-        return '';
-      }
-      const filename = uniqueFilename(record.sanitizedName || record.name);
-      const relativePath = `assets/${filename}`;
-      const manifestEntry = { filename, sourceMediaId: record.id, mimeType: record.mimeType, relativePath };
-      manifest.push(manifestEntry);
-      assets.push({ ...manifestEntry, blob: record.blob });
-      const canInline = mode === 'inline' && record.kind === 'image' && record.mimeType !== 'image/svg+xml' && record.size <= inlineImageLimit;
-      if (canInline) {
-        const dataUrl = await blobToDataURL(record.blob);
-        resolvedMedia.set(id, dataUrl);
-        return dataUrl;
-      }
-      if (mode === 'inline') {
-        warnings.push(`“${record.name}” requires an external asset file at ${relativePath}; it cannot be safely included in a single HTML file.`);
-      }
-      resolvedMedia.set(id, relativePath);
-      return relativePath;
+      return resolveMediaId(id, value.name || value.fileName || id);
     }
     if (Array.isArray(value)) return Promise.all(value.map(transform));
-    if (value && typeof value === 'object') {
+    if (typeof value === 'object') {
+      // 1. Handle item-media attachments (Accordion, Tabs, Flip Cards, Timeline, Process Flow)
+      const isItemMedia = value.placement !== undefined || (value.type && ['image', 'audio', 'video', 'none'].includes(value.type) && (value.mediaId || value.src !== undefined || value.alt !== undefined || value.caption !== undefined));
+      if (isItemMedia) {
+        const mediaId = value.mediaId || (value.src && typeof value.src === 'object' ? (value.src.mediaId || value.src.assetId) : '');
+        let resolvedSrc = value.src;
+        if (mediaId) {
+          resolvedSrc = await resolveMediaId(mediaId, value.fileName || value.name || mediaId);
+        } else if (isMediaReference(value.src)) {
+          resolvedSrc = await transform(value.src);
+        }
+        const posterMediaId = value.posterMediaId || (value.posterSrc && typeof value.posterSrc === 'object' ? (value.posterSrc.mediaId || value.posterSrc.assetId) : '');
+        let resolvedPoster = value.posterSrc;
+        if (posterMediaId) {
+          resolvedPoster = await resolveMediaId(posterMediaId, 'poster');
+        } else if (isMediaReference(value.posterSrc)) {
+          resolvedPoster = await transform(value.posterSrc);
+        }
+        return {
+          ...value,
+          src: resolvedSrc || '',
+          posterSrc: resolvedPoster || ''
+        };
+      }
+
+      // 2. Handle Hotspots audio attachments
+      if (value.audioMediaId && typeof value.audioMediaId === 'string') {
+        const resolvedAudio = await resolveMediaId(value.audioMediaId, 'audio');
+        const entries = await Promise.all(Object.entries(value).map(async ([k, v]) => [k, await transform(v)]));
+        const res = Object.fromEntries(entries);
+        res.audioUrl = resolvedAudio || res.audioUrl || '';
+        return res;
+      }
+
+      // 3. Handle standalone object with mediaId
+      if (value.mediaId || value.assetId) {
+        const id = value.mediaId || value.assetId;
+        const resolved = await resolveMediaId(id, value.name || value.fileName || id);
+        if (typeof value.src !== 'undefined') {
+          const entries = await Promise.all(Object.entries(value).map(async ([k, v]) => [k, await transform(v)]));
+          const res = Object.fromEntries(entries);
+          res.src = resolved || res.src || '';
+          return res;
+        }
+      }
+
       const entries = await Promise.all(Object.entries(value).map(async ([key, entry]) => [key, await transform(entry)]));
       return Object.fromEntries(entries);
     }

@@ -200,3 +200,26 @@ describe('switchEditorTab standard 4-tab model & legacy aliases (Prompt Section 
     expect(document.getElementById('tab-interaction').classList.contains('active')).toBe(true);
   });
 });
+
+describe('createSchemaItemEditor media and icon field rendering', () => {
+  test('renders componentFields and itemFields with image/media types without throwing schema ReferenceError', () => {
+    const tabSchema = {
+      itemLabel: 'Tab',
+      componentLabel: 'Horizontal Tabs Settings',
+      minItems: 1,
+      componentFields: [
+        { id: 'coverImage', label: 'Cover Image', type: 'image' }
+      ],
+      itemFields: [
+        { id: 'title', label: 'Tab Title', type: 'text' },
+        { id: 'iconImage', label: 'Tab Icon', type: 'image' }
+      ]
+    };
+    const items = [{ title: 'Tab 1', iconImage: null }];
+    const { container } = setup(items, tabSchema);
+    expect(container.querySelectorAll('.component-fields-card').length).toBe(1);
+    expect(container.querySelectorAll('.dynamic-item-card:not(.component-fields-card)').length).toBe(1);
+    expect(container.querySelectorAll('.schema-field-image').length).toBe(2);
+  });
+});
+

@@ -24,7 +24,7 @@ import { createZip, readZip } from './zip.js';
  *   specific assets when reopened.
  */
 export async function exportProjectPackage(project, options = {}) {
-  const references = collectMediaReferences(project.config);
+  const references = collectMediaReferences(project.config || project);
   const entries = [{ path: 'project.json', data: JSON.stringify(project, null, 2) }];
   const missing = [];
   for (const reference of references) {
@@ -67,7 +67,7 @@ export async function importProjectPackage(zipBlob, options = {}) {
   const mediaBytesById = new Map(
     entries.filter(entry => entry.path.startsWith('media/')).map(entry => [entry.path.slice('media/'.length), entry.data])
   );
-  const references = collectMediaReferences(result.project.config);
+  const references = collectMediaReferences(result.project.config || result.project);
   const missingMedia = [];
   let restoredMediaCount = 0;
   for (const reference of references) {

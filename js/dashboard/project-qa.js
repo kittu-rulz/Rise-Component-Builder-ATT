@@ -6,6 +6,7 @@
  */
 
 import { getProject } from '../storage.js';
+import { showPreExportReviewDialog, buildCourseProjectZip } from './project-export.js';
 
 /**
  * Performs a deep audit of a course project.
@@ -189,10 +190,12 @@ export function auditCourseProject(project) {
 }
 
 export class ProjectQaView {
-  constructor({ container, projectId, onBack, onEditComponent }) {
+  constructor({ container, projectId, onBack, onOpenQa = null, onOpenPreview = null, onEditComponent = null }) {
     this.container = container;
     this.projectId = projectId;
     this.onBack = onBack;
+    this.onOpenQa = onOpenQa;
+    this.onOpenPreview = onOpenPreview;
     this.onEditComponent = onEditComponent;
 
     this.state = {
@@ -256,18 +259,54 @@ export class ProjectQaView {
       <div class="project-workspace-view">
         <header class="workspace-header">
           <div class="workspace-breadcrumbs">
-            <button id="qa-back-btn" class="breadcrumb-back-btn">
+            <button id="qa-back-btn" class="breadcrumb-back-btn" title="Back to Projects Dashboard">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
-              ${this.escapeHtml(project?.name || 'Project')}
+              <span>${this.escapeHtml(project?.name || 'Project')}</span>
             </button>
             <span class="breadcrumb-separator">/</span>
             <span class="breadcrumb-current">Course Quality & Compliance QA</span>
           </div>
+
+          <!-- Workflow Segment Control (Build -> Preview -> QA -> Export) -->
+          <div class="workflow-nav-segment" role="tablist" aria-label="Course workflow steps">
+            <button class="workflow-tab-btn" id="wp-tab-build" role="tab" aria-selected="false" title="Build & Edit Course">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Build</span>
+            </button>
+            <button class="workflow-tab-btn" id="wp-preview-btn" role="tab" aria-selected="false" title="Launch Full Course Preview">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>Course Preview</span>
+            </button>
+            <button class="workflow-tab-btn active" id="wp-qa-btn" role="tab" aria-selected="true" title="Course Quality & Compliance QA">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+              <span>QA Preflight</span>
+            </button>
+            <button class="workflow-tab-btn" id="wp-export-btn" role="tab" aria-selected="false" title="Export Course Package ZIP">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Export Package</span>
+            </button>
+          </div>
+
           <div class="workspace-header-actions">
-            <button id="qa-return-structure-btn" class="btn-att-secondary">
-              Back to Course Structure
+            <button id="qa-return-structure-btn" class="btn btn-secondary btn-sm">
+              Back to Course
             </button>
           </div>
         </header>
@@ -425,6 +464,18 @@ export class ProjectQaView {
   attachEventListeners() {
     this.container.querySelector('#qa-back-btn')?.addEventListener('click', () => {
       if (this.onBack) this.onBack();
+    });
+
+    this.container.querySelector('#wp-tab-build')?.addEventListener('click', () => {
+      if (this.onBack) this.onBack();
+    });
+
+    this.container.querySelector('#wp-preview-btn')?.addEventListener('click', () => {
+      if (this.onOpenPreview) this.onOpenPreview(this.projectId);
+    });
+
+    this.container.querySelector('#wp-export-btn')?.addEventListener('click', () => {
+      showPreExportReviewDialog(this.projectId, () => buildCourseProjectZip(this.projectId));
     });
 
     this.container.querySelector('#qa-return-structure-btn')?.addEventListener('click', () => {

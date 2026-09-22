@@ -231,9 +231,9 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
   }
 
   /**
-   * @param {{ field: any, model: any, items: any, indexKey: any, target: any, onMultiple?: any, limits?: any }} options
+   * @param {{ field: any, model: any, items: any, indexKey: any, target: any, onMultiple?: any, limits?: any, schema?: any }} options
    */
-  function appendField({ field, model, items, indexKey, target, onMultiple, limits }) {
+  function appendField({ field, model, items, indexKey, target, onMultiple, limits, schema }) {
     if (!supportedEditorFieldTypes.includes(field.type)) return;
     const wrapper = document.createElement('div');
     wrapper.className = `input-wrapper schema-field schema-field-${field.type}`;
@@ -273,7 +273,7 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
     let fieldElement;
     if (['image', 'audio', 'video'].includes(field.type) || field.uploadKind) {
       let media;
-      const contextLabel = field.contextLabel || (indexKey === 'component' ? (schema.componentLabel || field.label) : (items && items[indexKey]?.title ? `${formatItemLabel(schema, indexKey)} (${items[indexKey].title})` : `${formatItemLabel(schema, indexKey)} ${field.label}`));
+      const contextLabel = field.contextLabel || (indexKey === 'component' ? (schema?.componentLabel || field.label) : (items && items[indexKey]?.title ? `${formatItemLabel(schema, indexKey)} (${items[indexKey].title})` : `${formatItemLabel(schema, indexKey)} ${field.label}`));
       media = createMediaUploadControl({
         field, controlId, value: model[field.id], limits, contextLabel,
         onChange: value => {
@@ -394,7 +394,7 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
       title.textContent = schema.componentLabel || 'Component media';
       const body = document.createElement('div');
       body.className = 'item-card-body';
-      schema.componentFields.forEach(field => appendField({ field, model: config, items, indexKey: 'component', target: body, limits }));
+      schema.componentFields.forEach(field => appendField({ field, model: config, items, indexKey: 'component', target: body, limits, schema }));
       componentCard.append(title, body);
       container.appendChild(componentCard);
     }
@@ -470,7 +470,7 @@ export function createSchemaItemEditor({ container, onChange, focusFallback }) {
       if (!collapsed) {
         schema.itemFields.forEach(field => {
           appendField({
-            field, model: item, items, indexKey: index, target: body, limits,
+            field, model: item, items, indexKey: index, target: body, limits, schema,
             onMultiple: references => {
               item[field.id] = references[0];
               item[`${field.id}Duration`] = Number.isFinite(references[0]?.duration) ? references[0].duration : null;

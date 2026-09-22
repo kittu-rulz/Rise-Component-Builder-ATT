@@ -12,13 +12,15 @@
 
 /* Project Workspace Top Nav */
 .workspace-header {
+  position: relative;
   background: var(--att-surface, #FFFFFF);
   border-bottom: 1px solid var(--att-border, #DCDFE3);
-  padding: var(--att-space-3, 12px) var(--att-space-6, 32px);
+  padding: 8px var(--att-space-6, 32px);
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -29,6 +31,7 @@
   align-items: center;
   gap: var(--att-space-2, 8px);
   font-size: var(--att-fs-body-sm, 0.875rem);
+  z-index: 2;
 }
 
 .breadcrumb-back-btn {
@@ -62,39 +65,57 @@
   display: flex;
   align-items: center;
   gap: var(--att-space-2, 8px);
+  z-index: 2;
 }
 
-/* Workflow Navigation Segment Control */
+/* Workflow Navigation Segment Control (Secondary Floating Pill Bar aligned with top nav) */
 .workflow-nav-segment {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
-  background: var(--att-grey-1, #F3F4F5);
-  padding: 3px;
-  border-radius: 10px;
+  align-items: center;
+  background: rgba(241, 245, 249, 0.75);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 2.5px 3.5px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02);
   gap: 2px;
-  border: 1px solid var(--att-border, #DCDFE3);
+  z-index: 10;
 }
 
 .workflow-tab-btn {
-  padding: 5px 14px;
-  font-size: 0.8125rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4.5px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
   font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-main, #333);
+  color: var(--text-muted, #64748B);
+  text-decoration: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  border: none;
+  background: transparent;
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
 }
 
 .workflow-tab-btn:hover {
   color: var(--att-cobalt, #00388F);
+  background: rgba(0, 56, 143, 0.05);
 }
 
 .workflow-tab-btn.active {
   font-weight: 700;
-  background: var(--att-surface, #FFF);
   color: var(--att-cobalt, #00388F);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 56, 143, 0.04);
 }
 
 /* Three-Zone Layout */
@@ -814,13 +835,24 @@
 }
 
 [data-theme="dark"] .workflow-nav-segment {
-  background: #161920 !important;
-  border-color: #2E3440 !important;
+  background: rgba(30, 41, 59, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .workflow-tab-btn {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .workflow-tab-btn:hover {
+  color: #38BDF8 !important;
+  background: rgba(56, 189, 248, 0.08) !important;
 }
 
 [data-theme="dark"] .workflow-tab-btn.active {
-  background: #1E222B !important;
-  color: var(--att-blue, #009FDB) !important;
+  background: rgba(56, 189, 248, 0.14) !important;
+  color: #38BDF8 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
 }
 
 [data-theme="dark"] .component-row.is-selected {
