@@ -48,7 +48,22 @@ const versionPath = join(root, 'js', 'version.js');
 
 // Local stylesheet/script assets index.html references by a plain href/src and that
 // must be cache-busted on each release. Paths are relative to the repo root.
-const ROOT_ASSETS = ['design/att-tokens.css', 'design/post-publish.css', 'fonts.css', 'styles.css', 'app.js'];
+//
+// Every stylesheet index.html links must appear here. dashboard.css, landing.css and
+// project-overview.css were missing until 2026-09-23, so they kept whatever ?v= token
+// had been typed into index.html by hand: dashboard.css and project-overview.css sat on
+// 20260913.1925 across nine days and two edits, meaning returning visitors were served
+// new HTML against stale cached CSS. If you add a <link> to index.html, add it here too.
+const ROOT_ASSETS = [
+  'design/att-tokens.css',
+  'design/post-publish.css',
+  'design/dashboard.css',
+  'design/landing.css',
+  'design/project-overview.css',
+  'fonts.css',
+  'styles.css',
+  'app.js'
+];
 
 // Module directories whose every *.js file is reachable from app.js and must be
 // covered by the import map.
@@ -139,12 +154,39 @@ function injectImportMap(html, block, eol) {
   return html.replace(anchor, `${block}${eol}$1`);
 }
 
+/**
+ * Every local stylesheet index.html links must be listed in ROOT_ASSETS, or it silently
+ * keeps whatever ?v= token was last written into the HTML and goes on being served from
+ * browser caches after it changes. That is exactly how dashboard.css and
+ * project-overview.css ended up frozen on a nine-day-old token. Rather than trusting
+ * whoever adds the next <link> to remember this file, fail loudly here.
+ *
+ * @param {string} html
+ * @returns {string[]} linked stylesheet paths that ROOT_ASSETS does not cover
+ */
+export function findUnstampedStylesheets(html) {
+  const linked = [...html.matchAll(/<link\b[^>]*href="(?!https?:|\/\/|data:)([^"?#]+\.css)(?:[?#][^"]*)?"/g)]
+    .map(match => match[1].replace(/^\.\//, ''));
+  return [...new Set(linked)].filter(href => !ROOT_ASSETS.includes(href));
+}
+
 export async function computeStampedIndex() {
   const [token, specifiers, original] = await Promise.all([
     deriveToken(),
     listModuleSpecifiers(),
     readFile(indexPath, 'utf8')
   ]);
+
+  const unstamped = findUnstampedStylesheets(original);
+  if (unstamped.length) {
+    throw new Error(
+      `index.html links stylesheet(s) that ROOT_ASSETS does not cache-bust:\n` +
+        unstamped.map(href => `  - ${href}`).join('\n') +
+        `\nAdd them to ROOT_ASSETS in scripts/stamp-cache-busting.mjs so each release ` +
+        `invalidates them; otherwise returning visitors keep the cached copy.`
+    );
+  }
+
   const eol = original.includes('\r\n') ? '\r\n' : '\n';
   const stamped = injectImportMap(
     stampRootAssets(original, token),

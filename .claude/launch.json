@@ -3,8 +3,14 @@
   "configurations": [
     {
       "name": "rise-builder",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["http-server", "D:\\projects\\Rise Component Builder\\v4_ATT_Specific", "-p", "8123", "-c-1"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/http-server/bin/http-server",
+        ".",
+        "-p",
+        "8123",
+        "-c-1"
+      ],
       "port": 8123
     }
   ]

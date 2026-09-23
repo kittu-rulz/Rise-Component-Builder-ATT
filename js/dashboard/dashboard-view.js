@@ -662,11 +662,11 @@ export class DashboardView {
       this.render();
     };
     document.querySelectorAll('#dash-create-btn, .dash-btn-create, #dash-empty-create-btn').forEach(btn => {
-      btn.onclick = (e) => openModal(e, 'standard');
+      /** @type {HTMLElement} */ (btn).onclick = (e) => openModal(e, 'standard');
     });
 
     const headerImportBtn = document.getElementById('dash-import-btn');
-    const headerImportInput = document.getElementById('dash-import-file-input');
+    const headerImportInput = /** @type {HTMLInputElement|null} */ (document.getElementById('dash-import-file-input'));
     if (headerImportBtn && headerImportInput) {
       headerImportBtn.onclick = () => headerImportInput.click();
       headerImportInput.onchange = async () => {

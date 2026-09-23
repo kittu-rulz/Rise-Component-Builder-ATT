@@ -164,6 +164,9 @@ export async function computeFileHash(blob) {
 }
 
 export function sanitizeSVGText(value) {
+  // Stripping C0 control characters and DEL is precisely what this sanitizer exists to
+  // do, so the control characters in the class below are intentional, not a typo.
+  // eslint-disable-next-line no-control-regex
   const svg = String(value ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
   const normalized = svg
     .replace(/&#x([0-9a-f]+);?/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))

@@ -776,7 +776,7 @@ export function createItemMediaControl({ item, index, onChange, limits = MEDIA_L
   }
 
   typeSelect.addEventListener('change', () => {
-    const newType = typeSelect.value;
+    const newType = /** @type {ItemMediaType} */ (typeSelect.value);
     if (newType === 'none') {
       Object.assign(item.media, createDefaultItemMedia());
       item.media.type = 'none';

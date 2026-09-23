@@ -326,4 +326,168 @@ describe('download helpers', () => {
     expect(globalThis.URL.revokeObjectURL).toHaveBeenCalledTimes(2);
     clickSpy.mockRestore();
   });
+
+  // Every helper above substitutes a generic, slugified name when the caller has no title
+  // to hand it — an untitled project, or a component exported before it was named. The
+  // tests above always pass one, so without this the fallback arms never run and a broken
+  // filename would reach an author mid-export.
+  test('each download helper falls back to a generic filename when no title is supplied', async () => {
+    stubObjectURL();
+    const exportModule = await import('../../js/export.js');
+    const downloadNames = [];
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(function record() { downloadNames.push(this.download); });
+
+    exportModule.downloadZipFile(undefined, new Blob(['zip']));
+    exportModule.downloadStorylineWebObjectZip('', new Blob(['zip']));
+    exportModule.downloadCoursePackZip(undefined, new Blob(['zip']));
+    exportModule.downloadHtml('', '<html></html>');
+    exportModule.downloadProjectJson({});
+    exportModule.downloadAssetManifest(undefined, []);
+
+    expect(downloadNames).toEqual([
+      'rise-component.zip',
+      'storyline-web-object.storyline.zip',
+      'course-pack.course-pack.zip',
+      'rise-component.html',
+      'rise-project.rise.json',
+      'rise-component.assets.json'
+    ]);
+    clickSpy.mockRestore();
+  });
+});
+
+// The suites above drive export.js's happy paths. The ones below cover its defaulting and
+// skip-this-entry arms — the shapes that only turn up with an untitled project, a
+// partially-written config, or an asset whose blob never loaded. They are easy to get
+// wrong precisely because no well-formed export reaches them.
+
+describe('buildRiseEmbedSnippet placeholder defaults', () => {
+  test('with no arguments at all, emits the placeholder host URL for the author to replace', async () => {
+    const { buildRiseEmbedSnippet } = await import('../../js/export.js');
+    const snippet = buildRiseEmbedSnippet();
+    expect(snippet).toContain('src="https://your-server.com/path-to-component/index.html"');
+    expect(snippet).toContain('title="AT&amp;T Interactive Block"');
+    expect(snippet).toContain('height="560px"');
+  });
+});
+
+describe('buildExportPayload', () => {
+  const compiled = '<html><body>Compiled "block" output</body></html>';
+
+  test('defaults manifest and warnings to empty arrays when no options are supplied', async () => {
+    const { buildExportPayload } = await import('../../js/export.js');
+    const payload = buildExportPayload(compiled);
+    expect(payload.manifest).toEqual([]);
+    expect(payload.warnings).toEqual([]);
+    expect(payload.iframe).toContain('<iframe srcdoc="');
+    expect(payload.fragment).toBeTruthy();
+  });
+
+  // Both lists are rendered straight into the Export modal, so a non-array (a caller that
+  // passed one warning as a bare string) has to collapse to an empty list rather than
+  // being spread character by character.
+  test('discards non-array manifest and warnings instead of passing them through', async () => {
+    const { buildExportPayload } = await import('../../js/export.js');
+    const payload = buildExportPayload(compiled, { manifest: 'not-an-array', warnings: null });
+    expect(payload.manifest).toEqual([]);
+    expect(payload.warnings).toEqual([]);
+  });
+
+  test('passes real arrays through untouched', async () => {
+    const { buildExportPayload } = await import('../../js/export.js');
+    const manifest = [{ filename: 'badge.png' }];
+    const warnings = ['This package is large.'];
+    const payload = buildExportPayload(compiled, { manifest, warnings });
+    expect(payload.manifest).toEqual(manifest);
+    expect(payload.warnings).toEqual(warnings);
+  });
+});
+
+describe('prepareMediaExport defaulting and malformed references', () => {
+  test('falls back to the shared mediaStore when no options are supplied', async () => {
+    // A config with no media references never reaches the store, so this exercises the
+    // `options.store || mediaStore` default without needing IndexedDB under jsdom.
+    const result = await prepareMediaExport({ items: [{ content: 'Plain text only' }] });
+    expect(result.manifest).toEqual([]);
+    expect(result.assets).toEqual([]);
+    expect(result.missing).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.config.items[0].content).toBe('Plain text only');
+  });
+
+  // The collision suffix is normally spliced in ahead of the extension. An asset stored
+  // without one has no dot to split on, so the suffix has to land at the very end.
+  test('de-duplicates colliding asset filenames that have no extension', async () => {
+    const store = fakeStore({
+      'clip-a': { id: 'clip-a', blob: pngBlob([1]), sanitizedName: 'recording', kind: 'audio', mimeType: 'audio/mpeg', size: 1, name: 'recording' },
+      'clip-b': { id: 'clip-b', blob: pngBlob([2]), sanitizedName: 'recording', kind: 'audio', mimeType: 'audio/mpeg', size: 1, name: 'recording' }
+    });
+    const reference = id => ({ source: 'upload', mediaId: id, schemaVersion: 1, kind: 'audio', name: 'recording', mimeType: 'audio/mpeg', size: 1, createdAt: new Date().toISOString() });
+    const config = { items: [{ content: reference('clip-a') }, { content: reference('clip-b') }] };
+    const result = await prepareMediaExport(config, { store, mode: 'package' });
+    expect(result.manifest.map(entry => entry.filename)).toEqual(['recording', 'recording-2']);
+  });
+
+  // A hotspot whose audio was cleared mid-edit can leave a blank audioMediaId behind.
+  // That is an empty attachment, not missing media, so it must not raise the "missing
+  // from local storage" warning that a genuinely unresolvable id does.
+  test('a whitespace-only audioMediaId resolves to an empty URL without reporting missing media', async () => {
+    const store = fakeStore({});
+    const config = { items: [{ hotspot: { audioMediaId: '   ', label: 'Antenna' } }] };
+    const result = await prepareMediaExport(config, { store, mode: 'package' });
+    expect(result.config.items[0].hotspot.audioUrl).toBe('');
+    expect(result.config.items[0].hotspot.label).toBe('Antenna');
+    expect(result.missing).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+});
+
+describe('zip builders skip asset entries that have no blob', () => {
+  // prepareMediaExport still emits a manifest entry for an asset it could not resolve, so
+  // the packagers do receive descriptors with no blob attached. Those must be skipped
+  // quietly rather than throwing on `undefined.arrayBuffer()` and failing the export.
+  test('buildStorylineWebObjectZip omits blob-less assets but still writes the manifest', async () => {
+    const { buildStorylineWebObjectZip } = await import('../../js/export.js');
+    const { blob } = await buildStorylineWebObjectZip({
+      html: '<html><body>Web object</body></html>',
+      assets: [{ relativePath: 'assets/missing.png', filename: 'missing.png' }, null],
+      manifest: [{ filename: 'missing.png', relativePath: 'assets/missing.png' }],
+      title: 'Partial Export'
+    });
+    const paths = (await readZip(blob)).map(entry => entry.path);
+    expect(paths).toContain('index.html');
+    expect(paths).toContain('assets/storyline-manifest.json');
+    expect(paths).not.toContain('assets/missing.png');
+  });
+
+  test('buildCoursePackZip skips blob-less assets and components with no assets array', async () => {
+    const { buildCoursePackZip } = await import('../../js/export.js');
+    const { blob } = await buildCoursePackZip({
+      courseTitle: 'Partial Course',
+      components: [
+        { name: 'No Assets Key', html: '<html><body>A</body></html>' },
+        { name: 'Unresolved Asset', html: '<html><body>B</body></html>', assets: [{ relativePath: 'assets/gone.png' }] }
+      ]
+    });
+    const paths = (await readZip(blob)).map(entry => entry.path);
+    expect(paths).toContain('components/no-assets-key/index.html');
+    expect(paths).toContain('components/unresolved-asset/index.html');
+    expect(paths).not.toContain('components/unresolved-asset/assets/gone.png');
+  });
+
+  // The component slug falls back name -> id -> 'component'. An unnamed component still
+  // has to land at a stable, non-empty path rather than 'components//index.html'.
+  test('buildCoursePackZip slugs an unnamed component from its id, then a generic fallback', async () => {
+    const { buildCoursePackZip } = await import('../../js/export.js');
+    const { blob } = await buildCoursePackZip({
+      components: [
+        { id: 'accordion-7', html: '<html><body>A</body></html>' },
+        { html: '<html><body>B</body></html>' }
+      ]
+    });
+    const paths = (await readZip(blob)).map(entry => entry.path);
+    expect(paths).toContain('components/accordion-7/index.html');
+    expect(paths).toContain('components/component/index.html');
+  });
 });

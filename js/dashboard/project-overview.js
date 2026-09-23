@@ -120,11 +120,11 @@ export class ProjectOverviewView {
       const targetRow = this.container.querySelector(`.component-row[data-comp-id="${compId}"]`);
       if (targetRow) {
         if (typeof targetRow.scrollIntoView === 'function') {
-          try { targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch {}
+          try { targetRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch { /* noop: scrolling the row into view is a best-effort affordance */ }
         }
         const targetBtn = targetRow.querySelector('.component-select-target');
         if (targetBtn && typeof targetBtn.focus === 'function') {
-          try { targetBtn.focus(); } catch {}
+          try { targetBtn.focus(); } catch { /* noop: focusing the row is a best-effort affordance */ }
         }
       }
     }, 50);
@@ -185,13 +185,17 @@ export class ProjectOverviewView {
     return getProject(this.projectId);
   }
 
-  updateProject(mutator) {
+  // `render: false` lets a caller that is about to render anyway persist a change without
+  // paying for a second full rebuild. That matters beyond performance: each render
+  // replaces the modal markup wholesale, so a redundant one detaches the element the
+  // previous render just focused and drops focus to <body>.
+  updateProject(mutator, { render = true } = {}) {
     const project = this.getProject();
     if (!project) return;
     mutator(project);
     project.updatedAt = new Date().toISOString();
     saveProject(project);
-    this.render();
+    if (render) this.render();
   }
 
   getFirstComponentId(project) {
@@ -222,6 +226,11 @@ export class ProjectOverviewView {
 
       const html = generateIframeContent(fakeAppState, COMPONENT_MODULES, colorToRgba);
 
+      // The `</script>` terminator below is escaped on purpose: this template is
+      // injected verbatim into an iframe document, and an unescaped </script> would
+      // close the *outer* script block early. eslint sees only the JS string literal
+      // and reports the escape as useless, so the rule is off for this template.
+      /* eslint-disable no-useless-escape */
       const autoResizeScript = `
         <style>
           html, body {
@@ -271,6 +280,7 @@ export class ProjectOverviewView {
           })();
         <\/script>
       `;
+      /* eslint-enable no-useless-escape */
 
       if (html.includes('</body>')) {
         return html.replace('</body>', `${autoResizeScript}</body>`);
@@ -1017,10 +1027,11 @@ export class ProjectOverviewView {
     `;
   }
 
-  renderComponentPicker(project) {
+  // Shared by the full picker render and by refreshPickerResults()'s in-place update, so
+  // the two paths can never disagree about which components match the current filters.
+  getFilteredPickerList() {
     let list = COMPONENT_REGISTRY || [];
-    const isFiltered = Boolean(this.state.pickerSearch.trim() || (this.state.pickerCategory && this.state.pickerCategory !== 'all'));
-    
+
     // Category or Quick Views Filter
     if (this.state.pickerCategory === 'recommended') {
       list = list.filter(c => c.tier === 'flagship' || c.complexity === 'Standard');
@@ -1036,6 +1047,15 @@ export class ProjectOverviewView {
     if (this.state.pickerSearch.trim()) {
       list = searchComponents(list, this.state.pickerSearch);
     }
+    return list;
+  }
+
+  isPickerFiltered() {
+    return Boolean(this.state.pickerSearch.trim() || (this.state.pickerCategory && this.state.pickerCategory !== 'all'));
+  }
+
+  renderComponentPicker(project) {
+    const list = this.getFilteredPickerList();
 
     const sections = project.sections || {};
     const sectionOrder = project.sectionOrder || [];
@@ -1096,17 +1116,108 @@ export class ProjectOverviewView {
             </div>
 
             <!-- Search Result Meta Bar -->
+            ${this.renderPickerResultMeta(list)}
+
+            <!-- Responsive 2-Column Components Grid -->
+            ${this.renderPickerGrid(list)}
+          </div>
+
+          <div class="modal-footer">
+            <button id="picker-cancel-btn" class="btn btn-secondary btn-sm" type="button">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Re-renders only the two elements that depend on the current query — the result count
+  // bar and the component grid — replacing each in place. The sticky controls above them
+  // (search input, destination select, category chips) keep their live DOM nodes, so the
+  // caret, focus and scroll position survive a keystroke. Handlers inside the replaced
+  // markup are rebound because the elements themselves are new.
+  refreshPickerResults() {
+    const modalHost = this.getModalHost() || this.container;
+    const meta = modalHost.querySelector('.picker-result-meta');
+    const grid = modalHost.querySelector('.picker-grid');
+    if (!meta || !grid) {
+      // The picker markup isn't on the page as expected — fall back to a full render
+      // rather than silently leaving stale results on screen.
+      this.render();
+      return;
+    }
+
+    const list = this.getFilteredPickerList();
+    meta.outerHTML = this.renderPickerResultMeta(list);
+    grid.outerHTML = this.renderPickerGrid(list);
+    this.bindPickerResultHandlers();
+  }
+
+  // Binds every handler that lives inside the re-renderable results area. Called after a
+  // full render and again after each in-place refresh; the elements are freshly created
+  // each time, so this never double-binds.
+  bindPickerResultHandlers() {
+    const modalHost = this.getModalHost() || this.container;
+
+    const resetFilters = () => {
+      this.state.pickerSearch = '';
+      this.state.pickerCategory = 'all';
+      this.render();
+    };
+
+    modalHost.querySelector('#picker-clear-filters-btn')?.addEventListener('click', resetFilters);
+    modalHost.querySelector('#picker-no-results-reset-btn')?.addEventListener('click', resetFilters);
+
+    // Favorite toggle in component card
+    modalHost.querySelectorAll('[data-action="toggle-fav-comp"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const compId = btn.dataset.compType;
+        if (this.state.favorites.has(compId)) {
+          this.state.favorites.delete(compId);
+        } else {
+          this.state.favorites.add(compId);
+        }
+        saveFavorites(this.state.favorites);
+        // Favourite state shows on the chip counter outside the results area too, and no
+        // text field is focused mid-click, so a full render is safe here.
+        this.render();
+      });
+    });
+
+    modalHost.querySelectorAll('[data-action="preview-picker-item"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.lastDetailsTrigger = btn;
+        const compType = btn.dataset.compType;
+        this.state.previewDetailsComp = getComponentById(COMPONENT_REGISTRY, compType);
+        this.render();
+      });
+    });
+
+    modalHost.querySelectorAll('[data-action="select-picker-item"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.addComponentToProject(btn.dataset.compType, this.state.pickerTargetSectionId);
+      });
+    });
+  }
+
+  renderPickerResultMeta(list) {
+    return `
             <div class="picker-result-meta" aria-live="polite">
               <span>Showing <strong>${list.length}</strong> of ${COMPONENT_REGISTRY.length} components</span>
-              ${isFiltered ? `
+              ${this.isPickerFiltered() ? `
                 <button type="button" class="btn btn-secondary btn-sm" id="picker-clear-filters-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   <span>Clear filters</span>
                 </button>
               ` : ''}
             </div>
+    `;
+  }
 
-            <!-- Responsive 2-Column Components Grid -->
+  renderPickerGrid(list) {
+    return `
             <div class="picker-grid">
               ${list.map(c => {
                 const isFav = this.state.favorites.has(c.id);
@@ -1157,13 +1268,6 @@ export class ProjectOverviewView {
                 </div>
               ` : ''}
             </div>
-          </div>
-
-          <div class="modal-footer">
-            <button id="picker-cancel-btn" class="btn btn-secondary btn-sm" type="button">Close</button>
-          </div>
-        </div>
-      </div>
     `;
   }
 
@@ -1331,10 +1435,18 @@ export class ProjectOverviewView {
       const project = this.getProject();
       this.lastPickerTrigger = triggerBtn || document.activeElement;
       this.state.isPickerOpen = true;
+      // The search query persists in state between openings, so a reopened picker can
+      // come back with text already in the field. A freshly rendered input puts the
+      // caret at index 0, which would drop the next thing typed in front of the old
+      // query; attachHandlers reads this flag to focus and move the caret to the end.
+      this.pickerNeedsSearchFocus = true;
       this.state.pickerTargetSectionId = this.resolveDestinationSectionId(project, secId, isExplicitStandalone);
       if (secId && project?.sections?.[secId]) {
         this.state.lastActiveSectionId = secId;
-        this.updateProject(p => { p.lastActiveSectionId = secId; });
+        // Skip updateProject's own render — the one below covers it. Rendering twice here
+        // built the picker markup twice, and the second build detached the freshly
+        // focused search input, leaving focus on <body>.
+        this.updateProject(p => { p.lastActiveSectionId = secId; }, { render: false });
       }
       this.render();
     };
@@ -1775,21 +1887,28 @@ export class ProjectOverviewView {
         });
       }
 
+      if (searchInput && this.pickerNeedsSearchFocus) {
+        this.pickerNeedsSearchFocus = false;
+        searchInput.focus();
+        const end = searchInput.value.length;
+        searchInput.setSelectionRange(end, end);
+      }
+
       if (searchInput) {
+        // Deliberately NOT this.render(): a full render replaces the whole workspace
+        // (including this input), so the element being typed into is destroyed on every
+        // keystroke. The replacement carries the right `value` but no focus and a caret
+        // at index 0, so each subsequent character is inserted at the *start* — the text
+        // appears to type backwards — and the rebuilt modal visibly jumps. Only the two
+        // result elements actually depend on the query, so swap just those in place and
+        // leave the input node untouched.
         searchInput.addEventListener('input', (e) => {
           this.state.pickerSearch = e.target.value;
-          this.render();
+          this.refreshPickerResults();
         });
       }
 
-      const resetFilters = () => {
-        this.state.pickerSearch = '';
-        this.state.pickerCategory = 'all';
-        this.render();
-      };
-
-      modalHost.querySelector('#picker-clear-filters-btn')?.addEventListener('click', resetFilters);
-      modalHost.querySelector('#picker-no-results-reset-btn')?.addEventListener('click', resetFilters);
+      this.bindPickerResultHandlers();
 
       if (sectionSelect) {
         sectionSelect.addEventListener('change', (e) => {
@@ -1800,39 +1919,9 @@ export class ProjectOverviewView {
       modalHost.querySelectorAll('[data-picker-cat]').forEach(btn => {
         btn.addEventListener('click', () => {
           this.state.pickerCategory = btn.dataset.pickerCat;
+          // A full render here is fine: the chips' own active state lives outside the
+          // results area, and no text field has focus to lose.
           this.render();
-        });
-      });
-
-      // Favorite toggle in component card
-      modalHost.querySelectorAll('[data-action="toggle-fav-comp"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const compId = btn.dataset.compType;
-          if (this.state.favorites.has(compId)) {
-            this.state.favorites.delete(compId);
-          } else {
-            this.state.favorites.add(compId);
-          }
-          saveFavorites(this.state.favorites);
-          this.render();
-        });
-      });
-
-      modalHost.querySelectorAll('[data-action="preview-picker-item"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.lastDetailsTrigger = btn;
-          const compType = btn.dataset.compType;
-          this.state.previewDetailsComp = getComponentById(COMPONENT_REGISTRY, compType);
-          this.render();
-        });
-      });
-
-      modalHost.querySelectorAll('[data-action="select-picker-item"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.addComponentToProject(btn.dataset.compType, this.state.pickerTargetSectionId);
         });
       });
     }
