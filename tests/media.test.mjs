@@ -182,7 +182,8 @@ test('project save and reopen retain media metadata without binary or object URL
   });
   const saved = saveProject(project);
   const reopened = getProject(saved.id);
-  assert.deepEqual(reopened.config.items[0].content, reference);
+  // A saved legacy (v2) project reopens as a v3 course project; the item lives on its component.
+  assert.deepEqual(Object.values(reopened.components)[0].config.items[0].content, reference);
   assert.equal(JSON.stringify(reopened).includes('blob:'), false);
   delete globalThis.localStorage;
 });

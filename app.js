@@ -2804,8 +2804,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function applyProject(project, isDraft = false) {
-    if (window.migrateProject) {
-      project = window.migrateProject(project);
+    // loadProjects() upgrades legacy saves to Schema v3 course projects, which have no
+    // top-level componentId/config. Open the first component through the v3 path.
+    if (project.schemaVersion === 3 && project.components) {
+      const firstId = [...(project.unsectionedComponentOrder || []), ...Object.keys(project.components)]
+        .find(id => project.components[id]);
+      if (!firstId) {
+        showToast(`“${project.name}” has no components to open.`, 'warning');
+        return false;
+      }
+      return applyComponentInstance(project, project.components[firstId]);
     }
     const compId = window.normalizeComponentType ? window.normalizeComponentType(project.componentId) : project.componentId;
     const component = componentCatalog.find(item => item.id === compId || item.id === project.componentId)
@@ -2851,10 +2859,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function applyComponentInstance(project, comp) {
     try {
-      if (window.migrateProject) {
-        project = window.migrateProject(project);
-        comp = project.components?.[comp.id] || comp;
-      }
       const compType = normalizeComponentType(comp.type);
       const component = componentCatalog.find(item => item.id === compType || item.id === comp.type)
         || getComponentById(COMPONENT_REGISTRY, compType)
@@ -3078,8 +3082,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       name.title = project.name;
       const meta = document.createElement('div');
       meta.className = 'sc-meta';
-      const component = componentCatalog.find(item => item.id === project.componentId);
-      meta.textContent = `Modified: ${formatReadableDate(project.updatedAt)} • ${component?.title || project.componentId}`;
+      const openType = project.componentId || Object.values(project.components || {})[0]?.type;
+      const component = componentCatalog.find(item => item.id === openType);
+      meta.textContent = `Modified: ${formatReadableDate(project.updatedAt)} • ${component?.title || openType || 'Course project'}`;
       details.append(name, meta);
       leftCol.append(checkbox, details);
 

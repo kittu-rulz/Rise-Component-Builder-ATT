@@ -6,6 +6,7 @@ import { DEFAULT_DEVICE_MODE, isValidDeviceMode } from './device-preview.js';
 import {
   buildProjectSchemaV3, validateProjectV3
 } from './project-schema.js';
+import { backupLegacyProjects, migrateProjectToV3 } from './project-migration.js';
 
 export const SCHEMA_VERSION = 3;
 
@@ -274,10 +275,32 @@ export function buildProject({
   };
 }
 
+// A record written before Schema v3 (single component, no `components` map).
+function isLegacyRecord(record) {
+  return isObject(record) && record.schemaVersion !== 3 && !isObject(record.components);
+}
+
+// The dashboard, project overview and export flows only understand Schema v3 course
+// projects, so a validated legacy (v0/v1/v2) project is upgraded on read to a v3 project
+// holding its one component. Falls back to the legacy shape (never drops the project) if
+// migration throws.
+function upgradeToV3(project) {
+  if (project.schemaVersion === 3) return project;
+  try {
+    return migrateProjectToV3(project);
+  } catch (error) {
+    console.warn('[Storage Migration] Could not upgrade project to schema v3; keeping legacy shape:', error);
+    return project;
+  }
+}
+
 export function loadProjects() {
   const stored = readJson(KEYS.projects, []);
   if (!Array.isArray(stored)) return [];
-  return stored.map(validateProject).filter(result => result.valid).map(result => result.project)
+  // Keep a one-time copy of the original records before any later save rewrites them as v3.
+  const legacy = stored.filter(isLegacyRecord);
+  if (legacy.length) backupLegacyProjects(legacy);
+  return stored.map(validateProject).filter(result => result.valid).map(result => upgradeToV3(result.project))
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
 }
 

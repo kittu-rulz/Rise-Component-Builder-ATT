@@ -86,7 +86,8 @@ describe('versioned project persistence', () => {
     });
     const project = validProject({ config: componentConfig([{ title: 'Image', content: reference }]) });
     saveProject(project);
-    expect(getProject(project.id).config.items[0].content).toEqual(reference);
+    // A saved legacy (v2) project reopens as a v3 course project; its item lives on the one component.
+    expect(Object.values(getProject(project.id).components)[0].config.items[0].content).toEqual(reference);
     expect(JSON.stringify(getProject(project.id))).not.toContain('objectUrl');
   });
 
@@ -257,5 +258,77 @@ describe('recovery from corrupted or unavailable storage', () => {
     globalThis.localStorage.setItem = () => { throw new Error('some other browser restriction'); };
     const project = buildProject({ name: 'Blocked', componentId: 'accordion', config: componentConfig(), activeTheme: cleanTheme });
     expect(() => saveProject(project)).toThrow(/could not save data locally/i);
+  });
+});
+
+describe('legacy (pre-v3) projects are upgraded to schema v3 on load', () => {
+  beforeEach(() => { globalThis.localStorage = memoryLocalStorage(); });
+
+  const legacyRecord = (over = {}) => ({ ...buildProject({ name: 'Old Project', componentId: 'accordion', config: componentConfig(), activeTheme: cleanTheme }), ...over });
+
+  test('a stored v2 project loads as a v3 course project holding its single component', () => {
+    const v2 = legacyRecord();
+    globalThis.localStorage.setItem(KEYS.projects, JSON.stringify([v2]));
+    const [loaded] = loadProjects();
+    expect(loaded.schemaVersion).toBe(3);
+    expect(loaded.id).toBe(v2.id);
+    expect(loaded.name).toBe('Old Project');
+    const components = Object.values(loaded.components);
+    expect(components).toHaveLength(1);
+    expect(components[0].type).toBe('accordion');
+    expect(components[0].config.items).toEqual(v2.config.items);
+    expect(loaded.unsectionedComponentOrder).toEqual([components[0].id]);
+  });
+
+  test('a stored v1 project (no theme/overrides) loads as v3 with its content intact', () => {
+    const v1 = { ...legacyRecord(), schemaVersion: 1 };
+    for (const key of ['theme', 'componentOverrides', 'uiTheme']) delete v1[key];
+    globalThis.localStorage.setItem(KEYS.projects, JSON.stringify([v1]));
+    const [loaded] = loadProjects();
+    expect(loaded.schemaVersion).toBe(3);
+    expect(Object.values(loaded.components)[0].config.items).toEqual(v1.config.items);
+  });
+
+  test('the upgrade is stable: component ids do not change between reads', () => {
+    globalThis.localStorage.setItem(KEYS.projects, JSON.stringify([legacyRecord()]));
+    const first = Object.keys(loadProjects()[0].components);
+    const second = Object.keys(loadProjects()[0].components);
+    expect(second).toEqual(first);
+  });
+
+  test('the original records are backed up once, before anything rewrites them', () => {
+    const v2 = legacyRecord();
+    globalThis.localStorage.setItem(KEYS.projects, JSON.stringify([v2]));
+    loadProjects();
+    const backup = JSON.parse(globalThis.localStorage.getItem('rise-builder-projects-backup-v2'));
+    expect(backup).toHaveLength(1);
+    expect(backup[0].schemaVersion).toBe(2);
+    expect(backup[0].config.items).toEqual(v2.config.items);
+    // Loading does not rewrite storage by itself.
+    expect(JSON.parse(globalThis.localStorage.getItem(KEYS.projects))[0].schemaVersion).toBe(2);
+  });
+
+  test('a legacy project can be edited and saved after upgrade (add a component, save, reload)', () => {
+    globalThis.localStorage.setItem(KEYS.projects, JSON.stringify([legacyRecord()]));
+    const [loaded] = loadProjects();
+    const extraId = 'comp-extra';
+    const saved = saveProject({
+      ...loaded,
+      components: { ...loaded.components, [extraId]: { ...Object.values(loaded.components)[0], id: extraId, name: 'Second' } },
+      unsectionedComponentOrder: [...loaded.unsectionedComponentOrder, extraId]
+    });
+    expect(saved.schemaVersion).toBe(3);
+    const reloaded = loadProjects()[0];
+    expect(Object.keys(reloaded.components)).toHaveLength(2);
+    expect(JSON.parse(globalThis.localStorage.getItem(KEYS.projects))[0].schemaVersion).toBe(3);
+  });
+
+  test('v3 projects and unrelated stored data are untouched and create no backup', () => {
+    globalThis.localStorage.setItem(KEYS.projects, JSON.stringify([legacyRecord()]));
+    const upgraded = loadProjects()[0];
+    globalThis.localStorage.removeItem('rise-builder-projects-backup-v2');
+    globalThis.localStorage.setItem(KEYS.projects, JSON.stringify([upgraded]));
+    expect(loadProjects()[0]).toEqual(upgraded);
+    expect(globalThis.localStorage.getItem('rise-builder-projects-backup-v2')).toBeNull();
   });
 });
