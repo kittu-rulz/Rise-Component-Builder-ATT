@@ -88,7 +88,18 @@ function isSafeProjectValue(value, depth = 0) {
   if (Array.isArray(value)) return value.length <= 1000 && value.every(entry => isSafeProjectValue(entry, depth + 1));
   if (!isPlainObject(value)) return false;
   if ('objectUrl' in value || 'blob' in value) return false;
-  if ((value.source === 'upload' || value.source === 'library' || value.sourceType === 'library' || value.sourceType === 'upload') && !isMediaReference(value)) return false;
+  // Only a value that actually points at stored media is held to the media-reference
+  // shape. Item-media descriptors (js/item-media.js) are initialised with
+  // sourceType: 'upload' while still empty — type: 'none', mediaId: '' — and
+  // isMediaReference deliberately rejects that shape, excluding anything that carries
+  // `placement` alongside `aspectRatio`/`fit`. Keying the check off `source`/`sourceType`
+  // alone therefore made every item that had ever rendered a media control unsavable,
+  // failing the whole project with "Project item data is invalid." A descriptor with no
+  // id references nothing, and the objectUrl/blob check above already rejects the
+  // non-serialisable media handles this guard exists to keep out of localStorage.
+  const mediaPointer = (typeof value.mediaId === 'string' ? value.mediaId.trim() : value.mediaId)
+    || (typeof value.assetId === 'string' ? value.assetId.trim() : value.assetId);
+  if (mediaPointer && !isMediaReference(value)) return false;
   return Object.entries(value).length <= 100 && Object.entries(value).every(([key, entry]) =>
     /^[a-zA-Z0-9_-]+$/.test(key) && !DANGEROUS_KEYS.has(key) && isSafeProjectValue(entry, depth + 1));
 }

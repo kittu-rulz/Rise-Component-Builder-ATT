@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test';
 
 test('a full authoring session: create, edit, save, reopen, preflight, export, and interact with a keyboard-driven completion flow', async ({ page, context }) => {
   // 1. Start a project — a fresh session opens on the component catalog.
-  await page.goto('/');
+  await page.goto('/?catalog');
   await expect(page.locator('#catalog-state')).toBeVisible();
 
   // 2. Select a component.
@@ -46,10 +46,14 @@ test('a full authoring session: create, edit, save, reopen, preflight, export, a
   await expect(page.locator('.toast')).toContainText('Saved');
 
   // 8. Reopen the project (simulating a new session) and confirm edits persisted.
-  await page.reload();
+  // A reload lands on whichever screen the URL names, and #btn-open lives on the
+  // contextual authoring toolbar that app.js only shows in the editor state — so the fresh
+  // session starts from the editor deep link.
+  await page.goto('/?editor');
+  await expect(page.locator('#editor-state')).toBeVisible();
   await page.locator('#btn-open').click();
   await page.locator('.saved-component-card').filter({ hasText: 'Full Journey Project' }).getByRole('button', { name: 'Load' }).click();
-  await expect(page.locator('#input-block-headline')).toHaveValue('Full Journey Tabs');
+  await expect(page.locator('#input-block-headline')).toHaveText('Full Journey Tabs');
   await expect(page.locator('#input-track-completion')).toBeChecked();
 
   // 9. Run export preflight — a fully-filled-out Tabs component has no blocking errors
@@ -65,14 +69,10 @@ test('a full authoring session: create, edit, save, reopen, preflight, export, a
   await page.locator('#btn-export').click();
   await expect(page.locator('#modal-export')).toBeVisible();
   await expect(page.locator('#export-html-code')).toContainText('Full Journey Tabs');
-  await page.locator('#export-advanced-options > summary').click({ force: true });
-  const downloadPromise = page.waitForEvent('download');
-  await page.locator('#btn-download-html').click();
-  const download = await downloadPromise;
-  const stream = await download.createReadStream();
-  const chunks = [];
-  for await (const chunk of stream) chunks.push(chunk);
-  const html = Buffer.concat(chunks).toString('utf8');
+  // The dialog's Advanced options disclosure and its single-file HTML download were
+  // removed in the two-card redesign; #export-html-code carries the same self-contained
+  // fragment the Copy for Rise button writes to the clipboard.
+  const html = await page.locator('#export-html-code').textContent();
   expect(html).toContain('Full Journey Tabs');
 
   // 11. Open the standalone export — it must work without the Builder app.

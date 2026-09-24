@@ -1298,7 +1298,11 @@ a {
 .card-action-link {
   font-size: 11px;
   font-weight: 600;
-  color: var(--primary);
+  /* Renders actual text at 11px, so it takes --primary-text (navy, 10.7:1) rather than
+     --primary (#009FDB, 3.01:1) per the token contract at the top of this file. It used
+     --primary until 2026-09-23 and failed WCAG AA; the accessibility suite only missed it
+     because its axe scan was landing on the welcome page instead of the catalog. */
+  color: var(--primary-text);
   margin-left: auto;
   cursor: pointer;
   padding: 4px 6px;

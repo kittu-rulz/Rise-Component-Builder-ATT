@@ -11,13 +11,17 @@ const FILTER = '.classification-filter-btn';
 const CATEGORIES = ['interactive', 'navigation', 'knowledge', 'timelines', 'process', 'cards', 'media', 'advanced'];
 
 async function catalog(page) {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await expect(page.locator(CARD).first()).toBeVisible();
 }
 
 const cat = (page, dataCategory) => page.locator(`.nav-item[data-category="${dataCategory}"]`);
 
-test('every template card shows a classification badge and a visible "Why use it?" section', async ({ page }) => {
+// "Why use it?" is deliberately not painted on the card any more (styles.css `.card-why
+// { display: none }` — kept off the card for scannability), but it is still rendered into
+// the DOM and still wired to the card through aria-describedby, so it reaches assistive
+// technology and the details modal. That contract is what this asserts.
+test('every template card carries a classification badge and a "Why use it?" description', async ({ page }) => {
   await catalog(page);
   let seen = 0;
   for (const category of CATEGORIES) {
@@ -30,7 +34,7 @@ test('every template card shows a classification badge and a visible "Why use it
       await expect(badge).toHaveText(/Enhanced Rise Alternative|Advanced Custom Interaction/);
       await expect(card.locator('.card-why-label')).toHaveText('Why use it?');
       const why = card.locator('.card-why-text');
-      await expect(why).toBeVisible();
+      await expect(why).toBeAttached();
       await expect(why).not.toBeEmpty();
       const describedby = await card.getAttribute('aria-describedby');
       expect(describedby).toContain(await badge.getAttribute('id'));

@@ -17,7 +17,7 @@ const CATEGORY_ID = {
 };
 
 async function openComponent(page, name, category = 'Interactive') {
-  await page.goto('/');
+  await page.goto('/?catalog');
   const categoryId = CATEGORY_ID[category] || category;
   if (categoryId !== 'interactive') await page.locator(`.nav-item[data-category="${categoryId}"]`).click();
   await page.locator('.component-select-card').filter({ hasText: name }).click();
@@ -161,7 +161,11 @@ test.describe('device mode persistence rules', () => {
   test('selected device mode persists when switching to a different component', async ({ page }) => {
     await openComponent(page, 'Accordion');
     await page.locator('[data-device="tablet"]').click();
-    await page.locator('#btn-back-to-catalog').click();
+    // The editor's back control exits to the course workspace rather than the catalog
+    // now, so re-entering the catalog goes through its ?catalog deep link. The selected
+    // device mode lives in localStorage (js/storage.js KEYS.previewDevice), so it still
+    // has to survive this.
+    await page.goto('/?catalog');
     await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
     await expect(page.locator('#preview-viewport')).toHaveClass(/tablet/);
     await expect(page.locator('[data-device="tablet"]')).toHaveAttribute('aria-pressed', 'true');
@@ -176,7 +180,7 @@ test.describe('narrow application window remains usable', () => {
     await expect.poll(() => noPageHorizontalScroll(page)).toBe(true);
     const viewportWidth = await page.locator('#preview-viewport').evaluate(el => el.getBoundingClientRect().width);
     expect(viewportWidth).toBeGreaterThan(0);
-    await page.locator('#btn-back-to-catalog').click();
+    await page.goto('/?catalog');
     await expect(page.locator('#catalog-state')).toBeVisible();
     await page.locator('.nav-item[data-category="knowledge"]').click();
     await expect(page.locator('.component-select-card').filter({ hasText: 'Multiple Choice' })).toBeVisible();

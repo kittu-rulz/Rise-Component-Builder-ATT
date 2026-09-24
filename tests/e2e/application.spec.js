@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 async function openComponent(page, name, categoryId = 'interactive') {
-  await page.goto('/');
+  await page.goto('/?catalog');
   if (categoryId !== 'interactive') await page.locator(`.nav-item[data-category="${categoryId}"]`).click();
   await page.locator('.component-select-card').filter({ hasText: name }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
@@ -11,30 +11,40 @@ test('application loads without console errors and renders the catalog', async (
   const errors = [];
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Component Builder' })).toBeVisible();
+  await page.goto('/?catalog');
+  await expect(page.getByRole('heading', { name: 'AT&T Learning Interaction Builder' })).toBeVisible();
   // Default landing category is "Interactive" (6 components).
   await expect(page.locator('.component-select-card')).toHaveCount(6);
   expect(errors).toEqual([]);
 });
 
-test('every registered component opens in the builder editor and renders its live preview with no console/page errors', async ({ page }) => {
-  // Opens and closes all 21 registered components in sequence — comfortably under the
+test('every registered component opens in the builder editor and renders its live preview with no console/page errors', async ({ page, baseURL }) => {
+  // Opens and closes all 26 registered components in sequence — comfortably under the
   // default 30s timeout when run alone, but slower under heavy parallel worker
   // contention (especially on WebKit), so this gets its own longer budget rather than
   // being treated as flaky.
   test.slow();
-  // image-gallery and video-frame ship illustrative default content that hotlinks a
-  // third-party image CDN (docs/MEDIA-ASSET-PIPELINE.md's external-dependency warning).
-  // Fulfilling those requests with a real, always-valid local placeholder — rather than
-  // letting the real network answer — makes this a deterministic check of the app's own
-  // code instead of a check of live network conditions in the test environment.
+  // Several components ship illustrative default content that hotlinks third-party media
+  // (docs/MEDIA-ASSET-PIPELINE.md's external-dependency warning). Answering *every*
+  // off-origin request locally — rather than only images.unsplash.com, as this did until
+  // 2026-09-23 — makes this a deterministic check of the app's own code instead of a
+  // check of live network conditions. How much that matters depends entirely on how the
+  // environment answers those CDN requests: on a developer machine behind a slow or
+  // filtered route the unstubbed fetches left every media-bearing component stalling
+  // until it timed out, taking this test from 58 seconds to 40 minutes. CI's own network
+  // answers quickly enough that it never saw that, which is exactly the kind of
+  // environment-dependent swing an e2e suite should not be exposed to.
   const onePixelPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
-  await page.route(/images\.unsplash\.com/, route => route.fulfill({ status: 200, contentType: 'image/png', body: onePixelPng }));
+  const origin = new URL(baseURL).origin;
+  await page.route('**/*', route => {
+    const url = route.request().url();
+    if (url.startsWith(origin) || url.startsWith('data:') || url.startsWith('blob:')) return route.continue();
+    return route.fulfill({ status: 200, contentType: 'image/png', body: onePixelPng });
+  });
   const errors = [];
   page.on('console', message => { if (message.type() === 'error') errors.push(`${message.text()} (console)`); });
   page.on('pageerror', error => errors.push(`${error.message} (pageerror)`));
-  await page.goto('/');
+  await page.goto('/?catalog');
 
   // 'advanced' (Interactive Video's own "Advanced Interactions" category) was missing
   // here until this line — a real gap: that component was never exercised by this
@@ -60,7 +70,10 @@ test('every registered component opens in the builder editor and renders its liv
       // errors should fail this test.
       const applicationErrors = errors.filter(message => !/failed to load resource|corrupt or truncated|net::err_|networkerror|failed to decode|temporal\.duration/i.test(message));
       expect(applicationErrors, `component "${title}" produced console/page errors`).toEqual([]);
-      await page.locator('#btn-back-to-catalog').click();
+      // The editor's back control now exits to the course workspace, not the catalog,
+      // and the catalog has no entry in the persistent navbar — so re-entering it for
+      // the next card means going back through its ?catalog deep link.
+      await page.goto('/?catalog');
       await page.locator(`.nav-item[data-category="${dataCategory}"]`).click();
     }
   }
@@ -82,7 +95,7 @@ test('every registered component opens in the builder editor and renders its liv
 // true first-selection case, so it's covered separately, here, on a clean page with no
 // prior selection at all.
 test('the very first component selected in a fresh session renders its live preview immediately, not just after a reload', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.nav-item[data-category="advanced"]').click();
   await page.locator('.component-select-card').filter({ hasText: 'Interactive Video' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
@@ -91,7 +104,7 @@ test('the very first component selected in a fresh session renders its live prev
 });
 
 test('an unanticipated runtime error surfaces a generic toast and logs full detail to the console, not to the user', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   // Reads each console.error argument's real value from the page (via arg.evaluate, pulling
   // .message off an Error instance) rather than relying on message.text()'s browser-native
   // string formatting of a non-primitive argument — that formatting is not consistent
@@ -115,7 +128,7 @@ test('an unanticipated runtime error surfaces a generic toast and logs full deta
 });
 
 test('sidebar storage meter reports measured browser storage usage', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   const label = page.locator('#storage-usage-label');
   const bar = page.locator('.storage-bar');
   await expect(label).not.toHaveText('Calculating…');
@@ -126,7 +139,7 @@ test('sidebar storage meter reports measured browser storage usage', async ({ pa
 });
 
 test('category switching and search filter the catalog', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.nav-item[data-category="knowledge"]').click();
   await expect(page.locator('.component-select-card')).toHaveCount(5);
   await expect(page.locator('.component-select-card').filter({ hasText: 'Multiple Choice' })).toBeVisible();
@@ -137,7 +150,7 @@ test('category switching and search filter the catalog', async ({ page }) => {
 });
 
 test('catalog cards are native buttons reachable and activatable by keyboard', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   const card = page.locator('.component-select-card').filter({ hasText: 'Accordion' });
   await expect(card).toHaveRole('button');
   await card.focus();
@@ -147,16 +160,22 @@ test('catalog cards are native buttons reachable and activatable by keyboard', a
   await expect(page.locator('#active-component-title')).toHaveText('Accordion');
 });
 
-test('component selection opens the editor and back returns to the catalog', async ({ page }) => {
+// The editor's back control is still called #btn-back-to-catalog, but since the course
+// workspace landed it no longer returns to the catalog: performBackToCatalog() sends you
+// to the project overview when a project is active and to the projects dashboard when one
+// is not (hence its context-sensitive "Return to Course Workspace" / "Back to Projects"
+// label). Opening a component straight from the catalog has no active project, so the
+// dashboard is the expected destination.
+test('component selection opens the editor and back leaves for the projects dashboard', async ({ page }) => {
   await openComponent(page, 'Accordion');
   await expect(page.locator('#active-component-title')).toHaveText('Accordion');
   await page.locator('#btn-back-to-catalog').click();
-  await expect(page.locator('#catalog-state')).toBeVisible();
+  await expect(page.locator('#dashboard-workspace')).toBeVisible();
   await expect(page.locator('#editor-state')).toBeHidden();
 });
 
 test('builder light and dark interface modes remain independent', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.locator('#btn-theme').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

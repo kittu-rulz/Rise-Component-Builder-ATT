@@ -10,7 +10,7 @@ async function selectAccordion(page) {
 }
 
 test('fresh launch: catalog shown, preview empty, Save/Export disabled and explained', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await expect(page.locator('#catalog-state')).toBeVisible();
   await expect(page.locator('#editor-state')).toBeHidden();
   await expect(page.locator('#preview-empty-state')).toBeVisible();
@@ -25,7 +25,7 @@ test('fresh launch: catalog shown, preview empty, Save/Export disabled and expla
 });
 
 test('selecting a component enables Save/Export and shows the live preview', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await selectAccordion(page);
   await expect(page.locator('#preview-empty-state')).toBeHidden();
   await expect(page.locator('#live-preview-iframe')).toBeVisible();
@@ -33,10 +33,16 @@ test('selecting a component enables Save/Export and shows the live preview', asy
   await expect(page.locator('#btn-export')).toBeEnabled();
 });
 
-test('deselection: Back to Templates disables Save/Export again and clears the preview', async ({ page }) => {
-  await page.goto('/');
+test('deselection: leaving the editor clears the preview and disables Save/Export again', async ({ page }) => {
+  await page.goto('/?catalog');
   await selectAccordion(page);
+  // The editor's back control exits to the course workspace rather than the catalog now,
+  // and the preview panel is not mounted there — so the "nothing selected" assertions below
+  // are made where they are still observable, back on the catalog screen.
   await page.locator('#btn-back-to-catalog').click();
+  await expect(page.locator('#dashboard-workspace')).toBeVisible();
+  await expect(page.locator('#editor-state')).toBeHidden();
+  await page.goto('/?catalog');
   await expect(page.locator('#catalog-state')).toBeVisible();
   await expect(page.locator('#preview-empty-state')).toBeVisible();
   await expect(page.locator('#live-preview-iframe')).toBeHidden();
@@ -45,16 +51,17 @@ test('deselection: Back to Templates disables Save/Export again and clears the p
 });
 
 test('opening a saved project restores selection with Save/Export enabled', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await selectAccordion(page);
   await page.locator('#btn-save').click();
   await page.locator('#save-component-name').fill('Reopen Me');
   await page.locator('#btn-confirm-save').click();
   await expect(page.locator('.toast')).toContainText('Saved');
 
-  await page.locator('#btn-back-to-catalog').click();
-  await expect(page.locator('#btn-export')).toBeDisabled();
-
+  // #btn-open sits on the contextual authoring toolbar, which app.js only shows in the
+  // editor state, so reopening starts from the editor deep link rather than the catalog.
+  await page.goto('/?editor');
+  await expect(page.locator('#editor-state')).toBeVisible();
   await page.locator('#btn-open').click();
   await page.locator('.saved-component-card').filter({ hasText: 'Reopen Me' }).getByRole('button', { name: 'Load' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
@@ -63,28 +70,30 @@ test('opening a saved project restores selection with Save/Export enabled', asyn
 });
 
 test('a restored draft on reload also lands with Save/Export enabled', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await selectAccordion(page);
   await page.waitForTimeout(800); // clears the 700ms draft-save debounce
-  await page.reload();
+  // Draft restoration is an explicit dashboard action now, not an automatic reload effect.
+  await page.goto('/?dashboard');
+  await page.locator('#btn-resume-draft').click();
   await expect(page.locator('#editor-state')).toBeVisible();
   await expect(page.locator('#btn-save')).toBeEnabled();
   await expect(page.locator('#btn-export')).toBeEnabled();
 });
 
 test('a Blocking issue disables the export actions inside the modal', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await selectAccordion(page);
   await page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]').fill('');
 
   await page.locator('#btn-export').click();
   await expect(page.locator('#export-preflight-results')).toContainText(/blocking/i);
   await expect(page.locator('#btn-copy-html')).toBeDisabled();
-  await expect(page.locator('#btn-download-html')).toBeDisabled();
+  await expect(page.locator('#btn-download-rise-zip')).toBeDisabled();
 });
 
 test('a Warning-only issue does not disable the export actions', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await selectAccordion(page);
   // Completion tracking on with no export format chosen yet fires
   // general-completion-iframe-format — a Warning, not Blocking (js/validation.js).
@@ -97,14 +106,15 @@ test('a Warning-only issue does not disable the export actions', async ({ page }
 });
 
 test('a clean selection can export successfully', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await selectAccordion(page);
   await page.locator('#btn-export').click();
   await expect(page.locator('#btn-copy-html')).toBeEnabled();
 
-  await page.locator('#export-advanced-options > summary').click();
+  // Web Package ZIP is the export dialog's only download path since the single-file HTML
+  // download and the Advanced options disclosure were removed.
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('#btn-download-html').click();
+  await page.locator('#btn-download-rise-zip').click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/\.html$/);
+  expect(download.suggestedFilename()).toMatch(/\.zip$/);
 });

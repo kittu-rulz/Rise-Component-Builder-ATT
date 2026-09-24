@@ -6,7 +6,7 @@ test.describe('Responsive Viewport Visual Verification', () => {
 
   test('Capture 1920x1080 Browsing and Authoring', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto('/');
+    await page.goto('/?catalog');
     await page.waitForSelector('.component-select-card');
     await page.screenshot({ path: path.join(artifactDir, 'screenshot_1920x1080_browsing.png') });
 
@@ -19,7 +19,7 @@ test.describe('Responsive Viewport Visual Verification', () => {
 
   test('Capture 1440x900 Browsing and Authoring', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/');
+    await page.goto('/?catalog');
     await page.waitForSelector('.component-select-card');
     await page.screenshot({ path: path.join(artifactDir, 'screenshot_1440x900_browsing.png') });
 
@@ -32,14 +32,14 @@ test.describe('Responsive Viewport Visual Verification', () => {
 
   test('Capture 1366x768 Browsing', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto('/');
+    await page.goto('/?catalog');
     await page.waitForSelector('.component-select-card');
     await page.screenshot({ path: path.join(artifactDir, 'screenshot_1366x768_browsing.png') });
   });
 
   test('Capture 1024px Browsing and Authoring', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto('/');
+    await page.goto('/?catalog');
     await page.waitForSelector('.component-select-card');
     await page.screenshot({ path: path.join(artifactDir, 'screenshot_1024px_browsing.png') });
 
@@ -52,7 +52,7 @@ test.describe('Responsive Viewport Visual Verification', () => {
 
   test('Capture Compact List View & Dark Mode at 1920x1080', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto('/');
+    await page.goto('/?catalog');
     await page.waitForSelector('#btn-density-compact');
     await page.click('#btn-density-compact');
     await page.waitForTimeout(300);

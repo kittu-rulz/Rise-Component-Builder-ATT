@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 async function openAccordion(page) {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   return page.frameLocator('#live-preview-iframe');
 }
@@ -30,7 +30,7 @@ test('application controls have accessible names and form labels', async ({ page
 // the theme contrast-report system, js/themes.js#contrastRatio). Catches real contrast
 // or landmark regressions in the app shell itself rather than relying on manual review.
 test('builder chrome has sufficient color contrast and one main landmark', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   const results = await new AxeBuilder({ page }).exclude('#live-preview-iframe').withRules([
     'color-contrast', 'landmark-one-main', 'region'
   ]).analyze();
@@ -87,7 +87,7 @@ test('generated accordion has valid ARIA references and state changes', async ({
 });
 
 test('tabs expose correct roles, selected state, and keyboard focus', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Horizontal Tabs' }).click();
   const frame = page.frameLocator('#live-preview-iframe');
   await expect(frame.locator('[role="tablist"]')).toHaveCount(1);
@@ -123,14 +123,14 @@ test('keyboard focus has a visible indicator and reduced motion is honored', asy
 });
 
 test('image authoring surfaces missing-alt warnings', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.nav-item[data-category="media"]').click();
   await page.locator('.component-select-card').filter({ hasText: 'Image Gallery' }).click();
   await expect(page.locator('.field-warning').filter({ hasText: /alternative text/i }).first()).toBeVisible();
 });
 
 test('builder modal traps focus while open', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('#btn-settings').click();
   const modal = page.locator('#modal-settings');
   await expect(modal).toBeVisible();
@@ -146,7 +146,7 @@ test('builder modal traps focus while open', async ({ page }) => {
 });
 
 test('closing a builder modal restores focus to its trigger', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   // Focus the trigger via keyboard rather than a mouse click: WebKit does not
   // give a button keyboard focus on click (matching real Safari behavior),
   // so a mouse click alone can't meaningfully exercise focus restoration

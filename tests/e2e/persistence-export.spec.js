@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 async function openAccordion(page) {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
@@ -17,9 +17,12 @@ test('project save, reload, open, draft restore, and delete persist locally', as
   await openAccordion(page);
   await page.locator('#input-block-headline').fill('Persisted headline');
   await saveNamedProject(page, 'Persistence E2E');
-  await page.reload();
+  // A reload lands on whichever screen the URL names and no longer reopens the autosaved
+  // draft by itself — resuming is an explicit choice on the projects dashboard.
+  await page.goto('/?dashboard');
+  await page.locator('#btn-resume-draft').click();
   await expect(page.locator('#editor-state')).toBeVisible();
-  await expect(page.locator('#input-block-headline')).toHaveValue('Persisted headline');
+  await expect(page.locator('#input-block-headline')).toHaveText('Persisted headline');
   await page.locator('#btn-open').click();
   const card = page.locator('.saved-component-card').filter({ hasText: 'Persistence E2E' });
   await expect(card).toBeVisible();
@@ -57,19 +60,19 @@ test('export contains selected content and theme, excludes unsafe executable mar
   ['quiz-option', 'gallery-item-card', 'aud-player', 'video-wrapper', 'ai-generator-preview']
     .forEach(marker => expect(exported).not.toContain(marker));
 
-  // The single-file download lives under Advanced export options.
-  await page.locator('#export-advanced-options > summary').click();
-  await expect(page.locator('#export-file-size')).toContainText(/\d+(\.\d+)?\s*(B|KB|MB)/);
+  // The export dialog is now two cards — "Copy for Rise" and "Web Package ZIP". Its
+  // Advanced options disclosure, the single-file #btn-download-html download and
+  // #export-file-size all went away with the redesign, so the self-contained fragment is
+  // taken from #export-html-code (exactly what the Copy button puts on the clipboard) and
+  // the remaining download path is asserted through the ZIP card.
+  await expect(page.locator('#export-html-size')).toContainText(/\d+(\.\d+)?\s*(B|KB|MB)/);
+  const html = exported;
+  expect(html).toContain('Exported');
 
   const downloadPromise = page.waitForEvent('download');
-  await page.locator('#btn-download-html').click();
+  await page.locator('#btn-download-rise-zip').click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/\.html$/);
-  const stream = await download.createReadStream();
-  const chunks = [];
-  for await (const chunk of stream) chunks.push(chunk);
-  const html = Buffer.concat(chunks).toString('utf8');
-  expect(html).toContain('Exported');
+  expect(download.suggestedFilename()).toMatch(/\.zip$/);
   expect(html).toContain('--primary: #00388F');
   const exportedPage = await context.newPage();
   exportedPage.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -87,7 +90,10 @@ test('export contains selected content and theme, excludes unsafe executable mar
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 });
 
-test('export copy button copies iframe code and shows visible confirmation', async ({ page, context, browserName }) => {
+// The iframe-snippet export (#export-advanced-options / #export-iframe-code /
+// #btn-copy-iframe) was removed from the dialog in the two-card redesign; "Copy for Rise"
+// is the only copy path left, so that is what this now confirms.
+test('export copy button copies the Rise code and shows visible confirmation', async ({ page, context, browserName }) => {
   // Firefox/WebKit don't support granting the 'clipboard-read'/'clipboard-write'
   // permissions through Playwright (Chromium-only CDP permissions), but the
   // app's own execCommand fallback (js/utilities.js) copies without needing
@@ -99,14 +105,12 @@ test('export copy button copies iframe code and shows visible confirmation', asy
   await openAccordion(page);
   await page.locator('#btn-export').click();
 
-  const riseInstructions = page.locator('.instructions-alert').filter({ hasText: 'Steps to add this in Articulate Rise' });
+  const riseInstructions = page.locator('.instructions-alert').filter({ hasText: 'Steps to add in Articulate Rise' });
   await expect(riseInstructions).toContainText('Code');
   await expect(riseInstructions).toContainText('Add code');
 
-  // The iframe snippet lives under Advanced export options.
-  await page.locator('#export-advanced-options > summary').click();
-  const expectedCode = await page.locator('#export-iframe-code').textContent();
-  const copyButton = page.locator('#btn-copy-iframe');
+  const expectedCode = await page.locator('#export-html-code').textContent();
+  const copyButton = page.locator('#btn-copy-html');
   await copyButton.click();
 
   await expect(copyButton).toHaveText('Copied!');
@@ -114,7 +118,11 @@ test('export copy button copies iframe code and shows visible confirmation', asy
   await expect(page.locator('.toast')).toContainText('Code copied to the clipboard.');
 
   if (browserName === 'chromium') {
-    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(expectedCode);
+    // The Windows clipboard round-trips line endings as CRLF, so every line of the export
+    // comes back differing from the DOM's textContent unless endings are normalised first.
+    await expect
+      .poll(async () => (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n'))
+      .toBe(expectedCode);
   }
 });
 
@@ -127,7 +135,7 @@ test('Export modal shows a compact size summary with code collapsed by default, 
 
   // Compact summary (size + description) is visible without expanding anything.
   await expect(page.locator('#export-html-size')).toContainText(/\d+(\.\d+)?\s*(B|KB|MB)/);
-  await expect(page.locator('#export-primary-code-box')).toContainText('HTML fragment');
+  await expect(page.locator('#export-primary-code-box')).toContainText('Self-contained HTML, CSS & JavaScript');
 
   // The full code is collapsed behind a "Technical preview" disclosure, not always-expanded.
   const technicalPreview = page.locator('#export-primary-code-box .code-technical-preview');

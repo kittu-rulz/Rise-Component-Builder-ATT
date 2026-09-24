@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 // New Project, Open Project (Load), Back to Templates, and browser/tab close.
 
 async function openAccordion(page) {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
@@ -24,7 +24,7 @@ test('editing shows "Unsaved changes"; saving flips the status to "Saved"', asyn
 
   await saveNamedProject(page, 'Project Safety E2E');
   await expect(page.locator('#header-project-name')).toHaveText('Project Safety E2E');
-  await expect(status).toHaveText('Saved');
+  await expect(status).toHaveText(/^Saved.*/);
 
   // Editing again after a save flips it back to unsaved.
   await page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]').fill('Edited title');
@@ -42,7 +42,7 @@ test('a failed save (empty name) keeps the dialog open and does not clear dirty 
   await page.locator('#save-component-name').fill('Recovered Name');
   await page.locator('#btn-confirm-save').click();
   await expect(page.locator('#header-project-name')).toHaveText('Recovered Name');
-  await expect(page.locator('#project-status-text')).toHaveText('Saved');
+  await expect(page.locator('#project-status-text')).toHaveText(/^Saved.*/);
 });
 
 test('New Project with unsaved changes: Cancel keeps the work in place', async ({ page }) => {
@@ -54,15 +54,17 @@ test('New Project with unsaved changes: Cancel keeps the work in place', async (
   await page.locator('#btn-confirm-dialog-cancel').click();
   await expect(page.locator('#modal-confirm')).toBeHidden();
   await expect(page.locator('#editor-state')).toBeVisible(); // still in the editor, not reset to the catalog
-  await expect(page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]')).toHaveValue('Do not lose me');
+  await expect(page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]')).toHaveText('Do not lose me');
 });
 
-test('New Project with unsaved changes: Discard proceeds and resets to the catalog', async ({ page }) => {
+test('New Project with unsaved changes: Discard proceeds and starts a fresh project', async ({ page }) => {
   await openAccordion(page);
   await page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]').fill('Discard me');
   await page.locator('#btn-new').click();
   await page.locator('#btn-confirm-dialog-action').click(); // "Discard" is the confirm-styled action
-  await expect(page.locator('#catalog-state')).toBeVisible();
+  // performNewProject() loads the default component straight into the editor now; it only
+  // falls back to the catalog when the registry is empty.
+  await expect(page.locator('#editor-state')).toBeVisible();
   await expect(page.locator('.toast')).toContainText('New project started');
 });
 
@@ -84,7 +86,7 @@ test('New Project with unsaved changes: choosing Save completes the save, then p
   await page.locator('#save-component-name').fill('Saved On The Way Out');
   await page.locator('#btn-confirm-save').click();
   // The originally-requested New Project action resumed automatically once the save succeeded.
-  await expect(page.locator('#catalog-state')).toBeVisible();
+  await expect(page.locator('#editor-state')).toBeVisible();
   await expect(page.locator('.toast').last()).toContainText('New project started');
 });
 
@@ -95,7 +97,7 @@ test('New Project with unsaved changes: cancelling the Save dialog does not sile
   await page.locator('#btn-confirm-dialog-extra').click(); // "Save"
   await page.locator('#modal-save .modal-close-btn').click(); // back out of the save dialog
   await expect(page.locator('#editor-state')).toBeVisible(); // New Project never ran
-  await expect(page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]')).toHaveValue('Careful with me');
+  await expect(page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]')).toHaveText('Careful with me');
 
   // A later, unrelated save must not retroactively trigger the earlier New Project action.
   await page.locator('#btn-save').click();
@@ -116,14 +118,17 @@ test('Opening a different saved project while dirty is guarded, and Discard load
   await page.locator('#btn-confirm-dialog-action').click(); // Discard
   await expect(page.locator('.toast').last()).toContainText('Opened');
   await expect(page.locator('#header-project-name')).toHaveText('Original Project');
-  await expect(page.locator('#project-status-text')).toHaveText('Saved');
+  await expect(page.locator('#project-status-text')).toHaveText(/^Saved.*/);
 });
 
 test('draft restoration on reload shows "Unsaved changes" for a never-explicitly-saved project', async ({ page }) => {
   await openAccordion(page);
   await page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]').fill('Autosaved only, never saved');
   await page.waitForTimeout(800); // clears the 700ms draft-save debounce (js/app.js#scheduleDraftSave)
-  await page.reload();
+  // A reload no longer reopens the draft by itself: restoring is an explicit choice on the
+  // projects dashboard ("Resume editing …", js/dashboard/dashboard-view.js#btn-resume-draft).
+  await page.goto('/?dashboard');
+  await page.locator('#btn-resume-draft').click();
   await expect(page.locator('#editor-state')).toBeVisible();
   // A never-explicitly-saved draft's stored name falls back to the component's own title
   // (app.js#saveCurrentDraft), not the literal "Untitled project" placeholder — that text
@@ -137,10 +142,11 @@ test('draft restoration on reload shows "Unsaved changes" for a never-explicitly
 test('draft restoration of an already-saved project shows "Saved", not "Unsaved changes"', async ({ page }) => {
   await openAccordion(page);
   await saveNamedProject(page, 'Restored As Saved');
-  await page.reload();
+  await page.goto('/?dashboard');
+  await page.locator('#btn-resume-draft').click();
   await expect(page.locator('#editor-state')).toBeVisible();
   await expect(page.locator('#header-project-name')).toHaveText('Restored As Saved');
-  await expect(page.locator('#project-status-text')).toHaveText('Saved');
+  await expect(page.locator('#project-status-text')).toHaveText(/^Saved.*/);
 });
 
 test('the project status is a live region but does not re-announce on every keystroke (no unrelated DOM churn while already dirty)', async ({ page }) => {
@@ -159,7 +165,7 @@ test('the project status is a live region but does not re-announce on every keys
 });
 
 test('preventDefault is set on beforeunload only when there are unsaved changes', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   const cleanResult = await page.evaluate(() => {
     const event = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(event);

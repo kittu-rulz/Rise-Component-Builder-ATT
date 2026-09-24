@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test';
 // activated by mouse or keyboard.
 
 async function openAccordion(page) {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
@@ -102,7 +102,7 @@ test('the concise accessible announcement updates without dumping the full issue
 // dimension, independent of any specific catalog component's actual rendered height.
 test.describe('js/dom-measurement.js — real hidden-iframe measurement', () => {
   test('measures a tall, wide document close to its actual pixel dimensions', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?catalog');
     const result = await page.evaluate(async () => {
       const { measureRenderedDimensions } = await import('/js/dom-measurement.js');
       const html = '<!doctype html><html><body style="margin:0"><div style="height:1234px;width:900px;">tall and wide</div></body></html>';
@@ -117,7 +117,7 @@ test.describe('js/dom-measurement.js — real hidden-iframe measurement', () => 
   });
 
   test('measures a small document as producing no overflow', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?catalog');
     const result = await page.evaluate(async () => {
       const { measureRenderedDimensions } = await import('/js/dom-measurement.js');
       const html = '<!doctype html><html><body style="margin:0"><p>short</p></body></html>';
@@ -128,7 +128,7 @@ test.describe('js/dom-measurement.js — real hidden-iframe measurement', () => 
   });
 
   test('resolves null overall for empty input rather than hanging or throwing', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?catalog');
     const result = await page.evaluate(async () => {
       const { measureRenderedDimensions } = await import('/js/dom-measurement.js');
       return measureRenderedDimensions('');
@@ -137,7 +137,7 @@ test.describe('js/dom-measurement.js — real hidden-iframe measurement', () => 
   });
 
   test('an aborted measurement resolves promptly to a null-valued result instead of waiting for the timeout', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/?catalog');
     const elapsedMs = await page.evaluate(async () => {
       const { measureRenderedDimensions } = await import('/js/dom-measurement.js');
       const controller = new AbortController();

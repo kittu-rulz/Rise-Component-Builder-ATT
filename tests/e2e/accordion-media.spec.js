@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 async function openAccordion(page) {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }

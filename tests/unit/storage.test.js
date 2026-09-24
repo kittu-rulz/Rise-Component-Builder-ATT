@@ -206,6 +206,43 @@ describe('recovery from corrupted or unavailable storage', () => {
     expect(validateProject(projectWithHostileConfig).valid).toBe(false);
   });
 
+  // Regression, found 2026-09-24: every accordion/flip-card item that had ever rendered a
+  // media control carried js/item-media.js's initialised-but-empty descriptor, and saving
+  // the project failed outright with "Project item data is invalid." isSafeProjectValue
+  // keyed its media-reference check off source/sourceType alone, and the descriptor
+  // defaults to sourceType: 'upload' while still holding no media — a shape
+  // isMediaReference deliberately rejects, since it excludes anything carrying
+  // `placement` next to `aspectRatio`/`fit`.
+  test('an item-media descriptor that holds no media yet does not block saving the project', () => {
+    const emptyDescriptor = {
+      type: 'none', sourceType: 'upload', src: '', mediaId: '', fileName: '', mimeType: '',
+      alt: '', decorative: false, caption: '', transcript: '', placement: 'above',
+      aspectRatio: 'original', fit: 'contain', focalPosition: 'center center',
+      posterSrc: '', posterMediaId: '', captionsSrc: '', preload: 'metadata'
+    };
+    const item = { title: 'Has a media control', content: 'body', media: emptyDescriptor };
+    const result = validateProject({ ...validProject(), config: componentConfig([item]) });
+    expect(result.valid).toBe(true);
+    expect(result.project.config.items[0].media).toEqual(emptyDescriptor);
+  });
+
+  test('a value that does point at stored media is still held to the media-reference shape', () => {
+    // Same descriptor, but now claiming an actual asset while carrying the descriptor-only
+    // placement/aspectRatio pair that isMediaReference rejects — the guard must still bite.
+    const malformed = {
+      sourceType: 'upload', mediaId: 'asset-123', placement: 'above', aspectRatio: 'original'
+    };
+    const item = { title: 'x', content: 'y', media: malformed };
+    expect(validateProject({ ...validProject(), config: componentConfig([item]) }).valid).toBe(false);
+  });
+
+  test('a media handle carrying a live object URL or blob is still refused', () => {
+    const withObjectUrl = { title: 'x', content: 'y', media: { mediaId: 'a1', objectUrl: 'blob:http://x/y' } };
+    expect(validateProject({ ...validProject(), config: componentConfig([withObjectUrl]) }).valid).toBe(false);
+    const withBlob = { title: 'x', content: 'y', media: { mediaId: 'a1', blob: {} } };
+    expect(validateProject({ ...validProject(), config: componentConfig([withBlob]) }).valid).toBe(false);
+  });
+
   test('a full storage quota surfaces a specific, user-actionable error rather than a generic failure', () => {
     globalThis.localStorage.setItem = () => {
       const error = new Error('quota exceeded');

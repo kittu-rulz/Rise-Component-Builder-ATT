@@ -7,7 +7,7 @@ const CATEGORY_ID = {
 };
 
 async function openComponent(page, name, category = 'Interactive') {
-  await page.goto('/');
+  await page.goto('/?catalog');
   const categoryId = CATEGORY_ID[category] || category;
   if (categoryId !== 'interactive') await page.locator(`.nav-item[data-category="${categoryId}"]`).click();
   await page.locator('.component-select-card').filter({ hasText: name }).click();

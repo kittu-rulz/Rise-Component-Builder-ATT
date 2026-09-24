@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Preview Pane Hide and Show Restore Behavior', () => {
   test('Hide preview pane and restore via docked Show Preview button and header button', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/');
+    await page.goto('/?catalog');
     await page.waitForSelector('.component-select-card');
 
     // 1. In browsing mode, hide preview panel

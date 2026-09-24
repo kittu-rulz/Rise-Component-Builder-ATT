@@ -25,13 +25,13 @@ async function uploadCanvasImage(fileInputLocator, { width, height, name = 'canv
 
 test('an oversized image is automatically downscaled to fit within the resize threshold', async ({ page, browserName }) => {
   test.skip(browserName === 'webkit', 'WebKit-on-Windows cannot store Blobs in IndexedDB in this test environment (see editor-preview.spec.js).');
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
 
   await uploadCanvasImage(iconField.locator('input[type="file"]'), { width: 4000, height: 3000, name: 'oversized.png' });
   await expect(iconField.locator('.media-file-metadata')).toContainText('oversized.png');
-  await expect(iconField.locator('.media-source-badge')).toHaveText('Local upload (stored in this browser)');
+  await expect(iconField.locator('.media-source-badge')).toHaveText('Shared Media Library (stored in this browser)');
 
   const preview = iconField.locator('img.media-upload-preview');
   await expect(preview).toBeVisible();
@@ -45,22 +45,22 @@ test('an oversized image is automatically downscaled to fit within the resize th
 
 test('an image far beyond the maximum dimension is rejected with a clear error, not silently accepted', async ({ page, browserName }) => {
   test.skip(browserName === 'webkit', 'WebKit-on-Windows cannot store Blobs in IndexedDB in this test environment (see editor-preview.spec.js).');
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
 
   await uploadCanvasImage(iconField.locator('input[type="file"]'), { width: 9000, height: 300, name: 'decompression-bomb-shaped.png' });
-  await expect(iconField.locator('.media-upload-error')).toContainText(/exceeds the 8000px maximum image dimension/i);
-  await expect(iconField.locator('.media-source-badge')).toHaveText('No file selected');
+  await expect(iconField.locator('.media-upload-error')).toContainText(/exceed the 8000 px maximum/i);
+  await expect(iconField.locator('.media-source-badge')).toHaveText('No media selected');
 });
 
 test('the media source badge reflects local vs. external vs. empty state', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.nav-item[data-category="media"]').click();
   await page.locator('.component-select-card').filter({ hasText: 'Image Gallery' }).click();
   const sourceField = page.locator('#schema-0-content').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
   await expect(sourceField.locator('.media-source-badge')).toHaveText('External URL');
 
   await sourceField.locator('input[type="url"]').fill('');
-  await expect(sourceField.locator('.media-source-badge')).toHaveText('No file selected');
+  await expect(sourceField.locator('.media-source-badge')).toHaveText('No media selected');
 });

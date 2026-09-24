@@ -448,6 +448,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncSettingsControls();
     if (window.location.search.includes('dashboard')) {
       showState('dashboard');
+    } else if (window.location.search.includes('catalog')) {
+      // Deep link straight to the component catalog, the same screen the persistent
+      // navbar's "catalog" item reaches. Without this the only way in is landing →
+      // dashboard → catalog, which makes the catalog the one primary screen with no
+      // addressable entry point.
+      showState('catalog');
+      renderCatalog();
     } else if (window.location.search.includes('editor')) {
       const initialComp = componentCatalog.find(c => c.id === 'tab-blocks') || componentCatalog.find(c => c.id === 'accordion') || componentCatalog[0];
       if (initialComp) {

@@ -1,21 +1,29 @@
 import { expect, test } from '@playwright/test';
 
 async function openAccordion(page) {
-  await page.goto('/');
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Accordion' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => openAccordion(page));
 
+// Block Label and Main Headline are deliberately single-line: app.js upgrades both to
+// rich-text editors with isSingleLine: true, and js/rich-text-editor.js swallows Enter for
+// those fields, so a newline typed into either is dropped rather than rendered. This test
+// asserted two-line values for both until 2026-09-24, which had not been true since the
+// rich-text editor shipped. All three header fields are contenteditable now, so a literal
+// newline character does not survive fill() on any of them; entering a second line means an
+// Enter keypress on the one multi-line field (Instructional Subtext), which this does not cover.
 test('content changes update the live preview', async ({ page }) => {
-  await page.locator('#input-block-title').fill('LEARNING\nACTIVITY');
-  await page.locator('#input-block-headline').fill('Updated live preview\nheadline');
+  await page.locator('#input-block-title').fill('LEARNING ACTIVITY');
+  await page.locator('#input-block-headline').fill('Updated live preview headline');
+  await page.locator('#input-block-desc').fill('Updated instructional subtext');
   const frame = page.frameLocator('#live-preview-iframe');
-  await expect(frame.locator('.block-label')).toHaveText('LEARNING\nACTIVITY');
-  await expect(frame.locator('[id$="-block-headline"]')).toHaveText('Updated live preview\nheadline');
-  await expect(frame.locator('.block-label')).toHaveCSS('white-space', 'pre-line');
-  await expect(frame.locator('[id$="-block-headline"]')).toHaveCSS('white-space', 'pre-line');
+  await expect(frame.locator('.block-label')).toHaveText('LEARNING ACTIVITY');
+  await expect(frame.locator('[id$="-block-headline"]')).toHaveText('Updated live preview headline');
+  await expect(frame.locator('.block-desc')).toHaveText('Updated instructional subtext');
+  await expect(frame.locator('.block-desc')).toHaveCSS('white-space', 'pre-line');
 });
 
 test('items can be added, duplicated, deleted, moved, and collapsed', async ({ page }) => {
@@ -41,7 +49,7 @@ test('items can be added, duplicated, deleted, moved, and collapsed', async ({ p
 });
 
 test('range sliders inside draggable item cards are not hijacked by drag-to-reorder', async ({ page }) => {
-  await page.locator('#btn-back-to-catalog').click();
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Hotspots' }).click();
 
   const input = page.locator('#schema-0-x');
@@ -73,7 +81,7 @@ test('behavior settings update accordion single-open behavior', async ({ page })
 });
 
 test('required schema fields display inline errors', async ({ page }) => {
-  await page.locator('#btn-back-to-catalog').click();
+  await page.goto('/?catalog');
   await page.getByText('Knowledge Checks', { exact: true }).click();
   await page.locator('.component-select-card').filter({ hasText: 'Multiple Choice' }).click();
   const label = page.locator('#schema-0-label');
@@ -83,7 +91,7 @@ test('required schema fields display inline errors', async ({ page }) => {
 });
 
 test('saving is blocked while a required schema field is invalid', async ({ page }) => {
-  await page.locator('#btn-back-to-catalog').click();
+  await page.goto('/?catalog');
   await page.getByText('Knowledge Checks', { exact: true }).click();
   await page.locator('.component-select-card').filter({ hasText: 'Multiple Choice' }).click();
 
@@ -121,7 +129,7 @@ test('flip-card custom artwork uploads per face and removal restores the built-i
   // Blob/File data to be stored in object store"). This is a platform/test
   // environment limitation, not an app bug — real Safari is unaffected.
   test.skip(browserName === 'webkit', 'WebKit-on-Windows cannot store Blobs in IndexedDB in this test environment.');
-  await page.locator('#btn-back-to-catalog').click();
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
   await expect(iconField.locator('.media-upload-guidance')).toHaveText(
@@ -136,7 +144,9 @@ test('flip-card custom artwork uploads per face and removal restores the built-i
   const front = page.frameLocator('#live-preview-iframe').locator('.flip-card-front').first();
   await expect(front.locator('img.custom-item-icon')).toHaveAttribute('alt', 'Custom learning icon');
   await expect(iconField.locator('.media-file-metadata')).toContainText('custom-icon.png');
-  await iconField.getByRole('button', { name: 'Remove file' }).click();
+  // The button reads "Remove media", but its aria-label — "Remove <kind> from <field>" —
+  // is what sets the accessible name (js/media-upload.js), so match that instead.
+  await iconField.getByRole('button', { name: /^Remove .* from / }).click();
   await expect(front.locator('img.custom-item-icon')).toHaveCount(0);
   await expect(front.locator('.card-icon-badge svg')).toBeVisible();
 });
@@ -157,7 +167,7 @@ test('media size-limit settings enforce a configurable maximum on image uploads'
   await page.locator('#btn-save-settings').click();
   await expect(page.locator('#modal-settings')).toBeHidden();
 
-  await page.locator('#btn-back-to-catalog').click();
+  await page.goto('/?catalog');
   await page.locator('.component-select-card').filter({ hasText: 'Study Cards' }).click();
   const iconField = page.locator('#schema-0-iconImage').locator('xpath=ancestor::div[contains(@class,"schema-field")]');
   await expect(iconField.locator('.media-upload-guidance')).toContainText('Maximum file size: 1.0 MB');
