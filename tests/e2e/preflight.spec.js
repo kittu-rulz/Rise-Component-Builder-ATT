@@ -76,7 +76,12 @@ test('an issue with only an item (no single field) gets a "Go to item" action th
 
 test('Preflight shows "No issues found" only when every enabled rule passes, and shows severity-grouped counts otherwise', async ({ page }) => {
   await page.locator('#btn-preflight').click();
-  await expect(page.locator('#preflight-results')).toContainText('No issues found');
+  // The default Accordion, measured with every section open, is taller than a typical Embed
+  // frame, so its one finding is a non-blocking warning: never "No issues found" while any
+  // rule reports something, and no blocking section.
+  await expect(page.locator('#preflight-results')).toContainText('May be clipped in a fixed-height Embed frame');
+  await expect(page.locator('#preflight-results')).not.toContainText('No issues found');
+  await expect(page.locator('.preflight-section-title.is-blocking')).toHaveCount(0);
 
   await page.locator('#modal-preflight .modal-close-btn').click();
   await page.locator('.dynamic-item-card[data-index="0"]').locator('[data-field-id="title"]').fill('');
@@ -201,12 +206,25 @@ test.describe('js/dom-measurement.js — deterministic and expansion-aware', () 
   });
 });
 
-test('Preflight measures real rendered dimensions for a normal component and reports no clipping/overflow issues', async ({ page }) => {
+test('Preflight measures the real rendered height with every section open, the same way on every engine', async ({ page }) => {
   await page.locator('#btn-preflight').click();
   const results = page.locator('#preflight-results');
   // Auto-retrying assertion — waits out the "Running preflight checks…" placeholder and
   // the real async hidden-iframe measurement without a fixed sleep.
-  await expect(results).toContainText('No issues found');
+  await expect(results).toContainText('Compliance Status');
   // A successful measurement must not fall back to the "couldn't measure" manual-check text.
   await expect(results).not.toContainText("couldn't be automatically measured");
+  // Collapsed accordion panels are opened for the measurement, so the default Accordion is
+  // taller than a typical 500px Embed frame. Chromium used to under-measure this because it
+  // doesn't advance transitions in an offscreen frame; every engine must now agree.
+  await expect(results).toContainText('May be clipped in a fixed-height Embed frame');
+  const text = await results.innerText();
+  const height = Number(/about (\d+)px tall/.exec(text)?.[1]);
+  expect(height).toBeGreaterThan(520);
+  expect(height).toBeLessThan(1000);
+  // The advice is scoped to the format it affects and says the fragment is not affected.
+  await expect(results).toContainText('Web Package ZIP');
+  await expect(results).toContainText('Copy for Rise');
+  // No mobile-overflow warning for a normal component.
+  await expect(results).not.toContainText('May overflow on mobile width');
 });

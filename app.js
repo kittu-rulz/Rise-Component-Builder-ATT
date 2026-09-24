@@ -2,7 +2,7 @@
 // @ts-nocheck -- extensive untyped document.getElementById() DOM wiring; see docs/TESTING-STRATEGY.md "Type checking".
 // Opt back in incrementally as sections of this file are typed or migrated into the component registry (docs/ARCHITECTURE.md §1).
 
-import { appState, resetConfig } from './js/state.js';
+import { appState, defaultBlockHeader, repairLeakedAccordionHeader, resetConfig } from './js/state.js';
 import { APP_VERSION, parseVersionBuildDate } from './js/version.js';
 import {
   buildProject, clearDraft, deleteProject, duplicateProject, getProject, importProjectJson,
@@ -1602,6 +1602,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     appState.config.blockTitle = inputBlockTitle.value;
     appState.config.blockHeadline = inputBlockHeadline.value;
+    if (catEntry.id !== 'accordion') {
+      // The base config is the Accordion demo; its description is wrong for other blocks.
+      appState.config.blockDesc = defaultBlockHeader(title).blockDesc;
+      inputBlockDesc.value = appState.config.blockDesc;
+    }
     
     // Set Favorites icon look
     setFavoriteButtonState(appState.favorites.has(catEntry.id));
@@ -2883,6 +2888,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       resetConfig();
       appState.config = { ...appState.config, ...structuredClone(comp.config), items: structuredClone(comp.config?.items || []) };
+      // A block saved before new blocks got their own header still holds the Accordion demo
+      // text; swap exactly those strings for ones derived from the block's own name.
+      appState.config = repairLeakedAccordionHeader(appState.config, component.id, component.title || component.name || comp.name);
       appState.activeProject = project;
       appState.activeComponentInstance = comp;
       appState.currentProjectId = project.id;

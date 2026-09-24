@@ -21,6 +21,7 @@ import { generateIframeContent } from '../preview.js';
 import { toRgba as colorToRgba, escapeHTML } from '../utilities.js';
 import { showToast } from '../toast.js';
 import { getBuiltInTheme, DEFAULT_THEME_ID } from '../themes.js';
+import { defaultBlockHeader } from '../state.js';
 
 export class ProjectOverviewView {
   constructor({
@@ -815,12 +816,15 @@ export class ProjectOverviewView {
   addComponentToProject(type, targetSecId = null) {
     const regEntry = getComponentById(COMPONENT_REGISTRY, type);
     const defaultCfg = regEntry ? getDefaultConfig(regEntry) : {};
+    const label = regEntry?.name || 'New Component';
 
     const newComp = createComponentInstance({
-      name: regEntry?.name || 'New Component',
+      name: label,
       type,
       status: 'draft',
-      config: defaultCfg
+      // Registry defaults carry no header text; without this the editor filled the gap with
+      // the Accordion demo ("INTERACTIVE ACCORDION") for every component type.
+      config: { ...defaultBlockHeader(label), ...defaultCfg }
     });
 
     const project = this.getProject();

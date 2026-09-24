@@ -74,6 +74,40 @@ export const appState = {
   config: structuredClone(initialConfig)
 };
 
+// The editor's base config (above) is the Accordion demo. Any component that doesn't define
+// its own header text used to inherit these strings, so every new block was titled
+// "INTERACTIVE ACCORDION". They are kept here so they can be recognised and replaced.
+export const ACCORDION_DEMO_HEADER = Object.freeze({
+  blockTitle: initialConfig.blockTitle,
+  blockHeadline: initialConfig.blockHeadline,
+  blockDesc: initialConfig.blockDesc
+});
+
+/** Header text for a component, derived from its own name. */
+export function defaultBlockHeader(title) {
+  const name = String(title || 'Component').trim() || 'Component';
+  return {
+    blockTitle: name.toUpperCase(),
+    blockHeadline: `Explore details about ${name}`,
+    // The Accordion's description ("Click on the headers below…") is wrong for other blocks.
+    blockDesc: ''
+  };
+}
+
+/**
+ * Replaces leaked Accordion demo header text on a non-Accordion component, field by field.
+ * Only exact matches of the demo strings are touched, so anything an author wrote is kept.
+ */
+export function repairLeakedAccordionHeader(config, componentType, title) {
+  if (!config || componentType === 'accordion') return config;
+  const fresh = defaultBlockHeader(title);
+  const repaired = { ...config };
+  for (const key of Object.keys(ACCORDION_DEMO_HEADER)) {
+    if (repaired[key] === ACCORDION_DEMO_HEADER[key]) repaired[key] = fresh[key];
+  }
+  return repaired;
+}
+
 export function resetConfig() {
   appState.config = structuredClone(initialConfig);
   return appState.config;

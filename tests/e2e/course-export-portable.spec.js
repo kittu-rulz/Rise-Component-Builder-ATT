@@ -97,6 +97,7 @@ async function exportCourse(page, id) {
 }
 
 test('the full course ZIP works from a clean directory on another origin, with media loading', async ({ page, browser, browserName }) => {
+  test.setTimeout(90000); // builds a ZIP, unzips it, and loads two pages on a second origin
   test.skip(browserName === 'webkit', 'Playwright WebKit cannot store Blobs in IndexedDB (fails on Windows and Linux CI; see editor-preview.spec.js). Archive contents are covered by tests/unit/course-export-media.test.js.');
   await page.goto('/?dashboard');
   const id = await seedCourse(page);

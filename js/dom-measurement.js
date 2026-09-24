@@ -25,7 +25,8 @@ const MEASUREMENT_MESSAGE_TYPE = 'rcb-dom-measurement';
 //     hidden until opened and a collapsed-only reading misses it entirely.
 function buildMeasurementScript() {
   return `<script>(function() {
-  var STABLE_READINGS = 2, POLL_MS = 50, MAX_POLLS = 40, MAX_TRIGGERS = 16, ASSET_WAIT_MS = 2500;
+  var STABLE_READINGS = 2, POLL_MS = 50, MAX_POLLS = 40, MAX_TRIGGERS = 16, ASSET_WAIT_MS = 2500, DEADLINE_MS = 6500;
+  var collected = [], reported = false;
   function reading() {
     var d = document.documentElement;
     return { h: d.scrollHeight, sw: d.scrollWidth, cw: d.clientWidth };
@@ -45,7 +46,8 @@ function buildMeasurementScript() {
   }
   function assetsReady() {
     var waits = [];
-    if (document.fonts && document.fonts.ready) waits.push(document.fonts.ready);
+    // Capped like images: a promise that never resolves in some engines must not hang the run.
+    if (document.fonts && document.fonts.ready) waits.push(Promise.race([document.fonts.ready, new Promise(function(done) { setTimeout(done, ASSET_WAIT_MS); })]));
     Array.prototype.forEach.call(document.images, function(img) {
       // loading="lazy" images in an offscreen 1px frame never load; force them eager.
       if (img.loading === 'lazy') img.loading = 'eager';
@@ -71,7 +73,8 @@ function buildMeasurementScript() {
   }
   function run() {
     return assetsReady().then(settle).then(function(first) {
-      var states = [first.r], allSettled = first.settled, offender = widest(first.r.cw), chain = Promise.resolve();
+      var states = collected, allSettled = first.settled, offender = widest(first.r.cw), chain = Promise.resolve();
+      states.push(first.r);
       triggers().forEach(function(trigger) {
         chain = chain.then(function() {
           try { trigger.click(); } catch (e) {}
@@ -87,11 +90,20 @@ function buildMeasurementScript() {
     });
   }
   function send(payload) {
+    if (reported) return;
+    reported = true;
     try { window.parent.postMessage({ type: ${JSON.stringify(MEASUREMENT_MESSAGE_TYPE)}, payload: payload }, '*'); } catch (e) {}
   }
-  function start() { run().then(send, function() { send(null); }); }
-  if (document.readyState === 'complete') start();
-  else window.addEventListener('load', start);
+  function start() {
+    // Whatever happens, report before the host gives up: what was measured so far, flagged
+    // unsettled (the host treats that as "unmeasured", never as a pass or a warning).
+    setTimeout(function() { send({ states: collected, settled: false, offender: null }); }, DEADLINE_MS);
+    run().then(send, function() { send(null); });
+  }
+  // Not \`load\`: a loading="lazy" image in an offscreen frame can keep it from ever firing in
+  // some engines, and assets are waited for explicitly (with caps) above.
+  if (document.readyState !== 'loading') start();
+  else document.addEventListener('DOMContentLoaded', start);
 })();</script>`;
 }
 
@@ -99,7 +111,10 @@ function injectMeasurementScript(html) {
   const script = buildMeasurementScript();
   // No scrollbar: a 1px-tall frame would otherwise show one and shave ~15px off the width
   // the component is laid out at, which real phones (overlay scrollbars) don't do.
-  const style = '<style>html{overflow:hidden !important}</style>';
+  // Also no transitions/animations: Chromium doesn't advance them in an offscreen, invisible
+  // frame, so an opened accordion panel (a max-height transition) would stay collapsed and be
+  // under-measured there while Firefox and WebKit measured it open.
+  const style = '<style>html{overflow:hidden !important}*,*::before,*::after{transition:none !important;animation:none !important}</style>';
   const withStyle = html.includes('</head>') ? html.replace('</head>', `${style}</head>`) : `${style}${html}`;
   return withStyle.includes('</body>') ? withStyle.replace('</body>', `${script}</body>`) : `${withStyle}${script}`;
 }
