@@ -949,11 +949,25 @@ document.addEventListener('DOMContentLoaded', async () => {
    * already opened the save dialog and stashed `action` in pendingActionAfterSave; the
    * caller should not also run `action` itself.
    */
+  /**
+   * Names what the unsaved-changes prompt is about. Never says "Untitled project" while a
+   * named course is open: a block inside a course is “<block>” in “<course>”.
+   */
+  function describeActiveWork() {
+    const course = appState.activeProject?.name;
+    const block = appState.activeComponentInstance?.name || appState.currentProjectName;
+    if (course && block && block !== course) return `“${block}” in “${course}”`;
+    if (course) return `“${course}”`;
+    if (block) return `“${block}”`;
+    const type = appState.selectedComponent?.title || appState.selectedComponent?.name;
+    return type ? `Your new ${type} block (not saved yet)` : 'Your work';
+  }
+
   async function guardUnsavedChanges(action) {
     if (!appState.isDirty) return true;
     const result = await openConfirmDialog({
       title: 'Unsaved changes',
-      message: `“${appState.currentProjectName || 'Untitled project'}” has unsaved changes. Save before continuing?`,
+      message: `${describeActiveWork()} has unsaved changes. Save before continuing?`,
       confirmLabel: 'Discard',
       cancelLabel: 'Cancel',
       danger: true,
@@ -2999,7 +3013,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const saved = saveProject(buildCurrentProject(name, asNew));
       appState.currentProjectId = saved.id;
       appState.currentProjectName = saved.name;
-      saveDraft(saved);
+      // An explicit save leaves nothing to recover; a draft equal to the project would only
+      // make the dashboard call already-saved work an "unsaved working draft".
+      window.clearTimeout(draftTimer);
+      clearDraft();
       // Set before closeModal() so modal-save's own settler (above) sees isDirty already
       // false and correctly leaves pendingActionAfterSave alone for this success path.
       appState.isDirty = false;
@@ -3251,7 +3268,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         appState.currentProjectId = saved.id;
         appState.currentProjectName = saved.name;
         appState.isDirty = false;
-        saveDraft(saved);
+        window.clearTimeout(draftTimer);
+        clearDraft();
         updateProjectStatusDisplay();
         showToast(`Duplicated block as “${saved.name}”.`, 'success');
       } catch (error) {
@@ -3279,7 +3297,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           saveProject(proj);
           appState.activeProject = proj;
           appState.isDirty = false;
-          saveDraft(buildCurrentProject(appState.currentProjectName, false));
+          // Nothing left to recover after an explicit save: a draft that equals the saved
+          // project would only make the dashboard offer to "resume" work that is already saved.
+          window.clearTimeout(draftTimer);
+          clearDraft();
           updateProjectStatusDisplay();
           showToast(`Saved component “${appState.activeComponentInstance.name}” to ${proj.name}.`, 'success');
           return;

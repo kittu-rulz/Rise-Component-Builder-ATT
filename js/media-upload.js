@@ -1,7 +1,7 @@
 import {
   createMediaReference, formatFileSize, IMAGE_RESIZE_THRESHOLD_PX, isMediaReference, MEDIA_LIMITS, prepareMediaFile
 } from './media.js';
-import { ensureMediaObjectURL, findDuplicateByHash, peekMediaObjectURL, saveMediaRecord } from './media-storage.js';
+import { ensureMediaObjectURL, findDuplicateByHash, getMediaRecord, peekMediaObjectURL, saveMediaRecord } from './media-storage.js';
 import { showMediaPickerModal } from './dashboard/media-picker-modal.js';
 
 const ACCEPT = Object.freeze({
@@ -46,6 +46,9 @@ export function createMediaUploadControl({
   field, controlId, value, onChange, onMultiple, store, limits, contextLabel
 }) {
   let currentValue = value || '';
+  // Item media persists only { mediaId, name, mimeType }, so after a refresh the size must be
+  // read back from the stored record instead of showing "0 B".
+  const sizeLookups = new Set();
   const kind = field.uploadKind || field.type;
   const targetContext = contextLabel || field.contextLabel || field.label || 'this component';
   const kindLabel = kind === 'image' ? 'Image' : kind === 'audio' ? 'Audio' : kind === 'video' ? 'Video' : kind === 'captions' ? 'Captions' : 'Media';
@@ -201,7 +204,19 @@ export function createMediaUploadControl({
       const name = document.createElement('strong');
       name.textContent = reference.name || reference.fileName || 'Selected Asset';
       const meta = document.createElement('span');
-      meta.textContent = `${formatFileSize(reference.size)} • ${reference.mimeType}${Number.isFinite(reference.duration) ? ` • ${Math.round(reference.duration)} seconds` : ''}`;
+      const knownSize = Number(reference.size) > 0;
+      meta.textContent = `${knownSize ? formatFileSize(reference.size) : (isMissing ? 'Size unknown' : 'Reading size…')} • ${reference.mimeType}${Number.isFinite(reference.duration) ? ` • ${Math.round(reference.duration)} seconds` : ''}`;
+      if (!knownSize && assetId && !sizeLookups.has(assetId)) {
+        sizeLookups.add(assetId);
+        getMediaRecord(assetId, store).then(record => {
+          sizeLookups.delete(assetId);
+          const stillCurrent = isMediaReference(currentValue) && (currentValue.mediaId || currentValue.assetId) === assetId;
+          if (stillCurrent && record?.size > 0) {
+            currentValue = { ...currentValue, size: record.size, mimeType: currentValue.mimeType || record.mimeType };
+            renderValue();
+          }
+        }).catch(() => sizeLookups.delete(assetId));
+      }
       metadata.append(name, meta);
       if (isMissing) {
         const missingNotice = document.createElement('div');

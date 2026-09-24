@@ -133,9 +133,11 @@ export async function showMediaPickerModal({
             ${visibleAssets.length === 0 ? `
               <div class="dashboard-empty-state" style="text-align: center; padding: 48px 20px;">
                 <div style="font-size: 2.5rem; margin-bottom: 8px;">🖼️</div>
-                <h3 class="empty-state-title" style="font-size: 1.125rem; font-weight: 700; color: #1E293B; margin-bottom: 4px;">No matching assets found</h3>
+                <h3 class="empty-state-title" style="font-size: 1.125rem; font-weight: 700; color: #1E293B; margin-bottom: 4px;">${allAssets.length === 0 ? 'No media uploaded yet.' : 'No matching assets'}</h3>
                 <p class="empty-state-subtitle" style="font-size: 0.875rem; color: #64748B; margin-bottom: 16px;">
-                  ${searchQuery ? `No assets match "${escapeHtml(searchQuery)}".` : `No ${filterKind !== 'all' ? filterKind : ''} assets in the Media Library.`}
+                  ${allAssets.length === 0
+                    ? 'Upload a file to add it to the library, which is shared by every project in this browser.'
+                    : searchQuery ? `No assets match "${escapeHtml(searchQuery)}". The library has ${allAssets.length} asset${allAssets.length === 1 ? '' : 's'}.` : `No ${filterKind !== 'all' ? filterKind : ''} assets match this filter (the library has ${allAssets.length}).`}
                 </p>
                 <button type="button" id="picker-empty-upload-btn" class="btn-att-primary btn-small">Upload Asset Now</button>
               </div>

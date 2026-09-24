@@ -139,11 +139,14 @@ test('draft restoration on reload shows "Unsaved changes" for a never-explicitly
   await expect(page.locator('#project-status-text')).toHaveText('Unsaved changes');
 });
 
-test('draft restoration of an already-saved project shows "Saved", not "Unsaved changes"', async ({ page }) => {
+test('an explicitly saved project is not offered as a draft, and reopens as "Saved", not "Unsaved changes"', async ({ page }) => {
   await openAccordion(page);
   await saveNamedProject(page, 'Restored As Saved');
   await page.goto('/?dashboard');
-  await page.locator('#btn-resume-draft').click();
+  await expect(page.locator('#btn-resume-draft')).toHaveCount(0);
+  await page.goto('/?editor');
+  await page.locator('#btn-open').click();
+  await page.locator('.saved-component-card').filter({ hasText: 'Restored As Saved' }).getByRole('button', { name: 'Load' }).click();
   await expect(page.locator('#editor-state')).toBeVisible();
   await expect(page.locator('#header-project-name')).toHaveText('Restored As Saved');
   await expect(page.locator('#project-status-text')).toHaveText(/^Saved.*/);

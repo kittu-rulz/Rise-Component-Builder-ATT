@@ -5,7 +5,7 @@
 
 import {
   clearDraft, deleteProject, duplicateProject, exportProjectJson, getProject,
-  importProjectJson, loadDraft, loadProjects, saveProject, toggleFavoriteProject
+  compareDraftToSaved, importProjectJson, loadDraft, loadProjects, saveProject, toggleFavoriteProject
 } from '../storage.js';
 import {
   buildProjectSchemaV3, createComponentInstance, createSection
@@ -145,7 +145,15 @@ export class DashboardView {
     if (!this.container) return;
     const projects = this.getFilteredAndSortedProjects();
     const allProjects = loadProjects();
-    const activeDraft = loadDraft();
+    // Only offer a recovery draft when it holds something the saved project does not.
+    const draftRecord = loadDraft();
+    const draftStatus = compareDraftToSaved(draftRecord, allProjects);
+    const activeDraft = draftStatus.recoverable ? draftRecord : null;
+    const draftSavedAt = activeDraft?.updatedAt ? new Date(activeDraft.updatedAt) : null;
+    const draftWhen = draftSavedAt && !Number.isNaN(draftSavedAt.getTime()) ? draftSavedAt.toLocaleString() : 'earlier';
+    const draftRelation = draftStatus.reason === 'differs'
+      ? `It has changes that are not in the saved project “${this.escapeHtml(draftStatus.savedName)}”.`
+      : 'It has never been saved as a project.';
 
     // Clear any previous modal rendered in modal host if modal is closed
     const modalHost = this.getModalHost();
@@ -162,7 +170,7 @@ export class DashboardView {
           <header class="dashboard-hero-section">
             <div class="dashboard-hero-content">
               <div class="dashboard-hero-eyebrow">
-                <span class="hero-brand-pill">Aptara Learning Interaction Studio</span>
+                <span class="hero-brand-pill">Aptara Learning Interaction Studio · AT&amp;T edition</span>
                 <span class="hero-compliance-pill">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   Built for WCAG 2.2 AA · brand-checked
@@ -186,7 +194,7 @@ export class DashboardView {
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat-item">
-                  <span class="hero-stat-num">4</span>
+                  <span class="hero-stat-num">3</span>
                   <span class="hero-stat-label">Post-Publish Tools</span>
                 </div>
                 <div class="hero-stat-divider"></div>
@@ -207,11 +215,11 @@ export class DashboardView {
                 </div>
                 <div class="draft-banner-text">
                   <div class="draft-banner-tags">
-                    <span class="draft-badge-pill">Unsaved Working Draft</span>
+                    <span class="draft-badge-pill">Recovered autosave</span>
                     <span class="draft-badge-type">${this.escapeHtml(activeDraft.type || 'Custom Block')}</span>
                   </div>
                   <h3 class="draft-banner-title">Resume editing “${this.escapeHtml(activeDraft.name || 'Untitled Component')}”</h3>
-                  <p class="draft-banner-sub">An autosaved working session is ready on this device. Jump right back in or create a new project below.</p>
+                  <p class="draft-banner-sub">Autosaved ${this.escapeHtml(draftWhen)} on this device. ${draftRelation} Resume it, or dismiss it to discard the autosave.</p>
                 </div>
               </div>
               <div class="draft-banner-actions">
@@ -252,7 +260,7 @@ export class DashboardView {
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                 </div>
                 <h3 class="starter-card-title">Rise Post-Publish Toolkit</h3>
-                <p class="starter-card-desc">Inject Persistent Top Nav, Glossary Modal, Resource Center, and Help Dialog into published Rise ZIP exports.</p>
+                <p class="starter-card-desc">Add a persistent Course Tools launcher with a Glossary, a Resource Center and Help &amp; Support to a Rise Web or SCORM export you upload.</p>
                 <div class="starter-card-footer">
                   <span class="starter-card-cta">Open Package Tools →</span>
                 </div>

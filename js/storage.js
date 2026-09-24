@@ -393,6 +393,39 @@ export function clearDraft() {
   try { localStorage.removeItem(KEYS.draft); } catch { /* Storage may be unavailable in privacy mode. */ }
 }
 
+/** JSON with object keys sorted, so equal content compares equal regardless of key order. */
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (isObject(value)) return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  return JSON.stringify(value === undefined ? null : value);
+}
+
+/**
+ * What a project *says*, independent of its record shape: legacy single-component records and
+ * schema v3 course projects fingerprint the same when they hold the same name and blocks.
+ * Timestamps and ids are deliberately excluded.
+ */
+function contentFingerprint(project) {
+  const parts = isObject(project?.components)
+    ? Object.values(project.components).map(comp => ({ type: comp.type, config: comp.config }))
+    : [{ type: project?.componentId, config: project?.config }];
+  return stableStringify({ name: project?.name || '', parts });
+}
+
+/**
+ * A working draft is only worth offering back when it holds something the saved project does
+ * not. After an explicit save the draft equals the project, and "Unsaved working draft" would
+ * be wrong.
+ * @returns {{ recoverable: boolean, reason: 'never-saved'|'differs'|'identical', savedName: string }}
+ */
+export function compareDraftToSaved(draft, savedProjects = loadProjects()) {
+  if (!draft) return { recoverable: false, reason: 'identical', savedName: '' };
+  const saved = savedProjects.find(project => project.id === draft.id);
+  if (!saved) return { recoverable: true, reason: 'never-saved', savedName: '' };
+  const same = contentFingerprint(draft) === contentFingerprint(saved);
+  return { recoverable: !same, reason: same ? 'identical' : 'differs', savedName: saved.name };
+}
+
 export function loadUiTheme() {
   try { return localStorage.getItem(KEYS.uiTheme) === 'dark' ? 'dark' : 'light'; }
   catch { return 'light'; }

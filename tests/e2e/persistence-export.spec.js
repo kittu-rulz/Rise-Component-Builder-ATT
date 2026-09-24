@@ -17,16 +17,17 @@ test('project save, reload, open, draft restore, and delete persist locally', as
   await openAccordion(page);
   await page.locator('#input-block-headline').fill('Persisted headline');
   await saveNamedProject(page, 'Persistence E2E');
-  // A reload lands on whichever screen the URL names and no longer reopens the autosaved
-  // draft by itself — resuming is an explicit choice on the projects dashboard.
+  // An explicit save leaves nothing to recover, so the dashboard must not offer the saved
+  // work back as an "unsaved working draft". Saved projects reopen through Open.
   await page.goto('/?dashboard');
-  await page.locator('#btn-resume-draft').click();
+  await expect(page.locator('#btn-resume-draft')).toHaveCount(0);
+  await page.goto('/?editor');
   await expect(page.locator('#editor-state')).toBeVisible();
-  await expect(page.locator('#input-block-headline')).toHaveText('Persisted headline');
   await page.locator('#btn-open').click();
   const card = page.locator('.saved-component-card').filter({ hasText: 'Persistence E2E' });
   await expect(card).toBeVisible();
   await card.getByRole('button', { name: 'Load' }).click();
+  await expect(page.locator('#input-block-headline')).toHaveText('Persisted headline');
   await page.locator('#btn-open').click();
   await page.locator('.saved-component-card').filter({ hasText: 'Persistence E2E' }).getByRole('button', { name: 'Delete' }).click();
   await expect(page.locator('#modal-confirm')).toBeVisible();
