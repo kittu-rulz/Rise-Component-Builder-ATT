@@ -5,11 +5,13 @@
 
 import { getProject } from '../storage.js';
 import { createZip } from '../zip.js';
+import { prepareMediaExport } from '../export.js';
 import { COMPONENT_REGISTRY } from '../component-registry.js';
 import { generateIframeContent as compilePreview } from '../preview.js';
 import { toRgba as colorToRgba } from '../utilities.js';
 import { auditCourseProject } from './project-qa.js';
 import { isolateModal } from './att-modal.js';
+import { showToast } from '../toast.js';
 
 const componentRegistry = Object.fromEntries(
   COMPONENT_REGISTRY.map(entry => [entry.id, { ...entry.renderer, validate: entry.validate, version: entry.version }])
@@ -27,16 +29,122 @@ function padZero(num) {
 }
 
 /**
+ * Thrown when a course cannot be exported as a portable package (missing local media,
+ * or a compiled component that would still reference something the ZIP does not contain).
+ * The message always names the component so the author knows what to fix.
+ */
+export class CourseExportError extends Error {
+  /** @param {string} message @param {{ componentName?: string, assets?: string[] }} [details] */
+  constructor(message, details = {}) {
+    super(message);
+    this.name = 'CourseExportError';
+    this.componentName = details.componentName || '';
+    this.assets = details.assets || [];
+  }
+}
+
+// Session-only URLs that stop working the moment the ZIP leaves this tab. A real one is
+// `blob:<origin>/<id>`; a bare `blob:` is only a CSP source keyword and is legitimate.
+const TRANSIENT_URL_PATTERN = /\b(?:blob|filesystem):(?:https?:|null\/|file:)/i;
+// Local packaged references: assets/<file> in an attribute, url(...) or srcset.
+const PACKAGED_REF_PATTERN = /(?:["'(=,\s])(assets\/[^"'\s)<>,]+)/g;
+
+/**
+ * Compiles one component into a self-contained folder: `<folder>/index.html` plus
+ * `<folder>/assets/*` for every locally uploaded file it references (each component
+ * folder can therefore be hosted or embedded on its own).
+ *
+ * Media goes through the same `prepareMediaExport(..., { mode: 'package' })` step as the
+ * single-component Web Package ZIP, so it resolves to relative `assets/` paths rather than
+ * the preview's `blob:` URLs.
+ *
+ * @returns {Promise<{ path: string, assets: { path: string, mimeType: string, sourceMediaId: string }[] }>}
+ */
+async function addComponentToArchive(project, comp, folder, entries, store) {
+  const name = comp.name || comp.id;
+  const compDef = COMPONENT_REGISTRY.find(r => r.id === comp.type);
+  const prepared = await prepareMediaExport(comp.config, { mode: 'package', ...(store ? { store } : {}) });
+  if (prepared.missing.length) {
+    throw new CourseExportError(
+      `Cannot export “${name}”: uploaded media ${prepared.missing.map(m => `“${m}”`).join(', ')} is missing from local storage. Re-upload it or remove it from the component, then export again.`,
+      { componentName: name, assets: prepared.missing }
+    );
+  }
+
+  // The compiler silently drops unregistered blob: sources, so catch them in the prepared
+  // config, before compiling, while the offending value is still visible.
+  const staleConfigUrl = JSON.stringify(prepared.config).match(TRANSIENT_URL_PATTERN);
+  if (staleConfigUrl) {
+    throw new CourseExportError(
+      `Cannot export “${name}”: it still references a temporary ${staleConfigUrl[0]} media URL that will not work outside this browser. Re-attach the media and export again.`,
+      { componentName: name }
+    );
+  }
+
+  const html = compilePreview({
+    selectedComponent: compDef,
+    config: prepared.config,
+    activeTheme: project.theme,
+    componentOverrides: comp.styleOverrides || project.componentOverrides,
+    settings: project.settings,
+    uiTheme: project.uiTheme
+  }, componentRegistry, colorToRgba);
+
+  // Distributable-package gate: refuse to ship anything that only works in this browser tab.
+  const transient = html.match(TRANSIENT_URL_PATTERN);
+  if (transient) {
+    throw new CourseExportError(
+      `Cannot export “${name}”: it still references a temporary ${transient[0]} URL that will not work outside this browser. Re-attach the media and export again.`,
+      { componentName: name }
+    );
+  }
+  // A media element with no source is the other way a distributable package silently breaks:
+  // the compiler drops unregistered blob: URLs, leaving `<img src="">` behind.
+  if (/<(?:img|source|video|audio)\b[^>]*\ssrc=(?:""|'')/i.test(html)) {
+    throw new CourseExportError(
+      `Cannot export “${name}”: it has an image, audio or video with no file attached. Re-attach the media or remove it, then export again.`,
+      { componentName: name }
+    );
+  }
+  const packaged = new Set(prepared.assets.map(a => a.relativePath));
+  const dangling = [...new Set([...html.matchAll(PACKAGED_REF_PATTERN)].map(m => m[1]))].filter(ref => !packaged.has(ref));
+  if (dangling.length) {
+    throw new CourseExportError(
+      `Cannot export “${name}”: it references ${dangling.map(d => `“${d}”`).join(', ')} but that file is not in the package.`,
+      { componentName: name, assets: dangling }
+    );
+  }
+
+  entries.push({ path: `${folder}/index.html`, data: html });
+  for (const asset of prepared.assets) {
+    entries.push({ path: `${folder}/${asset.relativePath}`, data: await asset.blob.arrayBuffer() });
+  }
+  if (prepared.assets.length) {
+    entries.push({
+      path: `${folder}/assets/manifest.json`,
+      data: JSON.stringify({ schemaVersion: 1, assets: prepared.manifest }, null, 2)
+    });
+  }
+  return {
+    path: `${folder}/index.html`,
+    assets: prepared.manifest.map(m => ({ path: `${folder}/${m.relativePath}`, mimeType: m.mimeType, sourceMediaId: m.sourceMediaId }))
+  };
+}
+
+/**
  * Builds structured ZIP archive entries for an entire Schema v3 course project.
+ * Every component becomes its own folder (`index.html` + `assets/`), so nothing depends on
+ * the Builder, IndexedDB, or a browser session. Throws CourseExportError instead of shipping
+ * a package with missing or temporary media.
  * @param {string} projectId
+ * @param {{ store?: any }} [options] media store override (tests); defaults to the app's IndexedDB store
  * @returns {Promise<Blob>}
  */
-export async function buildCourseProjectZip(projectId) {
+export async function buildCourseProjectZip(projectId, options = {}) {
   const project = getProject(projectId);
   if (!project) throw new Error('Project not found.');
 
   const entries = [];
-
   const manifest = {
     courseName: project.name,
     client: project.clientLabel || 'AT&T',
@@ -44,141 +152,85 @@ export async function buildCourseProjectZip(projectId) {
     schemaVersion: project.schemaVersion,
     totalSections: (project.sectionOrder || []).length,
     totalComponents: Object.keys(project.components || {}).length,
+    totalAssets: 0,
     sections: []
   };
 
-  let sectionIdx = 1;
+  const addGroup = async (groupId, groupName, folder, componentIds) => {
+    const group = { sectionId: groupId, sectionName: groupName, folder, components: [] };
+    let compIdx = 1;
+    for (const compId of componentIds) {
+      const comp = project.components?.[compId];
+      if (!comp) continue;
+      const compFolder = `${folder}/${padZero(compIdx)}-${sanitizeSlug(comp.name)}`;
+      const added = await addComponentToArchive(project, comp, compFolder, entries, options.store);
+      manifest.totalAssets += added.assets.length;
+      group.components.push({
+        componentId: comp.id,
+        name: comp.name,
+        type: comp.type,
+        path: added.path,
+        assets: added.assets.map(a => a.path)
+      });
+      compIdx++;
+    }
+    manifest.sections.push(group);
+  };
 
-  // Process sections in order
+  let sectionIdx = 1;
   for (const secId of project.sectionOrder || []) {
     const sec = project.sections?.[secId];
     if (!sec) continue;
-
-    const secFolder = `${padZero(sectionIdx)}-${sanitizeSlug(sec.name)}`;
-    const secManifest = {
-      sectionId: sec.id,
-      sectionName: sec.name,
-      folder: secFolder,
-      components: []
-    };
-
-    let compIdx = 1;
-    for (const compId of sec.componentOrder || []) {
-      const comp = project.components?.[compId];
-      if (!comp) continue;
-
-      const compFolder = `${secFolder}/${padZero(compIdx)}-${sanitizeSlug(comp.name)}`;
-      const compDef = COMPONENT_REGISTRY.find(r => r.id === comp.type);
-      const renderState = {
-        selectedComponent: compDef,
-        config: comp.config,
-        activeTheme: project.theme,
-        componentOverrides: comp.styleOverrides || project.componentOverrides,
-        settings: project.settings,
-        uiTheme: project.uiTheme
-      };
-      const compHtml = compilePreview(renderState, componentRegistry, colorToRgba);
-
-      entries.push({
-        path: `${compFolder}/index.html`,
-        data: compHtml
-      });
-
-      secManifest.components.push({
-        componentId: comp.id,
-        name: comp.name,
-        type: comp.type,
-        path: `${compFolder}/index.html`
-      });
-
-      compIdx++;
-    }
-
-    manifest.sections.push(secManifest);
+    await addGroup(sec.id, sec.name, `${padZero(sectionIdx)}-${sanitizeSlug(sec.name)}`, sec.componentOrder || []);
     sectionIdx++;
   }
-
-  // Process unsectioned components
   if (project.unsectionedComponentOrder && project.unsectionedComponentOrder.length > 0) {
-    const unsectionedFolder = 'unsectioned-components';
-    const unsecManifest = {
-      sectionId: 'unsectioned',
-      sectionName: 'Unsectioned Components',
-      folder: unsectionedFolder,
-      components: []
-    };
-
-    let compIdx = 1;
-    for (const compId of project.unsectionedComponentOrder) {
-      const comp = project.components?.[compId];
-      if (!comp) continue;
-
-      const compFolder = `${unsectionedFolder}/${padZero(compIdx)}-${sanitizeSlug(comp.name)}`;
-      const compDef = COMPONENT_REGISTRY.find(r => r.id === comp.type);
-      const renderState = {
-        selectedComponent: compDef,
-        config: comp.config,
-        activeTheme: project.theme,
-        componentOverrides: comp.styleOverrides || project.componentOverrides,
-        settings: project.settings,
-        uiTheme: project.uiTheme
-      };
-      const compHtml = compilePreview(renderState, componentRegistry, colorToRgba);
-
-      entries.push({
-        path: `${compFolder}/index.html`,
-        data: compHtml
-      });
-
-      unsecManifest.components.push({
-        componentId: comp.id,
-        name: comp.name,
-        type: comp.type,
-        path: `${compFolder}/index.html`
-      });
-
-      compIdx++;
-    }
-
-    manifest.sections.push(unsecManifest);
+    await addGroup('unsectioned', 'Unsectioned Components', 'unsectioned-components', project.unsectionedComponentOrder);
   }
 
-  // Add manifest.json
-  entries.push({
-    path: 'manifest.json',
-    data: JSON.stringify(manifest, null, 2)
-  });
-
-  // Add project backup json
-  entries.push({
-    path: 'project-backup.json',
-    data: JSON.stringify(project, null, 2)
-  });
-
-  // Add course README.md with Rise 360 embedding instructions
-  const readmeContent = `# ${project.name}
-Course Component Package — Prepared for ${project.clientLabel || 'AT&T'}
-
-## Package Structure
-This ZIP contains all interactive learning components for this course, organized by section and lesson sequence.
-
-${manifest.sections.map(s => `### ${s.sectionName}
-${s.components.map(c => `- **${c.name}** (\`${c.type}\`): \`${c.path}\``).join('\n')}
-`).join('\n')}
-
-## How to Embed in Articulate Rise 360:
-1. In Rise 360, add a **Multimedia > Embed** block (or **Multimedia > Web** block).
-2. Host the \`index.html\` file on your web server / cloud storage, or embed via iframe:
-   \`<iframe src="path/to/index.html" width="100%" height="600" frameborder="0"></iframe>\`
-3. Each component includes built-in responsive sizing and WCAG 2.2 AA accessibility support.
-`;
-
-  entries.push({
-    path: 'README.md',
-    data: readmeContent
-  });
+  entries.push({ path: 'manifest.json', data: JSON.stringify(manifest, null, 2) });
+  entries.push({ path: 'project-backup.json', data: JSON.stringify(project, null, 2) });
+  entries.push({ path: 'README.md', data: buildCourseReadme(project, manifest) });
 
   return createZip(entries);
+}
+
+function buildCourseReadme(project, manifest) {
+  return `# ${project.name}
+Course Component Package — prepared for ${project.clientLabel || 'AT&T'}
+
+## What this ZIP is
+A set of **standalone interactive components**, one folder per component. Each folder holds an
+\`index.html\` and, when the component uses uploaded media, its own \`assets/\` folder. Every
+media reference is a relative path inside that folder, so a folder works wherever it is hosted
+without the Builder, this browser, or its local media library.
+
+This is **not** a Rise course export and **not** a SCORM package.
+
+${manifest.sections.map(s => `### ${s.sectionName}
+${s.components.map(c => `- **${c.name}** (\`${c.type}\`): \`${c.path}\`${c.assets.length ? ` — ${c.assets.length} media file(s)` : ''}`).join('\n')}
+`).join('\n')}
+## Choosing an export format
+| Format | What you get | Use it when |
+|---|---|---|
+| **This course ZIP** | Every component of the course, each as its own hostable folder | You want to publish or archive the whole course's interactions |
+| **Web Package ZIP** (one component) | One \`index.html\` + \`assets/\` | You only need a single block hosted by URL |
+| **Copy for Rise** | An HTML fragment for pasting | The block has no uploaded media, or its media is hosted elsewhere |
+
+## Using a component in Articulate Rise 360
+Rise cannot import these folders directly. Upload the component folder to a web host you
+control (it must serve \`index.html\` and the \`assets/\` folder over **HTTPS**), then in Rise add
+a **Multimedia > Embed** (web object) block and point it at that component's \`index.html\` URL.
+Fixed-height embeds may clip taller content, so set the embed height to fit.
+
+## What is not included
+- \`project-backup.json\` is the editable course definition. It references uploaded media by
+  id only, so it does **not** contain the media files themselves. Those files are in each
+  component's \`assets/\` folder.
+- The Builder's media library is stored in the authoring browser and is not part of this ZIP.
+
+Exported ${manifest.exportedAt} — ${manifest.totalComponents} component(s), ${manifest.totalAssets} media file(s).
+`;
 }
 
 /**
@@ -442,7 +494,11 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
       if (onProceed) {
         await onProceed(projectId);
       } else {
-        await downloadCourseProjectZip(projectId);
+        try {
+          await downloadCourseProjectZip(projectId);
+        } catch (err) {
+          showToast(`Export failed: ${err.message}`, 'error', 8000);
+        }
       }
     });
   });

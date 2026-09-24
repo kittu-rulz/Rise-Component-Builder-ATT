@@ -8,6 +8,7 @@ import { generateIframeContent } from '../preview.js';
 import { COMPONENT_MODULES, COMPONENT_REGISTRY, normalizeComponentType } from '../component-registry.js';
 import { toRgba as colorToRgba, escapeHTML, pluralize } from '../utilities.js';
 import { showPreExportReviewDialog, buildCourseProjectZip, downloadCourseProjectZip } from './project-export.js';
+import { showToast } from '../toast.js';
 
 export class CoursePreviewView {
   constructor({ container = null, projectId = null, onBack = null, onOpenQa = null, onOpenPreview = null, onEditComponent = null } = {}) {
@@ -398,8 +399,10 @@ export class CoursePreviewView {
         onProceed: async (id) => {
           try {
             await downloadCourseProjectZip(id);
+            showToast('Course package exported successfully!', 'success');
           } catch (err) {
             console.error('Export failed:', err);
+            showToast(`Export failed: ${err.message}`, 'error', 8000);
           }
         },
         onViewQa: this.onOpenQa

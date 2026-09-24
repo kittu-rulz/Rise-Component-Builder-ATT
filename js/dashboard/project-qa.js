@@ -7,6 +7,7 @@
 
 import { getProject } from '../storage.js';
 import { showPreExportReviewDialog, buildCourseProjectZip, downloadCourseProjectZip } from './project-export.js';
+import { showToast } from '../toast.js';
 
 /**
  * Performs a deep audit of a course project.
@@ -480,8 +481,10 @@ export class ProjectQaView {
         onProceed: async (id) => {
           try {
             await downloadCourseProjectZip(id);
+            showToast('Course package exported successfully!', 'success');
           } catch (err) {
             console.error('Export failed:', err);
+            showToast(`Export failed: ${err.message}`, 'error', 8000);
           }
         },
         onViewQa: this.onOpenQa
