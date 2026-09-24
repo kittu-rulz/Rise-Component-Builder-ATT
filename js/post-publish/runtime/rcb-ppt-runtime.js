@@ -81,6 +81,8 @@
     drawer.setAttribute('role', 'dialog');
     drawer.setAttribute('aria-modal', 'true');
     drawer.setAttribute('aria-label', 'Course Tools Panel');
+    // Closed = inert immediately (visibility only flips after the slide-out finishes).
+    drawer.setAttribute('inert', '');
 
     drawer.innerHTML = `
       <div class="rcb-ppt-drawer-header">
@@ -94,12 +96,12 @@
           </button>
         </div>
         <div class="rcb-ppt-tabs" role="tablist">
-          ${enabledTools.glossary ? `<button type="button" class="rcb-ppt-tab-btn" data-tab="glossary" role="tab" aria-selected="false">Glossary</button>` : ''}
-          ${enabledTools.resources ? `<button type="button" class="rcb-ppt-tab-btn" data-tab="resources" role="tab" aria-selected="false">Resources</button>` : ''}
-          ${enabledTools.help ? `<button type="button" class="rcb-ppt-tab-btn" data-tab="help" role="tab" aria-selected="false">Help & Support</button>` : ''}
+          ${enabledTools.glossary ? `<button type="button" class="rcb-ppt-tab-btn" id="rcb-ppt-tab-glossary" data-tab="glossary" role="tab" aria-selected="false" aria-controls="rcb-ppt-body" tabindex="-1">Glossary</button>` : ''}
+          ${enabledTools.resources ? `<button type="button" class="rcb-ppt-tab-btn" id="rcb-ppt-tab-resources" data-tab="resources" role="tab" aria-selected="false" aria-controls="rcb-ppt-body" tabindex="-1">Resources</button>` : ''}
+          ${enabledTools.help ? `<button type="button" class="rcb-ppt-tab-btn" id="rcb-ppt-tab-help" data-tab="help" role="tab" aria-selected="false" aria-controls="rcb-ppt-body" tabindex="-1">Help & Support</button>` : ''}
         </div>
       </div>
-      <div class="rcb-ppt-drawer-body" id="rcb-ppt-body"></div>
+      <div class="rcb-ppt-drawer-body" id="rcb-ppt-body" role="tabpanel"></div>
     `;
 
     drawer.querySelector('.rcb-ppt-close-btn').addEventListener('click', closeDrawer);
@@ -108,6 +110,22 @@
       tabBtn.addEventListener('click', function() {
         switchTab(tabBtn.getAttribute('data-tab'));
       });
+    });
+
+    // Tab pattern: one tab stop (the selected tab); arrows/Home/End move selection and focus.
+    drawer.querySelector('.rcb-ppt-tabs').addEventListener('keydown', function(e) {
+      var tabs = Array.prototype.slice.call(drawer.querySelectorAll('.rcb-ppt-tab-btn'));
+      var index = tabs.indexOf(document.activeElement);
+      if (index === -1) return;
+      var next = -1;
+      if (e.key === 'ArrowRight') next = (index + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tabs.length - 1;
+      if (next === -1) return;
+      e.preventDefault();
+      switchTab(tabs[next].getAttribute('data-tab'));
+      tabs[next].focus();
     });
 
     root.appendChild(drawer);
@@ -153,7 +171,7 @@
     var backdrop = document.getElementById('rcb-ppt-backdrop');
     var btn = document.getElementById('rcb-ppt-launcher');
 
-    if (drawer) drawer.classList.add('rcb-ppt-open');
+    if (drawer) { drawer.removeAttribute('inert'); drawer.classList.add('rcb-ppt-open'); }
     if (backdrop) backdrop.classList.add('rcb-ppt-open');
     if (btn) btn.setAttribute('aria-expanded', 'true');
 
@@ -171,7 +189,7 @@
     var backdrop = document.getElementById('rcb-ppt-backdrop');
     var btn = document.getElementById('rcb-ppt-launcher');
 
-    if (drawer) drawer.classList.remove('rcb-ppt-open');
+    if (drawer) { drawer.setAttribute('inert', ''); drawer.classList.remove('rcb-ppt-open'); }
     if (backdrop) backdrop.classList.remove('rcb-ppt-open');
     if (btn) btn.setAttribute('aria-expanded', 'false');
 
@@ -188,6 +206,7 @@
       var isCurrent = b.getAttribute('data-tab') === tabKey;
       b.classList.toggle('rcb-ppt-active', isCurrent);
       b.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+      b.tabIndex = isCurrent ? 0 : -1;
     });
     renderActiveTab();
   }
@@ -202,8 +221,10 @@
         var isCurrent = b.getAttribute('data-tab') === activeTab;
         b.classList.toggle('rcb-ppt-active', isCurrent);
         b.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+        b.tabIndex = isCurrent ? 0 : -1;
       });
     }
+    body.setAttribute('aria-labelledby', 'rcb-ppt-tab-' + activeTab);
 
     if (activeTab === 'glossary') renderGlossary(body);
     else if (activeTab === 'resources') renderResources(body);
@@ -286,7 +307,11 @@
     var searchInput = container.querySelector('#rcb-ppt-gloss-search');
     searchInput.addEventListener('input', function() {
       glossSearchQuery = searchInput.value;
+      var caret = searchInput.selectionStart;
       renderGlossary(container);
+      // The list is re-rendered on every keystroke; put focus and caret back in the search box.
+      var refreshed = container.querySelector('#rcb-ppt-gloss-search');
+      if (refreshed) { refreshed.focus(); try { refreshed.setSelectionRange(caret, caret); } catch (err) { /* type=search may not support it */ } }
     });
 
     container.querySelectorAll('.rcb-ppt-az-btn:not([disabled])').forEach(function(btn) {
@@ -369,7 +394,10 @@
     var searchInput = container.querySelector('#rcb-ppt-res-search');
     searchInput.addEventListener('input', function() {
       resSearchQuery = searchInput.value;
+      var caret = searchInput.selectionStart;
       renderResources(container);
+      var refreshed = container.querySelector('#rcb-ppt-res-search');
+      if (refreshed) { refreshed.focus(); try { refreshed.setSelectionRange(caret, caret); } catch (err) { /* type=search may not support it */ } }
     });
 
     container.querySelectorAll('.rcb-ppt-cat-pill').forEach(function(btn) {

@@ -5,14 +5,75 @@ export const MANIFEST_FILENAME = 'rcb-ppt-manifest.json';
 export const ENHANCEMENT_SIGNATURE = '<!-- RCB-POST-PUBLISH-TOOLS:START -->';
 
 /**
+ * INPUT CONTRACT
+ * The Post-Publish tools modify a course that was *published from Articulate Rise*. Accepted:
+ *   - `web`        a Rise-style Web export: a launch file at the ZIP root plus structure typical of
+ *                  a Rise export (`lib/rise*`, `lib/main.*`, `scormcontent/`, or Rise/Articulate in
+ *                  the launch page).
+ *   - `scorm12` / `scorm2004`  an `imsmanifest.xml` whose `<resource href>` launch file exists.
+ *   - `generic-web` a plain web page with a root index.html and no Rise markers. Accepted but
+ *                  labelled distinctly: nothing Rise-specific (navigation, completion, LMS
+ *                  communication) can be assumed to work.
+ * Rejected, with an explanation: this Builder's own course ZIP, archives whose only HTML lives in
+ * nested folders, SCORM manifests pointing at a missing file, and anything without a launch file.
+ *
+ * Detection is by file structure only. It has not been verified against a live Rise export in
+ * this repository (none is bundled), so a `web` result means "looks like a Rise export".
+ */
+
+const norm = p => String(p).replace(/\\/g, '/').replace(/^\.\//, '');
+
+function rejected(entries, error, extra = {}) {
+  return {
+    valid: false,
+    packageType: 'unknown',
+    kind: 'unsupported',
+    label: 'Unsupported package',
+    launchHtmlPath: '',
+    isPreviouslyEnhanced: false,
+    previousConfig: null,
+    warnings: [],
+    entries,
+    error,
+    ...extra
+  };
+}
+
+/** Builder course/component packages are an input mistake worth naming specifically. */
+function looksLikeBuilderCourse(entries) {
+  const byPath = new Map(entries.map(e => [norm(e.path).toLowerCase(), e]));
+  if (byPath.has('project-backup.json')) return true;
+  const manifest = byPath.get('manifest.json');
+  if (!manifest) return false;
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(manifest.data));
+    return Boolean(parsed && typeof parsed === 'object' && 'courseName' in parsed && Array.isArray(parsed.sections));
+  } catch {
+    return false;
+  }
+}
+
+/** First `<resource href="…">` in an imsmanifest.xml, without query/fragment; '' when absent. */
+function manifestLaunchHref(manifestText) {
+  const match = /<resource\b[^>]*\bhref\s*=\s*["']([^"']+)["']/i.exec(manifestText);
+  if (!match) return '';
+  let href = match[1].trim();
+  try { href = decodeURIComponent(href); } catch { /* keep as written */ }
+  return norm(href.split(/[?#]/)[0]);
+}
+
+/**
  * Inspects an uploaded ZIP file and returns package metadata.
  * @param {Blob|File} zipBlob
  * @returns {Promise<{
  *   valid: boolean,
- *   packageType: 'web'|'scorm12'|'scorm2004'|'unknown',
+ *   packageType: 'web'|'generic-web'|'scorm12'|'scorm2004'|'unknown',
+ *   kind: 'rise-web'|'generic-web'|'scorm12'|'scorm2004'|'unsupported',
+ *   label: string,
  *   launchHtmlPath: string,
  *   isPreviouslyEnhanced: boolean,
  *   previousConfig: any|null,
+ *   warnings: string[],
  *   entries: { path: string, data: Uint8Array, isDirectory: boolean }[],
  *   error?: string
  * }>}
@@ -20,17 +81,18 @@ export const ENHANCEMENT_SIGNATURE = '<!-- RCB-POST-PUBLISH-TOOLS:START -->';
 export async function detectRisePackage(zipBlob) {
   try {
     const entries = await readZip(zipBlob);
-    const entryPaths = new Set(entries.map(e => e.path.replace(/\\/g, '/')));
+    const files = entries.filter(e => !e.isDirectory);
+    const byPath = new Map(files.map(e => [norm(e.path).toLowerCase(), e]));
+    const paths = [...byPath.keys()];
+    const warnings = [];
 
-    // Check for previous enhancement manifest
+    // Previous enhancement manifest
     let isPreviouslyEnhanced = false;
     let previousConfig = null;
-
-    const manifestEntry = entries.find(e => e.path.endsWith(MANIFEST_FILENAME));
-    if (manifestEntry) {
+    const enhancement = files.find(e => e.path.endsWith(MANIFEST_FILENAME));
+    if (enhancement) {
       try {
-        const text = new TextDecoder().decode(manifestEntry.data);
-        const parsed = JSON.parse(text);
+        const parsed = JSON.parse(new TextDecoder().decode(enhancement.data));
         if (parsed && parsed.enhancement === 'Rise Post-Publish Tools') {
           isPreviouslyEnhanced = true;
           previousConfig = parsed.config || null;
@@ -40,99 +102,90 @@ export async function detectRisePackage(zipBlob) {
       }
     }
 
-    // Detect package structure
-    let packageType = 'unknown';
-    let launchHtmlPath = '';
-
-    const hasManifest = entryPaths.has('imsmanifest.xml');
-    const hasIndexHtml = entryPaths.has('index.html');
-    const hasIndexLms = entryPaths.has('index_lms.html') || entryPaths.has('scormcontent/index.html');
-    const hasScormDriver = Array.from(entryPaths).some(p => p.startsWith('scormdriver/') || p.includes('scormdriver.js'));
-    const hasRiseLib = Array.from(entryPaths).some(p => p.includes('lib/rise') || p.includes('lib/main.') || p.includes('scormcontent/'));
-
-    // Helper to find the best launch HTML entry
-    function findLaunchHtmlPath() {
-      // 1. For SCORM packages, prefer scormcontent/index.html if present
-      const scormContent = entries.find(e => {
-        const p = e.path.replace(/\\/g, '/').toLowerCase();
-        return p === 'scormcontent/index.html' || p.endsWith('/scormcontent/index.html');
-      });
-      if (scormContent) return scormContent.path;
-
-      // 2. Direct root index.html or index.htm
-      const rootIndex = entries.find(e => {
-        const p = e.path.replace(/\\/g, '/').replace(/^\.\//, '').toLowerCase();
-        return p === 'index.html' || p === 'index.htm';
-      });
-      if (rootIndex) return rootIndex.path;
-
-      // 3. index_lms.html
-      const lmsIndex = entries.find(e => {
-        const p = e.path.replace(/\\/g, '/').replace(/^\.\//, '').toLowerCase();
-        return p === 'index_lms.html' || p.endsWith('/index_lms.html');
-      });
-      if (lmsIndex) return lmsIndex.path;
-
-      // 4. Any index.html in any subdirectory
-      const subIndex = entries.find(e => {
-        const p = e.path.replace(/\\/g, '/').toLowerCase();
-        return p.endsWith('/index.html') || p.endsWith('/index.htm');
-      });
-      if (subIndex) return subIndex.path;
-
-      // 5. Any .html at root
-      const anyRootHtml = entries.find(e => {
-        const p = e.path.replace(/\\/g, '/').replace(/^\.\//, '');
-        return !p.includes('/') && (p.endsWith('.html') || p.endsWith('.htm'));
-      });
-      if (anyRootHtml) return anyRootHtml.path;
-
-      return '';
+    if (looksLikeBuilderCourse(files)) {
+      return rejected(entries,
+        'This is a Rise Component Builder course package (one folder per interactive component), not a published Rise course. Post-Publish tools enhance a Web or SCORM export downloaded from Articulate Rise: publish your course in Rise, export it, and upload that ZIP.',
+        { kind: 'builder-course', label: 'Builder course package' });
     }
 
-    launchHtmlPath = findLaunchHtmlPath();
-
-    if (hasManifest && (hasIndexLms || hasScormDriver || launchHtmlPath.includes('scormcontent/'))) {
-      const manifestEntry = entries.find(e => e.path.replace(/\\/g, '/').endsWith('imsmanifest.xml'));
-      let manifestText = '';
-      if (manifestEntry) {
-        manifestText = new TextDecoder().decode(manifestEntry.data);
-      }
+    // --- SCORM: the launch file comes from the manifest, not from guessing ---
+    const manifestEntry = byPath.get('imsmanifest.xml');
+    if (manifestEntry) {
+      const manifestText = new TextDecoder().decode(manifestEntry.data);
       const is2004 = manifestText.includes('CAM 1.3') || manifestText.includes('2004') || manifestText.includes('adlcp:scormType');
-      packageType = is2004 ? 'scorm2004' : 'scorm12';
-    } else if (launchHtmlPath || hasRiseLib || hasIndexHtml) {
-      packageType = 'web';
-    }
-
-    if (!launchHtmlPath) {
+      const packageType = is2004 ? 'scorm2004' : 'scorm12';
+      const href = manifestLaunchHref(manifestText);
+      let launch = '';
+      if (href) {
+        const hit = byPath.get(href.toLowerCase());
+        if (!hit) {
+          return rejected(entries,
+            `imsmanifest.xml says the course launches from “${href}”, but that file is not in the package. The ZIP may be incomplete or re-zipped with an extra folder; re-export it from Rise.`,
+            { kind: packageType, label: 'SCORM package with a missing launch file' });
+        }
+        launch = hit.path;
+      } else {
+        const guess = ['scormcontent/index.html', 'index_lms.html', 'index.html'].map(p => byPath.get(p)).find(Boolean);
+        if (!guess) {
+          return rejected(entries,
+            'imsmanifest.xml does not name a launch file and none of the usual Rise launch pages (scormcontent/index.html, index_lms.html, index.html) is present.',
+            { kind: packageType, label: 'SCORM package without a launch file' });
+        }
+        launch = guess.path;
+        warnings.push('imsmanifest.xml does not name a launch resource, so the launch page was inferred from the file layout. Confirm it is the page your LMS actually opens.');
+      }
       return {
-        valid: false,
-        packageType: 'unknown',
-        launchHtmlPath: '',
-        isPreviouslyEnhanced: false,
-        previousConfig: null,
-        entries,
-        error: 'The uploaded file does not appear to be a supported Rise 360 web or LMS export (could not find index.html or imsmanifest.xml).'
+        valid: true,
+        packageType,
+        kind: packageType,
+        label: is2004 ? 'SCORM 2004 package' : 'SCORM 1.2 package',
+        launchHtmlPath: launch,
+        isPreviouslyEnhanced,
+        previousConfig,
+        warnings,
+        entries
       };
     }
 
+    // --- Web: the launch page must sit at the package root ---
+    const rootLaunch = byPath.get('index.html') || byPath.get('index.htm');
+    if (!rootLaunch) {
+      const nested = paths.filter(p => /(^|\/)index\.html?$/.test(p));
+      return rejected(entries, nested.length
+        ? `No launch file at the root of this ZIP (index.html is only inside subfolders such as “${nested[0]}”). A Rise Web export has index.html at the top level; if you zipped a folder, zip its contents instead.`
+        : 'The uploaded file does not look like a Rise 360 Web or SCORM export: there is no imsmanifest.xml and no index.html at the package root.');
+    }
+
+    const launchText = new TextDecoder().decode(rootLaunch.data);
+    const riseStructure = paths.some(p => p.startsWith('lib/rise') || p.startsWith('lib/main.') || p.startsWith('scormcontent/'));
+    const riseContent = /articulate|rise[\s-]?360|\brise\b/i.test(launchText);
+    if (riseStructure || riseContent) {
+      return {
+        valid: true,
+        packageType: 'web',
+        kind: 'rise-web',
+        label: 'Rise Web export (identified from its file structure)',
+        launchHtmlPath: rootLaunch.path,
+        isPreviouslyEnhanced,
+        previousConfig,
+        warnings,
+        entries
+      };
+    }
+
+    warnings.push('This package has a root index.html but none of the file structure of a Rise export. It will be treated as a generic web page: the tools can be added, but Rise navigation, completion tracking and LMS communication cannot be assumed to work.');
     return {
       valid: true,
-      packageType,
-      launchHtmlPath,
+      packageType: 'generic-web',
+      kind: 'generic-web',
+      label: 'Generic web page (not identified as a Rise export)',
+      launchHtmlPath: rootLaunch.path,
       isPreviouslyEnhanced,
       previousConfig,
+      warnings,
       entries
     };
   } catch (err) {
-    return {
-      valid: false,
-      packageType: 'unknown',
-      launchHtmlPath: '',
-      isPreviouslyEnhanced: false,
-      previousConfig: null,
-      entries: [],
-      error: `Failed to inspect package: ${err.message}`
-    };
+    return rejected([], `Failed to inspect package: ${err.message}`);
   }
 }

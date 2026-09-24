@@ -7,6 +7,7 @@ import { createHelpEditor } from './editors/help-editor.js';
 import { createSettingsEditor } from './editors/settings-editor.js';
 import { generateSimulatorPreviewHTML } from './preview.js';
 import { validatePostPublishConfig } from './validator.js';
+import { planEnhancement } from './zip-enhancer.js';
 import { enhanceRisePackage } from './zip-enhancer.js';
 import { escapeHTML, formatStorageBytes } from '../utilities.js';
 
@@ -144,9 +145,11 @@ export function createPostPublishWorkflow({ onBack = null } = {}) {
 
       ${packageDetection ? `
         <div class="ppt-package-detected-card ${packageDetection.valid ? 'success' : 'error'}">
-          <h4>${packageDetection.valid ? '✓ Package Detected Successfully' : '⚠️ Package Inspection Warning'}</h4>
-          <p><strong>Package Type:</strong> ${packageDetection.packageType ? packageDetection.packageType.toUpperCase() : 'Unknown'}</p>
-          <p><strong>Launch Document:</strong> ${packageDetection.launchHtmlPath || 'None'}</p>
+          <h4>${packageDetection.valid ? (packageDetection.kind === 'generic-web' ? '⚠️ Accepted as a generic web page' : '✓ Package detected') : '⛔ This ZIP cannot be used'}</h4>
+          <p><strong>Detected as:</strong> ${escapeHTML(packageDetection.label || 'Unknown')}</p>
+          <p><strong>Launch document:</strong> ${escapeHTML(packageDetection.launchHtmlPath || 'None')}</p>
+          ${(packageDetection.warnings || []).length ? `<ul class="ppt-package-warnings">${packageDetection.warnings.map(w => `<li>${escapeHTML(w)}</li>`).join('')}</ul>` : ''}
+          ${packageDetection.valid ? '<p class="field-hint">Detection uses file structure only; it has not been checked against a live Rise course.</p>' : ''}
           ${packageDetection.isPreviouslyEnhanced ? `
             <div class="ppt-prior-enhancement-alert">
               <span>🌟 This package was previously enhanced. Its prior settings have been automatically loaded for you to update or modify.</span>
@@ -355,12 +358,21 @@ export function createPostPublishWorkflow({ onBack = null } = {}) {
         </div>
       </div>
 
+      <p class="ppt-demo-label" role="note" style="margin: 0 0 8px; padding: 8px 12px; border: 1px solid #F59E0B; background: #FFFBEB; border-radius: 8px; font-size: 0.8125rem;">
+        <strong>Demo simulator — not your uploaded course.</strong> This is a made-up course page used to show how the tools look and behave with your settings. Your uploaded package has not been opened or rendered, so this preview does not validate it.
+      </p>
       <div class="ppt-preview-frame-shell">
-        <iframe id="ppt-sim-iframe" class="ppt-sim-iframe" title="Rise Course Tools Live Simulator Preview"></iframe>
+        <iframe id="ppt-sim-iframe" class="ppt-sim-iframe" title="Demo simulator (sample course page, not your uploaded course)"></iframe>
       </div>
 
       <div class="ppt-validation-report-card">
-        <h3>Pre-Export Quality & Accessibility Validation</h3>
+        <h3>Tool settings checks</h3>
+        <p class="field-hint" style="margin: 0 0 8px;">${validation.notes.map(escapeHTML).join(' ')}</p>
+        ${validation.samples.length ? `
+          <label class="ppt-sample-ack" style="display: flex; gap: 8px; align-items: flex-start; margin: 0 0 10px; font-size: 0.875rem;">
+            <input type="checkbox" id="ppt-sample-ack" ${currentConfig.settings.sampleContentAcknowledged ? 'checked' : ''}>
+            <span>I understand this export includes sample content (${validation.samples.length} item${validation.samples.length === 1 ? '' : 's'}). Placeholder links and addresses still block export.</span>
+          </label>` : ''}
         <div class="ppt-val-groups">
           <div class="ppt-val-group passed">
             <h4>✓ Passed Checks (${validation.passed.length})</h4>
@@ -381,6 +393,11 @@ export function createPostPublishWorkflow({ onBack = null } = {}) {
         </div>
       </div>
     `;
+
+    box.querySelector('#ppt-sample-ack')?.addEventListener('change', event => {
+      currentConfig.settings.sampleContentAcknowledged = event.target.checked;
+      renderStepContent();
+    });
 
     const iframe = box.querySelector('#ppt-sim-iframe');
     generateSimulatorPreviewHTML(currentConfig).then(html => {
@@ -415,6 +432,8 @@ export function createPostPublishWorkflow({ onBack = null } = {}) {
         <p>Package your persistent course tools into the final distribution ZIP archive.</p>
       </div>
 
+      <div class="ppt-package-summary" id="ppt-package-summary" aria-live="polite">Preparing summary of what will change…</div>
+
       ${validation.errors.length > 0 ? `
         <div class="ppt-package-detected-card error">
           <h4>Export Blocked by Validation Errors</h4>
@@ -436,6 +455,26 @@ export function createPostPublishWorkflow({ onBack = null } = {}) {
         </div>
       `}
     `;
+
+    planEnhancement(uploadedFile, packageDetection, currentConfig).then(plan => {
+      const target = box.querySelector('#ppt-package-summary');
+      if (!target) return;
+      const outstanding = [...(packageDetection?.warnings || []), ...validation.warnings, ...plan.warnings];
+      target.innerHTML = `
+        <div class="ppt-package-detected-card success">
+          <h4>What this download will change</h4>
+          <p><strong>Package:</strong> ${escapeHTML(uploadedFile?.name || '')} — ${escapeHTML(packageDetection?.label || '')}</p>
+          <p><strong>Existing file modified:</strong> <code>${escapeHTML(plan.modifiedFile)}</code> (a script/style block is added before <code>&lt;/body&gt;</code>)</p>
+          <p><strong>Tools enabled:</strong> ${plan.enabledTools.length ? plan.enabledTools.map(escapeHTML).join(', ') : 'none'}</p>
+          <p><strong>Files added:</strong></p>
+          <ul>${plan.addedFiles.map(f => `<li><code>${escapeHTML(f)}</code></li>`).join('')}</ul>
+          ${outstanding.length ? `<p><strong>Outstanding warnings:</strong></p><ul>${outstanding.map(w => `<li>${escapeHTML(w)}</li>`).join('')}</ul>` : ''}
+          <p class="field-hint">Everything else in the package is left byte-for-byte as uploaded. This step adds the tools; it does not repair problems that were already in the course.</p>
+        </div>`;
+    }).catch(err => {
+      const target = box.querySelector('#ppt-package-summary');
+      if (target) target.textContent = `Could not prepare the summary: ${err.message}`;
+    });
 
     const dlBtn = box.querySelector('#btn-run-enhancement');
     const statusEl = box.querySelector('#ppt-enhancement-status');

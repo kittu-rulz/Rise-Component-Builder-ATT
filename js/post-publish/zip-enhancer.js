@@ -5,6 +5,50 @@ import { normalizePostPublishConfig } from './schema.js';
 import { getMediaRecord } from '../media-storage.js';
 import { getRuntimeAssets } from './runtime-assets.js';
 
+const INJECTED_ASSETS = ['assets/rcb-ppt/rcb-ppt-styles.css', 'assets/rcb-ppt/rcb-ppt-config.js', 'assets/rcb-ppt/rcb-ppt-runtime.js'];
+
+function baseDirOf(launchPath) {
+  const normalized = String(launchPath || '').replace(/\\/g, '/');
+  const lastSlash = normalized.lastIndexOf('/');
+  return lastSlash !== -1 ? normalized.slice(0, lastSlash + 1) : '';
+}
+
+/**
+ * Describes, before anything is generated, exactly what the enhanced ZIP will change: the one
+ * existing file that is modified, every file that is added, and anything that will stop the
+ * export. Shown to the author before download so the summary is the real plan, not a guess.
+ *
+ * @param {Blob|File} uploadedZip
+ * @param {{ launchHtmlPath: string, isPreviouslyEnhanced?: boolean }} detection
+ * @param {any} rawConfig
+ */
+export async function planEnhancement(uploadedZip, detection, rawConfig) {
+  const config = normalizePostPublishConfig(rawConfig);
+  const baseDir = baseDirOf(detection?.launchHtmlPath);
+  const warnings = [];
+  const addedFiles = INJECTED_ASSETS.map(path => `${baseDir}${path}`);
+
+  for (const item of config.resources?.items || []) {
+    if (item.sourceType === 'upload' && item.fileRef?.mediaId) {
+      const record = await getMediaRecord(item.fileRef.mediaId).catch(() => null);
+      if (record?.blob) addedFiles.push(`${baseDir}assets/rcb-ppt/resources/${item.fileRef.name}`);
+      else warnings.push(`Resource “${item.title}” was uploaded, but its file is no longer in local storage. Re-upload it; the export will stop until you do.`);
+    }
+  }
+  addedFiles.push(MANIFEST_FILENAME);
+  if (baseDir) addedFiles.push(`${baseDir}${MANIFEST_FILENAME}`);
+  addedFiles.push('rcb-ppt-enhancement-report.txt');
+
+  const enabled = config.settings.enabledTools;
+  return {
+    modifiedFile: detection?.launchHtmlPath || '',
+    addedFiles,
+    enabledTools: [enabled.glossary && 'Glossary', enabled.resources && 'Resources', enabled.help && 'Help & Support'].filter(Boolean),
+    replacesPrevious: Boolean(detection?.isPreviouslyEnhanced),
+    warnings
+  };
+}
+
 /**
  * Injects Post-Publish Course Tools into an uploaded Rise package ZIP and generates an enhanced ZIP.
  * @param {Blob|File} uploadedZip
@@ -113,20 +157,39 @@ ${ENHANCEMENT_SIGNATURE}
           try {
             const record = await getMediaRecord(item.fileRef.mediaId);
             const blob = record?.blob;
-            if (blob) {
-              const buffer = await blob.arrayBuffer();
-              const safePath = `${baseDir}assets/rcb-ppt/resources/${item.fileRef.name}`;
-              filteredEntries.push({
-                path: safePath,
-                data: new Uint8Array(buffer)
-              });
-              packagedFilesList.push(`${item.fileRef.name} (${item.title})`);
-            }
+            if (!blob) throw new Error('missing');
+            const buffer = await blob.arrayBuffer();
+            const safePath = `${baseDir}assets/rcb-ppt/resources/${item.fileRef.name}`;
+            filteredEntries.push({
+              path: safePath,
+              data: new Uint8Array(buffer)
+            });
+            packagedFilesList.push(`${item.fileRef.name} (${item.title})`);
           } catch {
-            // Missing media will fallback to URL
+            // Silently falling back to a blank link would ship a dead resource; stop instead.
+            return {
+              success: false,
+              enhancedBlob: null,
+              downloadFilename: '',
+              report: '',
+              error: `Resource “${item.title}” was uploaded, but its file is no longer in local storage. Re-upload it (or switch it to a link) and try again.`
+            };
           }
         }
       }
+    }
+
+    // Every path the launch page now references must exist in the archive we are about to write.
+    const present = new Set(filteredEntries.map(e => e.path.replace(/\\/g, '/')));
+    const unresolved = INJECTED_ASSETS.filter(path => !present.has(`${baseDir}${path}`));
+    if (unresolved.length) {
+      return {
+        success: false,
+        enhancedBlob: null,
+        downloadFilename: '',
+        report: '',
+        error: `The enhanced package would reference files it does not contain (${unresolved.join(', ')}). Nothing was downloaded.`
+      };
     }
 
     // Add Manifest JSON for future reload / idempotency

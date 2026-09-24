@@ -125,7 +125,7 @@ export async function generateSimulatorPreviewHTML(config) {
   <header class="mock-rise-header">
     <div class="mock-rise-course-title">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      <span>Course Overview: Enterprise Technical Operations</span>
+      <span>DEMO — sample course page, not your uploaded course</span>
     </div>
     <div class="mock-rise-nav-crumbs">Lesson 2 of 6</div>
   </header>

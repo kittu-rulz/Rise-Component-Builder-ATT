@@ -2,6 +2,68 @@ import { sanitizeRichText, sanitizeURL } from '../utilities.js';
 
 export const POST_PUBLISH_SCHEMA_VERSION = 1;
 
+// Reserved/example hosts that can never be a real destination for learners.
+const PLACEHOLDER_HOSTS = /(^|\.)(example\.(com|org|net)|example|invalid|test|localhost)$/i;
+
+/** True when the URL points at a reserved example/placeholder host (example.com, *.example.com, …). */
+export function isPlaceholderUrl(value) {
+  try {
+    const host = new URL(String(value || '').trim()).hostname;
+    return PLACEHOLDER_HOSTS.test(host);
+  } catch {
+    return false;
+  }
+}
+
+/** True when the email's domain is a reserved example/placeholder domain. */
+export function isPlaceholderEmail(value) {
+  const at = String(value || '').trim().lastIndexOf('@');
+  return at !== -1 && PLACEHOLDER_HOSTS.test(String(value).trim().slice(at + 1));
+}
+
+/**
+ * The starter config ships example content so the tools are not empty on first open. That
+ * content must never reach learners by accident, so this lists every place the current
+ * config still carries an unchanged seed value. Compared against the seed itself (not a
+ * flag) so editing a value clears it without any UI having to remember to.
+ * @returns {{ tool: 'glossary'|'resources'|'help', what: string }[]}
+ */
+export function findSampleContent(config) {
+  const seed = createDefaultPostPublishConfig();
+  /** @type {{ tool: 'glossary'|'resources'|'help', what: string }[]} */
+  const found = [];
+  const enabled = config?.settings?.enabledTools || {};
+  if (enabled.glossary) {
+    const seedTerms = new Set(seed.glossary.entries.map(e => `${e.term}|${e.definition}`));
+    for (const e of config.glossary?.entries || []) {
+      if (seedTerms.has(`${(e.term || '').trim()}|${e.definition}`) || seed.glossary.entries.some(s => s.term === (e.term || '').trim())) {
+        found.push({ tool: 'glossary', what: `Glossary term “${e.term}” is the sample term that ships with the tool` });
+      }
+    }
+  }
+  if (enabled.resources) {
+    const seedRes = seed.resources.items;
+    for (const item of config.resources?.items || []) {
+      if (seedRes.some(s => s.title === (item.title || '').trim() && s.url === item.url)) {
+        found.push({ tool: 'resources', what: `Resource “${item.title}” is the sample resource that ships with the tool` });
+      }
+    }
+  }
+  if (enabled.help) {
+    const h = config.help || {};
+    const sh = seed.help;
+    for (const key of ['supportEmail', 'supportPhone', 'supportPortalUrl', 'supportHours', 'responseTime', 'department']) {
+      if (h[key] && h[key] === sh[key]) found.push({ tool: 'help', what: `Help & Support ${key} is still the sample value “${h[key]}”` });
+    }
+    for (const faq of h.faqItems || []) {
+      if (sh.faqItems.some(s => s.question === (faq.question || '').trim())) {
+        found.push({ tool: 'help', what: `FAQ “${faq.question}” is a sample FAQ that ships with the tool` });
+      }
+    }
+  }
+  return found;
+}
+
 /**
  * Creates a clean default Post-Publish Tools configuration.
  */
@@ -21,6 +83,7 @@ export function createDefaultPostPublishConfig() {
       desktopOffsetBottom: 24,
       desktopOffsetSide: 24,
       displayOnCoverPage: true,
+      sampleContentAcknowledged: false,
       enabledTools: {
         glossary: true,
         resources: true,
@@ -127,6 +190,8 @@ export function normalizePostPublishConfig(config) {
     desktopOffsetBottom: Math.max(8, Math.min(120, Number(settings.desktopOffsetBottom) || 24)),
     desktopOffsetSide: Math.max(8, Math.min(120, Number(settings.desktopOffsetSide) || 24)),
     displayOnCoverPage: settings.displayOnCoverPage !== false,
+    // The author has explicitly accepted that sample content remains in this export.
+    sampleContentAcknowledged: settings.sampleContentAcknowledged === true,
     enabledTools: {
       glossary: Boolean(settings.enabledTools?.glossary ?? defaults.settings.enabledTools.glossary),
       resources: Boolean(settings.enabledTools?.resources ?? defaults.settings.enabledTools.resources),

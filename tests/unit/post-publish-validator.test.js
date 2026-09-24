@@ -4,11 +4,72 @@ import { createDefaultPostPublishConfig } from '../../js/post-publish/schema.js'
 import { parseGlossaryCSV } from '../../js/post-publish/editors/glossary-editor.js';
 
 describe('Post-Publish Validator', () => {
-  test('passes validation with default valid configuration', () => {
+  // A config an author has actually filled in: none of the shipped sample values remain.
+  function realConfig() {
     const config = createDefaultPostPublishConfig();
-    const result = validatePostPublishConfig(config);
+    config.glossary.entries = [{ id: 'g1', term: 'Handover', definition: '<p>Passing an active call between cells.</p>', abbreviation: '', aliases: '', category: '', resourceUrl: '', resourceLabel: '' }];
+    config.resources.items = [{ id: 'r1', title: 'Field checklist', description: '', type: 'document', sourceType: 'url', url: 'https://learn.acme-telecom.net/checklist.pdf', fileRef: null, category: '', featured: false, actionLabel: 'Open', openBehavior: 'new-tab' }];
+    Object.assign(config.help, {
+      supportEmail: 'learning@acme-telecom.net', supportPhone: '+1 555 010 4477', supportPortalUrl: 'https://help.acme-telecom.net',
+      supportHours: 'Weekdays 9-5', responseTime: 'One business day', department: 'Learning Operations',
+      faqItems: [{ id: 'f1', question: 'Where do I find my certificate?', answer: '<p>In the LMS transcript.</p>' }]
+    });
+    return config;
+  }
+
+  test('the shipped starter config is NOT exportable: it carries sample content and placeholder destinations', () => {
+    const result = validatePostPublishConfig(createDefaultPostPublishConfig());
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => /placeholder address \(https:\/\/example\.com\/field-guide\.pdf\)/.test(e))).toBe(true);
+    expect(result.errors.some(e => /helpdesk\.example\.com/.test(e))).toBe(true);
+    expect(result.errors.some(e => /example\.com/.test(e) && /Support email/.test(e))).toBe(true);
+    expect(result.errors.some(e => /Sample content is still present/.test(e))).toBe(true);
+    expect(result.samples.length).toBeGreaterThan(0);
+  });
+
+  test('a config with real content and real destinations validates, and says what was not checked', () => {
+    const result = validatePostPublishConfig(realConfig());
+    expect(result.errors).toEqual([]);
     expect(result.valid).toBe(true);
-    expect(result.errors.length).toBe(0);
+    expect(result.samples).toEqual([]);
+    expect(result.notes.join(' ')).toMatch(/not rendered or tested/i);
+    expect(result.passed.join(' ')).toMatch(/reachability is not checked/i);
+  });
+
+  test('placeholder destinations block export even when sample content is acknowledged', () => {
+    const config = realConfig();
+    config.settings.sampleContentAcknowledged = true;
+    config.resources.items[0].url = 'https://example.com/anything';
+    config.help.supportPortalUrl = 'https://helpdesk.example.com';
+    config.help.supportEmail = 'me@example.org';
+    const result = validatePostPublishConfig(config);
+    expect(result.valid).toBe(false);
+    expect(result.errors.filter(e => /placeholder/i.test(e))).toHaveLength(3);
+  });
+
+  test('sample content blocks export until it is replaced, or knowingly acknowledged (then only warns)', () => {
+    const config = realConfig();
+    config.help.department = createDefaultPostPublishConfig().help.department; // one sample value left behind
+    const blocked = validatePostPublishConfig(config);
+    expect(blocked.valid).toBe(false);
+    expect(blocked.errors.some(e => /Sample content is still present/.test(e))).toBe(true);
+
+    config.settings.sampleContentAcknowledged = true;
+    const acknowledged = validatePostPublishConfig(config);
+    expect(acknowledged.valid).toBe(true);
+    expect(acknowledged.warnings.some(w => /Sample content remains and was acknowledged/.test(w))).toBe(true);
+
+    config.settings.sampleContentAcknowledged = false;
+    config.help.department = 'Learning Operations';
+    expect(validatePostPublishConfig(config).valid).toBe(true); // editing the value clears it
+  });
+
+  test('malformed web addresses are errors; relative paths and https links are accepted', () => {
+    const config = realConfig();
+    config.resources.items[0].url = 'not a url';
+    expect(validatePostPublishConfig(config).errors.some(e => /not a valid web address/.test(e))).toBe(true);
+    config.resources.items[0].url = '/files/guide.pdf';
+    expect(validatePostPublishConfig(config).valid).toBe(true);
   });
 
   test('fails validation when all tools are disabled', () => {

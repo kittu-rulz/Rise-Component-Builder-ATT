@@ -1,11 +1,29 @@
+import { findSampleContent, isPlaceholderEmail, isPlaceholderUrl } from './schema.js';
+
+const isHttpUrl = value => {
+  try {
+    const url = new URL(String(value).trim());
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Validates a Post-Publish Tools configuration for pre-export QA.
+ *
+ * What this does and does not establish: it checks the tool settings only. It does not open
+ * the uploaded package, and it cannot check that a link is reachable (the browser blocks
+ * cross-origin probes), so a passing link means "well-formed and not a placeholder", not
+ * "works".
  * @param {any} config
  * @returns {{
  *   valid: boolean,
  *   errors: string[],
  *   warnings: string[],
- *   passed: string[]
+ *   passed: string[],
+ *   samples?: { tool: string, what: string }[],
+ *   notes?: string[]
  * }}
  */
 export function validatePostPublishConfig(config) {
@@ -18,7 +36,9 @@ export function validatePostPublishConfig(config) {
       valid: false,
       errors: ['Configuration object is missing or malformed.'],
       warnings: [],
-      passed: []
+      passed: [],
+      samples: [],
+      notes: []
     };
   }
 
@@ -133,10 +153,51 @@ export function validatePostPublishConfig(config) {
     }
   }
 
+  // 6. Destinations: syntax, and reserved placeholder hosts are never acceptable
+  const destinations = [];
+  if (enabled.resources) {
+    (config.resources?.items || []).forEach((item, idx) => {
+      if (item.sourceType !== 'upload' && item.url) destinations.push({ label: `Resource “${item.title || idx + 1}”`, url: item.url });
+    });
+  }
+  if (enabled.glossary) {
+    (config.glossary?.entries || []).forEach((e, idx) => {
+      if (e.resourceUrl) destinations.push({ label: `Glossary term “${e.term || idx + 1}” related link`, url: e.resourceUrl });
+    });
+  }
+  if (enabled.help && config.help?.supportPortalUrl) {
+    destinations.push({ label: 'Support portal', url: config.help.supportPortalUrl });
+  }
+  for (const { label, url } of destinations) {
+    if (isPlaceholderUrl(url)) {
+      errors.push(`${label} points at a placeholder address (${url}). Replace it with a real destination.`);
+    } else if (!url.startsWith('/') && !isHttpUrl(url)) {
+      errors.push(`${label} is not a valid web address (${url}).`);
+    }
+  }
+  if (enabled.help && config.help?.supportEmail && isPlaceholderEmail(config.help.supportEmail)) {
+    errors.push(`Support email ${config.help.supportEmail} uses a placeholder domain. Replace it with a real address.`);
+  }
+  if (destinations.length && !errors.some(e => /placeholder|valid web address/.test(e))) {
+    passed.push(`${destinations.length} link(s) are well-formed and not placeholders (reachability is not checked).`);
+  }
+
+  // 7. Sample content that ships with the tool must be replaced, or knowingly accepted
+  const samples = findSampleContent(config);
+  if (samples.length) {
+    if (settings.sampleContentAcknowledged) {
+      warnings.push(`Sample content remains and was acknowledged (${samples.length} item(s)): ${samples.map(s => s.what).join('; ')}.`);
+    } else {
+      errors.push(`Sample content is still present (${samples.length} item(s)). Replace or remove it, or tick “I understand this export includes sample content” before exporting. ${samples.slice(0, 4).map(s => s.what).join('; ')}${samples.length > 4 ? '; …' : ''}.`);
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
     warnings,
-    passed
+    passed,
+    samples,
+    notes: ['These checks cover the tool settings only. The uploaded package is not rendered or tested here, and link reachability is not verified.']
   };
 }
