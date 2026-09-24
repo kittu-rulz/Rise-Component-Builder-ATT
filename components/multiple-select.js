@@ -101,7 +101,9 @@ export function generateCSS() {
     .option-check-square {
       width: 18px;
       height: 18px;
-      border-radius: var(--att-radius-sm, 4px);
+      /* Fixed 4px: --att-radius-sm is 8px, which rounds an 18px box into a circle
+         and makes checkboxes indistinguishable from the single-select radios. */
+      border-radius: 4px;
       border: 2px solid var(--text-muted);
       position: relative;
       margin-top: 2px;

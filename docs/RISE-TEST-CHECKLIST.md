@@ -7,34 +7,30 @@ Run this once per component you need Confirmed for, and once per Rise-side chang
 ## Before you start
 
 1. In this application, select the component to test, configure it (or leave defaults), and open **Export Block**.
-2. Read the compatibility report at the top of the modal for whichever option you're about to test — it names the specific thing that's unverified.
+2. Read any Preflight results at the top of the dialog, and check `docs/RISE-COMPATIBILITY-MATRIX.md` for the format you're about to test — it names the specific thing that's unverified.
 3. Have `docs/COMPATIBILITY-RESULTS.md` open in another tab; you'll fill in a row at the end.
 
 **Run the checklist at least once against the largest practical export, not just a default/empty component.** Since P04 (2026-08-14) optimized the embedded brand font (~150 KB baseline across every export, down from ~380 KB), the remaining size variation between components comes almost entirely from author-uploaded media. Build the largest-practical case by configuring a media-capable component (Custom Video Embed, Custom Audio Player, or Grid Photo Gallery are the largest by typical file size) with real uploaded audio/video/images close to the Builder Settings media-size limits, then run the full checklist below against that export — this is the case most likely to trip the paste-size warning in the Export modal or a real Rise paste-size ceiling this project hasn't otherwise encountered.
 
-## Test A — Iframe snippet (srcdoc)
+## Test A — HTML block fragment (Copy for Rise)
 
-1. Open **Advanced export options**, select the **Iframe Snippet (srcdoc)** tab, and click **Copy Code**.
+1. Click **Copy for Rise** in the export dialog.
 2. In Rise, open the lesson where the block should appear → **Block library** → **`</>` Code** → **Add code**.
-3. Paste the copied code into the code editor exactly as copied. Do not manually edit the `srcdoc` attribute.
+3. Paste the copied code into the code editor exactly as copied.
 4. Save the code block.
 5. Click Rise's own **Preview** for that lesson.
 6. Check, in order — stop and record a **fail** at the first one that doesn't hold:
    - a. Does the block appear at all, or is it blank/missing?
-   - b. Does it render at roughly the expected width/height, or is it clipped/scrolled awkwardly inside Rise's block frame?
+   - b. Does it render at roughly the expected width and expand naturally with its content, or is it clipped/scrolled awkwardly?
    - c. Click every interactive element (e.g. an accordion header, a quiz option, a hotspot pin). Does each respond?
    - d. Tab to the block using only the keyboard (no mouse). Can you reach every interactive control and activate it with Enter/Space/arrow keys, matching what `docs/RISE-COMPATIBILITY-MATRIX.md` claims for that component?
    - e. If the component has completion tracking enabled, complete it. Does Rise's own lesson-completion state change, or does nothing happen on Rise's side? (A visible in-block progress bar reaching 100% is expected either way — that part is this project's own UI, not Rise's. What you're checking is whether *Rise* also marks the lesson/block complete.)
 7. Repeat step 6 in Rise's **share-link preview** (a shareable pre-publish link, not just the in-editor preview) if your Rise plan supports it — this is a separate row in the matrix.
 8. If you have access to publish to a test/sandbox course, repeat step 6 once more against the fully published lesson.
 
-## Test B — HTML block fragment
+9. Additionally check: does anything on the *rest* of the Rise lesson page look visually broken after adding this block (unexpected color/spacing changes elsewhere on the page)? This format's CSS class names are not scoped against the host page by design — a collision here is expected to be possible, not a surprise.
 
-1. Click **Copy for Rise** in the main export panel (this is the primary/default recommendation).
-2. Repeat steps 2–8 above, pasting the fragment instead of the iframe snippet.
-3. Additionally check: does anything on the *rest* of the Rise lesson page look visually broken after adding this block (unexpected color/spacing changes elsewhere on the page)? This format's CSS class names are not scoped against the host page by design — a collision here is expected to be possible, not a surprise.
-
-## Test C — Rise web export (if applicable)
+## Test B — Rise web export (if applicable)
 
 Only run this if your workflow actually uses Rise's own "Export" to a static HTML5 bundle rather than publishing to Rise 360 hosting.
 
@@ -45,7 +41,7 @@ Only run this if your workflow actually uses Rise's own "Export" to a static HTM
 
 ## Recording your result
 
-For each test (A/B/C) and each Rise surface (editor preview / share-link preview / published / web-export), add a row to `docs/COMPATIBILITY-RESULTS.md` with:
+For each test (A/B) and each Rise surface (editor preview / share-link preview / published / web-export), add a row to `docs/COMPATIBILITY-RESULTS.md` with:
 
 - Date, tester, Rise version/plan (Rise doesn't expose a version number in the UI the way desktop software does — note the date instead, since that's what the entry is really pinned to).
 - Component tested, and its configuration (default vs. customized, completion tracking on/off).
