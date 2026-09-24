@@ -12,6 +12,7 @@ import { toRgba as colorToRgba } from '../utilities.js';
 import { auditCourseProject } from './project-qa.js';
 import { isolateModal } from './att-modal.js';
 import { showToast } from '../toast.js';
+import { describeTechnicalStatus, getCourseReadiness } from './course-readiness.js';
 
 const componentRegistry = Object.fromEntries(
   COMPONENT_REGISTRY.map(entry => [entry.id, { ...entry.renderer, validate: entry.validate, version: entry.version }])
@@ -283,13 +284,12 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
     }
 
     const previouslyFocused = document.activeElement;
-    const qaReport = auditCourseProject(project);
-    const totalSecs = (project.sectionOrder || []).length;
-    const totalComps = qaReport.totalComponents;
-    const hasBlockers = qaReport.counts.blockers > 0;
-    const hasErrors = qaReport.counts.errors > 0;
-    const hasWarnings = qaReport.counts.warnings > 0;
-    const hasDrafts = qaReport.editorial.draftCount > 0;
+    // The dialog opens immediately on the cheap structure checks and updates in place when the
+    // full Preflight run finishes. It is the same run Course QA and the editor use, so the
+    // counts match. Until then Export stays disabled and nothing claims "passed".
+    let readiness = null;
+    let readinessFailed = false;
+    const readinessPromise = getCourseReadiness(project, auditCourseProject);
 
     const existing = document.getElementById('att-export-review-modal-overlay');
     if (existing) existing.remove();
@@ -306,7 +306,29 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     };
 
-    overlay.innerHTML = `
+    const build = () => {
+      const qaReport = readiness || auditCourseProject(project);
+      const pending = !readiness && !readinessFailed;
+      const totalSecs = (project.sectionOrder || []).length;
+      const totalComps = qaReport.totalComponents;
+      const hasBlockers = qaReport.counts.blockers > 0;
+      const hasErrors = qaReport.counts.errors > 0;
+      const hasWarnings = qaReport.counts.warnings > 0;
+      const hasDrafts = qaReport.editorial.draftCount > 0;
+    // The actual findings, not just counts, so the dialog agrees with Course QA line for line.
+    const listed = qaReport.componentReports.flatMap(report => report.issues
+      .filter(issue => issue.severity === 'blocker' || issue.severity === 'error' || issue.severity === 'warning')
+      .map(issue => ({ issue, name: report.component.name })));
+    const findingsHtml = listed.length ? `
+          <div style="border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 14px; font-size: 0.8125rem;">
+            <div style="font-weight: 700; margin-bottom: 6px; color: var(--att-heading-contrast, #000);">Findings (${listed.length})</div>
+            <ul style="margin: 0; padding-left: 18px; line-height: 1.5; max-height: 180px; overflow: auto;">
+              ${listed.slice(0, 12).map(({ issue, name }) => `<li><strong>${escapeHtml(issue.severity)}</strong> — ${escapeHtml(name)}: ${escapeHtml(issue.title)}${issue.formats?.length && issue.source === 'preflight' ? ` <span style="color: #555;">(affects ${escapeHtml(issue.formats.join(', '))})</span>` : ''}</li>`).join('')}
+              ${listed.length > 12 ? `<li>…and ${listed.length - 12} more in Course QA.</li>` : ''}
+            </ul>
+          </div>` : '';
+
+      return `
       <div class="modal-card" style="max-width: 640px;">
         <div class="modal-header">
           <div>
@@ -345,13 +367,17 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
               </div>
               <div style="background: var(--att-surface, #FFFFFF); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--att-border, #DCDFE3);">
                 <div style="color: var(--att-text-muted, #707780); font-size: 0.75rem;">Technical QA</div>
-                <div style="font-weight: 700; color: var(--att-text, #000);">${qaReport.technicalScore}% Passed</div>
+                <div style="font-weight: 700; color: var(--att-text, #000);">${pending ? 'Running checks…' : readinessFailed ? 'Not completed' : escapeHtml(describeTechnicalStatus(qaReport).replace(/^Technical checks: /, ''))}</div>
               </div>
             </div>
           </div>
 
           <!-- Canonical QA Status Notice Box -->
-          ${hasBlockers ? `
+          ${pending && !hasBlockers ? `
+            <div role="status" style="background: rgba(2, 119, 189, 0.06); border: 1px solid rgba(2, 119, 189, 0.25); border-radius: 12px; padding: 14px; font-size: 0.8125rem;">
+              <strong>Running technical checks…</strong> The same Preflight checks the editor uses are being applied to every component. Export becomes available when they finish.
+            </div>
+          ` : hasBlockers ? `
             <div style="background: rgba(224, 88, 77, 0.08); border: 1px solid rgba(224, 88, 77, 0.3); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E0584D" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
               <div>
@@ -385,13 +411,17 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
             <div style="background: rgba(0, 138, 0, 0.08); border: 1px solid rgba(0, 138, 0, 0.3); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#008A00" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
               <div>
-                <div style="font-weight: 700; font-size: 0.875rem; color: #008A00; margin-bottom: 4px;">Course is 100% Ready for Export</div>
+                <div style="font-weight: 700; font-size: 0.875rem; color: #008A00; margin-bottom: 4px;">No blocking issues or warnings found</div>
                 <p style="margin: 0; font-size: 0.8125rem; color: var(--att-text, #000); line-height: 1.4;">
-                  All technical, editorial, and accessibility checks have passed.
+                  ${readinessFailed
+                    ? 'The full technical checks could not run, so only basic structure checks were applied. '
+                    : 'The automated Preflight checks found nothing to fix. '}Automated checks cannot certify accessibility conformance or Rise compatibility; review the package in Rise before publishing.
                 </p>
               </div>
             </div>
           `}
+
+          ${findingsHtml}
 
           <!-- Package Details -->
           <div style="border: 1px solid var(--att-border, #DCDFE3); border-radius: 12px; padding: 14px; font-size: 0.8125rem;">
@@ -399,8 +429,8 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
             <ul style="margin: 0; padding-left: 18px; color: var(--att-text-muted, #555); line-height: 1.5;">
               <li>Organized folders for each section and component HTML bundle.</li>
               <li>Includes <code>manifest.json</code> course hierarchy and <code>project-backup.json</code>.</li>
-              <li>Includes <code>README.md</code> with Articulate Rise 360 iframe embed instructions.</li>
-              <li>Compatible with Rise 360 Multimedia &gt; Embed blocks and custom LMS hosting.</li>
+              <li>Every uploaded media file is packaged inside each component's own <code>assets/</code> folder; export stops if any file is missing.</li>
+              <li>Includes <code>README.md</code> explaining hosting: components are standalone pages to host over HTTPS and embed in Rise, not a Rise or SCORM import.</li>
             </ul>
           </div>
         </div>
@@ -413,7 +443,11 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
           
           <div style="display: flex; gap: 8px;">
             <button id="att-export-review-cancel-btn" class="btn-att-secondary" type="button">Cancel</button>
-            ${hasBlockers ? `
+            ${pending && !hasBlockers ? `
+              <button id="att-export-review-proceed-btn" class="btn-att-primary" type="button" disabled title="Checks are still running" style="opacity: 0.5; cursor: not-allowed;">
+                Checking…
+              </button>
+            ` : hasBlockers ? `
               <button id="att-export-review-proceed-btn" class="btn-att-primary" type="button" disabled title="Fix blockers before export" style="opacity: 0.5; cursor: not-allowed;">
                 Export Blocked
               </button>
@@ -434,14 +468,11 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
         </div>
       </div>
     `;
+    };
+    overlay.innerHTML = build();
 
     const modalRoot = document.getElementById('modal-root') || document.body;
     modalRoot.appendChild(overlay);
-
-    const closeBtn = overlay.querySelector('#att-export-review-close-btn');
-    const cancelBtn = overlay.querySelector('#att-export-review-cancel-btn');
-    const qaBtn = overlay.querySelector('#att-export-review-qa-btn');
-    const proceedBtn = overlay.querySelector('#att-export-review-proceed-btn');
 
     let cleanupIsolation = null;
     const cleanup = () => {
@@ -471,35 +502,51 @@ export function showPreExportReviewDialog(options, maybeOnProceed = null, maybeO
       }
     });
 
-    closeBtn?.addEventListener('click', () => {
-      cleanup();
-      resolve(false);
-    });
+    const bind = () => {
+      const closeBtn = overlay.querySelector('#att-export-review-close-btn');
+      const cancelBtn = overlay.querySelector('#att-export-review-cancel-btn');
+      const qaBtn = overlay.querySelector('#att-export-review-qa-btn');
+      const proceedBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector('#att-export-review-proceed-btn'));
+      closeBtn?.addEventListener('click', () => {
+        cleanup();
+        resolve(false);
+      });
 
-    cancelBtn?.addEventListener('click', () => {
-      cleanup();
-      resolve(false);
-    });
+      cancelBtn?.addEventListener('click', () => {
+        cleanup();
+        resolve(false);
+      });
 
-    qaBtn?.addEventListener('click', () => {
-      cleanup();
-      resolve(false);
-      if (onViewQa) onViewQa(projectId);
-    });
+      qaBtn?.addEventListener('click', () => {
+        cleanup();
+        resolve(false);
+        if (onViewQa) onViewQa(projectId);
+      });
 
-    proceedBtn?.addEventListener('click', async () => {
-      if (hasBlockers) return;
-      cleanup();
-      resolve(true);
-      if (onProceed) {
-        await onProceed(projectId);
-      } else {
-        try {
-          await downloadCourseProjectZip(projectId);
-        } catch (err) {
-          showToast(`Export failed: ${err.message}`, 'error', 8000);
+      proceedBtn?.addEventListener('click', async () => {
+        if (proceedBtn?.disabled) return;
+        cleanup();
+        resolve(true);
+        if (onProceed) {
+          await onProceed(projectId);
+        } else {
+          try {
+            await downloadCourseProjectZip(projectId);
+          } catch (err) {
+            showToast(`Export failed: ${err.message}`, 'error', 8000);
+          }
         }
-      }
+      });
+
+    };
+    bind();
+
+    readinessPromise.then(report => { readiness = report; }, () => { readinessFailed = true; }).then(() => {
+      if (!overlay.isConnected) return;
+      const focusedId = document.activeElement?.id;
+      overlay.innerHTML = build();
+      bind();
+      if (focusedId) /** @type {HTMLElement|null} */ (overlay.querySelector(`#${focusedId}`))?.focus();
     });
   });
 }

@@ -8,6 +8,7 @@
 import { getProject } from '../storage.js';
 import { showPreExportReviewDialog, buildCourseProjectZip, downloadCourseProjectZip } from './project-export.js';
 import { showToast } from '../toast.js';
+import { describeTechnicalStatus, getCourseReadiness } from './course-readiness.js';
 
 /**
  * Performs a deep audit of a course project.
@@ -206,6 +207,28 @@ export class ProjectQaView {
   }
 
   mount() {
+    this.readiness = null;
+    this.render();
+    this.loadReadiness();
+  }
+
+  /**
+   * Runs the same Preflight engine the editor uses over every component (measurement
+   * included), then re-renders with the merged result. Until it resolves the view says
+   * checks are running instead of claiming anything passed.
+   */
+  async loadReadiness(force = false) {
+    const project = getProject(this.projectId);
+    if (!project) return;
+    const projectId = this.projectId;
+    try {
+      const merged = await getCourseReadiness(project, auditCourseProject, { force });
+      if (this.projectId !== projectId || !this.container?.isConnected) return; // navigated away meanwhile
+      this.readiness = merged;
+      this.readinessError = null;
+    } catch (error) {
+      this.readinessError = error;
+    }
     this.render();
   }
 
@@ -229,7 +252,8 @@ export class ProjectQaView {
   render() {
     if (!this.container) return;
     const project = getProject(this.projectId);
-    const audit = auditCourseProject(project || {});
+    const audit = this.readiness || auditCourseProject(project || {});
+    const pending = !this.readiness && !this.readinessError;
 
     // Filter reports based on active severity and search query
     let filteredReports = audit.componentReports;
@@ -317,9 +341,13 @@ export class ProjectQaView {
             <div class="workspace-banner-info">
               <h1 class="workspace-title">Course Quality & Compliance Audit</h1>
               <p class="workspace-desc">
-                Technical checks: <strong>${audit.technicalScore}% passed</strong> · 
-                Editorial status: <strong>${audit.editorial.readyCount} Ready</strong>, <strong>${audit.editorial.inReviewCount} In Review</strong>, <strong>${audit.editorial.draftCount} Draft</strong> · 
-                Overall: <strong>${audit.overallStatus}</strong>
+                ${pending
+                  ? 'Technical checks: running the same Preflight checks the editor uses on every component…'
+                  : this.readinessError
+                    ? `Technical checks: could not be completed (${this.escapeHtml(this.readinessError.message || 'unknown error')}). Only basic structure checks are shown.`
+                    : this.escapeHtml(describeTechnicalStatus(audit))} ·
+                Editorial status: <strong>${audit.editorial.readyCount} Ready</strong>, <strong>${audit.editorial.inReviewCount} In Review</strong>, <strong>${audit.editorial.draftCount} Draft</strong> ·
+                Export: <strong>${pending ? 'checking…' : audit.exportReadiness ? (audit.exportReadiness.canExport ? 'can be built' : 'blocked') : this.escapeHtml(audit.overallStatus)}</strong>
               </p>
               <div style="margin-top: 10px; font-size: 0.8125rem; color: #555555; display: flex; gap: 14px; flex-wrap: wrap;">
                 <span>🛑 <strong>${audit.counts.blockers}</strong> blockers</span>
@@ -331,26 +359,27 @@ export class ProjectQaView {
 
               <details class="qa-score-explainer" style="margin-top: 14px; background: #FFFFFF; border: 1px solid var(--att-border, #DCDFE3); border-radius: 8px; padding: 10px 14px; font-size: 0.8125rem;">
                 <summary style="font-weight: 600; cursor: pointer; color: var(--att-cobalt, #00388F);">
-                  How is this QA Score calculated?
+                  What do these statuses mean?
                 </summary>
                 <div style="margin-top: 8px; color: var(--att-text, #333); line-height: 1.5;">
-                  <p style="margin: 0 0 6px 0;">The QA Readiness Score combines two independent audit dimensions:</p>
+                  <p style="margin: 0 0 6px 0;">Three things are reported separately, and none is a percentage:</p>
                   <ul style="margin: 0 0 8px 18px; padding: 0;">
-                    <li><strong>Technical Quality (${audit.technicalScore}%):</strong> Checks for valid titles, non-empty interactive content items, and block header metadata.</li>
-                    <li><strong>Editorial Workflow:</strong> Evaluates publication status across ${audit.totalComponents} components (${audit.editorial.readyCount} Ready, ${audit.editorial.inReviewCount} In Review, ${audit.editorial.draftCount} Draft).</li>
+                    <li><strong>Technical checks:</strong> the same automated Preflight rules the editor runs (required fields, accessibility, media, contrast, layout measurements), applied to all ${audit.totalComponents} components. “Passed” means none of those automated rules found a warning or blocker; it is not a WCAG conformance certificate or a guarantee of Rise compatibility.</li>
+                    <li><strong>Editorial status:</strong> the Draft / In Review / Ready label authors set on each component. Draft is a workflow note, not a defect.</li>
+                    <li><strong>Export:</strong> whether anything stops the package being built (for example a missing uploaded file).</li>
                   </ul>
                   <p style="margin: 0; font-size: 0.75rem; color: #666;">
-                    <em>Note: Any blocker issues (e.g. empty component items) prevent package export and cap readiness at 40% until resolved.</em>
+                    <em>Layout measurements are heuristics taken in this Builder's own preview with collapsed sections opened. Confirm in Rise's own preview before publishing.</em>
                   </p>
                 </div>
               </details>
             </div>
             <div class="workspace-banner-metrics">
               <div class="metric-card">
-                <p class="metric-value" style="color: ${audit.overallStatus === 'Ready to Export' ? '#10B981' : audit.overallStatus === 'In Progress' ? '#F59E0B' : '#EF4444'};">
-                  ${audit.overallScore}%
+                <p class="metric-value" style="font-size: 1.125rem; color: ${pending ? '#6B7280' : audit.overallStatus === 'Ready to Export' ? '#10B981' : (audit.overallStatus === 'In Progress' || audit.overallStatus === 'Ready with warnings') ? '#B45309' : '#EF4444'};">
+                  ${pending ? 'Checking…' : this.escapeHtml(audit.overallStatus)}
                 </p>
-                <p class="metric-label">${audit.overallStatus}</p>
+                <p class="metric-label">Overall status</p>
               </div>
             </div>
           </div>
@@ -407,13 +436,15 @@ export class ProjectQaView {
                       <div style="flex: 1;">
                         <strong style="color: var(--att-heading-contrast, #111);">${this.escapeHtml(iss.title)}:</strong>
                         <span style="color: var(--att-text, #333); margin-left: 4px;">${this.escapeHtml(iss.message)}</span>
+                        ${iss.formats?.length ? `<span style="display: block; font-size: 0.75rem; color: #555; margin-top: 2px;">Affects: ${this.escapeHtml(iss.formats.join(', '))}</span>` : ''}
+                        ${iss.remediation ? `<span style="display: block; font-size: 0.75rem; color: #555; margin-top: 2px;">Fix: ${this.escapeHtml(iss.remediation)}</span>` : ''}
                         ${iss.preventsExport ? `<span style="display: block; font-size: 0.75rem; color: #D32F2F; font-weight: 600; margin-top: 2px;">🛑 Prevents package export</span>` : ''}
                       </div>
                     </div>
                   `).join('') : `
                     <p style="margin: 0; font-size: 0.875rem; color: #10B981; display: flex; align-items: center; gap: 8px; font-weight: 500;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      All technical, content, and metadata quality checks pass.
+                      ${pending ? 'Running technical checks…' : 'No findings from the automated technical, content and metadata checks.'}
                     </p>
                   `}
                 </div>

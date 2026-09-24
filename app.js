@@ -3908,7 +3908,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     return [
       { id: 'brand', name: 'Brand & Typography', state: getPillarState(brandIssues), count: brandIssues.length },
-      { id: 'a11y', name: 'WCAG 2.1 AA Accessibility', state: getPillarState(a11yIssues), count: a11yIssues.length },
+      { id: 'a11y', name: 'Accessibility (WCAG 2.2 AA, automated checks)', state: getPillarState(a11yIssues), count: a11yIssues.length },
       { id: 'rise', name: 'Rise 360 Compatibility', state: getPillarState(riseIssues), count: riseIssues.length },
       { id: 'media', name: 'Media & Asset Budgets', state: getPillarState(mediaIssues), count: mediaIssues.length }
     ];

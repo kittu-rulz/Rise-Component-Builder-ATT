@@ -165,7 +165,7 @@ export class DashboardView {
                 <span class="hero-brand-pill">Aptara Learning Interaction Studio</span>
                 <span class="hero-compliance-pill">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  WCAG 2.2 AA &amp; Brand Verified
+                  Built for WCAG 2.2 AA · brand-checked
                 </span>
               </div>
 
@@ -191,8 +191,8 @@ export class DashboardView {
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat-item">
-                  <span class="hero-stat-num">100%</span>
-                  <span class="hero-stat-label">Rise 360 Ready</span>
+                  <span class="hero-stat-num">Rise 360</span>
+                  <span class="hero-stat-label">Embed &amp; HTML export</span>
                 </div>
               </div>
             </div>

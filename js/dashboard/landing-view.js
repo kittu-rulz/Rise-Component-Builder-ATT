@@ -71,7 +71,7 @@ export class LandingView {
             <div class="landing-brand-badge">
               <span class="landing-brand-tag">Aptara Learning Technologies</span>
               <span class="landing-brand-dot"></span>
-              <span class="landing-brand-tech">WCAG 2.2 AA Verified</span>
+              <span class="landing-brand-tech">Designed for WCAG 2.2 AA</span>
             </div>
 
             <div class="landing-title-wrap">

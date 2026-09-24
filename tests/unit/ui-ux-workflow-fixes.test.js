@@ -27,7 +27,7 @@ describe('UI/UX Workflow Fixes & Verification Suite', () => {
             id: 'c1',
             name: 'Intro',
             type: 'accordion',
-            config: { items: [{ title: 'Overview', content: 'Intro text' }] }
+            config: { blockTitle: 'Intro', blockHeadline: 'Overview', items: [{ title: 'Overview', content: 'Intro text' }] }
           })
         },
         unsectionedComponentOrder: ['c1']
@@ -46,9 +46,10 @@ describe('UI/UX Workflow Fixes & Verification Suite', () => {
       const overlay = document.getElementById('att-export-review-modal-overlay');
       expect(overlay).toBeTruthy();
 
+      // Export stays disabled until the full Preflight run finishes, then enables (no blockers).
+      expect(overlay.querySelector('#att-export-review-proceed-btn').disabled).toBe(true);
+      await vi.waitFor(() => expect(overlay.querySelector('#att-export-review-proceed-btn').disabled).toBe(false));
       const proceedBtn = overlay.querySelector('#att-export-review-proceed-btn');
-      expect(proceedBtn).toBeTruthy();
-      expect(proceedBtn.disabled).toBe(false);
       proceedBtn.click();
       await Promise.resolve();
 
@@ -64,7 +65,7 @@ describe('UI/UX Workflow Fixes & Verification Suite', () => {
             id: 'c1',
             name: 'Intro',
             type: 'accordion',
-            config: { items: [{ title: 'Overview', content: 'Intro text' }] }
+            config: { blockTitle: 'Intro', blockHeadline: 'Overview', items: [{ title: 'Overview', content: 'Intro text' }] }
           })
         },
         unsectionedComponentOrder: ['c1']
@@ -79,9 +80,10 @@ describe('UI/UX Workflow Fixes & Verification Suite', () => {
       const overlay = document.getElementById('att-export-review-modal-overlay');
       expect(overlay).toBeTruthy();
 
+      // Export stays disabled until the full Preflight run finishes, then enables (no blockers).
+      expect(overlay.querySelector('#att-export-review-proceed-btn').disabled).toBe(true);
+      await vi.waitFor(() => expect(overlay.querySelector('#att-export-review-proceed-btn').disabled).toBe(false));
       const proceedBtn = overlay.querySelector('#att-export-review-proceed-btn');
-      expect(proceedBtn).toBeTruthy();
-      expect(proceedBtn.disabled).toBe(false);
       proceedBtn.click();
       await Promise.resolve();
 
@@ -97,7 +99,7 @@ describe('UI/UX Workflow Fixes & Verification Suite', () => {
             id: 'c1',
             name: 'Intro',
             type: 'accordion',
-            config: { items: [{ title: 'Overview', content: 'Intro text' }] }
+            config: { blockTitle: 'Intro', blockHeadline: 'Overview', items: [{ title: 'Overview', content: 'Intro text' }] }
           })
         },
         unsectionedComponentOrder: ['c1']

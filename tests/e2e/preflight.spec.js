@@ -151,6 +151,56 @@ test.describe('js/dom-measurement.js — real hidden-iframe measurement', () => 
   });
 });
 
+// Audit finding: the same component could measure differently between runs (once as 0px
+// tall, once as ~161px overflowing) and hidden content was never measured. These pin the two
+// behaviours that make the heuristic trustworthy: identical repeated readings, and inclusion
+// of content that is only visible after opening a collapsed control.
+test.describe('js/dom-measurement.js — deterministic and expansion-aware', () => {
+  const collapsibleHtml = wide => `<!doctype html><html><body style="margin:0">
+    <button aria-expanded="false" aria-controls="p" onclick="var p=document.getElementById('p');var o=this.getAttribute('aria-expanded')==='true';this.setAttribute('aria-expanded',String(!o));p.hidden=o">Open</button>
+    <div id="p" hidden><div style="width:${wide}px;height:400px">wide hidden content</div></div>
+    <img loading="lazy" alt="" width="10" height="10" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+  </body></html>`;
+
+  test('ten repeated measurements of the same document are identical', async ({ page }) => {
+    await page.goto('/?catalog');
+    const runs = await page.evaluate(async html => {
+      const { measureRenderedDimensions } = await import('/js/dom-measurement.js');
+      const out = [];
+      for (let i = 0; i < 10; i++) out.push(JSON.stringify(await measureRenderedDimensions(html)));
+      return out;
+    }, collapsibleHtml(900));
+    expect(new Set(runs).size).toBe(1);
+    const first = JSON.parse(runs[0]);
+    expect(first.desktopContentHeight).not.toBeNull();
+    expect(first.mobileOverflowPx).not.toBeNull();
+  });
+
+  test('content hidden behind a collapsed control is included, and the offending element is named', async ({ page }) => {
+    await page.goto('/?catalog');
+    const result = await page.evaluate(async html => {
+      const { measureRenderedDimensions } = await import('/js/dom-measurement.js');
+      return measureRenderedDimensions(html);
+    }, collapsibleHtml(900));
+    // 400px of content only exists once the button is pressed, and it is 900px wide.
+    expect(result.desktopContentHeight).toBeGreaterThanOrEqual(400);
+    expect(result.mobileOverflowPx).toBeGreaterThan(450);
+    expect(result.statesMeasured).toBeGreaterThanOrEqual(2);
+    expect(result.mobileOffender).not.toBeNull();
+    expect(result.mobileOffender.overflowPx).toBeGreaterThan(450);
+  });
+
+  test('narrow hidden content produces no overflow warning', async ({ page }) => {
+    await page.goto('/?catalog');
+    const result = await page.evaluate(async html => {
+      const { measureRenderedDimensions } = await import('/js/dom-measurement.js');
+      return measureRenderedDimensions(html);
+    }, collapsibleHtml(200));
+    expect(result.mobileOverflowPx).toBe(0);
+    expect(result.mobileOffender).toBeNull();
+  });
+});
+
 test('Preflight measures real rendered dimensions for a normal component and reports no clipping/overflow issues', async ({ page }) => {
   await page.locator('#btn-preflight').click();
   const results = page.locator('#preflight-results');
