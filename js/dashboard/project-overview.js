@@ -67,6 +67,7 @@ export class ProjectOverviewView {
     this.cleanupPickerIsolation = null;
     this.cleanupDetailsIsolation = null;
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
+    this.handleMenuItemClick = this.handleMenuItemClick.bind(this);
     this.boundResizeMessageListener = this.handleIframeResizeMessage.bind(this);
   }
 
@@ -76,6 +77,7 @@ export class ProjectOverviewView {
 
   mount() {
     document.addEventListener('click', this.handleDocumentClick);
+    document.addEventListener('click', this.handleMenuItemClick, true);
     window.addEventListener('message', this.boundResizeMessageListener);
 
     const project = this.getProject();
@@ -153,6 +155,7 @@ export class ProjectOverviewView {
     modalHost?.querySelector('#picker-modal-overlay')?.remove();
     modalHost?.querySelector('#details-modal-overlay')?.remove();
     document.removeEventListener('click', this.handleDocumentClick);
+    document.removeEventListener('click', this.handleMenuItemClick, true);
     window.removeEventListener('message', this.boundResizeMessageListener);
     if (this.container) {
       this.container.innerHTML = '';
@@ -171,6 +174,16 @@ export class ProjectOverviewView {
         }
       }
     }
+  }
+
+  // Choosing an item closes its three-dots menu. Items stop their click from bubbling, so the
+  // document handler below never sees it; this capture-phase one does, and removes the menu after
+  // the item's own handler has run (a cancelled dialog must not leave the menu hanging open).
+  handleMenuItemClick(e) {
+    const item = e.target instanceof Element ? e.target.closest('.project-menu-item') : null;
+    if (!item) return;
+    this.state.activeMenuId = null;
+    setTimeout(() => item.closest('.project-action-menu')?.remove(), 0);
   }
 
   handleDocumentClick(e) {
@@ -1399,8 +1412,16 @@ export class ProjectOverviewView {
     const csSearchInput = this.container.querySelector('#cs-search-input');
     if (csSearchInput) {
       csSearchInput.addEventListener('input', (e) => {
+        const caret = e.target.selectionStart;
         this.state.courseStructureSearch = e.target.value;
         this.render();
+        // render() rebuilds the whole view, including this input; put the author back where they were typing.
+        const fresh = this.container.querySelector('#cs-search-input');
+        if (fresh) {
+          fresh.focus();
+          const at = caret ?? fresh.value.length;
+          fresh.setSelectionRange(at, at);
+        }
       });
     }
 

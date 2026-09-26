@@ -640,8 +640,16 @@ export class DashboardView {
     const searchInput = this.container.querySelector('#dash-search-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
+        const caret = e.target.selectionStart;
         this.state.searchQuery = e.target.value;
         this.render();
+        // render() rebuilds the whole view, including this input; put the author back where they were typing.
+        const fresh = this.container.querySelector('#dash-search-input');
+        if (fresh) {
+          fresh.focus();
+          const at = caret ?? fresh.value.length;
+          fresh.setSelectionRange(at, at);
+        }
       });
     }
 

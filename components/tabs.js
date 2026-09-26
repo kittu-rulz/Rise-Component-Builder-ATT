@@ -1,6 +1,7 @@
 import { getEditorSchema } from '../js/editor-schemas.js';
 import { escapeAttribute, sanitizeRichText, sanitizeURL, serializeForInlineScript } from '../js/utilities.js';
 import { getAttIconSvg } from '../js/att-icons.js';
+import { wrapItemMediaContent, getItemMediaCSS, validateItemMedia } from '../js/item-media.js';
 
 /**
  * Horizontal Tabs Component Configuration
@@ -80,7 +81,7 @@ export function generateHTML(config, instanceId) {
     return `<button class="tab-btn ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-${index}" role="tab" aria-selected="${index === 0}" aria-controls="${instanceId}-tab-panel-${index}" tabindex="${index === 0 ? '0' : '-1'}" data-idx="${index}" ${sequential ? `aria-describedby="${instanceId}-tab-lock-note-${index}"` : ''} ${locked ? 'aria-disabled="true"' : ''}>${sequential ? `<span class="tab-lock-icon-slot" ${locked ? '' : 'hidden'}>${lockIconSvg}</span>` : ''}${icon}${numbered ? `<span class="tab-number" aria-hidden="true">${index + 1}.</span>` : ''}<span class="tab-label-text">${item.title ? sanitizeRichText(item.title) : 'Tab'}</span>${showVisitedBadge ? `<span class="tab-visited-badge" hidden>${visitedCheckIconSvg} Visited</span>` : ''}</button>${sequential ? `<span class="sr-only tab-lock-note" id="${instanceId}-tab-lock-note-${index}" ${locked ? '' : 'hidden'}>Locked. Select the previous tab first.</span>` : ''}`;
   }).join('');
 
-  const tabPanels = config.items.map((item, index) => `<div class="tab-panel ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-panel-${index}" role="tabpanel" aria-labelledby="${instanceId}-tab-${index}" tabindex="0" ${index === 0 ? '' : 'hidden'}><p>${sanitizeRichText(item.content || '')}</p></div>`).join('');
+  const tabPanels = config.items.map((item, index) => `<div class="tab-panel ${index === 0 ? 'active' : ''}" id="${instanceId}-tab-panel-${index}" role="tabpanel" aria-labelledby="${instanceId}-tab-${index}" tabindex="0" ${index === 0 ? '' : 'hidden'}>${wrapItemMediaContent(item.media, `<p>${sanitizeRichText(item.content || '')}</p>`, instanceId, index)}</div>`).join('');
 
   const compareBlock = compareMode ? `
     <div class="tabs-compare-panel" hidden>
@@ -426,7 +427,9 @@ export function generateCSS() {
       .tabs-compare-columns {
         grid-template-columns: 1fr;
       }
-    }`;
+    }
+
+    ${getItemMediaCSS()}`;
 }
 
 export function generateJS(config, instanceId) {
@@ -496,6 +499,10 @@ export function generateJS(config, instanceId) {
         b.setAttribute('tabindex', '-1');
       });
       container.querySelectorAll('.tab-panel').forEach(function(p) {
+        // Leaving a tab must not leave its audio or video playing behind the new one.
+        p.querySelectorAll('audio, video').forEach(function(mediaEl) {
+          if (!mediaEl.paused) mediaEl.pause();
+        });
         p.classList.remove('active');
         p.hidden = true;
       });
@@ -728,5 +735,10 @@ export function generateJS(config, instanceId) {
 
 export function validate(config) {
   const errors = Array.isArray(config.items) && config.items.length ? [] : ['Add at least one tab.'];
+  (config.items || []).forEach((item, index) => {
+    if (item && item.media && item.media.type && item.media.type !== 'none') {
+      validateItemMedia(item.media, index).errors.forEach(err => errors.push(err));
+    }
+  });
   return { valid: errors.length === 0, errors };
 }

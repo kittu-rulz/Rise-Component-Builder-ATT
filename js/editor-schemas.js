@@ -33,7 +33,7 @@ export const editorSchemas = {
     itemFields: [field('title', 'Section Title', 'text', { required: true, default: 'New Section', maxLength: 120 }), field('content', 'Section Content', 'richtext', { required: true, default: 'Add section content.' })]
   },
   'tab-blocks': {
-    itemLabel: 'Tab', minItems: 2,
+    itemLabel: 'Tab', minItems: 2, supportsItemMedia: true,
     componentLabel: 'Tab Presentation & Auto-Advance',
     componentFields: [
       field('tabsAutoAdvance', 'Enable Auto-Advancing Step Mode', 'checkbox', { default: false }),
