@@ -17,6 +17,7 @@
   border-bottom: 1px solid var(--att-border, #DCDFE3);
   padding: 8px var(--att-space-6, 32px);
   min-height: 48px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -335,7 +336,8 @@
   background: var(--att-surface, #FFFFFF);
   border: 1px solid var(--att-border, #DCDFE3);
   border-radius: 12px;
-  overflow: hidden;
+  /* Visible, not hidden: a menu opens over the card's edge. The header rounds its own top corners. */
+  overflow: visible;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: all 0.15s ease;
 }
@@ -349,7 +351,12 @@
   box-shadow: 0 0 0 2px rgba(0, 56, 143, 0.2);
 }
 
+.section-card-header:last-child {
+  border-radius: 11px;
+}
+
 .section-card-header {
+  border-radius: 11px 11px 0 0;
   background: var(--att-surface-sunken, #FAFAFA);
   border-bottom: 1px solid var(--att-border, #EFEFEF);
   padding: 10px 14px;
@@ -791,6 +798,18 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 4px 0;
   min-width: 150px;
+}
+
+.project-menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+/* A menu opens directly under its own three-dots button, wherever the row places it. */
+.project-menu-anchor > .project-action-menu {
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 60;
 }
 
 .project-menu-item {

@@ -920,9 +920,20 @@ export class ProjectOverviewView {
             <button class="btn btn-secondary btn-sm" data-action="add-comp-to-sec" data-sec-id="${sectionId}">
               + Component
             </button>
-            <button class="project-menu-btn" data-action="section-menu" data-sec-id="${sectionId}" aria-label="Section options">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-            </button>
+            <div class="project-menu-anchor">
+              <button class="project-menu-btn" data-action="section-menu" data-sec-id="${sectionId}" aria-label="Section options">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+              </button>
+          ${isMenuOpen ? `
+            <div class="project-action-menu">
+              <button class="project-menu-item" data-action="rename-sec" data-sec-id="${sectionId}">Rename Section</button>
+              <button class="project-menu-item" data-action="duplicate-sec" data-sec-id="${sectionId}">Duplicate Section</button>
+              ${index > 0 ? `<button class="project-menu-item" data-action="move-sec-up" data-sec-id="${sectionId}">Move Up</button>` : ''}
+              ${index < (project.sectionOrder.length - 1) ? `<button class="project-menu-item" data-action="move-sec-down" data-sec-id="${sectionId}">Move Down</button>` : ''}
+              <button class="project-menu-item text-danger" data-action="delete-sec" data-sec-id="${sectionId}">Delete Section</button>
+            </div>
+          ` : ''}
+            </div>
           </div>
         </div>
 
@@ -957,16 +968,6 @@ export class ProjectOverviewView {
             </div>
           `}
         </div>
-
-        ${isMenuOpen ? `
-          <div class="project-action-menu">
-            <button class="project-menu-item" data-action="rename-sec" data-sec-id="${sectionId}">Rename Section</button>
-            <button class="project-menu-item" data-action="duplicate-sec" data-sec-id="${sectionId}">Duplicate Section</button>
-            ${index > 0 ? `<button class="project-menu-item" data-action="move-sec-up" data-sec-id="${sectionId}">Move Up</button>` : ''}
-            ${index < (project.sectionOrder.length - 1) ? `<button class="project-menu-item" data-action="move-sec-down" data-sec-id="${sectionId}">Move Down</button>` : ''}
-            <button class="project-menu-item text-danger" data-action="delete-sec" data-sec-id="${sectionId}">Delete Section</button>
-          </div>
-        ` : ''}
       </div>
     `;
   }
@@ -1014,19 +1015,20 @@ export class ProjectOverviewView {
           ${index > 0 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-up" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Up" aria-label="Move ${escapeHTML(comp.name)} Up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : ''}
           ${index < totalInGroup - 1 ? `<button class="btn btn-secondary btn-sm btn-icon" data-action="move-comp-down" data-comp-id="${compId}" data-sec-id="${sectionId || ''}" title="Move Down" aria-label="Move ${escapeHTML(comp.name)} Down"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : ''}
 
-          <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options for ${escapeHTML(comp.name)}">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-          </button>
-        </div>
-
-        ${isMenuOpen ? `
-          <div class="project-action-menu">
-            <button class="project-menu-item" data-action="open-focus-editor" data-comp-id="${compId}">Open Focus Editor</button>
-            <button class="project-menu-item" data-action="duplicate-comp" data-comp-id="${compId}">Duplicate</button>
-            <button class="project-menu-item" data-action="rename-comp" data-comp-id="${compId}">Rename</button>
-            <button class="project-menu-item text-danger" data-action="delete-comp" data-comp-id="${compId}" data-sec-id="${sectionId || ''}">Delete</button>
+          <div class="project-menu-anchor">
+            <button class="project-menu-btn" data-action="comp-menu" data-comp-id="${compId}" aria-label="Component options for ${escapeHTML(comp.name)}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+            </button>
+          ${isMenuOpen ? `
+            <div class="project-action-menu">
+              <button class="project-menu-item" data-action="open-focus-editor" data-comp-id="${compId}">Open Focus Editor</button>
+              <button class="project-menu-item" data-action="duplicate-comp" data-comp-id="${compId}">Duplicate</button>
+              <button class="project-menu-item" data-action="rename-comp" data-comp-id="${compId}">Rename</button>
+              <button class="project-menu-item text-danger" data-action="delete-comp" data-comp-id="${compId}" data-sec-id="${sectionId || ''}">Delete</button>
+            </div>
+          ` : ''}
           </div>
-        ` : ''}
+        </div>
       </div>
     `;
   }
